@@ -91,8 +91,15 @@ describe('camera error mapping (§57, CAM-006)', () => {
     }
   });
 
-  it('maps hardware and constraint failures to CAMERA_UNAVAILABLE', () => {
-    for (const name of ['NotFoundError', 'NotReadableError', 'OverconstrainedError', 'AbortError']) {
+  it('maps hardware, constraint and policy failures to CAMERA_UNAVAILABLE', () => {
+    // NotSupportedError is in this list, not the denial list: Chromium raises it when the
+    // request is refused by policy. "Nobody would service this" is not "the user said no",
+    // and reporting it as a denial would send the user to a permission screen that has
+    // nothing to change. It was added after a CI runner produced it.
+    for (const name of [
+      'NotFoundError', 'NotReadableError', 'OverconstrainedError', 'AbortError',
+      'NotSupportedError',
+    ]) {
       expect(mapCameraError(Object.assign(new Error('x'), { name })).state, name).toBe(
         CameraState.UNAVAILABLE,
       );

@@ -93,6 +93,15 @@ const ERROR_MAP: Record<string, { state: CameraState; recovery: string }> = {
     state: CameraState.UNAVAILABLE,
     recovery: 'the constraints were malformed; this is a bug in the constraint ladder',
   },
+  NotSupportedError: {
+    state: CameraState.UNAVAILABLE,
+    // Observed from Chromium when camera access is blocked by policy rather than by the
+    // user. It says the request could not be serviced, not that anyone refused it, so it
+    // must not be reported as a denial — the two lead to different advice.
+    recovery:
+      'the browser refused to service the request at all, typically a policy or embedding ' +
+      'restriction rather than a user decision; the camera is reported unavailable',
+  },
 };
 
 export function mapCameraError(err: unknown): CameraFailure {

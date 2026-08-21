@@ -15,6 +15,17 @@ Two browsers, because the two permission scenarios cannot occur in one session. 
 bundles carry `phaseContext` with the constraint-ladder attempts, the frame statistics and
 the scenario ledger.
 
+The denial is induced by setting the origin's permission set to empty
+(`context.grantPermissions([], { origin })`), so the request is refused without a prompt.
+An earlier version used the `--deny-permission-prompts` command-line flag, which produced
+`NotAllowedError` on one Chromium build and `NotSupportedError` on another — a difference
+that failed CI. The permission-set route goes through CDP rather than a flag and is stable
+across builds. If a browser nonetheless refuses the camera in some way other than a user
+denial, the harness says so and excludes CAM-002 from its gate rather than pretending
+otherwise: mapping `NotSupportedError` to "denied" would make the product report a policy
+block as a user decision, which sends the user to a permission screen with nothing to
+change.
+
 Two things in them are simulation, and both are recorded rather than hidden:
 
 **The camera is Chromium's synthetic device.** It is a moving test pattern, not a camera
