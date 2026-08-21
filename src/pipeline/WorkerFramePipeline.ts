@@ -5,9 +5,10 @@
  *
  * The UI thread's whole job here is to decide *whether* to take a frame and to hand a
  * handle to it across the boundary. Everything that costs real time — the readback, the
- * grayscale conversion, the pyramid — happens in `frameWorker.ts`. That division is not a
- * preference: §H.1 measured a main-thread `drawImage` + `getImageData` at 13.8 ms on the
- * device, and a 30 Hz pipeline has 33 ms in total.
+ * grayscale conversion, the pyramid — happens in the tracking worker. That division is not
+ * a preference: §H.1 measured a main-thread `drawImage` + `getImageData` at 5.8–13.8 ms on
+ * the device, and a 30 Hz pipeline has 33 ms in total. The worker is supplied as a factory
+ * (see `WorkerFactory`) so this module never names it.
  *
  * Three ideas do most of the work:
  *
@@ -117,6 +118,18 @@ interface RouteState {
 export interface PipelineHooks {
   readonly onStateChange?: () => void;
 }
+
+/**
+ * How the pipeline gets its worker.
+ *
+ * Injected rather than named here, and that is a dependency rule rather than a convenience.
+ * §82 places the detector that runs inside the worker in `tracking/`, and the architecture
+ * audit forbids `pipeline` from importing `tracking` — so a `new URL('../tracking/…')` in
+ * this file would be the same dependency wearing a disguise. The composition root
+ * (`src/main.ts`, which belongs to no layer) supplies the factory; this module stays unable
+ * to see what is on the other end of the port.
+ */
+export type WorkerFactory = () => Worker;
 
 export class WorkerFramePipeline {
   private video: HTMLVideoElement | null = null;
@@ -245,7 +258,10 @@ export class WorkerFramePipeline {
 
   private readonly hooks: PipelineHooks;
 
-  constructor(hooks: PipelineHooks = {}) {
+  private readonly createWorker: WorkerFactory;
+
+  constructor(createWorker: WorkerFactory, hooks: PipelineHooks = {}) {
+    this.createWorker = createWorker;
     this.hooks = hooks;
     for (const route of ROUTE_ORDER) {
       this.routeStates.set(route, {
@@ -273,13 +289,10 @@ export class WorkerFramePipeline {
     this.video = video;
 
     try {
-      this.worker = new Worker(new URL('./frameWorker.ts', import.meta.url), {
-        type: 'module',
-        name: 'frame-pipeline',
-      });
+      this.worker = this.createWorker();
     } catch (err) {
       logger.error(
-        PHASE, 'FramePipeline', 'the preprocessing worker could not be created',
+        PHASE, 'FramePipeline', 'the tracking worker could not be created',
         'the pipeline does not start and FRAME-002 fails rather than the work silently ' +
           'moving to the UI thread, which §10 forbids',
         err,

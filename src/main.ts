@@ -82,7 +82,20 @@ class Phase0App {
   private phase1Bundle: EvidenceBundle | null = null;
   private cameraOpening = false;
   private phase1Timer: number | null = null;
-  private readonly pipeline = new WorkerFramePipeline();
+  /**
+   * The composition root supplies the worker.
+   *
+   * `main.ts` belongs to no layer, which is what lets it name both sides: the pipeline that
+   * schedules frames and the tracking worker that consumes them. Neither module can see the
+   * other (§83, and the architecture audit that enforces it).
+   */
+  private readonly pipeline = new WorkerFramePipeline(
+    () =>
+      new Worker(new URL('./tracking/trackingWorker.ts', import.meta.url), {
+        type: 'module',
+        name: 'tracking-worker',
+      }),
+  );
   private phase2Results: TestResult[] = [];
   private phase2Bundle: EvidenceBundle | null = null;
   private phase2Timer: number | null = null;

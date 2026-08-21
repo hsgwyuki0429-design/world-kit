@@ -1,5 +1,5 @@
 /**
- * Preprocessing worker (§10, §52).
+ * Tracking worker (§10, §52, §82).
  *
  * Everything expensive about a frame happens here: the GPU→CPU readback that §H.1 measured
  * at 13.8 ms on the device, the grayscale conversion, and the three-level pyramid. The UI
@@ -15,12 +15,20 @@
  * UNAVAILABLE on the target (static hosting cannot send COOP/COEP), so nothing here can be
  * shared with the main thread; what crosses the boundary is transferred, and the only
  * per-frame allocation is the 3 kB proof strip, and only on the frames that ask for it.
+ *
+ * **Why this lives in `tracking/` and not in `pipeline/`.** §10's diagram ends at "Tracking
+ * Worker" and §52 puts preprocessing *and* feature detection in the same worker, so this is
+ * the tracking stage — preprocessing is merely the first thing it does. It was written in
+ * `pipeline/` during Phase 2, when preprocessing was all it did, and moved here in Phase 3
+ * when the detector §82 places in `tracking/` needed to run on the pyramid it holds. The
+ * architecture audit forbids `pipeline → tracking`, which is the right rule; the file was on
+ * the wrong side of it. `tracking → pipeline` is permitted and is the direction used below.
  */
 
 /// <reference lib="webworker" />
 
-import { GrayPyramid, rgbaToGray, stridedChecksum } from './pyramid';
-import { payloadRoute } from './messages';
+import { GrayPyramid, rgbaToGray, stridedChecksum } from '../pipeline/pyramid';
+import { payloadRoute } from '../pipeline/messages';
 import type {
   FrameMessage,
   FromWorkerMessage,
@@ -28,7 +36,7 @@ import type {
   ResultMessage,
   ToWorkerMessage,
   WorkerScopeReport,
-} from './messages';
+} from '../pipeline/messages';
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
