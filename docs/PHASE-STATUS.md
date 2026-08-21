@@ -8,9 +8,9 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 
 | Phase | Name | State | Notes |
 | --- | --- | --- | --- |
-| 0 | Environment / Capability | **TESTING** | Implemented. Desktop leg green; **awaiting real-device evidence**. |
-| 1 | Camera Capture | BLOCKED | Phase Lock — Phase 0 has not PASSED. |
-| 2 | Frame Pipeline | BLOCKED | |
+| 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
+| 1 | Camera Capture | **TESTING** | Implemented. Desktop leg exercises both permission scenarios; **awaiting two real-device bundles** (granted and denied). |
+| 2 | Frame Pipeline | BLOCKED | Phase Lock — Phase 1 has not PASSED. |
 | 3 | Feature Detection | BLOCKED | |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
@@ -29,19 +29,84 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 18 | Performance / Stress | BLOCKED | |
 | 19 | Final Audit | BLOCKED | |
 
-## Why Phase 0 is TESTING and not PASSED
+## Phase 0 — PASSED
 
-Every required test (CAP-0001 … CAP-0011) passes on the automated DESKTOP_DEV leg, and the
-evidence bundle for that run is committed. That is not a pass, and the code will not report
-one: `determineLeg()` classifies an automated localhost run as `DESKTOP_DEV`, and
-`PhaseRegistry.evaluate()` returns `TESTING` for any non-`REAL_DEVICE` leg no matter how
-green the results are.
+**Evidence:** `docs/phase0/evidence/phase0-real-device-PASSED-2026-08-21T08-05-07-305Z.json`
+plus the device screenshot from the same session.
 
-To move Phase 0 to PASSED, see **`docs/phase0/HOW-TO-RUN-DEVICE-TEST.md`**.
+| | |
+| --- | --- |
+| Device | iPhone, iOS 18.7, Safari 26.6, `https://hsgwyuki0429-design.github.io` |
+| Leg | `REAL_DEVICE` — https, non-local host, `navigator.webdriver` false, 5 touch points |
+| Required tests | 11 / 11 PASS, 0 PENDING, 0 FAIL |
+| Advisory tests | 2 / 2 PASS |
+| Capabilities | 31 records, 0 integrity issues |
+| Probe time | 51 ms against a 1500 ms budget |
+| Error log | empty |
+
+Transitions recorded during the run:
+
+```
+NOT_STARTED -> IMPLEMENTING   capability detection starting
+IMPLEMENTING -> TESTING       PENDING: CAP-0004, CAP-0005 — not yet evaluable
+TESTING -> PASSED             all 11 required tests PASS on a real device
+phase[1] BLOCKED -> NOT_STARTED   phase 0 PASSED; this phase may now be started
+```
+
+The middle step matters: the run really did sit at `TESTING` with the two gesture-gated
+tests `PENDING`, and only reached `PASSED` once the sensors delivered data. The phase was
+not passed by assertion at any point.
+
+**The verdict is not taken on trust.** `tests/unit/committedEvidence.test.ts` re-derives it
+from the bundle's own test results using the same `PhaseRegistry.evaluate` the app uses,
+and re-checks the anti-fake invariants — that no `INFERENCE` record backs a criterion, that
+ARKit/RoomPlan are not claimed without a bridge, that metric scale is `UNKNOWN`, and that an
+`AVAILABLE` sensor carries real finite samples. It runs in `npm test`, so a hand-edited
+`"overallVerdict": "PASSED"` would be caught by disagreeing with the results it summarises.
+
+### Code changed after the pass
+
+The pass attests to `appVersion 0.1.0` at commit `59cd379`. Two evidence-path defects found
+by reading that bundle have since been fixed:
+
+1. `motion.deviceOrientation` did not record which of alpha/beta/gamma carried data (the
+   motion record did). Adds a field; changes no verdict.
+2. `stateTransitions` was merged from two sources unsorted, so the bundle contained a
+   duplicate `IMPLEMENTING -> TESTING` entry positioned after `TESTING -> PASSED`. Now
+   deduplicated at source and sorted chronologically.
+
+Neither touches a probe result or a pass criterion, and the committed bundle is still
+re-derived to `PASSED` by the current code on every test run. If you want the record to
+correspond exactly to HEAD, one more export from the device takes about thirty seconds.
+
+## Phase 1 — TESTING
+
+Implemented and exercised end to end on the automated DESKTOP_DEV leg, which drives two
+browsers: one with a synthetic camera and permission granted, one with permission refused.
+Between them CAM-001, CAM-002, CAM-003, CAM-005 and CAM-006 are decided.
+
+| Measured on the desktop leg | |
+| --- | --- |
+| Stream | 1280×720, constraint ladder rung 2 (`facingMode: {exact:'environment'}` refused, looser rung succeeded) |
+| Capture | ~808 frames over 40.4 s at ~20 fps, longest gap 69–273 ms across runs, via `requestVideoFrameCallback` |
+| Rotation | 2 orientation changes, next frame 21 ms later |
+| Denial | `NotAllowedError` → `CAMERA_PERMISSION_DENIED`, no stream held, no preview element in the DOM |
+
+**CAM-004 cannot be decided on that leg.** Chromium's synthetic camera is not a moving
+camera, and its peak frame-to-frame difference straddles the 8.0 floor between runs — 6.79
+and 9.70 both observed. The harness therefore excludes CAM-004 from the gate rather than
+letting a meaningless verdict flap, and prints the measured values. Feeding in a video file
+chosen to clear the bar would make the leg green without making it informative. The
+threshold logic is covered by unit tests; the behaviour needs the device.
+
+**To pass Phase 1:** two device runs, granted and denied — see
+`docs/phase1/HOW-TO-RUN-DEVICE-TEST.md`. `tests/unit/committedEvidence.test.ts` requires a
+committed bundle for each scenario with `observedDirectly: true`, ignoring the in-app
+carry-over ledger.
 
 ## What "implemented" means here
 
 `IMPLEMENTED_PHASES` in `src/core/PhaseRegistry.ts` is the codebase's own statement of what
-exists — currently `{0}`. The START SCAN control reads it, and stays disabled with the
-label `PHASE 1 — NOT IMPLEMENTED` even after Phase Lock would permit entry. Nothing in the
-UI implies a capability that has not been built.
+exists — currently `{0, 1}`. The START SCAN control reads it alongside Phase Lock, and a
+control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
+implies a capability that has not been built.

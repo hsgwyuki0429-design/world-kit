@@ -36,48 +36,90 @@ This is enforced by test `CAP-0010` and by `assertNoInferenceInPassCriteria()`.
 Default is `UNKNOWN` (fail closed, §1.4). A probe that throws yields `ERROR`, never
 `UNAVAILABLE` — "we could not tell" and "it is not there" are different facts.
 
-### A.3 Prior expectation (NOT the matrix — to be confirmed or refuted by measurement)
+### A.3 Prior expectation vs. measurement
 
-Recorded here only so that a *discrepancy* between expectation and measurement is
-visible and investigable. If measurement disagrees, **measurement wins** and the
-expectation below is wrong.
+Expectations were recorded before the first device run so that a *discrepancy* would be
+visible rather than invisible. Measured column is from **iPhone / iOS 18.7 / Safari 26.6 /
+HTTPS**, 2026-08-21. Where the two disagree, **measurement wins and the expectation was
+wrong** — that is the point of writing it down.
 
-| Capability | Expected on iPhone / Safari 26 | Basis |
-| --- | --- | --- |
-| Secure context (HTTPS) | AVAILABLE | deployment requirement |
-| MediaDevices / getUserMedia | AVAILABLE | long-standing Safari support |
-| `enumerateDevices` labels pre-permission | hidden (empty strings) | privacy behaviour |
-| `MediaStreamTrack.getCapabilities` | AVAILABLE | Safari 15.4+ |
-| DeviceMotion | PERMISSION_REQUIRED → then AVAILABLE | iOS 13+ gate |
-| DeviceOrientation | PERMISSION_REQUIRED → then AVAILABLE | iOS 13+ gate |
-| `webkitCompassHeading` | AVAILABLE | WebKit-only field |
-| WebAssembly | AVAILABLE | universal |
-| Web Worker | AVAILABLE | universal |
-| OffscreenCanvas | AVAILABLE | Safari 16.4+ |
-| `transferControlToOffscreen` | AVAILABLE | Safari 16.4+ |
-| WebGL2 | AVAILABLE | Safari 15+ |
-| WebGPU | AVAILABLE | Safari 26 ships WebGPU |
-| WebCodecs (`VideoFrame`) | AVAILABLE | Safari 16.4+ |
-| `requestVideoFrameCallback` | AVAILABLE | Safari 15.4+ |
-| `createImageBitmap` | AVAILABLE | Safari 15+ |
-| SharedArrayBuffer | UNAVAILABLE unless COOP/COEP | needs cross-origin isolation |
-| ImageCapture | **UNAVAILABLE** | not implemented in WebKit |
-| `performance.memory` | **UNAVAILABLE** | Chromium-only |
-| `navigator.deviceMemory` | **UNAVAILABLE** | Chromium-only |
-| WebXR (`navigator.xr`) | **UNAVAILABLE** | not implemented in iOS Safari |
-| Camera Depth | **UNAVAILABLE** | no Web API exists on this platform |
-| Native ARKit | **UNAVAILABLE** | no JavaScript API exists |
-| RoomPlan | **UNAVAILABLE** | no JavaScript API exists |
-| Metric scale | **UNKNOWN** | monocular; §90 |
+| Capability | Expected | Measured on device | |
+| --- | --- | --- | --- |
+| Secure context (HTTPS) | AVAILABLE | AVAILABLE | ✓ |
+| MediaDevices / getUserMedia | AVAILABLE | AVAILABLE | ✓ |
+| `enumerateDevices` labels pre-permission | hidden | hidden (1 videoinput, ids also hidden) | ✓ |
+| `MediaStreamTrack.getCapabilities` | AVAILABLE | AVAILABLE (+ getSettings, applyConstraints) | ✓ |
+| DeviceMotion | PERMISSION_REQUIRED → AVAILABLE | AVAILABLE after tap — 119 events / 2 s, **59.96 Hz** measured | ✓ |
+| DeviceOrientation | PERMISSION_REQUIRED → AVAILABLE | AVAILABLE after tap — 119 events / 2 s, 59.96 Hz | ✓ |
+| `webkitCompassHeading` | AVAILABLE | AVAILABLE, but `compassAccuracy` **±24.5°** | ✓ (with a caveat, below) |
+| WebAssembly | AVAILABLE | AVAILABLE — `add(2,3)===5`, streaming + Memory present | ✓ |
+| Web Worker | AVAILABLE | AVAILABLE — 2 ms round-trip | ✓ |
+| OffscreenCanvas | AVAILABLE | AVAILABLE — byte-exact readback | ✓ |
+| `transferControlToOffscreen` | AVAILABLE | AVAILABLE, and exact **inside a worker** | ✓ |
+| WebGL2 | AVAILABLE | AVAILABLE — Apple GPU, unmasked, maxTexture 16384, `EXT_color_buffer_float` yes | ✓ |
+| WebGPU | AVAILABLE | **AVAILABLE** — adapter *and* device created | ✓ |
+| WebCodecs (`VideoFrame`) | AVAILABLE | AVAILABLE (+ VideoDecoder, VideoEncoder) | ✓ |
+| `requestVideoFrameCallback` | AVAILABLE | AVAILABLE (`playsInline` present) | ✓ |
+| `createImageBitmap` | AVAILABLE | AVAILABLE | ✓ |
+| SharedArrayBuffer | UNAVAILABLE without COOP/COEP | UNAVAILABLE (`crossOriginIsolated: false`) | ✓ |
+| **ImageCapture** | **UNAVAILABLE** ("not implemented in WebKit") | **AVAILABLE** | ✗ **expectation was wrong** |
+| `performance.memory` | UNAVAILABLE | UNAVAILABLE (`deviceMemory` also null) | ✓ |
+| WebXR (`navigator.xr`) | UNAVAILABLE | UNAVAILABLE | ✓ |
+| Camera Depth | UNAVAILABLE | UNAVAILABLE — no depth constraint key, no XR route | ✓ |
+| Native ARKit | UNAVAILABLE | UNAVAILABLE — no `webkit.messageHandlers` bridge | ✓ |
+| RoomPlan | UNAVAILABLE | UNAVAILABLE — same | ✓ |
+| Metric scale | UNKNOWN | UNKNOWN (LOCAL_UNITS) | ✓ |
+
+**The one miss: `ImageCapture` is available on Safari 26.6.** The Fallback table in §F still
+routes frame acquisition through `VideoFrame` → `createImageBitmap` → `drawImage`, which
+remains correct: `ImageCapture.grabFrame()` is a still-capture API, not a per-frame path,
+and Phase 2 needs a frame every 33 ms. `takePhoto()` may become useful later for a
+high-resolution keyframe, so this is recorded as an opportunity, not a plan change. Any
+such change goes through §33.
+
+### A.3.1 What the IMU measurement means for Phase 7
+
+The sensor probe returned more than a yes. Four facts from it constrain the fusion design:
+
+- **60 Hz, with `interval` = 0.01667 s.** At a 20–30 Hz tracking cadence that is 2–3 IMU
+  samples per frame — enough to integrate gyro between keyframes, which is what §17 wants
+  the IMU for.
+- **`acceleration` and `accelerationIncludingGravity` are both present.** iOS is already
+  running its own fusion, so gravity is recoverable as their difference. That matters well
+  beyond Phase 7: §29 lists gravity as an input to plane classification, and this is where
+  it comes from. It is a measured vector, not an assumed "down".
+- **`absolute` is `false`.** Orientation is relative, not world-referenced. Yaw has no
+  reliable global datum.
+- **`webkitCompassHeading` exists but reported ±24.5° accuracy.** So there *is* a magnetic
+  heading, and it is far too coarse to anchor a world. It may seed a relocalization search;
+  it must not define the world origin. §34 already fixes the origin at the initial camera
+  pose, and this measurement is the reason not to revisit that.
+
+Combined: the IMU is good for short-horizon rotation, usable for a gravity vector, and
+useless for absolute position or heading — exactly the split §17 assumes, now measured
+rather than assumed.
+
+Device facts worth carrying into later phases:
+
+| | |
+| --- | --- |
+| `hardwareConcurrency` | **4** — the worker budget in §B.2 must fit 4 cores, not 8 |
+| Storage quota | 38.4 GB (1.1 MB used) — Phase 14 save/load is not quota-constrained |
+| WebGPU limits | `maxComputeInvocationsPerWorkgroup` 256, `maxComputeWorkgroupSizeX` 256, `maxTextureDimension2D` 8192, `maxStorageBufferBindingSize` 128 MB |
+| WebGPU features | includes `shader-f16`, `float32-filterable`, `timestamp-query` |
+| WebGL2 | `maxTextureSize` 16384 — larger than WebGPU's 8192, relevant if the GL path handles pyramids |
+| Viewport | 393×852 CSS px at DPR 3 |
+| Media constraints | 17 supported; all six Phase 1/2 needs present |
 
 ### A.4 Measured matrices
 
-`MEASURED` — see `docs/phase0/evidence/`. Two independent legs are recorded:
-
-- **DESKTOP-CHROMIUM leg** — automated, produced by `npm run test:e2e`. Development
-  signal only. Per Rule 004 this can never constitute a Phase pass.
-- **REAL-DEVICE leg** — iPhone / iOS / Safari / HTTPS. Produced by a human tapping
-  through the app and exporting evidence JSON. This is the only leg that can pass a Phase.
+- **REAL_DEVICE leg** — `docs/phase0/evidence/phase0-real-device-PASSED-2026-08-21T08-05-07-305Z.json`.
+  31 records, **51 ms** of non-gesture probe time (budget 1500 ms); Phase 0 **PASSED**.
+  Note that many `durationMs` values read `0`: iOS clamps `performance.now()` to ~1 ms for
+  privacy, so a sub-millisecond probe is indistinguishable from an instant one. The probes
+  did run — each carries its measured `data`.
+- **DESKTOP_CHROMIUM leg** — `docs/phase0/evidence/phase0-desktop-chromium.json`, produced
+  by `npm run test:e2e`. Development signal only; per Rule 004 it can never pass a phase.
 
 ---
 

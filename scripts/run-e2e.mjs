@@ -76,6 +76,29 @@ try {
   const started = await page.evaluate(() => window.__SPATIAL_READY__);
   if (!started) throw new Error('app failed to start');
 
+  // The boot-failure notice in index.html is replaced by the app's first render. If it is
+  // still on the page, the shell loaded but the engine did not — the silent black-page
+  // failure this check exists to make loud.
+  const bootNoticeVisible = await page.evaluate(() =>
+    document.body.textContent?.includes('The application did not start') ?? false,
+  );
+  if (bootNoticeVisible) throw new Error('boot-failure notice still present after start');
+
+  // Before the gesture, CAP-0004/0005 are PENDING, so the evidence card must warn that an
+  // export would record TESTING rather than a pass, and the download button must name that
+  // verdict. This is the guard for a bundle exported too early being filed as proof.
+  const beforeProbe = await page.evaluate(() => ({
+    warning: document.getElementById('evidence-pending-warning')?.textContent ?? null,
+    downloadLabel: document.getElementById('download-evidence')?.textContent ?? null,
+  }));
+  if (!beforeProbe.warning) {
+    throw new Error('no PENDING warning shown while required tests are PENDING');
+  }
+  if (!beforeProbe.downloadLabel?.includes('TESTING')) {
+    throw new Error(`download button does not name the verdict: ${beforeProbe.downloadLabel}`);
+  }
+  console.log(`[e2e] pre-probe export guard: "${beforeProbe.downloadLabel}"`);
+
   console.log('[e2e] tapping the sensor probe (CAP-0004 / CAP-0005)…');
   await page.click('#probe-sensors');
   await page.waitForFunction(
@@ -87,6 +110,15 @@ try {
   await page.waitForFunction(() => !!window.__SPATIAL_DEBUG__.getEvidence(), undefined, {
     timeout: 10000,
   });
+
+  const afterProbe = await page.evaluate(() => ({
+    warning: document.getElementById('evidence-pending-warning')?.textContent ?? null,
+    downloadLabel: document.getElementById('download-evidence')?.textContent ?? null,
+  }));
+  if (afterProbe.warning) {
+    throw new Error('PENDING warning still shown after every required test was determined');
+  }
+  console.log(`[e2e] post-probe export label: "${afterProbe.downloadLabel}"`);
 
   const snapshot = await page.evaluate(() => ({
     evidence: window.__SPATIAL_DEBUG__.getEvidenceJson(),

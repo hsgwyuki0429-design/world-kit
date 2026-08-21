@@ -15,10 +15,32 @@ leg cannot produce `PASSED` no matter how green its results are.
 
 ## Option A — GitHub Pages (recommended: real HTTPS, nothing to install)
 
-1. In the repository: **Settings → Pages → Source → GitHub Actions**.
-2. Push this branch. The `Deploy to GitHub Pages` workflow builds and publishes.
-3. On the iPhone, open the published URL in **Safari** (not Chrome — on iOS every browser
+1. In the repository: **Settings → Pages → Source → GitHub Actions**. This setting is
+   load-bearing — see the black-page note below.
+2. Merge to `main`, or run **Actions → Deploy to GitHub Pages → Run workflow**. The
+   workflow builds with the correct base path and verifies it before publishing.
+3. Confirm the most recent entry under **Actions** is `Deploy to GitHub Pages`, not
+   `pages build and deployment`.
+4. On the iPhone, open the published URL in **Safari** (not Chrome — on iOS every browser
    uses WebKit, but the goal is the actual Safari target).
+
+### If the page is completely black
+
+The site is being served from the repository root instead of the built output.
+
+`index.html` at the repo root is Vite's *development* entry: it loads `/src/main.ts`, which
+does not exist on a static host and which no browser can execute. The stylesheet is
+imported by that module, so nothing loads at all, and `<meta name="color-scheme"
+content="dark">` leaves the browser painting a black background over an empty page.
+
+This happens when **Settings → Pages → Source** is `Deploy from a branch`. GitHub then runs
+its own `pages build and deployment` job, which publishes the repository root and silently
+overrides whatever the `Deploy to GitHub Pages` workflow had published. Switch Source to
+**GitHub Actions** and re-run the workflow.
+
+A boot-failure notice now renders in that situation instead of a blank rectangle, saying
+what happened and naming this cause. It reports only that the app did not start — it never
+implies any capability or phase result.
 
 ## Option B — local HTTPS dev server
 
@@ -44,16 +66,24 @@ context, and CAP-0001 will correctly fail.
      engine records that it must run vision-only.
 3. Read the **PHASE 0 VERDICT** panel. It will show `PASSED`, `TESTING` or `FAILED`, and
    the reason.
-4. Tap **DOWNLOAD EVIDENCE JSON** (or **COPY EVIDENCE JSON**, or expand *Show evidence
-   JSON* and select it by hand).
+4. Tap **DOWNLOAD EVIDENCE JSON — PASSED**. The button names the verdict it is about to
+   export, and so does the filename.
+
+   **Export after the tap, not before.** Exporting while CAP-0004/0005 are still `PENDING`
+   produces a `…-TESTING-….json` that cannot pass the phase. If a yellow warning is showing
+   above the export buttons, the sensor probe has not completed — go back to step 2. (Also
+   available: **COPY EVIDENCE JSON**, or expand *Show evidence JSON* and select it by hand.)
 5. Take a screenshot of the screen.
 
 ## Committing the evidence (§60)
 
 ```
-docs/phase0/evidence/phase0-real-device-<date>.json
-docs/phase0/evidence/phase0-real-device-<date>.png
+docs/phase0/evidence/phase0-real-device-PASSED-<timestamp>.json
+docs/phase0/evidence/phase0-real-device-PASSED-<timestamp>.png
 ```
+
+If the filename says `TESTING` or `FAILED`, the run did not pass and committing it will not
+change that — the verdict inside the file is what `docs/PHASE-STATUS.md` must reflect.
 
 Then update `docs/PHASE-STATUS.md`. Phase 1 work may begin only once the committed bundle
 reads:

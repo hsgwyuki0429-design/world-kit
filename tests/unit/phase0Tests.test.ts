@@ -388,15 +388,33 @@ describe('START SCAN control label (Rule 002)', () => {
     expect(s.note).toContain('Rule 005');
   });
 
-  it('stays disabled after Phase 0 passes, and says Phase 1 is not implemented', async () => {
+  it('opens once Phase 0 passes and Phase 1 exists', async () => {
     const { startScanState } = await import('../../src/ui/Phase0Screen');
     const s = startScanState(true, {
       index: 0, name: 'Environment / Capability', state: PhaseState.PASSED,
       reason: 'all required tests PASS on a real device', updatedAt: 1,
     });
-    // Phase Lock now permits Phase 1, but Phase 1 does not exist. Offering the button
-    // would be a UI claiming capability the engine lacks.
-    expect(s.disabled).toBe(true);
-    expect(s.label).toContain('NOT IMPLEMENTED');
+    expect(s.disabled).toBe(false);
+    expect(s.label).toBe('START SCAN');
+  });
+
+  it('the control is disabled exactly when entry is forbidden or the phase is unbuilt', async () => {
+    const { startScanState } = await import('../../src/ui/Phase0Screen');
+    const { isPhaseImplemented } = await import('../../src/core/PhaseRegistry');
+    // The invariant, rather than either specific case: whichever of the two reasons holds,
+    // the control must be unavailable and must say which. When Phase 2 work begins this
+    // test keeps holding without being rewritten.
+    for (const canEnter of [true, false]) {
+      const s = startScanState(canEnter, {
+        index: 0, name: 'Environment / Capability',
+        state: canEnter ? PhaseState.PASSED : PhaseState.TESTING,
+        reason: 'r', updatedAt: 1,
+      });
+      const shouldBeDisabled = !canEnter || !isPhaseImplemented(1);
+      expect(s.disabled).toBe(shouldBeDisabled);
+      if (shouldBeDisabled) {
+        expect(s.label.toUpperCase()).toMatch(/LOCKED|NOT IMPLEMENTED/);
+      }
+    }
   });
 });

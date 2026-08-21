@@ -8,19 +8,49 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phase 0 of 20 implemented. Phase 0 is `TESTING`, awaiting real-device
-evidence — see [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+**Current state: Phase 0 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS.
+Phase 1 (Camera Capture) implemented and `TESTING` — the automated leg exercises both
+permission scenarios; awaiting two device runs. See
+[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
-npm test          # anti-fake audits + typecheck + 69 unit tests
-npm run test:e2e  # automated DESKTOP_DEV leg: real browser, real evidence, real screenshot
+npm test          # anti-fake audits + typecheck + 154 unit tests, incl. evidence re-derivation
+npm run test:e2e  # automated DESKTOP_DEV legs for both phases, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
 
 To pass Phase 0, run the device test: [`docs/phase0/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase0/HOW-TO-RUN-DEVICE-TEST.md).
+
+## What Phase 1 does
+
+Opens a real camera and then proves the stream is genuine, which a picture on screen does
+not: a frozen frame, a still photo, and a black stream from a camera another app holds all
+look like "a camera works".
+
+- **Constraint ladder** — rear camera at 1280×720, loosening a rung at a time on
+  `OverconstrainedError`/`NotFoundError` only. A denial stops it immediately rather than
+  re-prompting. The rung used and the *achieved* facing mode are recorded as achieved,
+  never as requested.
+- **Continuity** — frames counted through `requestVideoFrameCallback` for a full 30 s, with
+  the longest inter-frame gap measured. Backgrounding is a failure, not an excluded
+  interval: frame callbacks stop while hidden, so a run interrupted by an app switch has
+  not demonstrated anything.
+- **Liveness** — frames sampled at 4 Hz into a 64×48 grayscale buffer, and the peak
+  frame-to-frame difference compared against a floor of 8.0. Downsampling attenuates sensor
+  noise by ~17×, so a static scene cannot reach that floor however noisy, while camera
+  movement reaches 20–60.
+- **Denial** — every `DOMException` name maps to a declared state with a recovery action,
+  and an unrecognised name fails closed to `CAMERA_UNAVAILABLE` while saying it was
+  unrecognised. On a denial the preview element leaves the DOM entirely rather than holding
+  its last frame.
+
+Phase 1 needs **two device runs**, granted and denied, because neither scenario can be
+inferred from the other. An in-app ledger carries an observation between runs for the
+tester's benefit; the repository gate ignores it and requires a committed bundle that
+observed each scenario directly.
 
 ## What Phase 0 does
 
@@ -90,17 +120,34 @@ docs/
   phase0/TEST-PLAN.md            CAP-0001..0013, written before the code
   phase0/HOW-TO-RUN-DEVICE-TEST.md
   phase0/evidence/               evidence bundles + screenshots
+  phase1/TEST-PLAN.md            CAM-001..006, written before the code
+  phase1/HOW-TO-RUN-DEVICE-TEST.md
+  phase1/evidence/
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
-  capture/       CapabilityDetector, MotionCapabilityProbe, probe plumbing
+  capture/       CapabilityDetector, MotionCapabilityProbe, CameraSource,
+                 FrameIntegrityMonitor, ScenarioLedger, probe plumbing
   debug/         Logger, EvidenceRecorder
-  testkit/       Phase0Tests
-  ui/            Phase0Screen, styles
+  testkit/       Phase0Tests, Phase1Tests
+  ui/            Phase0Screen, Phase1Screen, styles
   pipeline/ tracking/ mapping/ world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e
 ```
 
+## What the device actually reported
+
+From the passing run (full matrix in the evidence bundle):
+
+| | |
+| --- | --- |
+| WebGPU | AVAILABLE — adapter and device both created; `shader-f16`, `timestamp-query` |
+| WebGL2 | AVAILABLE — Apple GPU unmasked, `maxTextureSize` 16384 |
+| IMU | 60 Hz, gravity-removed acceleration present, `absolute` false, compass ±24.5° |
+| Cores | `hardwareConcurrency` 4 |
+| Storage | 38.4 GB quota |
+| Depth / ARKit / RoomPlan | UNAVAILABLE, each by probe |
+| Scale | UNKNOWN |
+
 ## Next
 
-Phase 1 (Camera Capture, CAM-001..005) begins only after a committed `REAL_DEVICE` bundle
-reads `"overallVerdict": "PASSED"`.
+Phase 2 — Frame Pipeline (§10). Blocked until Phase 1 passes on a device.

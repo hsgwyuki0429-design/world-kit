@@ -98,6 +98,12 @@ export interface BuildBundleInput {
   readonly overallReason: string;
   readonly transitions: readonly StateTransition[];
   readonly log: readonly LogEntry[];
+  /**
+   * Phase-specific measurements — the camera ladder and frame statistics for Phase 1, and
+   * whatever later phases need. Kept out of the fixed schema so each phase can record what
+   * it actually measured without every other phase carrying empty fields.
+   */
+  readonly context?: Record<string, JsonValue>;
 }
 
 export interface BuiltEvidence {
@@ -123,7 +129,10 @@ export function buildEvidenceBundle(input: BuildBundleInput): BuiltEvidence {
     testResults: [...input.testResults],
     overallVerdict: input.overallVerdict,
     overallReason: input.overallReason,
-    stateTransitions: [...input.transitions],
+    // Chronological. The array is merged from more than one source, and an out-of-order
+    // history is worse than no history: a reader reconstructing how a verdict was reached
+    // would see a phase move to PASSED before the step that made it evaluable.
+    stateTransitions: [...input.transitions].sort((a, b) => a.timestamp - b.timestamp),
     errorLog: input.log.filter((e) => e.level === 'ERROR'),
     fullLog: [...input.log],
   };
@@ -133,6 +142,7 @@ export function buildEvidenceBundle(input: BuildBundleInput): BuiltEvidence {
   const withLeg = {
     ...bundle,
     legDetermination: { signals: leg.signals, explanation: leg.explanation },
+    ...(input.context ? { phaseContext: input.context } : {}),
   } as EvidenceBundle & { legDetermination: unknown };
 
   const issues = findIntegrityIssues(withLeg, '$');
@@ -147,8 +157,18 @@ export function serialiseEvidence(bundle: EvidenceBundle): string {
   return JSON.stringify(bundle, null, 2);
 }
 
+/**
+ * Filename carries the verdict, not just the leg and the timestamp.
+ *
+ * The evidence file is exportable at any point, including while required tests are still
+ * PENDING — which is useful for diagnosis and impossible to forbid without hiding the
+ * button when it is most needed. But a `TESTING` bundle and a `PASSED` bundle look almost
+ * identical at a glance, and mistaking one for the other means recording a phase pass that
+ * did not happen. Putting the verdict in the name makes them impossible to confuse in a
+ * downloads folder or a file picker.
+ */
 export function evidenceFilename(bundle: EvidenceBundle): string {
   const stamp = bundle.createdAt.replace(/[:.]/g, '-');
   const leg = bundle.leg.toLowerCase().replace(/_/g, '-');
-  return `phase${bundle.phase}-${leg}-${stamp}.json`;
+  return `phase${bundle.phase}-${leg}-${bundle.overallVerdict}-${stamp}.json`;
 }

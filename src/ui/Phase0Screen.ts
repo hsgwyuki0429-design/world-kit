@@ -38,6 +38,7 @@ export interface Phase0ViewModel {
 }
 
 export interface Phase0Handlers {
+  onStartScan: () => void;
   onProbeSensors: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
@@ -139,7 +140,8 @@ function renderPrimary(vm: Phase0ViewModel, handlers: Phase0Handlers): HTMLEleme
     id: 'start-scan',
     disabled: scan.disabled,
     textContent: scan.label,
-  });
+    onclick: handlers.onStartScan,
+  } as never);
 
   const children: (Node | string)[] = [button];
   if (scan.note) children.push(el('p', { class: 'locked-note' }, [scan.note]));
@@ -343,29 +345,52 @@ function shortMethod(method: string): string {
 }
 
 function renderEvidence(vm: Phase0ViewModel, handlers: Phase0Handlers): HTMLElement {
-  const children: (Node | string)[] = [
+  // The export is allowed at any verdict — a failing bundle is exactly what you want to
+  // send when diagnosing — but the control has to say what it is about to hand you.
+  // A TESTING bundle downloaded by mistake and filed as proof of a pass is a real failure
+  // mode, and it is silent unless the button names the verdict.
+  const pending = vm.results.filter(
+    (r) => r.spec.required && r.verdict === Verdict.PENDING,
+  );
+  const verdictSuffix = vm.bundle ? ` — ${vm.bundle.overallVerdict}` : '';
+
+  const children: (Node | string)[] = [];
+
+  if (pending.length > 0) {
+    children.push(
+      el('p', { class: 'evidence-warning', id: 'evidence-pending-warning' }, [
+        `This export would record ${vm.bundle?.overallVerdict ?? 'TESTING'}, not a pass: ` +
+          `${pending.map((r) => r.spec.id).join(' and ')} ` +
+          `${pending.length === 1 ? 'is' : 'are'} still PENDING. ` +
+          'Tap PROBE MOTION SENSORS above first, then export.',
+      ]),
+    );
+  }
+
+  children.push(
     el('div', { class: 'button-row' }, [
       el('button', {
         class: 'secondary',
         id: 'download-evidence',
         disabled: !vm.bundle,
-        textContent: 'DOWNLOAD EVIDENCE JSON',
+        textContent: `DOWNLOAD EVIDENCE JSON${verdictSuffix}`,
         onclick: handlers.onDownloadEvidence,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'copy-evidence',
         disabled: !vm.bundle,
-        textContent: 'COPY EVIDENCE JSON',
+        textContent: `COPY EVIDENCE JSON${verdictSuffix}`,
         onclick: handlers.onCopyEvidence,
       } as never),
     ]),
     el('p', { class: 'footnote' }, [
       'Phase 0 can only PASS on evidence from an iPhone running Safari over HTTPS ' +
         '(Rule 004). Export this file from the device, commit it under ' +
-        'docs/phase0/evidence/, and attach a screenshot of this screen.',
+        'docs/phase0/evidence/, and attach a screenshot of this screen. The verdict is ' +
+        'part of the filename, so a TESTING export cannot be mistaken for a passing one.',
     ]),
-  ];
+  );
   if (vm.bundle) {
     const json = JSON.stringify(vm.bundle, null, 2);
     children.push(

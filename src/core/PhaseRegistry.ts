@@ -48,7 +48,7 @@ export const PHASE_NAMES: readonly string[] = [
  * a control for an unimplemented phase must say "NOT IMPLEMENTED" rather than simply
  * looking available. Add to this set only when the phase's code exists and its tests run.
  */
-export const IMPLEMENTED_PHASES: ReadonlySet<number> = new Set<number>([0]);
+export const IMPLEMENTED_PHASES: ReadonlySet<number> = new Set<number>([0, 1]);
 
 export function isPhaseImplemented(index: number): boolean {
   return IMPLEMENTED_PHASES.has(index);
