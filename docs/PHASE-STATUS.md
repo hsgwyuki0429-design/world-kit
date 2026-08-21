@@ -10,7 +10,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | --- | --- | --- | --- |
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
-| 2 | Frame Pipeline | **NOT_STARTED** | Phase Lock is open. Not yet implemented — §10 is next. |
+| 2 | Frame Pipeline | **IMPLEMENTING** | Built and green on the DESKTOP_DEV leg. Awaiting the device run — Rule 004. |
 | 3 | Feature Detection | BLOCKED | |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
@@ -128,9 +128,53 @@ dimensions**, 1280×720 ↔ 720×1280. Phase 6 derives camera intrinsics (`fx`, 
 cosmetic one. The monitor now records every distinct size seen so the change is visible in
 evidence rather than having to be inferred.
 
+## Phase 2 — IMPLEMENTING
+
+Built, unit tested, and green end to end on the automated Chromium leg — which cannot pass
+a phase (Rule 004). What exists:
+
+| | |
+| --- | --- |
+| Pipeline | `src/pipeline/` — rVFC scheduler with deadline pacing and backpressure, a probed acquisition-route ladder, a preprocessing worker building a 3-level grayscale pyramid, and an adaptive tier controller |
+| Tests | `FRAME-001..006` in `src/testkit/Phase2Tests.ts`, specs transcribed from `phase2/TEST-PLAN.md`, written first |
+| Desktop evidence | `docs/phase2/evidence/phase2-desktop-chromium.json` — 1659 frames, 0 lost, cross-check median Δluma 0.08, empty error log |
+| Device evidence | **none yet** |
+
+**What the device run has to add**, and why the desktop leg cannot: a real camera. The
+whole of FRAME-002 rests on the worker's grayscale agreeing with an independent reading of
+the same video frame taken on the main thread, and the synthetic camera's own image varies
+so little that the check sits near the floor of what is informative. §H.1's measurement —
+13.8 ms per readback on the device against 0.4 ms on the dev machine — is also the reason
+the architecture looks the way it does, and it has not yet been re-measured against the
+route the pipeline actually chose.
+
+Run it with `docs/phase2/HOW-TO-RUN-DEVICE-TEST.md`. Three tests stay `PENDING` until the
+tester does something specific, deliberately: FRAME-003 and FRAME-004 need load injected and
+then removed, and FRAME-006 needs the phone rotated. An adaptive pipeline whose adaptation
+has never run is not a demonstrated adaptive pipeline.
+
+### Three defects the automated leg found first
+
+Each was a real bug, found by the leg failing rather than by review, and each is recorded in
+`docs/phase2/evidence/README.md` with its measurement:
+
+1. **The pacer aliased against the camera rate** — a 30 fps target delivered 12.88 fps,
+   because pacing measured from the last admission declined every frame that landed a hair
+   early. The deadline now accumulates on an ideal grid.
+2. **The controller degraded for a rate the camera could not supply** — 13 ladder moves in
+   one run. Delivery is now judged against the lower of the target and the measured camera
+   rate, and only when the worker is actually loaded.
+3. **Recovery had no flap damping** — five moves in one ten-second window on a load the
+   ladder could partly escape. An upward step now waits out the last downward one.
+
+A fourth finding changed a criterion rather than the code, and is recorded as a plan
+amendment in `docs/phase2/TEST-PLAN.md`: FRAME-004's "the adaptation had an effect" is now
+judged on the last downward step that lowered the *resolution*, because a step that only
+lowers the target rate cannot reduce the time one frame takes.
+
 ## What "implemented" means here
 
 `IMPLEMENTED_PHASES` in `src/core/PhaseRegistry.ts` is the codebase's own statement of what
-exists — currently `{0, 1}`. The START SCAN control reads it alongside Phase Lock, and a
+exists — currently `{0, 1, 2}`. The START SCAN control reads it alongside Phase Lock, and a
 control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
 implies a capability that has not been built.

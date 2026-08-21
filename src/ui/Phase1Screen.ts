@@ -18,6 +18,11 @@ import type { CameraOpenResult, CameraSettingsSnapshot } from '../capture/Camera
 import type { FrameStats } from '../capture/FrameIntegrityMonitor';
 import { REQUIRED_CAPTURE_MS } from '../capture/FrameIntegrityMonitor';
 import type { LedgerEntry } from '../capture/ScenarioLedger';
+// One preview element for the whole app, since Phase 2 shows the same camera (see
+// `PreviewVideo.ts`). Re-exported so existing importers of this module are unaffected.
+import { getPreviewVideo, isPreviewPresented } from './PreviewVideo';
+
+export { getPreviewVideo, isPreviewPresented };
 
 export interface Phase1ViewModel {
   readonly phase1: PhaseInfo;
@@ -30,12 +35,18 @@ export interface Phase1ViewModel {
   readonly denied: LedgerEntry | null;
   readonly opening: boolean;
   readonly trackLive: boolean;
+  /** Phase 2's state, so the control that leads to it can say why it is closed. */
+  readonly phase2: PhaseInfo;
+  readonly canEnterPhase2: boolean;
+  readonly phase2Implemented: boolean;
+  readonly phase2BlockedReason: string;
 }
 
 export interface Phase1Handlers {
   onStartCamera: () => void;
   onStopCamera: () => void;
   onBack: () => void;
+  onEnterPhase2: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
 }
@@ -66,35 +77,6 @@ function stat(label: string, value: string | null, cls = ''): HTMLElement {
   ]);
 }
 
-/**
- * The single video element, kept across renders.
- *
- * Re-creating it would tear down and re-attach the stream on every state change, which
- * restarts frame delivery and would corrupt CAM-003's continuity measurement.
- */
-let videoEl: HTMLVideoElement | null = null;
-
-export function getPreviewVideo(): HTMLVideoElement {
-  if (!videoEl) {
-    videoEl = document.createElement('video');
-    videoEl.id = 'camera-preview';
-    // All three are required for an inline preview on iOS; without playsInline the stream
-    // takes over the screen in a native player.
-    videoEl.playsInline = true;
-    videoEl.muted = true;
-    videoEl.autoplay = true;
-    videoEl.setAttribute('playsinline', '');
-    videoEl.setAttribute('muted', '');
-  }
-  return videoEl;
-}
-
-/** True when an image is actually on screen — read from the DOM, not from intent. */
-export function isPreviewPresented(): boolean {
-  const v = document.getElementById('camera-preview') as HTMLVideoElement | null;
-  if (!v || !v.isConnected) return false;
-  return v.videoWidth > 0 && v.videoHeight > 0 && !!v.srcObject;
-}
 
 export function renderPhase1Screen(
   root: HTMLElement,
@@ -116,16 +98,48 @@ export function renderPhase1Screen(
   root.append(renderTests(vm));
   root.append(renderEvidence(vm, handlers));
 
-  root.append(
-    card('Navigation', [
+  root.append(renderNavigation(vm, handlers));
+}
+
+/**
+ * Phase Lock, on screen (Rule 002, Rule 005).
+ *
+ * The control that leads to Phase 2 is disabled unless Phase 1 has actually PASSED in this
+ * session *and* Phase 2 exists in this build, and it says which of the two is missing. A
+ * button that looks available for a phase the engine cannot enter is the UI implying a
+ * capability the engine lacks.
+ */
+function renderNavigation(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLElement {
+  const open = vm.canEnterPhase2 && vm.phase2Implemented;
+  const label = !vm.phase2Implemented
+    ? 'FRAME PIPELINE — NOT IMPLEMENTED'
+    : !vm.canEnterPhase2
+      ? 'FRAME PIPELINE — LOCKED'
+      : 'GO TO FRAME PIPELINE';
+  const note = !vm.phase2Implemented
+    ? 'Phase 2 has not been written in this build.'
+    : !vm.canEnterPhase2
+      ? vm.phase2BlockedReason
+      : `Phase 2 is ${vm.phase2.state}.`;
+
+  return card('Navigation', [
+    el('div', { class: 'button-row' }, [
       el('button', {
         class: 'secondary',
         id: 'back-to-phase0',
         textContent: 'BACK TO CAPABILITY',
         onclick: handlers.onBack,
       } as never),
+      el('button', {
+        class: 'primary',
+        id: 'go-to-phase2',
+        disabled: !open,
+        textContent: label,
+        onclick: handlers.onEnterPhase2,
+      } as never),
     ]),
-  );
+    el('p', { class: 'footnote' }, [note]),
+  ]);
 }
 
 function renderPreview(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLElement {

@@ -362,6 +362,15 @@ and Phase 2 must take one of the routes Phase 0 measured as available:
 This is exactly the kind of assumption §H exists to expose. It is recorded here rather
 than discovered in Phase 2.
 
+**What Phase 2 did with it.** The pipeline probes three acquisition routes in order and
+keeps the first that completes real round trips: `VideoFrame` transferred into the worker,
+`createImageBitmap` with a resize, and last the main-thread readback above — kept as a
+declared fallback, and kept *measured*, so the comparison that ruled it out is in the
+evidence rather than only in this section. On the automated leg the first route was selected
+and cost **0.069 ms** on the UI thread against a 20.36 ms mean in the worker. The device
+number for the chosen route is still to be measured; §H.1's 13.8 ms stands as the figure for
+the route that was rejected.
+
 Per-frame budget at BASIC (960×540), tracking worker, target ≤ 33 ms:
 
 | Stage | Budget |
@@ -380,6 +389,32 @@ Memory: ≤ 30 keyframes, ≤ 5000 landmarks (§56). Keyframes store downscaled 
 features, never full-resolution RGBA. Estimated ceiling ≈ 30 × (960×540 grayscale ≈ 0.52 MB)
 ≈ 16 MB for keyframe imagery, plus ≈ 5000 × ~200 B ≈ 1 MB of landmark records.
 
+### H.2 Three things Phase 2 measured that the budget above did not anticipate
+
+Recorded here for the same reason §H.0 and §H.1 are: so the next phase inherits them rather
+than rediscovering them.
+
+**Pacing cannot be measured from the last admission.** A scheduler that admits a frame when
+`now - lastAdmitted >= 1000/targetFps` aliases catastrophically when the camera rate is
+close to the target rate: roughly half the frames land a hair early, each is declined, and
+the next arrives a full interval later. Measured at **12.88 fps against a 30 fps target**.
+The deadline has to accumulate on an ideal grid. Any later phase that paces work — mapping
+updates, bundle adjustment every N keyframes (§27) — has the same trap.
+
+**The delivered rate is capped by the camera, not by the target.** §53's tiers name target
+rates, and it is tempting to treat a shortfall against the target as a signal to degrade.
+It is not: the camera may simply not be offering that many frames, and no amount of
+degrading conjures one. The controller now compares delivery against the lower of the two,
+and only blames itself when the worker is using at least half its budget — every remedy
+§54 lists reduces *processing* cost.
+
+**Recovery needs damping, and the ladder's own arithmetic says how much load escapes it.**
+Descending the full ladder cuts pixels per frame about fourfold (1280×720 → 640×360) while
+relaxing the worker budget about 1.5× (33.3 ms → 50 ms). So any fixed extra cost worth less
+than about 6× the budget where it appeared becomes affordable partway down, and a controller
+without flap damping cycles indefinitely. Measured as five ladder moves in one ten-second
+window. Phase 18's stress work should expect this shape.
+
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because
 it waits for real sensor events rather than guessing).
@@ -390,4 +425,4 @@ it waits for real sensor events rather than guessing).
 
 Live status is tracked in `docs/PHASE-STATUS.md` and, at runtime, by `PhaseRegistry`.
 No phase is marked PASSED in either place without real-device evidence JSON committed
-under `docs/phase0/evidence/`.
+under the phase's own `docs/phase*/evidence/` directory.

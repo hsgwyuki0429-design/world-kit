@@ -32,6 +32,12 @@ const FORBIDDEN = {
     from: ['game', 'renderer', 'ui'],
     why: 'SpatialWorld is the source of truth and must not depend on its consumers.',
   },
+  pipeline: {
+    from: ['game', 'renderer', 'ui', 'world', 'tracking', 'mapping'],
+    why: 'the frame pipeline feeds tracking and must not read back from it, from the world, ' +
+      'or from the UI (§10, §83). A pipeline that could see the UI would be able to adapt ' +
+      'to what is on screen rather than to what it measured.',
+  },
   tracking: {
     from: ['game', 'renderer', 'ui', 'world'],
     why: 'tracking feeds mapping; a back-edge from world or the UI would invert the pipeline.',

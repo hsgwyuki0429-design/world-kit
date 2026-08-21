@@ -9,19 +9,53 @@ constraint is that no number is displayed that was not measured, and no phase is
 passed on anything but real-device evidence.
 
 **Current state: Phases 0 and 1 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 2 (Frame Pipeline) is unlocked and not yet
-written. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+with committed, machine-checked evidence. Phase 2 (Frame Pipeline) is built and green on
+the automated leg, awaiting its device run. See
+[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
-npm test          # anti-fake audits + typecheck + 193 unit tests, incl. evidence re-derivation
-npm run test:e2e  # automated DESKTOP_DEV legs for both phases, with evidence and screenshots
+npm test          # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
+npm run test:e2e  # automated DESKTOP_DEV legs for all three phases, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
 
 To pass Phase 0, run the device test: [`docs/phase0/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase0/HOW-TO-RUN-DEVICE-TEST.md).
+
+## What Phase 2 does
+
+Supplies frames from the camera to a preprocessing worker, continuously and at a stable
+rate, with the expensive per-frame work off the UI thread — and proves that what reaches the
+worker is the real camera image rather than something the pipeline made up.
+
+The architecture is dictated by a measurement, not a preference. §H.1 recorded a main-thread
+`drawImage` + `getImageData` at **13.8 ms on the device**, which is 40 % of a 30 Hz budget
+spent before a single pixel has been looked at. So the pipeline probes three acquisition
+routes at run time — `VideoFrame` transferred into the worker, `createImageBitmap` with a
+resize, and last the main-thread readback itself — and keeps the first that completes real
+round trips. On the automated leg the first cost 0.069 ms on the UI thread.
+
+**The check that matters is the provenance cross-check.** Frame counters, latency histograms
+and a tier ladder can all be produced by a loop that never touches a camera pixel. So once a
+second, in the same callback that hands a frame to the worker, the main thread takes its own
+independent reading of that same video frame; the worker reports the mean of the grayscale
+it built; and the two must agree — within the tighter of a fixed ceiling and half the
+scene's own variation, so a frozen image cannot slip through on a scene that barely moved.
+If the scene did not vary at all, the test reports `PENDING` rather than passing on an
+agreement that proves nothing.
+
+**Adaptation is caused, not asserted.** A single tier ladder makes §54's ordering structural
+— a step gives up resolution before it gives up rate — and the controller is a pure function
+of its measurement window with no clock of its own. Every ladder move carries the median
+worker latency and the budget it was compared against, and the resolution it selected is
+read back from the dimensions of buffers the worker actually returned.
+
+Because a device that meets its budget never degrades on its own, the harness can inject
+**real** extra work — more passes over the pyramid the worker genuinely built, with the pass
+count computed from the measured cost of one pass on that device. That is a stimulus, not a
+result: everything downstream of it is still measured.
 
 ## What Phase 1 does
 
@@ -122,14 +156,19 @@ docs/
   phase1/TEST-PLAN.md            CAM-001..006, written before the code
   phase1/HOW-TO-RUN-DEVICE-TEST.md
   phase1/evidence/
+  phase2/TEST-PLAN.md            FRAME-001..006, written before the code
+  phase2/HOW-TO-RUN-DEVICE-TEST.md
+  phase2/evidence/
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
   capture/       CapabilityDetector, MotionCapabilityProbe, CameraSource,
                  FrameIntegrityMonitor, ScenarioLedger, probe plumbing
   debug/         Logger, EvidenceRecorder
-  testkit/       Phase0Tests, Phase1Tests
-  ui/            Phase0Screen, Phase1Screen, styles
-  pipeline/ tracking/ mapping/ world/ renderer/ game/   empty — later phases
+  pipeline/      tiers, pyramid maths, AdaptiveController, PipelineMetrics,
+                 frameWorker, WorkerFramePipeline
+  testkit/       Phase0Tests, Phase1Tests, Phase2Tests
+  ui/            Phase0Screen, Phase1Screen, Phase2Screen, PreviewVideo, styles
+  tracking/ mapping/ world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e
 ```
 
@@ -147,9 +186,9 @@ From the passing run (full matrix in the evidence bundle):
 | Depth / ARKit / RoomPlan | UNAVAILABLE, each by probe |
 | Scale | UNKNOWN |
 
-## Two measurements that shape Phase 2
+## Measurements that shaped Phase 2
 
-Both from the device, both recorded in the implementation plan:
+The first two are from the device, and were what the design had to answer:
 
 - **A main-thread `getImageData` costs 13.8 ms** (0.4 ms in headless Chromium) for a 3 kB
   result. That is a GPU→CPU readback stall. Phase 1 samples at 4 Hz and can afford it;
@@ -159,6 +198,18 @@ Both from the device, both recorded in the implementation plan:
   track — so frame size is per-frame data, and a rotation mid-scan changes the camera
   intrinsics. (§H.0)
 
+Three more came out of Phase 2's own automated leg, each from a test failing rather than
+from review, and each recorded in §H.2:
+
+- **Pacing measured from the last admission aliases against the camera rate**, delivering
+  12.88 fps against a 30 fps target. The deadline has to accumulate on an ideal grid.
+- **A shortfall against the target rate is not always this ladder's problem**: the camera
+  may not be offering that many frames, and degrading cannot conjure one.
+- **Recovery needs flap damping**, because the ladder's own arithmetic — four times fewer
+  pixels against a 1.5× budget relaxation — means any load worth less than about six times
+  the budget becomes affordable partway down, and the pipeline cycles.
+
 ## Next
 
-Phase 2 — Frame Pipeline (§10).
+Phase 2's device run: [`docs/phase2/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase2/HOW-TO-RUN-DEVICE-TEST.md).
+Then Phase 3 — Feature Detection (§11).
