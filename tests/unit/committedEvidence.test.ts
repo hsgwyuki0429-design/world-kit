@@ -24,12 +24,18 @@ import {
   MIN_SCENE_STDDEV,
   MIN_WORKER_SHARE,
 } from '../../src/testkit/Phase2Tests';
+import {
+  MIN_CONTRAST_ABOVE_CHANCE,
+  MIN_CONTRAST_SAMPLES,
+  POOR_COUNT_FRACTION,
+} from '../../src/testkit/Phase3Tests';
 import { findIntegrityIssues } from '../../src/core/validate';
 
 const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase0', 'evidence'),
   join(process.cwd(), 'docs', 'phase1', 'evidence'),
   join(process.cwd(), 'docs', 'phase2', 'evidence'),
+  join(process.cwd(), 'docs', 'phase3', 'evidence'),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
@@ -355,6 +361,89 @@ describe('Phase 2 evidence', () => {
       const f3 = bundle.testResults.find((r) => r.spec.id === 'FRAME-003');
       expect(Number(f3?.metrics['overBudgetFrames']), `${file} over-budget frames`).toBe(0);
       expect(Number(f3?.metrics['upscaledFrames']), `${file} upscaled frames`).toBe(0);
+    }
+  });
+});
+
+/**
+ * Phase 3 gate.
+ *
+ * The claim Phase 3 rests on is that the points are image structure rather than coordinates.
+ * That is not readable from a verdict, so this re-derives it from the numbers the bundle
+ * carries: the contrast statistic against its own chance value, the population collapsing
+ * when the texture did, and the §11 records still carrying `null` where nothing has been
+ * measured.
+ */
+describe('Phase 3 evidence', () => {
+  const phase3 = bundles.filter((b) => b.bundle.phase === 3);
+  const device = phase3.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 3 bundle carries the detection context that produced its verdict', () => {
+    for (const { file, bundle } of phase3) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { devEntry?: boolean; features?: Record<string, unknown> };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.features, `${file} feature context`).toBeTruthy();
+      // The histogram of the classifier's own input. Without it a reader cannot tell a run
+      // that saw no textured frames from one whose threshold was in the wrong place.
+      expect(Array.isArray(ctx?.features?.['gradientHistogram']), `${file} histogram`).toBe(true);
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 3 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass is backed by a contrast check that could have failed',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f1 = bundle.testResults.find((r) => r.spec.id === 'FEAT-001');
+        expect(f1?.verdict, `${file} FEAT-001`).toBe(Verdict.PASS);
+        expect(Number(f1?.metrics['contrastSamples']), `${file} contrast samples`)
+          .toBeGreaterThanOrEqual(MIN_CONTRAST_SAMPLES);
+        // Chance is 0.5 by construction, so this is the whole claim in one number.
+        expect(Number(f1?.metrics['medianAboveChance']), `${file} contrast`)
+          .toBeGreaterThanOrEqual(MIN_CONTRAST_ABOVE_CHANCE);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass shows the population collapsing when the texture did',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f2 = bundle.testResults.find((r) => r.spec.id === 'FEAT-002');
+        const poor = Number(f2?.metrics['poorMedianCount']);
+        const rich = Number(f2?.metrics['richMedianCount']);
+        expect(rich, `${file} textured median`).toBeGreaterThan(0);
+        expect(poor, `${file} blank median`).toBeLessThanOrEqual(rich * POOR_COUNT_FRACTION);
+        expect(Number(f2?.metrics['stateMismatches']), `${file} state mismatches`).toBe(0);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)('a claimed pass invents no metadata it cannot know', () => {
+    for (const { file, bundle } of claimsPass) {
+      const f6 = bundle.testResults.find((r) => r.spec.id === 'FEAT-006');
+      const records = (f6?.metrics['records'] ?? []) as {
+        forwardBackwardError?: unknown;
+        reprojectionError?: unknown;
+      }[];
+      expect(records.length, `${file} sampled records`).toBeGreaterThan(0);
+      for (const r of records) {
+        // Phase 4 and Phase 6 fill these. A number here would be a fabricated error term.
+        expect(r.forwardBackwardError, `${file} forwardBackwardError`).toBeNull();
+        expect(r.reprojectionError, `${file} reprojectionError`).toBeNull();
+      }
+      const f3 = bundle.testResults.find((r) => r.spec.id === 'FEAT-003');
+      expect(Number(f3?.metrics['quotaBreaches']), `${file} quota breaches`).toBe(0);
     }
   });
 });

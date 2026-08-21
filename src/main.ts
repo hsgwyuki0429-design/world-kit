@@ -24,6 +24,11 @@ import { FrameIntegrityMonitor } from './capture/FrameIntegrityMonitor';
 import { ScenarioLedger } from './capture/ScenarioLedger';
 import { runPhase1Tests, PHASE1_SPECS } from './testkit/Phase1Tests';
 import { runPhase2Tests, PHASE2_SPECS } from './testkit/Phase2Tests';
+import { runPhase3Tests, PHASE3_SPECS } from './testkit/Phase3Tests';
+import { FeaturePopulation } from './tracking/FeaturePopulation';
+import { asTrackingResult, DEFAULT_TRACKING_OPTIONS } from './tracking/trackingMessages';
+import type { TrackingOptions } from './tracking/trackingMessages';
+import { renderPhase3Screen } from './ui/Phase3Screen';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -45,6 +50,7 @@ const APP_VERSION = __APP_VERSION__;
 const PHASE = 0;
 const PHASE1 = 1;
 const PHASE2 = 2;
+const PHASE3 = 3;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -56,8 +62,12 @@ const PHASE1_TICK_MS = 500;
  * itself. Twice a second is enough for a human and cheap enough not to distort the run.
  */
 const PHASE2_TICK_MS = 500;
+/** Same reasoning as Phase 2's: re-render for a human, not for every frame. */
+const PHASE3_TICK_MS = 500;
+/** How often the contrast check and the paired grid control are asked for. */
+const PHASE3_SAMPLE_EVERY = 8;
 
-type Screen = 'phase0' | 'phase1' | 'phase2';
+type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -95,7 +105,18 @@ class Phase0App {
         type: 'module',
         name: 'tracking-worker',
       }),
+    { onTracking: (payload) => this.onTracking(payload) },
   );
+  private readonly features = new FeaturePopulation();
+  private phase3Results: TestResult[] = [];
+  private phase3Bundle: EvidenceBundle | null = null;
+  private phase3Timer: number | null = null;
+  private phase3DevEntry = false;
+  private detectionEverRan = false;
+  private trackingFrames = 0;
+  private lastOverlay: Float32Array | null = null;
+  private lastOverlayWidth = 0;
+  private lastOverlayHeight = 0;
   private phase2Results: TestResult[] = [];
   private phase2Bundle: EvidenceBundle | null = null;
   private phase2Timer: number | null = null;
@@ -365,6 +386,35 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase3') {
+      const stats = this.features.stats(this.pipeline.isRunning());
+      const p = this.pipeline.getStats();
+      renderPhase3Screen(
+        this.root,
+        {
+          phase3: this.registry.get(PHASE3),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          running: this.pipeline.isRunning(),
+          stats,
+          overlay: this.lastOverlay,
+          overlayWidth: this.lastOverlayWidth,
+          overlayHeight: this.lastOverlayHeight,
+          sourceWidth: p.sourceWidth,
+          sourceHeight: p.sourceHeight,
+          results: this.phase3Results,
+        },
+        {
+          onStart: () => void this.onStartPhase3(),
+          onStop: () => this.onStopPhase3('user stopped detection'),
+          onBack: () => this.leavePhase3(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase3Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase3Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase2') {
       renderPhase2Screen(
         this.root,
@@ -377,12 +427,17 @@ class Phase0App {
           strip: this.pipeline.getLastStrip(),
           results: this.phase2Results,
           stressRefusal: this.stressRefusal,
+          phase3: this.registry.get(PHASE3),
+          canEnterPhase3: this.registry.canEnter(PHASE3),
+          phase3Implemented: isPhaseImplemented(PHASE3),
+          phase3BlockedReason: this.registry.blockedReason(PHASE3),
         },
         {
           onStartCamera: () => void this.onStartPipeline(),
           onStopPipeline: () => this.onStopPipeline('user stopped the pipeline'),
           onToggleStress: () => this.onToggleStress(),
           onBack: () => this.leavePhase2(),
+          onEnterPhase3: () => this.enterPhase3(),
           onDownloadEvidence: () => this.onDownloadEvidence(this.phase2Bundle),
           onCopyEvidence: () => void this.onCopyEvidence(this.phase2Bundle),
         },
@@ -638,12 +693,14 @@ class Phase0App {
   private onCameraEnded(reason: string): void {
     this.cameraEndedUnexpectedly = true;
     logger.error(
-      this.screen === 'phase2' ? PHASE2 : PHASE1, 'CameraSource',
+      this.screen === 'phase3' ? PHASE3 : this.screen === 'phase2' ? PHASE2 : PHASE1,
+      'CameraSource',
       `camera track ended: ${reason}`,
       'the preview is removed and the state reported as CAMERA_ENDED; no last frame is ' +
         'left on screen',
     );
-    if (this.screen === 'phase2') this.onStopPipeline(reason);
+    if (this.screen === 'phase3') this.onStopPhase3(reason);
+    else if (this.screen === 'phase2') this.onStopPipeline(reason);
     else this.onStopCamera(reason);
   }
 
@@ -830,6 +887,211 @@ class Phase0App {
     }
   }
 
+  /* ---------------------------------------------------------------------- */
+  /* Phase 3 — Feature Detection                                             */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * One frame's detection result, arriving through the pipeline's opaque seam.
+   *
+   * Narrowed rather than cast: the pipeline forwards whatever the worker attached, and a
+   * payload that is not a Phase 3 result is dropped and counted rather than assumed.
+   */
+  private onTracking(payload: unknown): void {
+    const result = asTrackingResult(payload);
+    if (!result) return;
+    this.features.record(result);
+    if (result.overlay) {
+      this.lastOverlay = new Float32Array(result.overlay);
+      this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
+      this.lastOverlayHeight = result.detectHeight * 2 ** result.detectLevel;
+    }
+  }
+
+  /**
+   * What the tracking stage is asked to do on the next frames.
+   *
+   * The contrast check and the paired grid control each cost an extra pass, so they are
+   * sampled rather than run every frame — the same reasoning as Phase 2's 1 Hz cross-check.
+   * The level-0 calibration is requested once and the worker ignores it thereafter.
+   */
+  private trackingOptions(): TrackingOptions {
+    this.trackingFrames++;
+    const sample = this.trackingFrames % PHASE3_SAMPLE_EVERY === 0;
+    return {
+      ...DEFAULT_TRACKING_OPTIONS,
+      detect: true,
+      wantContrast: sample,
+      wantGridComparison: sample,
+      wantLevel0Calibration: this.features.getLevel0Calibration() === null,
+    };
+  }
+
+  /**
+   * Enter the FEATURES screen. Same gate as the phases before it (Rule 005), one along.
+   */
+  private enterPhase3(devOverride = false): boolean {
+    if (!this.registry.canEnter(PHASE3)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE3, 'App', 'refused entry to Phase 3', {
+          reason: this.registry.blockedReason(PHASE3),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase3DevEntry = true;
+      logger.warn(PHASE3, 'App', 'Phase 3 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    this.stopPhase2Ticking();
+    this.screen = 'phase3';
+    if (this.registry.get(PHASE3).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE3, PhaseState.IMPLEMENTING, 'FEATURES screen opened');
+    }
+    this.evaluatePhase3();
+    this.render();
+    return true;
+  }
+
+  private leavePhase3(): void {
+    this.onStopPhase3('left the FEATURES screen');
+    this.screen = 'phase2';
+    this.render();
+  }
+
+  /** MUST be reached from the click handler: getUserMedia needs the user gesture. */
+  private async onStartPhase3(): Promise<void> {
+    if (this.cameraOpening || this.pipeline.isRunning()) return;
+    const video = getPreviewVideo();
+
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE3, 'CameraSource', `detection could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and detection does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase3();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE3, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and detection still starts; if no frames arrive the ' +
+            'tests stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    // The options are recomputed per frame by the pipeline calling back into the seam; this
+    // sets the first set and the tick refreshes them.
+    this.pipeline.setTrackingOptions(this.trackingOptions());
+    if (this.pipeline.start(video)) {
+      this.pipelineEverStarted = true;
+      this.detectionEverRan = true;
+      this.startPhase3Ticking();
+    }
+    this.evaluatePhase3();
+    this.render();
+  }
+
+  private onStopPhase3(reason: string): void {
+    this.stopPhase3Ticking();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase3();
+    this.render();
+  }
+
+  private startPhase3Ticking(): void {
+    this.stopPhase3Ticking();
+    this.phase3Timer = window.setInterval(() => {
+      this.pipeline.setTrackingOptions(this.trackingOptions());
+      this.evaluatePhase3();
+      this.render();
+    }, PHASE3_TICK_MS);
+  }
+
+  private stopPhase3Ticking(): void {
+    if (this.phase3Timer !== null) {
+      clearInterval(this.phase3Timer);
+      this.phase3Timer = null;
+    }
+  }
+
+  private evaluatePhase3(): void {
+    const previous = this.registry.get(PHASE3).state;
+    this.phase3Results = runPhase3Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      detectionEverRan: this.detectionEverRan,
+      stats: this.features.stats(this.pipeline.isRunning()),
+    });
+
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(this.phase3Results, leg);
+    this.registry.applyEvaluation(PHASE3, evaluation);
+    const next = this.registry.get(PHASE3).state;
+    if (previous !== next) {
+      logger.info(PHASE3, 'App', `phase ${PHASE3}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    this.buildPhase3Evidence(evaluation.state, evaluation.reason);
+  }
+
+  private buildPhase3Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE3,
+      phaseName: PHASE_NAMES[PHASE3] ?? 'Feature Detection',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase3Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        features: this.features.describe(),
+        devEntry: this.phase3DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase3Bundle = built.bundle;
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        PHASE3, 'EvidenceRecorder',
+        `Phase 3 evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
+  }
+
   /**
    * Read-only debug surface, used by the automated desktop leg to pull the same evidence a
    * human would export. It exposes state; it cannot set a verdict.
@@ -875,6 +1137,16 @@ class Phase0App {
       getPhase2Evidence: () => this.phase2Bundle,
       getPhase2EvidenceJson: () => (this.phase2Bundle ? serialiseEvidence(this.phase2Bundle) : null),
       getPhase2State: () => this.registry.get(PHASE2),
+      phase3Specs: PHASE3_SPECS,
+      enterPhase3: (devOverride = false) => this.enterPhase3(devOverride),
+      leavePhase3: () => this.leavePhase3(),
+      startDetection: () => this.onStartPhase3(),
+      stopDetection: () => this.onStopPhase3('debug API'),
+      getTrackingStats: () => this.features.stats(this.pipeline.isRunning()),
+      getPhase3Results: () => this.phase3Results,
+      getPhase3Evidence: () => this.phase3Bundle,
+      getPhase3EvidenceJson: () => (this.phase3Bundle ? serialiseEvidence(this.phase3Bundle) : null),
+      getPhase3State: () => this.registry.get(PHASE3),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

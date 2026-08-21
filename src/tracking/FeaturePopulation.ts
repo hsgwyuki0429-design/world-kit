@@ -29,6 +29,8 @@ import {
   featureStateFor,
   refillUrgencyFor,
 } from './featureTypes';
+import type { FeatureRecordSample, TrackingResult } from './trackingMessages';
+import type { TrackingStats } from './trackingStats';
 
 /** How far the quality floor is relaxed on a refill pass. */
 export const REFILL_QUALITY_FACTOR = 0.25;
@@ -137,13 +139,21 @@ export class FeaturePopulation {
   private readonly byTexture = new Map<SceneTexture, ClassAccumulator>();
   private readonly refills: RefillEvent[] = [];
   private readonly contrastSamples: number[] = [];
-  private readonly gridSamples: { gridded: number; ungridded: number; griddedCells: number; ungriddedCells: number }[] = [];
+  private readonly gridSamples: {
+    gridded: number;
+    ungridded: number;
+    griddedCells: number;
+    ungriddedCells: number;
+    binding: boolean;
+  }[] = [];
   private readonly detectCosts: number[] = [];
   private readonly gradientHistogram = new Map<number, number>();
 
   private detections = 0;
   private framesSinceDetect = 0;
-  private lastResult: DetectionResult | null = null;
+  private lastResult: TrackingResult | null = null;
+  private lastRecordSamples: readonly FeatureRecordSample[] = [];
+  private stateMismatches = 0;
   private overMaxFrames = 0;
   private quotaBreaches = 0;
   private maxCountSeen = 0;
@@ -156,15 +166,21 @@ export class FeaturePopulation {
     this.framesSinceDetect++;
   }
 
-  record(outcome: DetectWithRefill, quota: number): void {
-    const r = outcome.result;
+  /**
+   * Fold one frame's tracking result into the run.
+   *
+   * Takes the message shape rather than the detector's own, because this runs on the main
+   * thread and the message is all that crossed. Nothing here recomputes anything the worker
+   * measured — it accumulates.
+   */
+  record(r: TrackingResult): void {
     this.detections++;
     this.lastResult = r;
-    this.detectCosts.push(r.detectMs + (outcome.refill ? outcome.refill.detectMs - r.detectMs : 0));
+    this.detectCosts.push(r.detectMs);
     if (this.detectCosts.length > 600) this.detectCosts.shift();
 
     const acc = this.byTexture.get(r.texture) ?? { counts: [], gradients: [] };
-    acc.counts.push(r.features.length);
+    acc.counts.push(r.count);
     acc.gradients.push(r.meanGradient);
     if (acc.counts.length > 2000) {
       acc.counts.shift();
@@ -177,15 +193,16 @@ export class FeaturePopulation {
     const bucket = Math.min(40, Math.max(0, Math.round(r.meanGradient)));
     this.gradientHistogram.set(bucket, (this.gradientHistogram.get(bucket) ?? 0) + 1);
 
-    const state = featureStateFor(r.features.length);
+    const state = r.state as FeatureState;
     this.stateFrames.set(state, (this.stateFrames.get(state) ?? 0) + 1);
+    // Rule 002: the state the engine reported and the count it reported must agree. If they
+    // ever do not, that is a UI/engine divergence and FEAT-002 has to see it.
+    if (state !== featureStateFor(r.count)) this.stateMismatches++;
 
-    if (r.features.length > this.maxCountSeen) this.maxCountSeen = r.features.length;
-    if (r.features.length > FEATURE_MAX) this.overMaxFrames++;
-
-    const cellCounts = new Map<number, number>();
-    for (const f of r.features) cellCounts.set(f.cell, (cellCounts.get(f.cell) ?? 0) + 1);
-    for (const c of cellCounts.values()) if (c > quota) this.quotaBreaches++;
+    if (r.count > this.maxCountSeen) this.maxCountSeen = r.count;
+    if (r.count > FEATURE_MAX) this.overMaxFrames++;
+    // The quota is a hard cap in the selector, so a breach means the cap did not hold.
+    if (r.maxCellShare * r.count > r.quota + 0.5) this.quotaBreaches++;
 
     if (r.contrast) {
       this.contrastSamples.push(r.contrast.aboveChance);
@@ -197,23 +214,47 @@ export class FeaturePopulation {
         ungridded: r.gridComparison.ungriddedMaxCellShare,
         griddedCells: r.gridComparison.griddedOccupiedCells,
         ungriddedCells: r.gridComparison.ungriddedOccupiedCells,
+        binding: r.gridComparison.binding,
       });
       if (this.gridSamples.length > 400) this.gridSamples.shift();
     }
-    if (outcome.refill) {
-      this.refills.push(outcome.refill);
+    if (r.refill) {
+      this.refills.push({
+        at: Date.now(),
+        urgency: r.refill.urgency as RefillUrgency,
+        countBefore: r.refill.countBefore,
+        countAfter: r.refill.countAfter,
+        candidatesBefore: r.refill.candidatesBefore,
+        candidatesAfter: r.refill.candidatesAfter,
+        exhausted: r.refill.exhausted,
+        texture: r.texture,
+        stateBefore: r.refill.stateBefore as FeatureState,
+        stateAfter: r.refill.stateAfter as FeatureState,
+        detectMs: r.detectMs,
+      });
       if (this.refills.length > 200) this.refills.shift();
     }
+    if (r.level0Calibration && !this.level0Calibration) {
+      this.level0Calibration = r.level0Calibration;
+    }
+    if (r.recordSamples.length > 0) this.lastRecordSamples = [...r.recordSamples];
     this.framesSinceDetect = 0;
   }
 
-  setLevel0Calibration(width: number, height: number, detectMs: number, features: number): void {
-    if (this.level0Calibration) return;
-    this.level0Calibration = { width, height, detectMs: round(detectMs, 2), features };
+  getLastResult(): TrackingResult | null {
+    return this.lastResult;
   }
 
-  getLastResult(): DetectionResult | null {
-    return this.lastResult;
+  getRecordSamples(): readonly FeatureRecordSample[] {
+    return this.lastRecordSamples;
+  }
+
+  getStateMismatches(): number {
+    return this.stateMismatches;
+  }
+
+  framesWithoutDetection(): number {
+    return this.framesSinceDetect;
   }
 
   getDetections(): number {
@@ -242,16 +283,37 @@ export class FeaturePopulation {
     return this.contrastSamples.length;
   }
 
-  /** Median of (ungridded − gridded) max cell share: how much clustering the grid removed. */
-  gridImprovement(): { samples: number; medianGridded: number; medianUngridded: number; medianCellGain: number } {
-    if (this.gridSamples.length === 0) {
-      return { samples: 0, medianGridded: -1, medianUngridded: -1, medianCellGain: 0 };
+  /**
+   * How much clustering the grid removed, over the frames where it had anything to remove.
+   *
+   * Only *binding* comparisons count: on a sparse frame no cell approaches the quota, the
+   * two selections are identical, and including those samples measures the scene rather
+   * than the mechanism. `samples` is the binding count, `totalSamples` the whole population,
+   * so a run where the grid never bound is visible as that rather than as a failure.
+   */
+  gridImprovement(): {
+    samples: number;
+    totalSamples: number;
+    medianGridded: number;
+    medianUngridded: number;
+    medianCellGain: number;
+  } {
+    const binding = this.gridSamples.filter((s) => s.binding);
+    if (binding.length === 0) {
+      return {
+        samples: 0,
+        totalSamples: this.gridSamples.length,
+        medianGridded: -1,
+        medianUngridded: -1,
+        medianCellGain: 0,
+      };
     }
     return {
-      samples: this.gridSamples.length,
-      medianGridded: round(median(this.gridSamples.map((s) => s.gridded)), 4),
-      medianUngridded: round(median(this.gridSamples.map((s) => s.ungridded)), 4),
-      medianCellGain: round(median(this.gridSamples.map((s) => s.griddedCells - s.ungriddedCells)), 2),
+      samples: binding.length,
+      totalSamples: this.gridSamples.length,
+      medianGridded: round(median(binding.map((s) => s.gridded)), 4),
+      medianUngridded: round(median(binding.map((s) => s.ungridded)), 4),
+      medianCellGain: round(median(binding.map((s) => s.griddedCells - s.ungriddedCells)), 2),
     };
   }
 
@@ -282,6 +344,52 @@ export class FeaturePopulation {
     return this.level0Calibration;
   }
 
+  /** The shape the Phase 3 suite is evaluated against. */
+  stats(running: boolean): TrackingStats {
+    const last = this.lastResult;
+    const grid = this.gridImprovement();
+    return {
+      running,
+      detections: this.detections,
+      detectLevel: last?.detectLevel ?? -1,
+      detectWidth: last?.detectWidth ?? 0,
+      detectHeight: last?.detectHeight ?? 0,
+
+      count: last?.count ?? 0,
+      state: last?.state ?? 'FEATURES_OK',
+      quota: last?.quota ?? 0,
+      maxCountSeen: this.maxCountSeen,
+      overMaxFrames: this.overMaxFrames,
+      quotaBreaches: this.quotaBreaches,
+      stateMismatches: this.stateMismatches,
+      stateFrames: this.getStateFrames(),
+
+      textureRich: this.classStats(SceneTexture.RICH),
+      texturePoor: this.classStats(SceneTexture.POOR),
+      textureAmbiguous: this.classStats(SceneTexture.AMBIGUOUS),
+      gradientHistogram: [...this.gradientHistogram.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([meanGradient, frames]) => ({ meanGradient, frames })),
+      meanGradient: last?.meanGradient ?? -1,
+      texture: last?.texture ?? 'AMBIGUOUS',
+
+      contrastSamples: this.contrastSamples.length,
+      medianAboveChance: this.medianContrast(),
+
+      grid,
+      occupiedCells: last?.occupiedCells ?? 0,
+      maxCellShare: last?.maxCellShare ?? 0,
+
+      refills: [...this.refills],
+
+      meanDetectCostMs: this.meanDetectCostMs(),
+      level0Calibration: this.level0Calibration,
+
+      recordSamples: this.lastRecordSamples,
+      lastResult: last,
+    };
+  }
+
   describe(): Record<string, JsonValue> {
     return toJsonSafe({
       detections: this.detections,
@@ -301,6 +409,8 @@ export class FeaturePopulation {
       },
       grid: this.gridImprovement(),
       quotaBreaches: this.quotaBreaches,
+      stateMismatches: this.stateMismatches,
+      lastRecordSamples: this.lastRecordSamples as unknown as JsonValue,
       overMaxFrames: this.overMaxFrames,
       maxCountSeen: this.maxCountSeen,
       refills: this.refills.slice(-40),

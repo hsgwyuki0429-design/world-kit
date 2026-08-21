@@ -64,6 +64,16 @@ export interface FrameMessage extends FrameGeometry {
   readonly payload: FramePayload;
   /** Ask for the 64×48 proof strip back. Set for display frames and cross-check frames. */
   readonly wantStrip: boolean;
+  /**
+   * Whatever the stage downstream of preprocessing needs, passed through untouched.
+   *
+   * `unknown` on purpose. §83 keeps `pipeline` from importing `tracking`, so the pipeline
+   * cannot name this type without acquiring the dependency the rule exists to prevent —
+   * and it has no reason to: it schedules frames and measures latency, and what the worker
+   * does with a frame after preprocessing is not its business. The composition root sets
+   * it, the worker narrows it, and the two ends are typed even though the pipe is not.
+   */
+  readonly tracking?: unknown;
 }
 
 export interface StressMessage {
@@ -126,6 +136,8 @@ export interface ResultMessage extends FrameGeometry {
   readonly pyramidAllocations: number;
   /** 64×48 grayscale, transferred, only when requested. */
   readonly strip: ArrayBuffer | null;
+  /** The downstream stage's own result, opaque here for the reason given on `FrameMessage`. */
+  readonly tracking?: unknown;
 }
 
 export interface WorkerErrorMessage {

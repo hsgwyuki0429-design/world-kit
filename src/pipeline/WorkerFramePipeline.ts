@@ -117,6 +117,13 @@ interface RouteState {
 
 export interface PipelineHooks {
   readonly onStateChange?: () => void;
+  /**
+   * Called with whatever the worker attached beyond preprocessing.
+   *
+   * Opaque here — see `FrameMessage.tracking`. The pipeline forwards it and forms no
+   * opinion about it.
+   */
+  readonly onTracking?: (payload: unknown, frameId: number) => void;
 }
 
 /**
@@ -257,6 +264,8 @@ export class WorkerFramePipeline {
   private acquireCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
 
   private readonly hooks: PipelineHooks;
+  /** Set by the composition root; attached to every frame message, never inspected. */
+  private trackingOptions: unknown = undefined;
 
   private readonly createWorker: WorkerFactory;
 
@@ -277,6 +286,11 @@ export class WorkerFramePipeline {
 
   isRunning(): boolean {
     return this.running;
+  }
+
+  /** Hand the downstream stage its per-frame options. Opaque to this module by design. */
+  setTrackingOptions(options: unknown): void {
+    this.trackingOptions = options;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -558,6 +572,7 @@ export class WorkerFramePipeline {
         tierStep: tier.step,
         payload: acquired.payload,
         wantStrip,
+        tracking: this.trackingOptions,
       },
       acquired.transfer,
     );
@@ -850,6 +865,8 @@ export class WorkerFramePipeline {
       if (result.topLevelMad > this.topMadMax) this.topMadMax = result.topLevelMad;
     }
     if (this.checksums.size < 4000) this.checksums.add(result.checksum);
+    if (result.tracking !== undefined) this.hooks.onTracking?.(result.tracking, result.frameId);
+
     if (result.strip) {
       const strip = new Uint8Array(result.strip);
       const mad = this.previousStrip ? madBetween(strip, this.previousStrip) : -1;

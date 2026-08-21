@@ -242,13 +242,26 @@ used for its MAD floor.
 - **Expected:** the grid demonstrably prevents the clumping §11 asks it to prevent.
 - **Pass criteria:** all three —
   1. no cell ever held more than its quota, computed from the target and the cell count;
-  2. over ≥ 10 comparison samples, the gridded selection's largest single-cell share of the
-     total is **lower** than that of an ungridded top-N selection run on the very same frame,
-     in the median case;
+  2. over ≥ 10 comparison samples **in which the quota bound** — that is, the ungridded
+     selection put more than the quota into some cell — the gridded selection's largest
+     single-cell share of the total is **lower** than that of an ungridded top-N selection
+     run on the very same frame, in the median case;
   3. the number of occupied cells is reported, and the gridded selection occupies at least
      as many cells as the ungridded one in the median case.
 - **Failure condition:** any cell over quota; a grid that does not measurably reduce
-  clustering against its own ungridded control.
+  clustering against its own ungridded control, *on frames where the quota bound*.
+
+> **Plan amendment, after the first automated run.** Criterion 2 originally counted every
+> paired comparison. It should count only those where the quota actually *bound* — where the
+> ungridded selection put more than the quota into some cell. On a sparse frame no cell comes
+> near the quota, the two selections are identical, and comparing them measures the scene
+> rather than the mechanism. The desktop leg produced exactly that: 34 features across 48
+> cells against a quota of 17, an identical 22 % largest-cell share either way, and FEAT-003
+> recorded `FAIL` against a selector that was working correctly and simply had nothing to do.
+> A comparison on a sparse frame is now `PENDING` with that reason, not a failure. This
+> narrows the test rather than widening it — a binding frame where the grid fails to spread
+> the selection still fails, and a run that never produced a binding frame can no longer pass
+> by accident either.
 - **Not accepted as a pass:** an even distribution on a scene that was evenly textured
   anyway. Criterion 2 is a paired comparison on the same frame, so a scene that would have
   been evenly distributed regardless produces no difference and no pass — the test measures

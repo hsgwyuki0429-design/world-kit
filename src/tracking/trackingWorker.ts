@@ -28,6 +28,11 @@
 /// <reference lib="webworker" />
 
 import { GrayPyramid, rgbaToGray, stridedChecksum } from '../pipeline/pyramid';
+import { FeatureDetector, DEFAULT_DETECTOR_CONFIG } from './FeatureDetector';
+import { detectWithRefill, REFILL_QUALITY_FACTOR, REFILL_SEPARATION_FACTOR } from './FeaturePopulation';
+import { GRID_CELLS, featureStateFor } from './featureTypes';
+import { asTrackingOptions } from './trackingMessages';
+import type { FeatureRecordSample, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
 import type {
   FrameMessage,
@@ -46,6 +51,25 @@ let ctx: OffscreenCanvasRenderingContext2D | null = null;
 let procWidth = 0;
 let procHeight = 0;
 let stressPasses = 0;
+
+/**
+ * The detector, and a second one configured for refills.
+ *
+ * Two instances rather than one with mutable settings: each keeps its own scratch buffers,
+ * and a detector whose configuration changed between the two passes of a single frame would
+ * make the pair incomparable — which is exactly what the refill event reports on.
+ */
+const detector = new FeatureDetector();
+const refillDetector = new FeatureDetector({
+  qualityLevel: DEFAULT_DETECTOR_CONFIG.qualityLevel * REFILL_QUALITY_FACTOR,
+  minSeparation: Math.max(
+    2,
+    Math.round(DEFAULT_DETECTOR_CONFIG.minSeparation * REFILL_SEPARATION_FACTOR),
+  ),
+});
+/** Runs once per worker, so the level choice is answerable from a measurement (FEAT-005). */
+const level0Detector = new FeatureDetector();
+let level0Calibration: TrackingResult['level0Calibration'] = null;
 
 function describeError(err: unknown): string {
   if (err instanceof Error) return `${err.name || 'Error'}: ${err.message}`;
@@ -209,6 +233,8 @@ function handleFrame(msg: FrameMessage): void {
     bytes: l.data.byteLength,
   }));
 
+  const tracking = runTracking(msg, p);
+
   const result: ResultMessage = {
     type: 'result',
     frameId: msg.frameId,
@@ -231,8 +257,117 @@ function handleFrame(msg: FrameMessage): void {
     checksum,
     pyramidAllocations: p.allocations,
     strip,
+    tracking,
   };
-  post(result, strip ? [strip] : []);
+  const transfer: Transferable[] = [];
+  if (strip) transfer.push(strip);
+  if (tracking?.overlay) transfer.push(tracking.overlay);
+  post(result, transfer);
+}
+
+/**
+ * Feature detection on the pyramid this worker just built (§11, Phase 3).
+ *
+ * Reads a pyramid level in place — nothing is copied and nothing is converted, which is the
+ * whole reason detection lives in the same worker as preprocessing rather than a second one
+ * behind another transfer.
+ */
+function runTracking(msg: FrameMessage, p: GrayPyramid): TrackingResult | undefined {
+  const options = asTrackingOptions(msg.tracking);
+  if (!options || !options.detect) return undefined;
+
+  const levelIndex = Math.min(Math.max(0, Math.floor(options.level)), p.levels.length - 1);
+  const level = p.levels[levelIndex];
+  if (!level) return undefined;
+  const levelScale = 2 ** levelIndex;
+
+  const outcome = detectWithRefill(
+    detector,
+    refillDetector,
+    level.data,
+    level.width,
+    level.height,
+    {
+      levelScale,
+      wantContrast: options.wantContrast,
+      wantGridComparison: options.wantGridComparison,
+      target: options.target,
+    },
+    Date.now(),
+  );
+  const r = outcome.result;
+
+  // The level-0 calibration: what detection *would* have cost at full resolution. Run once,
+  // so the test plan's arithmetic for choosing level 1 is answered by a measurement rather
+  // than left as an estimate — and never on the hot path afterwards.
+  if (options.wantLevel0Calibration && !level0Calibration) {
+    const base = p.levels[0];
+    if (base) {
+      const cal = level0Detector.detect(base.data, base.width, base.height, {
+        levelScale: 1,
+        wantContrast: false,
+        wantGridComparison: false,
+        target: options.target,
+      });
+      level0Calibration = {
+        width: base.width,
+        height: base.height,
+        detectMs: Math.round(cal.detectMs * 100) / 100,
+        features: cal.features.length,
+      };
+    }
+  }
+
+  const overlay = new Float32Array(r.features.length * 3);
+  for (let i = 0; i < r.features.length; i++) {
+    const f = r.features[i];
+    if (!f) continue;
+    overlay[i * 3] = f.x0;
+    overlay[i * 3 + 1] = f.y0;
+    overlay[i * 3 + 2] = f.qualityScore;
+  }
+
+  const samples: FeatureRecordSample[] = [];
+  const wanted = Math.min(options.recordSamples, r.features.length);
+  for (let i = 0; i < wanted; i++) {
+    const f = r.features[Math.floor((i * r.features.length) / Math.max(1, wanted))];
+    if (f) samples.push({ ...f });
+  }
+
+  return {
+    kind: 'phase3',
+    detected: true,
+    count: r.features.length,
+    detectMs: Math.round(r.detectMs * 1000) / 1000,
+    detectWidth: r.width,
+    detectHeight: r.height,
+    detectLevel: levelIndex,
+    meanGradient: Math.round(r.meanGradient * 1000) / 1000,
+    texture: r.texture,
+    maxCornerStrength: Math.round(r.maxCornerStrength * 100) / 100,
+    candidateCount: r.candidateCount,
+    occupiedCells: r.occupiedCells,
+    maxCellShare: Math.round(r.maxCellShare * 10000) / 10000,
+    quota: Math.ceil(options.target / GRID_CELLS),
+    state: featureStateFor(r.features.length),
+    contrast: r.contrast,
+    gridComparison: r.gridComparison,
+    refill: outcome.refill
+      ? {
+          urgency: outcome.refill.urgency,
+          countBefore: outcome.refill.countBefore,
+          countAfter: outcome.refill.countAfter,
+          candidatesBefore: outcome.refill.candidatesBefore,
+          candidatesAfter: outcome.refill.candidatesAfter,
+          exhausted: outcome.refill.exhausted,
+          stateBefore: outcome.refill.stateBefore,
+          stateAfter: outcome.refill.stateAfter,
+        }
+      : null,
+    recordSamples: samples,
+    level0Calibration,
+    overlay: overlay.buffer,
+  };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

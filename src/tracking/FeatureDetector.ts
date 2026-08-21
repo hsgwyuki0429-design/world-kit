@@ -114,6 +114,19 @@ export interface GridComparison {
   readonly ungriddedMaxCellShare: number;
   readonly griddedOccupiedCells: number;
   readonly ungriddedOccupiedCells: number;
+  /**
+   * Whether the quota had anything to do on this frame.
+   *
+   * A cap that never binds cannot be measured. On a frame yielding 34 features across 48
+   * cells, no cell comes near a quota of 17, the gridded and ungridded selections are
+   * identical, and comparing them says nothing about the grid — it says the scene was
+   * sparse. Measured on the desktop leg, where a working selector was reported as a
+   * failure for exactly this reason. A comparison only counts toward FEAT-003 when the
+   * *ungridded* selection put more than the quota into some cell, which is the situation
+   * the grid exists to prevent.
+   */
+  readonly binding: boolean;
+  readonly quota: number;
 }
 
 export interface DetectionResult {
@@ -476,7 +489,9 @@ export class FeatureDetector {
     gridded: readonly Candidate[],
   ): GridComparison {
     const ungridded = this.select(candidates, width, height, target, false);
-    const share = (sel: readonly Candidate[]): { max: number; occupied: number } => {
+    const share = (
+      sel: readonly Candidate[],
+    ): { max: number; occupied: number; maxCount: number } => {
       const counts = new Int32Array(GRID_CELLS);
       for (const c of sel) {
         const x = c.index % width;
@@ -490,15 +505,18 @@ export class FeatureDetector {
         if (v > 0) occupied++;
         if (v > max) max = v;
       }
-      return { max: sel.length > 0 ? max / sel.length : 0, occupied };
+      return { max: sel.length > 0 ? max / sel.length : 0, occupied, maxCount: max };
     };
     const g = share(gridded);
     const u = share(ungridded);
+    const quota = Math.ceil(target / GRID_CELLS);
     return {
       griddedMaxCellShare: g.max,
       ungriddedMaxCellShare: u.max,
       griddedOccupiedCells: g.occupied,
       ungriddedOccupiedCells: u.occupied,
+      binding: u.maxCount > quota,
+      quota,
     };
   }
 

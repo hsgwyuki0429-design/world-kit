@@ -11,7 +11,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 3 | Feature Detection | **NOT_STARTED** | Phase Lock is open. Not yet implemented — §11 is next. |
+| 3 | Feature Detection | **IMPLEMENTING** | §11 built and covered by unit tests plus a DESKTOP_DEV leg. Awaiting the real-device run — FEAT-001, FEAT-002 and FEAT-003 cannot be decided without one. |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
@@ -254,9 +254,53 @@ PASS, `PASSED` verdict, 0 lost, 48.5/30 s unstressed, empty error log — not it
 rather than as a file in the repository, so §60's screenshot evidence is satisfied by review
 here as it was for Phases 0 and 1.
 
+## Phase 3 — IMPLEMENTING
+
+**Not passed, and cannot be from what is committed.** The only Phase 3 bundle in the
+repository is `docs/phase3/evidence/phase3-desktop-chromium.json`, leg `DESKTOP_DEV`. Rule
+004 stands. `docs/phase3/HOW-TO-RUN-DEVICE-TEST.md` describes the run that would settle it.
+
+What exists: Shi-Tomasi detection on pyramid level 1, the 8×6 grid quota selector, the
+refill ladder of §11, the six-test Phase 3 suite, the FEATURES screen with an overlay drawn
+from the worker's own detected positions, 49 new unit tests, and the automated leg.
+
+What the automated leg establishes and what it cannot is set out in
+`docs/phase3/evidence/README.md`. In short: the mechanism holds its quota, never disagrees
+with its own state, and picks image structure over chance **97.3 %** of the time — but the
+synthetic camera is neither a textured wall nor a blank one, so FEAT-001, FEAT-002 and
+FEAT-003, which are the three tests that carry this phase's meaning, all report `PENDING`
+and are excluded from that gate with their reasons printed. FEAT-005 is excluded too, and
+for a reason worth reading: it measures this machine against a budget written for the
+iPhone, and consecutive runs of identical code straddled the threshold at 7.98 ms and
+9.36 ms.
+
+Three defects were found before any device saw the code — a three-pixel positional bias from
+a plateaued corner response, a contrast statistic that measured the scene rather than the
+detector, and a grid comparison that failed a selector which was working correctly. The
+first was a code fix; the other two are amendments recorded in `docs/phase3/TEST-PLAN.md`,
+both narrowing the test rather than relaxing it.
+
+### Code changed after the Phase 2 pass
+
+Phase 2's pass attests to `appVersion 0.1.0` at commit `f6a1b55`. One structural change has
+been made since, and it changes no Phase 2 behaviour:
+
+**The frame worker moved from `src/pipeline/frameWorker.ts` to
+`src/tracking/trackingWorker.ts`** (a `git mv`; the preprocessing code is unchanged).
+Feature detection has to run in the same worker as preprocessing — shipping the pyramid back
+to the main thread to detect on it would undo the reason Phase 2 exists — but §83 forbids
+`pipeline` from importing `tracking`. Resolving that the other way round keeps the layering:
+the worker now belongs to `tracking`, `WorkerFramePipeline` takes a `WorkerFactory` injected
+by `src/main.ts` (the composition root, which belongs to no audited layer), and the two
+message types carry an opaque `tracking?: unknown` field that `pipeline` passes through
+without ever naming its shape. The architecture audit passes unchanged.
+
+The committed Phase 2 device bundle is still re-derived to `PASSED` by the current code on
+every test run.
+
 ## What "implemented" means here
 
 `IMPLEMENTED_PHASES` in `src/core/PhaseRegistry.ts` is the codebase's own statement of what
-exists — currently `{0, 1, 2}`. The START SCAN control reads it alongside Phase Lock, and a
+exists — currently `{0, 1, 2, 3}`. The START SCAN control reads it alongside Phase Lock, and a
 control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
 implies a capability that has not been built.

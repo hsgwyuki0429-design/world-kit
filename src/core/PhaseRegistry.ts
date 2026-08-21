@@ -48,11 +48,11 @@ export const PHASE_NAMES: readonly string[] = [
  * a control for an unimplemented phase must say "NOT IMPLEMENTED" rather than simply
  * looking available. Add to this set only when the phase's code exists and its tests run.
  *
- * Membership here says the phase is *built*, never that it has passed. Phase 2's code
- * exists and its suite runs; whether it passes is decided by `evaluate` against real-device
- * evidence, exactly as for every other phase.
+ * Membership here says the phase is *built*, never that it has passed. Whether a phase
+ * passes is decided by `evaluate` against real-device evidence, exactly as for every other
+ * phase.
  */
-export const IMPLEMENTED_PHASES: ReadonlySet<number> = new Set<number>([0, 1, 2]);
+export const IMPLEMENTED_PHASES: ReadonlySet<number> = new Set<number>([0, 1, 2, 3]);
 
 export function isPhaseImplemented(index: number): boolean {
   return IMPLEMENTED_PHASES.has(index);
