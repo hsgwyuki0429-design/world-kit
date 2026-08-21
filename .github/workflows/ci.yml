@@ -28,5 +28,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: phase0-desktop-evidence
-          path: docs/phase0/evidence/phase0-desktop-chromium.*
+          name: desktop-evidence
+          path: |
+            docs/phase0/evidence/phase0-desktop-chromium.*
+            docs/phase1/evidence/phase1-desktop-chromium-*.*
+            docs/phase2/evidence/phase2-desktop-chromium.*

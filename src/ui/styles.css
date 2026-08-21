@@ -247,6 +247,26 @@ pre.json {
   justify-content: center;
   aspect-ratio: 16 / 9;
 }
+/*
+ * The worker's own output, painted from the proof strip it sends back.
+ * `pixelated` because the strip is 64x48 and a smoothed upscale would invent detail the
+ * worker never produced — the point of showing it is that it is exactly those bytes.
+ */
+.worker-output-frame {
+  margin-top: 10px;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b0b0d;
+  border: 1px solid var(--line);
+}
+.worker-output-frame canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+}
+
 .preview-message {
   font-family: var(--mono);
   font-size: 13px;

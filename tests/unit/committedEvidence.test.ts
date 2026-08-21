@@ -17,11 +17,19 @@ import { describe, expect, it } from 'vitest';
 import { CapabilityState, DetectionMethod, EvidenceLeg, PhaseState, Verdict } from '../../src/core/types';
 import type { CapabilityRecord, EvidenceBundle } from '../../src/core/types';
 import { PhaseRegistry } from '../../src/core/PhaseRegistry';
+import {
+  MAX_DISAGREEMENT_SCENE_FRACTION,
+  MAX_LUMA_DISAGREEMENT,
+  MIN_CROSSCHECKS,
+  MIN_SCENE_STDDEV,
+  MIN_WORKER_SHARE,
+} from '../../src/testkit/Phase2Tests';
 import { findIntegrityIssues } from '../../src/core/validate';
 
 const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase0', 'evidence'),
   join(process.cwd(), 'docs', 'phase1', 'evidence'),
+  join(process.cwd(), 'docs', 'phase2', 'evidence'),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
@@ -260,6 +268,93 @@ describe('Phase 1 evidence coverage', () => {
       expect(ctxData, `${file} has no phaseContext`).toBeTruthy();
       expect(typeof ctxData?.devEntry, `${file} devEntry`).toBe('boolean');
       expect(ctxData?.camera, `${file} camera context`).toBeTruthy();
+    }
+  });
+});
+
+/**
+ * Phase 2 gate.
+ *
+ * The claim Phase 2 rests on is that what reached the worker was the real camera image, and
+ * that the adaptation was caused by measurement. Neither is checkable from a verdict, so
+ * this re-derives both from the numbers the bundle carries: the provenance cross-check has
+ * to have run on a scene that varied, agreed within its own stated tolerance, and every
+ * ladder move has to carry the measurement it was made on.
+ */
+describe('Phase 2 evidence', () => {
+  const phase2 = bundles.filter((b) => b.bundle.phase === 2);
+  const device = phase2.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 2 bundle carries the pipeline context that produced its verdict', () => {
+    for (const { file, bundle } of phase2) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { devEntry?: boolean; pipeline?: Record<string, unknown> };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.pipeline, `${file} pipeline context`).toBeTruthy();
+      // The route ladder is what §H.1 exists to settle; a bundle that does not say which
+      // route it used cannot answer the question the phase was designed around.
+      expect(Array.isArray(ctx?.pipeline?.['routeProbes']), `${file} routeProbes`).toBe(true);
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 2 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass is backed by a provenance cross-check that could have failed',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f2 = bundle.testResults.find((r) => r.spec.id === 'FRAME-002');
+        expect(f2?.verdict, `${file} FRAME-002`).toBe(Verdict.PASS);
+
+        const count = Number(f2?.metrics['crossCheckCount']);
+        const median = Number(f2?.metrics['crossCheckMedian']);
+        const sceneStdDev = Number(f2?.metrics['sceneStdDev']);
+        const workerShare = Number(f2?.metrics['workerShare']);
+
+        expect(count, `${file} cross-check count`).toBeGreaterThanOrEqual(MIN_CROSSCHECKS);
+        // The scene has to have moved, or agreement means nothing.
+        expect(sceneStdDev, `${file} scene variation`).toBeGreaterThanOrEqual(MIN_SCENE_STDDEV);
+        expect(median, `${file} cross-check median`).toBeGreaterThanOrEqual(0);
+        expect(median, `${file} cross-check median`).toBeLessThanOrEqual(
+          Math.min(MAX_LUMA_DISAGREEMENT, MAX_DISAGREEMENT_SCENE_FRACTION * sceneStdDev),
+        );
+        // §10: the heavy work is off the UI thread, re-derived rather than taken on trust.
+        expect(workerShare, `${file} worker share`).toBeGreaterThanOrEqual(MIN_WORKER_SHARE);
+
+        const scope = f2?.metrics['workerScope'] as { hasDocument?: boolean } | undefined;
+        expect(scope?.hasDocument, `${file} worker scope`).toBe(false);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)('a claimed pass shows adaptation that was caused, not asserted', () => {
+    for (const { file, bundle } of claimsPass) {
+      const f4 = bundle.testResults.find((r) => r.spec.id === 'FRAME-004');
+      const decisions = (f4?.metrics['decisions'] ?? []) as {
+        medianWorkerMs?: number;
+        budgetMs?: number;
+        toTargetFps?: number;
+        reason?: string;
+      }[];
+      expect(decisions.length, `${file} ladder moves`).toBeGreaterThan(0);
+      for (const d of decisions) {
+        expect(Number(d.medianWorkerMs), `${file} decision measurement`).toBeGreaterThan(0);
+        expect(Number(d.budgetMs), `${file} decision budget`).toBeGreaterThan(0);
+        expect(Number(d.toTargetFps), `${file} selected target`).toBeGreaterThanOrEqual(15);
+        expect(d.reason, `${file} decision reason`).toBeTruthy();
+      }
+
+      const f3 = bundle.testResults.find((r) => r.spec.id === 'FRAME-003');
+      expect(Number(f3?.metrics['overBudgetFrames']), `${file} over-budget frames`).toBe(0);
+      expect(Number(f3?.metrics['upscaledFrames']), `${file} upscaled frames`).toBe(0);
     }
   });
 });

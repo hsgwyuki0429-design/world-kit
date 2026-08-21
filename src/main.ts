@@ -16,18 +16,18 @@ import type {
   EvidenceBundle,
   TestResult,
 } from './core/types';
-import { PhaseRegistry, PHASE_NAMES } from './core/PhaseRegistry';
+import { PhaseRegistry, PHASE_NAMES, isPhaseImplemented } from './core/PhaseRegistry';
 import { CapabilityDetector, collectDeviceInfo } from './capture/CapabilityDetector';
 import { probeMotionSensors } from './capture/MotionCapabilityProbe';
 import { CameraSource, CameraState } from './capture/CameraSource';
 import { FrameIntegrityMonitor } from './capture/FrameIntegrityMonitor';
 import { ScenarioLedger } from './capture/ScenarioLedger';
 import { runPhase1Tests, PHASE1_SPECS } from './testkit/Phase1Tests';
-import {
-  renderPhase1Screen,
-  getPreviewVideo,
-  isPreviewPresented,
-} from './ui/Phase1Screen';
+import { runPhase2Tests, PHASE2_SPECS } from './testkit/Phase2Tests';
+import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
+import { renderPhase1Screen } from './ui/Phase1Screen';
+import { renderPhase2Screen } from './ui/Phase2Screen';
+import { getPreviewVideo, isPreviewPresented } from './ui/PreviewVideo';
 import { logger } from './debug/Logger';
 import {
   buildEvidenceBundle,
@@ -44,11 +44,20 @@ import type { Phase0ViewModel } from './ui/Phase0Screen';
 const APP_VERSION = __APP_VERSION__;
 const PHASE = 0;
 const PHASE1 = 1;
+const PHASE2 = 2;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
+/**
+ * How often the PIPELINE screen re-evaluates.
+ *
+ * Not per frame: the pipeline reports state changes 30 times a second, and re-rendering
+ * the DOM at that rate would put the UI cost FRAME-005 measures into the measurement
+ * itself. Twice a second is enough for a human and cheap enough not to distort the run.
+ */
+const PHASE2_TICK_MS = 500;
 
-type Screen = 'phase0' | 'phase1';
+type Screen = 'phase0' | 'phase1' | 'phase2';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -73,6 +82,14 @@ class Phase0App {
   private phase1Bundle: EvidenceBundle | null = null;
   private cameraOpening = false;
   private phase1Timer: number | null = null;
+  private readonly pipeline = new WorkerFramePipeline();
+  private phase2Results: TestResult[] = [];
+  private phase2Bundle: EvidenceBundle | null = null;
+  private phase2Timer: number | null = null;
+  private phase2DevEntry = false;
+  private pipelineEverStarted = false;
+  /** Why the last request to inject load was refused, shown verbatim on the screen. */
+  private stressRefusal: string | null = null;
   /**
    * Set only when Phase 1 was opened through the desktop development override. It is
    * recorded in the evidence bundle, and it is unreachable on a device: the override is
@@ -89,6 +106,10 @@ class Phase0App {
   }
 
   async start(): Promise<void> {
+    // Registered once, on the source rather than on a track: `CameraSource` keeps its
+    // listener set across opens, so subscribing per open would add a listener every time
+    // the camera was started and fire the Phase 1 handler from a Phase 2 session.
+    this.camera.onEnded((reason) => this.onCameraEnded(reason));
     this.registry.setState(PHASE, PhaseState.IMPLEMENTING, 'capability detection starting');
     this.device = collectDeviceInfo();
     this.leg = determineLeg(this.device);
@@ -331,6 +352,30 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase2') {
+      renderPhase2Screen(
+        this.root,
+        {
+          phase2: this.registry.get(PHASE2),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          stats: this.pipeline.getStats(),
+          strip: this.pipeline.getLastStrip(),
+          results: this.phase2Results,
+          stressRefusal: this.stressRefusal,
+        },
+        {
+          onStartCamera: () => void this.onStartPipeline(),
+          onStopPipeline: () => this.onStopPipeline('user stopped the pipeline'),
+          onToggleStress: () => this.onToggleStress(),
+          onBack: () => this.leavePhase2(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase2Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase2Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase1') {
       renderPhase1Screen(
         this.root,
@@ -345,11 +390,16 @@ class Phase0App {
           denied: this.ledger.get('DENIED'),
           opening: this.cameraOpening,
           trackLive: this.camera.isLive(),
+          phase2: this.registry.get(PHASE2),
+          canEnterPhase2: this.registry.canEnter(PHASE2),
+          phase2Implemented: isPhaseImplemented(PHASE2),
+          phase2BlockedReason: this.registry.blockedReason(PHASE2),
         },
         {
           onStartCamera: () => void this.onStartCamera(),
           onStopCamera: () => this.onStopCamera('user stopped the camera'),
           onBack: () => this.leavePhase1(),
+          onEnterPhase2: () => this.enterPhase2(),
           onDownloadEvidence: () => this.onDownloadEvidence(this.phase1Bundle),
           onCopyEvidence: () => void this.onCopyEvidence(this.phase1Bundle),
         },
@@ -437,15 +487,6 @@ class Phase0App {
           err,
         );
       }
-      this.camera.onEnded((reason) => {
-        this.cameraEndedUnexpectedly = true;
-        logger.error(
-          PHASE1, 'CameraSource', `camera track ended: ${reason}`,
-          'the preview is removed and the state reported as CAMERA_ENDED; no last frame is ' +
-            'left on screen',
-        );
-        this.onStopCamera(reason);
-      });
       this.monitor.start(video);
       this.ledger.observe(
         'GRANTED',
@@ -575,6 +616,208 @@ class Phase0App {
   }
 
   /**
+   * The camera track ended on its own — another app took it, or the OS revoked access.
+   *
+   * Handled centrally because both Phase 1 and Phase 2 hold the same camera, and each has
+   * something different to shut down. The flag itself is shared: it records that the track
+   * ended without the user asking, which is what CAM-003 and CAM-005 read.
+   */
+  private onCameraEnded(reason: string): void {
+    this.cameraEndedUnexpectedly = true;
+    logger.error(
+      this.screen === 'phase2' ? PHASE2 : PHASE1, 'CameraSource',
+      `camera track ended: ${reason}`,
+      'the preview is removed and the state reported as CAMERA_ENDED; no last frame is ' +
+        'left on screen',
+    );
+    if (this.screen === 'phase2') this.onStopPipeline(reason);
+    else this.onStopCamera(reason);
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Phase 2 — Frame Pipeline                                                */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Enter the PIPELINE screen.
+   *
+   * Same gate as Phase 1, one phase along: Phase Lock must have opened, which on a device
+   * means Phase 1 really passed in this session. `devOverride` exists for the automated
+   * desktop leg, is gated on the DESKTOP_DEV leg, and is recorded in the bundle — and a
+   * DESKTOP_DEV bundle cannot pass a phase regardless (Rule 004).
+   */
+  private enterPhase2(devOverride = false): boolean {
+    if (!this.registry.canEnter(PHASE2)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE2, 'App', 'refused entry to Phase 2', {
+          reason: this.registry.blockedReason(PHASE2),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase2DevEntry = true;
+      logger.warn(PHASE2, 'App', 'Phase 2 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    // Phase 1's monitor and Phase 2's pipeline would otherwise both be driving frame
+    // callbacks on the same element. Phase 1's measurements are already made and are not
+    // reset by stopping it.
+    this.stopPhase1Ticking();
+    this.monitor.stop();
+    this.screen = 'phase2';
+    if (this.registry.get(PHASE2).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE2, PhaseState.IMPLEMENTING, 'PIPELINE screen opened');
+    }
+    this.evaluatePhase2();
+    this.render();
+    return true;
+  }
+
+  private leavePhase2(): void {
+    this.onStopPipeline('left the PIPELINE screen');
+    this.screen = 'phase1';
+    this.render();
+  }
+
+  /** MUST be reached from the click handler: getUserMedia needs the user gesture. */
+  private async onStartPipeline(): Promise<void> {
+    if (this.cameraOpening || this.pipeline.isRunning()) return;
+    const video = getPreviewVideo();
+
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE2, 'CameraSource', `the pipeline could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and the pipeline does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase2();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      this.ledger.observe(
+        'GRANTED',
+        `${result.settings?.width}x${result.settings?.height} @ ` +
+          `${result.settings?.frameRate}fps, opened for the Phase 2 pipeline`,
+      );
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE2, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and the pipeline still starts; if no frames arrive, ' +
+            'FRAME-001 fails rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    if (this.pipeline.start(video)) {
+      this.pipelineEverStarted = true;
+      this.stressRefusal = null;
+      this.startPhase2Ticking();
+    }
+    this.evaluatePhase2();
+    this.render();
+  }
+
+  private onStopPipeline(reason: string): void {
+    this.stopPhase2Ticking();
+    this.pipeline.stop(reason);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase2();
+    this.render();
+  }
+
+  private onToggleStress(): void {
+    this.stressRefusal = this.pipeline.setStress(!this.pipeline.isStressed());
+    this.evaluatePhase2();
+    this.render();
+  }
+
+  private startPhase2Ticking(): void {
+    this.stopPhase2Ticking();
+    this.phase2Timer = window.setInterval(() => {
+      this.evaluatePhase2();
+      this.render();
+    }, PHASE2_TICK_MS);
+  }
+
+  private stopPhase2Ticking(): void {
+    if (this.phase2Timer !== null) {
+      clearInterval(this.phase2Timer);
+      this.phase2Timer = null;
+    }
+  }
+
+  private evaluatePhase2(): void {
+    const previous = this.registry.get(PHASE2).state;
+    this.phase2Results = runPhase2Tests({
+      cameraState: this.camera.getState(),
+      cameraEverOpened: this.cameraEverOpened,
+      pipelineEverStarted: this.pipelineEverStarted,
+      stats: this.pipeline.getStats(),
+    });
+
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(this.phase2Results, leg);
+    this.registry.applyEvaluation(PHASE2, evaluation);
+    const next = this.registry.get(PHASE2).state;
+    if (previous !== next) {
+      logger.info(PHASE2, 'App', `phase ${PHASE2}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    this.buildPhase2Evidence(evaluation.state, evaluation.reason);
+  }
+
+  private buildPhase2Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE2,
+      phaseName: PHASE_NAMES[PHASE2] ?? 'Frame Pipeline',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase2Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        devEntry: this.phase2DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase2Bundle = built.bundle;
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        PHASE2, 'EvidenceRecorder',
+        `Phase 2 evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
+  }
+
+  /**
    * Read-only debug surface, used by the automated desktop leg to pull the same evidence a
    * human would export. It exposes state; it cannot set a verdict.
    */
@@ -603,6 +846,22 @@ class Phase0App {
       getPhase1State: () => this.registry.get(PHASE1),
       getFrameStats: () => this.monitor.getStats(),
       getCamera: () => this.camera.describe(),
+      phase2Specs: PHASE2_SPECS,
+      enterPhase2: (devOverride = false) => this.enterPhase2(devOverride),
+      leavePhase2: () => this.leavePhase2(),
+      startPipeline: () => this.onStartPipeline(),
+      stopPipeline: () => this.onStopPipeline('debug API'),
+      setStress: (on: boolean) => {
+        this.stressRefusal = this.pipeline.setStress(on);
+        this.evaluatePhase2();
+        this.render();
+        return this.stressRefusal;
+      },
+      getPipelineStats: () => this.pipeline.getStats(),
+      getPhase2Results: () => this.phase2Results,
+      getPhase2Evidence: () => this.phase2Bundle,
+      getPhase2EvidenceJson: () => (this.phase2Bundle ? serialiseEvidence(this.phase2Bundle) : null),
+      getPhase2State: () => this.registry.get(PHASE2),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),
