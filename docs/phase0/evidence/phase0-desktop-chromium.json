@@ -1,0 +1,889 @@
+{
+  "schemaVersion": 1,
+  "leg": "DESKTOP_DEV",
+  "phase": 0,
+  "phaseName": "Environment / Capability",
+  "createdAt": "2026-08-21T04:31:11.675Z",
+  "appVersion": "0.1.0",
+  "origin": "http://localhost:43919",
+  "secureContext": true,
+  "device": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+    "platformHint": "Linux x86_64",
+    "osGuess": "Linux",
+    "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+    "isLikelyIOS": false,
+    "maxTouchPoints": 0,
+    "screenWidth": 430,
+    "screenHeight": 932,
+    "viewportWidth": 430,
+    "viewportHeight": 932,
+    "devicePixelRatio": 2,
+    "hardwareConcurrency": 4,
+    "languages": [
+      "en-US"
+    ],
+    "timezone": "UTC"
+  },
+  "capabilityMatrix": {
+    "records": [
+      {
+        "id": "platform.secureContext",
+        "group": "platform",
+        "label": "Secure context (HTTPS)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "secure context over http://localhost:43919",
+        "data": {
+          "isSecureContext": true,
+          "protocol": "http:",
+          "host": "localhost:43919",
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0.4,
+        "timestamp": 1787286669422
+      },
+      {
+        "id": "platform.iosSafariGuess",
+        "group": "platform",
+        "label": "iOS/Safari (UA guess)",
+        "state": "UNAVAILABLE",
+        "method": "INFERENCE",
+        "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
+        "data": {
+          "osGuess": "Linux",
+          "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+          "maxTouchPoints": 0
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787286669422
+      },
+      {
+        "id": "camera.getUserMedia",
+        "group": "camera",
+        "label": "getUserMedia",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getUserMedia is present in a secure context. Not invoked in Phase 0 — opening the camera is Phase 1 (CAM-001), and probing it here would trigger a permission prompt",
+        "data": {
+          "hasMediaDevices": true,
+          "hasGetUserMedia": true,
+          "secureContext": true
+        },
+        "durationMs": 0,
+        "timestamp": 1787286669422
+      },
+      {
+        "id": "camera.enumerateDevices",
+        "group": "camera",
+        "label": "Video input devices",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no videoinput devices enumerated; on some browsers the list stays empty until camera permission is granted, so this is not conclusive before Phase 1",
+        "data": {
+          "videoInputCount": 0,
+          "audioInputCount": 0,
+          "totalDevices": 0,
+          "labelsHidden": true,
+          "deviceIdsHidden": true
+        },
+        "durationMs": 59.4,
+        "timestamp": 1787286669481
+      },
+      {
+        "id": "camera.supportedConstraints",
+        "group": "camera",
+        "label": "Media constraints",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
+        "data": {
+          "supportedCount": 36,
+          "facingMode": true,
+          "width": true,
+          "height": true,
+          "frameRate": true,
+          "aspectRatio": true,
+          "deviceId": true,
+          "missing": []
+        },
+        "durationMs": 0.4,
+        "timestamp": 1787286669482
+      },
+      {
+        "id": "camera.trackControl",
+        "group": "camera",
+        "label": "Track capability control",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getCapabilities / getSettings / applyConstraints all present — Phase 2 can negotiate resolution and frame rate at runtime",
+        "data": {
+          "getCapabilities": true,
+          "getSettings": true,
+          "applyConstraints": true
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787286669482
+      },
+      {
+        "id": "compute.webassembly",
+        "group": "compute",
+        "label": "WebAssembly (executed)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "compiled and executed a real 41-byte module: add(2,3) === 5",
+        "data": {
+          "moduleBytes": 41,
+          "addResult": 5,
+          "hasInstantiateStreaming": true,
+          "hasMemory": true
+        },
+        "durationMs": 1.4,
+        "timestamp": 1787286669483
+      },
+      {
+        "id": "compute.worker",
+        "group": "compute",
+        "label": "Web Worker round-trip",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "blob worker round-trip succeeded in 11.6 ms",
+        "data": {
+          "roundTripMs": 11.6,
+          "tokenMatched": true
+        },
+        "durationMs": 13.5,
+        "timestamp": 1787286669497
+      },
+      {
+        "id": "compute.offscreenCanvas",
+        "group": "compute",
+        "label": "OffscreenCanvas",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "drew and read back an exact pixel [10,20,30,255] from an OffscreenCanvas",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.6,
+        "timestamp": 1787286669497
+      },
+      {
+        "id": "compute.transferControlToOffscreen",
+        "group": "compute",
+        "label": "Canvas -> Offscreen transfer",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferControlToOffscreen returned a live OffscreenCanvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0.7,
+        "timestamp": 1787286669498
+      },
+      {
+        "id": "compute.offscreenInWorker",
+        "group": "compute",
+        "label": "OffscreenCanvas inside worker",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferred an OffscreenCanvas into a worker, drew there and read back the exact pixel",
+        "data": {
+          "ok": true,
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 14.6,
+        "timestamp": 1787286669513
+      },
+      {
+        "id": "compute.sharedArrayBuffer",
+        "group": "compute",
+        "label": "SharedArrayBuffer",
+        "state": "UNAVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "SharedArrayBuffer is absent — requires COOP+COEP headers, which static hosting such as GitHub Pages cannot set. WASM threads must not be assumed.",
+        "data": {
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787286669513
+      },
+      {
+        "id": "graphics.webgl2",
+        "group": "graphics",
+        "label": "WebGL2",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebGL2 context created on ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "data": {
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "rendererMasked": false,
+          "maxTextureSize": 8192,
+          "maxViewportDims": [
+            8192,
+            8192
+          ],
+          "colorBufferFloat": true,
+          "textureFloatLinear": true,
+          "extensionCount": 29
+        },
+        "durationMs": 17.1,
+        "timestamp": 1787286669530
+      },
+      {
+        "id": "graphics.webgpu",
+        "group": "graphics",
+        "label": "WebGPU",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+        "data": {
+          "hasNavigatorGpu": true,
+          "adapter": null
+        },
+        "durationMs": 2.5,
+        "timestamp": 1787286669533
+      },
+      {
+        "id": "graphics.createImageBitmap",
+        "group": "graphics",
+        "label": "createImageBitmap",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "created a real 4x4 ImageBitmap from a canvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 2.4,
+        "timestamp": 1787286669535
+      },
+      {
+        "id": "graphics.canvas2dReadback",
+        "group": "graphics",
+        "label": "Canvas 2D readback",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "main-thread canvas readback is byte-exact [10,20,30,255]",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.4,
+        "timestamp": 1787286669535
+      },
+      {
+        "id": "media.imageCapture",
+        "group": "media",
+        "label": "ImageCapture",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "ImageCapture is present",
+        "data": {},
+        "durationMs": 0.2,
+        "timestamp": 1787286669535
+      },
+      {
+        "id": "media.webcodecs",
+        "group": "media",
+        "label": "WebCodecs VideoFrame",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "VideoFrame is present — Phase 2 can pull frames without a canvas round-trip",
+        "data": {
+          "VideoFrame": true,
+          "VideoDecoder": true,
+          "VideoEncoder": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787286669536
+      },
+      {
+        "id": "media.videoFrameCallback",
+        "group": "media",
+        "label": "requestVideoFrameCallback",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "requestVideoFrameCallback is present — frame scheduling can be driven by real decoded frames rather than by rAF guessing",
+        "data": {
+          "playsInline": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787286669536
+      },
+      {
+        "id": "storage.estimate",
+        "group": "storage",
+        "label": "Storage quota",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "storage quota reported by the platform: 996.6 MB (used 0.0 B)",
+        "data": {
+          "quotaBytes": 1045015689,
+          "usageBytes": 0
+        },
+        "durationMs": 2.8,
+        "timestamp": 1787286669539
+      },
+      {
+        "id": "storage.localStorage",
+        "group": "storage",
+        "label": "localStorage",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "wrote, read and removed a real localStorage key",
+        "data": {},
+        "durationMs": 1.3,
+        "timestamp": 1787286669540
+      },
+      {
+        "id": "storage.indexedDB",
+        "group": "storage",
+        "label": "IndexedDB",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
+        "data": {},
+        "durationMs": 2.6,
+        "timestamp": 1787286669542
+      },
+      {
+        "id": "storage.performanceMemory",
+        "group": "storage",
+        "label": "JS heap metrics",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "performance.memory is present; heap numbers in the debug HUD will be real",
+        "data": {
+          "deviceMemory": 8
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787286669543
+      },
+      {
+        "id": "spatial.webxr",
+        "group": "spatial",
+        "label": "WebXR",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebXR present; immersive-ar=false, immersive-vr=false",
+        "data": {
+          "hasNavigatorXr": true,
+          "immersiveAR": false,
+          "immersiveVR": false
+        },
+        "durationMs": 12.7,
+        "timestamp": 1787286669555
+      },
+      {
+        "id": "spatial.nativeBridge",
+        "group": "spatial",
+        "label": "Native app bridge",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no window.webkit.messageHandlers bridge — the page is not hosted by a native app, so no native iOS framework can be reached from JavaScript",
+        "data": {
+          "handlerNames": []
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787286669555
+      },
+      {
+        "id": "spatial.cameraDepth",
+        "group": "spatial",
+        "label": "Camera depth",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no depth-related media constraint and no WebXR depth-sensing route (webxr=false) — DEPTH: UNAVAILABLE. Any depth used later must be labelled MONOCULAR ESTIMATE and never presented as native depth (§44)",
+        "data": {
+          "depthConstraintKeys": [],
+          "webxrAvailable": false
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787286669556
+      },
+      {
+        "id": "spatial.arkit",
+        "group": "spatial",
+        "label": "Native ARKit",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "ARKit has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. ARKit: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787286669556
+      },
+      {
+        "id": "spatial.roomplan",
+        "group": "spatial",
+        "label": "RoomPlan",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "RoomPlan has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. RoomPlan: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787286669556
+      },
+      {
+        "id": "spatial.metricScale",
+        "group": "spatial",
+        "label": "Metric scale",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "A monocular camera provides no absolute scale (§18, §90). No depth sensor, WebXR session or native bridge is reachable to supply one, so the world will be built in LOCAL UNITS and SCALE stays UNKNOWN until something actually measures it.",
+        "data": {
+          "scaleStatus": "UNKNOWN",
+          "units": "LOCAL_UNITS"
+        },
+        "durationMs": 0,
+        "timestamp": 1787286669556
+      },
+      {
+        "id": "motion.deviceMotion",
+        "group": "motion",
+        "label": "DeviceMotion",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "1 events arrived but only 0 carried finite values (need >= 5)",
+        "data": {
+          "permission": "no permission gate on this platform",
+          "permissionGated": false,
+          "listenMs": 2000,
+          "eventCount": 1,
+          "eventsWithFiniteData": 0,
+          "measuredHz": 0,
+          "fields": {
+            "acceleration": false,
+            "accelerationIncludingGravity": false,
+            "rotationRate": false,
+            "interval": true
+          },
+          "firstSample": null
+        },
+        "durationMs": 2000.8,
+        "timestamp": 1787286671666
+      },
+      {
+        "id": "motion.deviceOrientation",
+        "group": "motion",
+        "label": "DeviceOrientation",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "1 events arrived but only 0 carried finite values",
+        "data": {
+          "permission": "no permission gate on this platform",
+          "permissionGated": false,
+          "listenMs": 2000,
+          "eventCount": 1,
+          "eventsWithFiniteData": 0,
+          "measuredHz": 0,
+          "absolute": false,
+          "webkitCompassHeading": false,
+          "compassAccuracy": null,
+          "firstSample": null
+        },
+        "durationMs": 2000.5,
+        "timestamp": 1787286671666
+      }
+    ],
+    "startedAt": 1787286669421,
+    "completedAt": 1787286671666,
+    "totalDurationMs": 4135.7
+  },
+  "testResults": [
+    {
+      "spec": {
+        "id": "CAP-0001",
+        "title": "Secure context / HTTPS",
+        "required": true,
+        "input": "page load; window.isSecureContext and location.protocol",
+        "expected": "window.isSecureContext === true",
+        "passCriteria": "the page is running in a secure context",
+        "failureCondition": "plain http on a non-localhost origin — camera can never work there"
+      },
+      "verdict": "PASS",
+      "observed": "isSecureContext=true at http://localhost:43919",
+      "reason": "secure context confirmed by direct measurement",
+      "metrics": {
+        "protocol": "http:",
+        "crossOriginIsolated": false
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0002",
+        "title": "Camera API availability (API only, no permission prompt)",
+        "required": true,
+        "input": "navigator.mediaDevices, getUserMedia, getSupportedConstraints()",
+        "expected": "camera.getUserMedia = AVAILABLE and every constraint Phase 1/2 needs is supported",
+        "passCriteria": "getUserMedia is a function, page is secure, no required constraint missing",
+        "failureCondition": "mediaDevices undefined, getUserMedia missing, insecure, or a constraint missing"
+      },
+      "verdict": "PASS",
+      "observed": "getUserMedia=AVAILABLE; constraints=AVAILABLE",
+      "reason": "the camera API surface Phase 1 needs is present; opening a stream is deferred to CAM-001",
+      "metrics": {
+        "supportedConstraintCount": 36,
+        "facingMode": true,
+        "frameRate": true
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0003",
+        "title": "WebGPU determined by functional probe",
+        "required": true,
+        "input": "navigator.gpu.requestAdapter() then adapter.requestDevice()",
+        "expected": "state AVAILABLE or UNAVAILABLE, decided by executing the API",
+        "passCriteria": "state is AVAILABLE or UNAVAILABLE and method is FUNCTIONAL_PROBE",
+        "failureCondition": "state UNKNOWN/ERROR, or decided from the UA string instead of the API"
+      },
+      "verdict": "PASS",
+      "observed": "UNAVAILABLE via FUNCTIONAL_PROBE — navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+      "reason": "WebGPU state was decided by actually calling the API; UNAVAILABLE is a passing outcome because §8 asks for a correct report, not for WebGPU to exist",
+      "metrics": {
+        "vendor": null,
+        "architecture": null,
+        "maxComputeInvocationsPerWorkgroup": null,
+        "probeMs": 2.5
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0004",
+        "title": "DeviceMotion determined after user gesture",
+        "required": true,
+        "input": "user tap -> DeviceMotionEvent.requestPermission(), then a 2000 ms listen window",
+        "expected": "a determined state; when granted, >= 5 events carrying finite sensor values",
+        "passCriteria": "state in {AVAILABLE, UNAVAILABLE, PERMISSION_DENIED}; AVAILABLE requires real data",
+        "failureCondition": "AVAILABLE claimed with no arriving events, or non-finite sample values"
+      },
+      "verdict": "PASS",
+      "observed": "UNAVAILABLE — 1 events arrived but only 0 carried finite values (need >= 5)",
+      "reason": "DeviceMotion was correctly determined to be unavailable; the engine will run vision-only and must display that state rather than implying IMU support",
+      "metrics": {
+        "eventCount": 1
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0005",
+        "title": "DeviceOrientation determined after user gesture",
+        "required": true,
+        "input": "user tap -> DeviceOrientationEvent.requestPermission(), then a 2000 ms listen window",
+        "expected": "a determined state; when granted, >= 5 events with finite alpha/beta/gamma",
+        "passCriteria": "state in {AVAILABLE, UNAVAILABLE, PERMISSION_DENIED}; AVAILABLE requires real data",
+        "failureCondition": "AVAILABLE claimed with no arriving events, or non-finite sample values"
+      },
+      "verdict": "PASS",
+      "observed": "UNAVAILABLE — 1 events arrived but only 0 carried finite values",
+      "reason": "DeviceOrientation was correctly determined to be unavailable; the engine will run vision-only and must display that state rather than implying IMU support",
+      "metrics": {
+        "eventCount": 1
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0006",
+        "title": "WebAssembly compiles and executes",
+        "required": true,
+        "input": "a 41-byte hand-assembled module exporting add(i32,i32)->i32, instantiated at runtime",
+        "expected": "add(2,3) === 5",
+        "passCriteria": "instantiation succeeds and the export returns exactly 5",
+        "failureCondition": "instantiation throws, or the result is not 5"
+      },
+      "verdict": "PASS",
+      "observed": "AVAILABLE; add(2,3) returned 5",
+      "reason": "a real module was compiled and executed, so wasm is usable for Phase 3/4 hot loops",
+      "metrics": {
+        "moduleBytes": 41,
+        "probeMs": 1.4
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0007",
+        "title": "Web Worker round-trip",
+        "required": true,
+        "input": "a Blob-URL worker; post {ping: token}; 3000 ms timeout",
+        "expected": "the same token echoes back",
+        "passCriteria": "echo matches and arrives before the timeout",
+        "failureCondition": "timeout, error event, or token mismatch"
+      },
+      "verdict": "PASS",
+      "observed": "AVAILABLE — blob worker round-trip succeeded in 11.6 ms",
+      "reason": "workers function, so §21 (no long image processing on the UI thread) is achievable",
+      "metrics": {
+        "roundTripMs": 11.6
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0008",
+        "title": "Offscreen pixel readback exactness",
+        "required": true,
+        "input": "OffscreenCanvas(4,4) filled rgb(10,20,30); getImageData(1,1,1,1)",
+        "expected": "exactly [10,20,30,255]",
+        "passCriteria": "byte-exact readback; if OffscreenCanvas is absent, the declared main-thread fallback must be exact instead",
+        "failureCondition": "no exact readback path exists on either route"
+      },
+      "verdict": "PASS",
+      "observed": "OffscreenCanvas exact; worker transfer=AVAILABLE",
+      "reason": "pixel readback is byte-exact, so grayscale conversion in Phase 2 will not be corrupted by colour management",
+      "metrics": {
+        "offscreenPixel": [
+          10,
+          20,
+          30,
+          255
+        ],
+        "workerTransfer": "AVAILABLE"
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0009",
+        "title": "Depth / ARKit / RoomPlan / Scale honesty",
+        "required": true,
+        "input": "the completed capability matrix",
+        "expected": "depth, ARKit, RoomPlan reported UNAVAILABLE unless a real API was found; metric scale UNKNOWN",
+        "passCriteria": "no unsupported claim of availability, and none of these records uses INFERENCE",
+        "failureCondition": "any AVAILABLE without a probe that found a real API, or scale != UNKNOWN in Phase 0"
+      },
+      "verdict": "PASS",
+      "observed": "depth=UNAVAILABLE, arkit=UNAVAILABLE, roomplan=UNAVAILABLE, scale=UNKNOWN, webxr=UNAVAILABLE, bridge=UNAVAILABLE",
+      "reason": "nothing is claimed that the platform cannot actually provide; DEPTH, ARKit and RoomPlan are reported as measured absences and SCALE stays UNKNOWN (§44, §90)",
+      "metrics": {
+        "nativeBridgeHandlers": [],
+        "depthConstraintKeys": [],
+        "scaleStatus": "UNKNOWN"
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0010",
+        "title": "Matrix integrity, export and round-trip",
+        "required": true,
+        "input": "the capability matrix plus the evidence draft (device, leg signals, transitions, log)",
+        "expected": "JSON round-trips exactly; no NaN/Infinity/undefined; every record has id, state, method, timestamp",
+        "passCriteria": "round-trip deep-equality, zero integrity issues, complete records, no INFERENCE backing a criterion",
+        "failureCondition": "any violation"
+      },
+      "verdict": "PASS",
+      "observed": "31 records; draftChecked=true; roundTripStable=true; integrityIssues=0; inferenceRecords=[platform.iosSafariGuess]",
+      "reason": "the matrix is complete, finite and losslessly savable, so §7 \"the matrix is savable\" is a checked property rather than a claim",
+      "metrics": {
+        "recordCount": 31,
+        "integrityIssueCount": 0,
+        "integrityIssuePaths": [],
+        "evidenceDraftChecked": true,
+        "inferenceRecordIds": [
+          "platform.iosSafariGuess"
+        ],
+        "totalProbeMs": 4135.7
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0011",
+        "title": "Phase Lock blocks Phase 1 while Phase 0 is unpassed",
+        "required": true,
+        "input": "PhaseRegistry state and the rendered START SCAN control",
+        "expected": "registry refuses entry to Phase 1, and the UI control agrees with the registry",
+        "passCriteria": "canEnter(1) === false while Phase 0 is not PASSED; the control is disabled whenever entry is forbidden or Phase 1 is unimplemented, and its label says which",
+        "failureCondition": "the UI offers an action the registry forbids, or forbids one it allows"
+      },
+      "verdict": "PASS",
+      "observed": "phase0=TESTING, phase1=BLOCKED, canEnter(1)=false, startScanDisabled=true (\"START SCAN — LOCKED\")",
+      "reason": "Phase Lock holds and the UI reflects engine state exactly, so there is no control that could imply capability the engine does not have",
+      "metrics": {
+        "phase0State": "TESTING",
+        "phase1State": "BLOCKED",
+        "canEnterPhase1": false,
+        "phase1Implemented": false,
+        "startScanDisabled": true
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0012",
+        "title": "Probe budget",
+        "required": false,
+        "input": "summed duration of all non-gesture probes",
+        "expected": "<= 1500 ms",
+        "passCriteria": "within budget",
+        "failureCondition": "exceeded — advisory only, a slow adapter query is a performance fact"
+      },
+      "verdict": "PASS",
+      "observed": "134.4 ms of probing (budget 1500 ms); slowest: camera.enumerateDevices=59.4ms, graphics.webgl2=17.1ms, compute.offscreenInWorker=14.6ms",
+      "reason": "capability detection is within its time budget",
+      "metrics": {
+        "totalProbeMs": 134.4,
+        "budgetMs": 1500,
+        "slowest": [
+          "camera.enumerateDevices=59.4ms",
+          "graphics.webgl2=17.1ms",
+          "compute.offscreenInWorker=14.6ms"
+        ]
+      },
+      "timestamp": 1787286671674
+    },
+    {
+      "spec": {
+        "id": "CAP-0013",
+        "title": "Video input device enumeration",
+        "required": false,
+        "input": "navigator.mediaDevices.enumerateDevices()",
+        "expected": "at least one videoinput entry (labels may be hidden before permission)",
+        "passCriteria": "videoInputCount >= 1",
+        "failureCondition": "zero video inputs — advisory, since an empty pre-permission list is a known browser behaviour"
+      },
+      "verdict": "FAIL",
+      "observed": "0 videoinput device(s); labelsHidden=true",
+      "reason": "no cameras enumerated; this is inconclusive before permission is granted, so it is advisory. If Phase 1 CAM-002 also fails to open a stream, that pair is the real signal",
+      "metrics": {
+        "videoInputCount": 0,
+        "labelsHidden": true,
+        "totalDevices": 0
+      },
+      "timestamp": 1787286671674
+    }
+  ],
+  "overallVerdict": "TESTING",
+  "overallReason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED",
+  "stateTransitions": [
+    {
+      "timestamp": 1787286669401,
+      "subject": "phase[0] Environment / Capability",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "capability detection starting"
+    },
+    {
+      "timestamp": 1787286669563,
+      "subject": "phase[0] Environment / Capability",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787286671671,
+      "subject": "phase[0] Environment / Capability",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1787286669568,
+      "subject": "phase[0]",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+    }
+  ],
+  "errorLog": [],
+  "fullLog": [
+    {
+      "timestamp": 1787286669418,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "Phase 0 starting",
+      "data": {
+        "appVersion": "0.1.0",
+        "leg": "DESKTOP_DEV",
+        "origin": "http://localhost:43919"
+      }
+    },
+    {
+      "timestamp": 1787286669556,
+      "level": "INFO",
+      "phase": 0,
+      "source": "CapabilityDetector",
+      "message": "capability detection complete",
+      "data": {
+        "records": 31,
+        "totalProbeMs": 134.4
+      }
+    },
+    {
+      "timestamp": 1787286669568,
+      "level": "INFO",
+      "phase": -1,
+      "source": "StateTransition",
+      "message": "phase[0]: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787286671666,
+      "level": "INFO",
+      "phase": 0,
+      "source": "MotionProbe",
+      "message": "sensor probe finished",
+      "data": {
+        "motion": "UNAVAILABLE",
+        "orientation": "UNAVAILABLE",
+        "motionEvents": 0,
+        "orientationEvents": 0
+      }
+    }
+  ],
+  "legDetermination": {
+    "signals": {
+      "uaSuggestsIOS": false,
+      "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
+      "maxTouchPoints": 0,
+      "protocol": "http:",
+      "hostname": "localhost",
+      "isLocalHost": true,
+      "navigatorWebdriver": true,
+      "hardwareConcurrency": 4,
+      "devicePixelRatio": 2,
+      "screen": "430x932",
+      "failedChecks": [
+        "UA does not look like iOS/iPadOS",
+        "maxTouchPoints is 0",
+        "protocol is http:, not https:",
+        "host is local, so this is not a device reaching a real origin",
+        "navigator.webdriver is true (automated browser)"
+      ]
+    },
+    "explanation": "Classified as DESKTOP_DEV because: UA does not look like iOS/iPadOS; maxTouchPoints is 0; protocol is http:, not https:; host is local, so this is not a device reaching a real origin; navigator.webdriver is true (automated browser). Rule 004 means this run cannot pass a phase, only catch regressions."
+  }
+}

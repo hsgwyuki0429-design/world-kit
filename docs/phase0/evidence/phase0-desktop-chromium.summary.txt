@@ -1,0 +1,49 @@
+leg: DESKTOP_DEV
+verdict: TESTING
+reason: all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED
+
+PASS    REQ CAP-0001 Secure context / HTTPS
+PASS    REQ CAP-0002 Camera API availability (API only, no permission prompt)
+PASS    REQ CAP-0003 WebGPU determined by functional probe
+PASS    REQ CAP-0004 DeviceMotion determined after user gesture
+PASS    REQ CAP-0005 DeviceOrientation determined after user gesture
+PASS    REQ CAP-0006 WebAssembly compiles and executes
+PASS    REQ CAP-0007 Web Worker round-trip
+PASS    REQ CAP-0008 Offscreen pixel readback exactness
+PASS    REQ CAP-0009 Depth / ARKit / RoomPlan / Scale honesty
+PASS    REQ CAP-0010 Matrix integrity, export and round-trip
+PASS    REQ CAP-0011 Phase Lock blocks Phase 1 while Phase 0 is unpassed
+PASS    ADV CAP-0012 Probe budget
+FAIL    ADV CAP-0013 Video input device enumeration
+
+AVAILABLE            FUNCTIONAL_PROBE  platform.secureContext
+UNAVAILABLE          INFERENCE         platform.iosSafariGuess
+AVAILABLE            PRESENCE_CHECK    camera.getUserMedia
+UNAVAILABLE          FUNCTIONAL_PROBE  camera.enumerateDevices
+AVAILABLE            FUNCTIONAL_PROBE  camera.supportedConstraints
+AVAILABLE            PRESENCE_CHECK    camera.trackControl
+AVAILABLE            FUNCTIONAL_PROBE  compute.webassembly
+AVAILABLE            FUNCTIONAL_PROBE  compute.worker
+AVAILABLE            FUNCTIONAL_PROBE  compute.offscreenCanvas
+AVAILABLE            FUNCTIONAL_PROBE  compute.transferControlToOffscreen
+AVAILABLE            FUNCTIONAL_PROBE  compute.offscreenInWorker
+UNAVAILABLE          PRESENCE_CHECK    compute.sharedArrayBuffer
+AVAILABLE            FUNCTIONAL_PROBE  graphics.webgl2
+UNAVAILABLE          FUNCTIONAL_PROBE  graphics.webgpu
+AVAILABLE            FUNCTIONAL_PROBE  graphics.createImageBitmap
+AVAILABLE            FUNCTIONAL_PROBE  graphics.canvas2dReadback
+AVAILABLE            PRESENCE_CHECK    media.imageCapture
+AVAILABLE            PRESENCE_CHECK    media.webcodecs
+AVAILABLE            PRESENCE_CHECK    media.videoFrameCallback
+AVAILABLE            FUNCTIONAL_PROBE  storage.estimate
+AVAILABLE            FUNCTIONAL_PROBE  storage.localStorage
+AVAILABLE            FUNCTIONAL_PROBE  storage.indexedDB
+AVAILABLE            PRESENCE_CHECK    storage.performanceMemory
+UNAVAILABLE          FUNCTIONAL_PROBE  spatial.webxr
+UNAVAILABLE          FUNCTIONAL_PROBE  spatial.nativeBridge
+UNAVAILABLE          FUNCTIONAL_PROBE  spatial.cameraDepth
+UNAVAILABLE          FUNCTIONAL_PROBE  spatial.arkit
+UNAVAILABLE          FUNCTIONAL_PROBE  spatial.roomplan
+UNKNOWN              NOT_ATTEMPTED     spatial.metricScale
+UNAVAILABLE          FUNCTIONAL_PROBE  motion.deviceMotion
+UNAVAILABLE          FUNCTIONAL_PROBE  motion.deviceOrientation
