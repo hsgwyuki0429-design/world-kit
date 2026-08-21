@@ -1,0 +1,25 @@
+{
+  "name": "safari-spatial-mapping",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Safari Spatial Mapping Engine — real-data spatial reconstruction pipeline for iPhone Safari",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:audit": "node scripts/audit-fake-data.mjs && node scripts/audit-architecture.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "test": "npm run test:audit && npm run typecheck && npm run test:unit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
+    "playwright": "^1.62.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3",
+    "vitest": "^3.2.4"
+  }
+}
