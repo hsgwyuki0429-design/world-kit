@@ -76,6 +76,14 @@ try {
   const started = await page.evaluate(() => window.__SPATIAL_READY__);
   if (!started) throw new Error('app failed to start');
 
+  // The boot-failure notice in index.html is replaced by the app's first render. If it is
+  // still on the page, the shell loaded but the engine did not — the silent black-page
+  // failure this check exists to make loud.
+  const bootNoticeVisible = await page.evaluate(() =>
+    document.body.textContent?.includes('The application did not start') ?? false,
+  );
+  if (bootNoticeVisible) throw new Error('boot-failure notice still present after start');
+
   console.log('[e2e] tapping the sensor probe (CAP-0004 / CAP-0005)…');
   await page.click('#probe-sensors');
   await page.waitForFunction(

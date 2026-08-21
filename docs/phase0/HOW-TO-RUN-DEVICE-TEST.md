@@ -15,10 +15,32 @@ leg cannot produce `PASSED` no matter how green its results are.
 
 ## Option A — GitHub Pages (recommended: real HTTPS, nothing to install)
 
-1. In the repository: **Settings → Pages → Source → GitHub Actions**.
-2. Push this branch. The `Deploy to GitHub Pages` workflow builds and publishes.
-3. On the iPhone, open the published URL in **Safari** (not Chrome — on iOS every browser
+1. In the repository: **Settings → Pages → Source → GitHub Actions**. This setting is
+   load-bearing — see the black-page note below.
+2. Merge to `main`, or run **Actions → Deploy to GitHub Pages → Run workflow**. The
+   workflow builds with the correct base path and verifies it before publishing.
+3. Confirm the most recent entry under **Actions** is `Deploy to GitHub Pages`, not
+   `pages build and deployment`.
+4. On the iPhone, open the published URL in **Safari** (not Chrome — on iOS every browser
    uses WebKit, but the goal is the actual Safari target).
+
+### If the page is completely black
+
+The site is being served from the repository root instead of the built output.
+
+`index.html` at the repo root is Vite's *development* entry: it loads `/src/main.ts`, which
+does not exist on a static host and which no browser can execute. The stylesheet is
+imported by that module, so nothing loads at all, and `<meta name="color-scheme"
+content="dark">` leaves the browser painting a black background over an empty page.
+
+This happens when **Settings → Pages → Source** is `Deploy from a branch`. GitHub then runs
+its own `pages build and deployment` job, which publishes the repository root and silently
+overrides whatever the `Deploy to GitHub Pages` workflow had published. Switch Source to
+**GitHub Actions** and re-run the workflow.
+
+A boot-failure notice now renders in that situation instead of a blank rectangle, saying
+what happened and naming this cause. It reports only that the app did not start — it never
+implies any capability or phase result.
 
 ## Option B — local HTTPS dev server
 

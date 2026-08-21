@@ -8,9 +8,13 @@
 
 name: Deploy to GitHub Pages
 
+# main only. The github-pages environment restricts deployments to the default branch by
+# default, so triggering this from a feature branch produces a failed run that looks like a
+# broken build but is just the protection rule doing its job. Use workflow_dispatch to
+# redeploy on demand.
 on:
   push:
-    branches: [main, 'claude/**']
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -36,6 +40,25 @@ jobs:
       - name: Build
         # Pages serves the site under /<repo>/, so the bundle needs a matching base.
         run: BASE_PATH="/${GITHUB_REPOSITORY#*/}/" npm run build
+      - name: Disable Jekyll processing of the built output
+        run: touch dist/.nojekyll
+      - name: Verify the built entry references the deployed base path
+        # A base-path mistake ships a page that loads nothing and shows a blank dark
+        # rectangle, which is painful to diagnose from a phone. Catch it here instead.
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          if ! grep -q "src=\"/$repo/assets/" dist/index.html; then
+            echo "dist/index.html does not reference /$repo/assets/ — base path is wrong:"
+            cat dist/index.html
+            exit 1
+          fi
+          # Match the script tag specifically: the boot-failure notice mentions the dev
+          # entry path in its prose, and a substring match would reject a correct build.
+          if grep -q 'src="/src/main.ts"' dist/index.html; then
+            echo "dist/index.html still loads the dev entry point"
+            exit 1
+          fi
+          echo "base path OK"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

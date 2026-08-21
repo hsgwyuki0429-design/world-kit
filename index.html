@@ -12,7 +12,66 @@
     <title>Safari Spatial Mapping</title>
   </head>
   <body>
-    <div id="app"></div>
+    <!--
+      The contents of #app are a boot-failure notice, not application state.
+
+      The app's first render calls replaceChildren() on this element, so this block is
+      visible only when the module never ran: a 404 on the bundle, a browser that refused
+      the module, or a throw before the first paint. Without it the page would be a silent
+      black rectangle — the body has color-scheme: dark and the stylesheet is imported by
+      the module, so a failed boot renders nothing at all and says nothing at all.
+
+      It is deliberately styled inline and worded so it cannot be mistaken for engine
+      state: it reports that the app did not start, never that anything passed or is
+      available.
+    -->
+    <div id="app">
+      <div
+        style="
+          max-width: 640px;
+          margin: 0 auto;
+          padding: 48px 20px;
+          font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+          color: #f5f5f7;
+          line-height: 1.6;
+        "
+      >
+        <h1 style="font-size: 22px; font-weight: 600; margin: 0 0 4px">
+          Safari Spatial Mapping
+        </h1>
+        <p style="color: #ff453a; font-weight: 600; margin: 0 0 20px; font-size: 15px">
+          The application did not start.
+        </p>
+        <p style="color: #98989f; font-size: 14px; margin: 0 0 16px">
+          Nothing below reflects engine state — no capability has been detected and no
+          phase has been evaluated. Only the page shell loaded.
+        </p>
+        <p style="color: #98989f; font-size: 14px; margin: 0 0 8px">Most likely cause:</p>
+        <p
+          style="
+            color: #98989f;
+            font-size: 13px;
+            background: #1c1c20;
+            border: 1px solid #2a2a30;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin: 0 0 16px;
+          "
+        >
+          This is the repository's source <code>index.html</code>, which references
+          <code>/src/main.ts</code> and only works under the Vite dev server. If you are
+          seeing it on a deployed site, the host is serving the repository root instead of
+          the built output in <code>dist/</code>. In GitHub Pages that means
+          <strong>Settings → Pages → Source</strong> is set to “Deploy from a branch”
+          rather than <strong>GitHub Actions</strong>.
+        </p>
+        <p style="color: #6e6e76; font-size: 13px; margin: 0">
+          Run <code>npm run dev</code> for local development, or redeploy with the
+          <code>Deploy to GitHub Pages</code> workflow. See
+          <code>docs/phase0/HOW-TO-RUN-DEVICE-TEST.md</code>.
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
