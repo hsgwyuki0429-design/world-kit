@@ -102,6 +102,19 @@ against a floor of 8.0; two rotations survived with the next frame 38 ms later; 
 log. It sat at `TESTING` through five re-evaluations as each test became evaluable and
 reached `PASSED` only when the 30 s window filled.
 
+A device screenshot of the PASSED screen was reviewed against this bundle and every
+legible field matched exactly: 1263 frames, 29.84 fps, 42.3/30 s, 128 ms longest gap,
+image Δ max 68.812, noise floor 38.622, luma 58.72–184.42, 2 rotations, 13.987 ms per
+sample, and all six tests PASS. That cross-check is what §60's screenshot requirement is
+for — it makes the on-screen state and the exported file mutually corroborating rather than
+two independent claims.
+
+**The screenshot images themselves are not committed.** They were supplied in the working
+session, not as files in the repository, so §60's screenshot evidence is satisfied by
+review rather than by artefact for both Phase 0 and Phase 1. Saving them under the evidence
+directories would close that gap; the numeric cross-check above is recorded here in the
+meantime so the review is not merely asserted.
+
 Its CAM-002 is a carry-over (`observedDirectly: false`) from the denied run. The gate does
 not accept that on its own — it requires a direct observation of each scenario somewhere in
 the committed set, which the denied bundle supplies.
