@@ -123,7 +123,10 @@ export function buildEvidenceBundle(input: BuildBundleInput): BuiltEvidence {
     testResults: [...input.testResults],
     overallVerdict: input.overallVerdict,
     overallReason: input.overallReason,
-    stateTransitions: [...input.transitions],
+    // Chronological. The array is merged from more than one source, and an out-of-order
+    // history is worse than no history: a reader reconstructing how a verdict was reached
+    // would see a phase move to PASSED before the step that made it evaluable.
+    stateTransitions: [...input.transitions].sort((a, b) => a.timestamp - b.timestamp),
     errorLog: input.log.filter((e) => e.level === 'ERROR'),
     fullLog: [...input.log],
   };

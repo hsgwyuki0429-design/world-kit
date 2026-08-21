@@ -147,7 +147,12 @@ class Phase0App {
 
     const next = this.registry.get(PHASE).state;
     if (previous !== next) {
-      logger.transition(`phase[${PHASE}]`, previous, next, settled.reason);
+      // Narrative only. The registry already recorded this transition and is the single
+      // authority for it; calling logger.transition() here would put a second, differently
+      // labelled copy into the evidence bundle's stateTransitions array.
+      logger.info(PHASE, 'App', `phase ${PHASE}: ${previous} -> ${next}`, {
+        reason: settled.reason,
+      });
     }
     this.render();
   }

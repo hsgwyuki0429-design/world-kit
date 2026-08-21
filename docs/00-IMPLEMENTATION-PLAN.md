@@ -49,8 +49,9 @@ wrong** — that is the point of writing it down.
 | MediaDevices / getUserMedia | AVAILABLE | AVAILABLE | ✓ |
 | `enumerateDevices` labels pre-permission | hidden | hidden (1 videoinput, ids also hidden) | ✓ |
 | `MediaStreamTrack.getCapabilities` | AVAILABLE | AVAILABLE (+ getSettings, applyConstraints) | ✓ |
-| DeviceMotion | PERMISSION_REQUIRED → AVAILABLE | PERMISSION_REQUIRED (gesture-gated as expected) | ✓ |
-| DeviceOrientation | PERMISSION_REQUIRED → AVAILABLE | PERMISSION_REQUIRED (gesture-gated as expected) | ✓ |
+| DeviceMotion | PERMISSION_REQUIRED → AVAILABLE | AVAILABLE after tap — 119 events / 2 s, **59.96 Hz** measured | ✓ |
+| DeviceOrientation | PERMISSION_REQUIRED → AVAILABLE | AVAILABLE after tap — 119 events / 2 s, 59.96 Hz | ✓ |
+| `webkitCompassHeading` | AVAILABLE | AVAILABLE, but `compassAccuracy` **±24.5°** | ✓ (with a caveat, below) |
 | WebAssembly | AVAILABLE | AVAILABLE — `add(2,3)===5`, streaming + Memory present | ✓ |
 | Web Worker | AVAILABLE | AVAILABLE — 2 ms round-trip | ✓ |
 | OffscreenCanvas | AVAILABLE | AVAILABLE — byte-exact readback | ✓ |
@@ -76,6 +77,28 @@ and Phase 2 needs a frame every 33 ms. `takePhoto()` may become useful later for
 high-resolution keyframe, so this is recorded as an opportunity, not a plan change. Any
 such change goes through §33.
 
+### A.3.1 What the IMU measurement means for Phase 7
+
+The sensor probe returned more than a yes. Four facts from it constrain the fusion design:
+
+- **60 Hz, with `interval` = 0.01667 s.** At a 20–30 Hz tracking cadence that is 2–3 IMU
+  samples per frame — enough to integrate gyro between keyframes, which is what §17 wants
+  the IMU for.
+- **`acceleration` and `accelerationIncludingGravity` are both present.** iOS is already
+  running its own fusion, so gravity is recoverable as their difference. That matters well
+  beyond Phase 7: §29 lists gravity as an input to plane classification, and this is where
+  it comes from. It is a measured vector, not an assumed "down".
+- **`absolute` is `false`.** Orientation is relative, not world-referenced. Yaw has no
+  reliable global datum.
+- **`webkitCompassHeading` exists but reported ±24.5° accuracy.** So there *is* a magnetic
+  heading, and it is far too coarse to anchor a world. It may seed a relocalization search;
+  it must not define the world origin. §34 already fixes the origin at the initial camera
+  pose, and this measurement is the reason not to revisit that.
+
+Combined: the IMU is good for short-horizon rotation, usable for a gravity vector, and
+useless for absolute position or heading — exactly the split §17 assumes, now measured
+rather than assumed.
+
 Device facts worth carrying into later phases:
 
 | | |
@@ -90,8 +113,8 @@ Device facts worth carrying into later phases:
 
 ### A.4 Measured matrices
 
-- **REAL_DEVICE leg** — `docs/phase0/evidence/phase0-real-device-TESTING-*.json`.
-  31 records, **33 ms** of total probe time (budget 1500 ms).
+- **REAL_DEVICE leg** — `docs/phase0/evidence/phase0-real-device-PASSED-2026-08-21T08-05-07-305Z.json`.
+  31 records, **51 ms** of non-gesture probe time (budget 1500 ms); Phase 0 **PASSED**.
   Note that many `durationMs` values read `0`: iOS clamps `performance.now()` to ~1 ms for
   privacy, so a sub-millisecond probe is indistinguishable from an instant one. The probes
   did run — each carries its measured `data`.

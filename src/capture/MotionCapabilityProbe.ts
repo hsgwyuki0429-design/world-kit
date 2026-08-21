@@ -265,6 +265,10 @@ async function finishOrientationProbe(
       eventCount: stats.eventCount,
       eventsWithFiniteData: stats.eventsWithFiniteData,
       measuredHz: stats.measuredHz,
+      // Which axes actually delivered finite values. Phase 7 needs this: an orientation
+      // stream missing gamma is a different sensor from one that has all three, and
+      // "AVAILABLE" alone does not distinguish them.
+      fields: stats.fields,
       absolute: stats.absolute,
       webkitCompassHeading: stats.hasCompass,
       compassAccuracy: stats.compassAccuracy,

@@ -8,14 +8,15 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phase 0 of 20 implemented. Phase 0 is `TESTING`, awaiting real-device
-evidence — see [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+**Current state: Phase 0 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS — 11/11
+required tests, evidence committed and machine-checked. Phase 1 (Camera Capture) is
+unlocked and not yet written. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
-npm test          # anti-fake audits + typecheck + 69 unit tests
+npm test          # anti-fake audits + typecheck + 99 unit tests, incl. evidence re-derivation
 npm run test:e2e  # automated DESKTOP_DEV leg: real browser, real evidence, real screenshot
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
@@ -100,7 +101,21 @@ src/
 scripts/         audit-fake-data, audit-architecture, run-e2e
 ```
 
+## What the device actually reported
+
+From the passing run (full matrix in the evidence bundle):
+
+| | |
+| --- | --- |
+| WebGPU | AVAILABLE — adapter and device both created; `shader-f16`, `timestamp-query` |
+| WebGL2 | AVAILABLE — Apple GPU unmasked, `maxTextureSize` 16384 |
+| IMU | 60 Hz, gravity-removed acceleration present, `absolute` false, compass ±24.5° |
+| Cores | `hardwareConcurrency` 4 |
+| Storage | 38.4 GB quota |
+| Depth / ARKit / RoomPlan | UNAVAILABLE, each by probe |
+| Scale | UNKNOWN |
+
 ## Next
 
-Phase 1 (Camera Capture, CAM-001..005) begins only after a committed `REAL_DEVICE` bundle
-reads `"overallVerdict": "PASSED"`.
+Phase 1 — Camera Capture (CAM-001..005). Phase Lock is open; the START SCAN control stays
+disabled and labelled `PHASE 1 — NOT IMPLEMENTED` until the code exists.
