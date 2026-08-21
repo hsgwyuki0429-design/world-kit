@@ -10,8 +10,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | --- | --- | --- | --- |
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
-| 2 | Frame Pipeline | **IMPLEMENTING** | Built and green on the DESKTOP_DEV leg. Awaiting the device run — Rule 004. |
-| 3 | Feature Detection | BLOCKED | |
+| 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
+| 3 | Feature Detection | **NOT_STARTED** | Phase Lock is open. Not yet implemented — §11 is next. |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
@@ -128,49 +128,131 @@ dimensions**, 1280×720 ↔ 720×1280. Phase 6 derives camera intrinsics (`fx`, 
 cosmetic one. The monitor now records every distinct size seen so the change is visible in
 evidence rather than having to be inferred.
 
-## Phase 2 — IMPLEMENTING
+## Phase 2 — PASSED
 
-Built, unit tested, and green end to end on the automated Chromium leg — which cannot pass
-a phase (Rule 004). What exists:
+**Evidence:** `docs/phase2/evidence/phase2-real-device-PASSED-2026-08-21T15-00-01-120Z.json`
+plus the device screenshot from the same session.
 
 | | |
 | --- | --- |
-| Pipeline | `src/pipeline/` — rVFC scheduler with deadline pacing and backpressure, a probed acquisition-route ladder, a preprocessing worker building a 3-level grayscale pyramid, and an adaptive tier controller |
-| Tests | `FRAME-001..006` in `src/testkit/Phase2Tests.ts`, specs transcribed from `phase2/TEST-PLAN.md`, written first |
-| Desktop evidence | `docs/phase2/evidence/phase2-desktop-chromium.json` — 1659 frames, 0 lost, cross-check median Δluma 0.08, empty error log |
-| Device evidence | **none yet** |
+| Device | iPhone, iOS 18.7, Safari 26.6, `https://hsgwyuki0429-design.github.io` |
+| Leg | `REAL_DEVICE` — https, non-local host, `navigator.webdriver` false, 5 touch points |
+| Required tests | 4 / 4 PASS, 0 PENDING, 0 FAIL |
+| Advisory tests | 2 / 2 PASS |
+| Route | `VIDEO_FRAME` selected, 2363/2363 round trips, **0.048 ms** mean on the UI thread |
+| Throughput | 2363 frames completed, **0 lost**, 300 paced out, 233 backpressured |
+| Continuity | **48.5 s unstressed at 29.65 fps**, longest gap 103 ms, against a 30 s requirement |
+| UI thread | 0.07 ms mean, 1 ms p95, 2 ms max, against a 16.7 ms budget |
+| Worker | 17.27 ms mean over the whole run; **10.53 ms unstressed** at 720×1280 |
+| Provenance | 94 cross-checks, scene σ 15.18, **median Δluma 0.284**, max 0.625 |
+| Geometry | source 720×1280 ↔ 1280×720; 0 frames over budget, 0 upscaled, aspect error 0 |
+| Ladder | 6 moves, deepest `REDUCED 640x360@20`, max 3 in any 10 s window |
+| Error log | empty |
 
-**What the device run has to add**, and why the desktop leg cannot: a real camera. The
-whole of FRAME-002 rests on the worker's grayscale agreeing with an independent reading of
-the same video frame taken on the main thread, and the synthetic camera's own image varies
-so little that the check sits near the floor of what is informative. §H.1's measurement —
-13.8 ms per readback on the device against 0.4 ms on the dev machine — is also the reason
-the architecture looks the way it does, and it has not yet been re-measured against the
-route the pipeline actually chose.
+Transitions recorded during the run:
 
-Run it with `docs/phase2/HOW-TO-RUN-DEVICE-TEST.md`. Three tests stay `PENDING` until the
-tester does something specific, deliberately: FRAME-003 and FRAME-004 need load injected and
-then removed, and FRAME-006 needs the phone rotated. An adaptive pipeline whose adaptation
-has never run is not a demonstrated adaptive pipeline.
+```
+phase[2] BLOCKED -> NOT_STARTED   phase 1 PASSED; this phase may now be started
+NOT_STARTED -> IMPLEMENTING       PIPELINE screen opened
+IMPLEMENTING -> TESTING           PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004
+TESTING -> TESTING                PENDING: FRAME-001, FRAME-003, FRAME-004
+TESTING -> TESTING                PENDING: FRAME-003, FRAME-004
+TESTING -> TESTING                PENDING: FRAME-004
+TESTING -> PASSED                 all 4 required tests PASS on a real device
+phase[3] BLOCKED -> NOT_STARTED   phase 2 PASSED; this phase may now be started
+```
 
-### Three defects the automated leg found first
+It was not passed by assertion at any point: the run sat at `TESTING` through four successive
+re-evaluations as FRAME-002, then FRAME-001, then FRAME-003, then FRAME-004 each became
+evaluable. The same bundle also carries Phase 0 and Phase 1 passing in the same session,
+which is what opened the lock — the registry starts fresh on every page load, so Phase 2 was
+reachable only because Phase 1 really passed on the device that afternoon.
 
-Each was a real bug, found by the leg failing rather than by review, and each is recorded in
-`docs/phase2/evidence/README.md` with its measurement:
+**The verdict is not taken on trust.** `tests/unit/committedEvidence.test.ts` re-derives it
+from the bundle's own results, and for Phase 2 additionally re-derives the provenance claim
+— cross-check count, scene variation, agreement against its own scene-scaled tolerance,
+worker share, worker scope — and requires every ladder move to carry the measurement it was
+made on. Those four gates had been skipping for want of a device bundle; they now run.
 
-1. **The pacer aliased against the camera rate** — a 30 fps target delivered 12.88 fps,
-   because pacing measured from the last admission declined every frame that landed a hair
-   early. The deadline now accumulates on an ideal grid.
-2. **The controller degraded for a rate the camera could not supply** — 13 ladder moves in
-   one run. Delivery is now judged against the lower of the target and the measured camera
-   rate, and only when the worker is actually loaded.
-3. **Recovery had no flap damping** — five moves in one ten-second window on a load the
-   ladder could partly escape. An upward step now waits out the last downward one.
+### §H.1, answered
 
-A fourth finding changed a criterion rather than the code, and is recorded as a plan
-amendment in `docs/phase2/TEST-PLAN.md`: FRAME-004's "the adaptation had an effect" is now
-judged on the last downward step that lowered the *resolution*, because a step that only
-lowers the target rate cannot reduce the time one frame takes.
+The measurement that dictated the architecture has its counterpart:
+
+| Route | Cost on the UI thread |
+| --- | --- |
+| `VideoFrame` construction (selected) | **0.048 ms** mean over 2363 frames |
+| main-thread `drawImage` + `getImageData` (rejected) | 5.81 ms mean, 11 ms p95, 15 ms max |
+
+Two things follow, and the second corrects §H.1.
+
+**The route ladder never needed a fallback.** `VideoFrame` worked on the first attempt and on
+all 2363 of them; `IMAGE_BITMAP` and `MAIN_CANVAS` were never reached. Their cost on this
+platform is therefore unmeasured, and the bundle says so rather than reporting a zero.
+
+**The readback is not a fixed 13.8 ms.** §H.1 recorded 13.797 ms from Phase 1. The same
+operation, in this run, cost **5.81 ms** mean. Both are real measurements of the same
+platform; the cost simply varies with what else is in flight. The conclusion §H.1 drew is
+unaffected — 5.81 ms is still 17 % of a 33 ms budget before any pixel has been looked at,
+against 0.048 ms for the route actually chosen — but the specific number should not be
+quoted as a constant. §H.1 has been amended to say so.
+
+### Two things worth knowing before reading these numbers
+
+**WebKit quantises `performance.now()` to 1 ms.** Every duration in this bundle is an
+integer. "UI cost 0.07 ms mean" therefore means *zero on almost every frame, 1–2 ms
+occasionally* — the pipeline's per-frame UI work is below what the platform's clock can
+resolve. Averages over thousands of samples still recover sub-millisecond accuracy because
+the underlying values vary; individual readings do not.
+
+**The worker's p95 of 53 ms exceeds §55's 50 ms ceiling, and that is the injected load.**
+Unstressed it ran at 10–11 ms per frame at 720×1280 — a third of the 33 ms budget. The
+stressed segment deliberately drove it to roughly 6× budget, and those frames are in the
+same percentile. The unstressed and stressed segments are measured separately for exactly
+this reason.
+
+### The device confirmed the FRAME-004 amendment
+
+The amendment recorded in `docs/phase2/TEST-PLAN.md` — that a step lowering only the target
+rate cannot reduce the time one frame takes, so the effect criterion must name the last step
+that lowered the *resolution* — was an argument. The device turned it into a measurement:
+
+| Ladder move | Median worker latency, before → after |
+| --- | --- |
+| `BASIC 960x540@30 → BASIC 960x540@20` (rate only) | 58 ms → **59 ms** |
+| `BASIC 960x540@20 → REDUCED 640x360@20` (resolution) | 57 ms → **26 ms** |
+
+The rate-only step left per-frame latency exactly where it was, and the resolution step
+halved it. Under the original criterion this run would have been recorded as a failure of a
+mechanism that demonstrably worked.
+
+### Where the screenshot and the bundle differ, and why
+
+The device screenshot was taken about three seconds after the JSON was exported, and they do
+not match field for field:
+
+| | Bundle | Screenshot |
+| --- | --- | --- |
+| Tier | `BASIC 960x540@30` | `HIGH 1280x720@30` |
+| Ladder moves | 6 | 7 |
+| Completed | 2363 | 2434 |
+| Delivered / camera fps | 30.05 / 30.04 | 21.85 / 22.46 |
+| Cross-checks | 94 | 97 |
+
+Everything in the second column is the first column plus three more seconds of a running
+pipeline, including one more upward step. The rate figures fall because they are a rolling
+window: at `HIGH` the worker processes 720×1280 rather than 540×960, and the camera itself
+delivers 22.46 fps once the page is doing that much more work per frame. The controller
+correctly did not degrade — 21.85 against a reachable 22.46 is well inside its floor.
+
+This is recorded rather than smoothed over. Phase 1's screenshot matched its bundle field
+for field; this one does not, and claiming otherwise would be precisely the kind of
+convenient assertion the whole project is built to refuse. The screenshot corroborates the
+bundle's *shape* — pipeline running, worker output visible and tracking the preview, 6 tests
+PASS, `PASSED` verdict, 0 lost, 48.5/30 s unstressed, empty error log — not its every digit.
+
+**The screenshot image itself is not committed.** It was supplied in the working session
+rather than as a file in the repository, so §60's screenshot evidence is satisfied by review
+here as it was for Phases 0 and 1.
 
 ## What "implemented" means here
 

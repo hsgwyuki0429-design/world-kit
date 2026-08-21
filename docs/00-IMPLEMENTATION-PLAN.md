@@ -366,10 +366,33 @@ than discovered in Phase 2.
 keeps the first that completes real round trips: `VideoFrame` transferred into the worker,
 `createImageBitmap` with a resize, and last the main-thread readback above — kept as a
 declared fallback, and kept *measured*, so the comparison that ruled it out is in the
-evidence rather than only in this section. On the automated leg the first route was selected
-and cost **0.069 ms** on the UI thread against a 20.36 ms mean in the worker. The device
-number for the chosen route is still to be measured; §H.1's 13.8 ms stands as the figure for
-the route that was rejected.
+evidence rather than only in this section.
+
+**Measured on the device, Phase 2's passing run:**
+
+| Route | Cost on the UI thread |
+| --- | --- |
+| `VideoFrame` construction (selected, 2363/2363 round trips) | **0.048 ms** mean |
+| main-thread `drawImage` + `getImageData` at 64×48 (rejected) | 5.81 ms mean, 11 ms p95 |
+
+`IMAGE_BITMAP` and `MAIN_CANVAS` were never reached, so their cost on this platform remains
+unmeasured and the bundle reports that rather than a zero.
+
+**Amendment: the readback is not a constant 13.8 ms.** The 13.797 ms above came from one
+Phase 1 session. In Phase 2's passing run the same operation — the provenance cross-check,
+which deliberately uses this exact route — measured **5.81 ms** mean, 11 ms p95, 15 ms max
+over 94 samples. Both are real measurements of the same platform; the cost varies with what
+else is in flight, and quoting either as *the* figure would be a guess about a distribution
+from one sample. The argument is unchanged, because it never depended on the precise value:
+at 5.81 ms the readback is still 17 % of a 33 ms budget spent before a pixel has been looked
+at, against 0.048 ms for the route actually chosen — a ratio of roughly 120×.
+
+**A measurement caveat that applies to every duration in Phase 2's evidence.** WebKit
+quantises `performance.now()` to 1 ms. Every timing in the device bundle is an integer, so
+"0.07 ms mean UI cost" means *zero on almost every frame, 1–2 ms occasionally* — the
+per-frame UI work is below what the platform's clock can resolve. Means over thousands of
+varying samples still recover sub-millisecond accuracy; individual readings do not, and no
+sub-millisecond claim should rest on one.
 
 Per-frame budget at BASIC (960×540), tracking worker, target ≤ 33 ms:
 
@@ -414,6 +437,32 @@ relaxing the worker budget about 1.5× (33.3 ms → 50 ms). So any fixed extra c
 than about 6× the budget where it appeared becomes affordable partway down, and a controller
 without flap damping cycles indefinitely. Measured as five ladder moves in one ten-second
 window. Phase 18's stress work should expect this shape.
+
+**A rate-only ladder step does not reduce per-frame latency, and the device proved it.**
+Steps 1→2 and 3→4 lower the target rate and leave the resolution alone. Phase 2's passing run
+measured a rate-only step at 58 ms → 59 ms and the resolution step immediately after it at
+57 ms → 26 ms. Anything later that asks "did degrading help?" has to ask it of the quantity
+the step actually controls: a rate step buys wall-clock time between frames, not time within
+one. §27's bundle-adjustment frequency is the next knob with this shape.
+
+### H.3 What the device turned out to afford
+
+Phase 2's passing run, for calibrating the budgets above against something measured rather
+than targeted. iPhone / iOS 18.7 / Safari 26.6, `hardwareConcurrency` 4.
+
+| | Measured |
+| --- | --- |
+| Full preprocessing at 720×1280 — readback, grayscale, 3-level pyramid | **10–11 ms** per frame, unstressed |
+| Sustained delivery at that size | **29.65 fps** over 48.5 s, 0 frames lost |
+| UI thread, per admitted frame | below the platform's 1 ms clock resolution |
+| Tier the controller settled on | `HIGH 1280×720@30` — the top of the ladder |
+
+The budget table above allows ≤ 6 ms for acquire + grayscale + pyramid at 960×540. The
+device did the same work at **1.8× that pixel count in 10–11 ms**, so per pixel it is close
+to the estimate and comfortably inside the 33 ms frame budget as a whole. What that leaves
+for Phases 3–6 is roughly 22 ms per frame at 30 Hz, against the 32 ms those stages are
+budgeted — which is the first sign that the per-frame budget is tight rather than generous,
+and worth remembering before Phase 4 adds pyramidal LK on 700 points.
 
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because

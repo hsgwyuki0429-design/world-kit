@@ -8,10 +8,9 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0 and 1 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 2 (Frame Pipeline) is built and green on
-the automated leg, awaiting its device run. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+**Current state: Phases 0, 1 and 2 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
+with committed, machine-checked evidence. Phase 3 (Feature Detection) is unlocked and not
+yet written. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -198,6 +197,13 @@ The first two are from the device, and were what the design had to answer:
   track — so frame size is per-frame data, and a rotation mid-scan changes the camera
   intrinsics. (§H.0)
 
+**Both were answered by Phase 2's device run.** `VideoFrame` construction cost **0.048 ms**
+on the UI thread across 2363 frames and the fallback routes were never needed; the readback
+it replaced cost 5.81 ms in the same run — real, but not the 13.797 ms Phase 1 measured, so
+§H.1 now records that the figure varies rather than quoting one sample as a constant. The
+rotation showed up as 720×1280 ↔ 1280×720 with the processing size re-derived within a
+frame, 0 frames over budget and 0 upscaled.
+
 Three more came out of Phase 2's own automated leg, each from a test failing rather than
 from review, and each recorded in §H.2:
 
@@ -209,7 +215,28 @@ from review, and each recorded in §H.2:
   pixels against a 1.5× budget relaxation — means any load worth less than about six times
   the budget becomes affordable partway down, and the pipeline cycles.
 
+And one the device settled, recorded in §H.2 and in the Phase 2 evidence README: a ladder
+step that lowers only the target rate does not reduce per-frame latency. Measured at
+58 ms → 59 ms for a rate step against 57 ms → 26 ms for the resolution step beside it, which
+is why FRAME-004 judges the effect of adaptation on the last step that changed the
+resolution.
+
+## What the device afforded
+
+From Phase 2's passing run — the first numbers in this project that describe the engine
+rather than the platform:
+
+| | Measured |
+| --- | --- |
+| Full preprocessing at 720×1280 (readback, grayscale, 3-level pyramid) | 10–11 ms per frame |
+| Sustained delivery at that size | 29.65 fps over 48.5 s, **0 frames lost** |
+| UI thread per admitted frame | below WebKit's 1 ms clock resolution |
+| Worker's grayscale vs an independent read of the same frame | median Δluma **0.284** / 255 |
+| Tier the controller settled on | `HIGH 1280×720@30`, the top of the ladder |
+
+That leaves roughly 22 ms per frame at 30 Hz for Phases 3–6, against the 32 ms §H budgets
+them — the first sign that the per-frame budget is tight rather than generous.
+
 ## Next
 
-Phase 2's device run: [`docs/phase2/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase2/HOW-TO-RUN-DEVICE-TEST.md).
-Then Phase 3 — Feature Detection (§11).
+Phase 3 — Feature Detection (§11).
