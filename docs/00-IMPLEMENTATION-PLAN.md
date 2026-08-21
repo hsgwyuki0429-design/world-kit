@@ -324,11 +324,34 @@ Derived from §53–§56. These are **targets to measure against**, not claims.
 | BASIC (default start) | 960×540 | 20–30 | 600–800 | reduced BA |
 | REDUCED | 640×360 | 15–20 | 300 | minimal |
 
+### H.1 A measurement that puts the acquire budget in doubt
+
+Phase 1's frame sampler measured **13.8 ms per sample** on the device for
+`drawImage(video → 64×48)` followed by `getImageData(64×48)` — recorded as
+`sampleCostMsMean` in the Phase 1 evidence. The same operation costs 0.4 ms in headless
+Chromium on the dev machine.
+
+The output is 3 kB, so the cost is not the pixels. It is the readback: `getImageData`
+forces a GPU→CPU synchronisation, and on the iPhone that stalls for most of a frame
+interval. **Phase 1 can afford it at 4 Hz; Phase 2 cannot afford it at 30 Hz**, where it
+would consume 40% of the entire 33 ms budget before any feature has been detected.
+
+So the "frame acquire" line below is not achievable through a main-thread canvas readback,
+and Phase 2 must take one of the routes Phase 0 measured as available:
+
+- `VideoFrame` (WebCodecs, measured AVAILABLE) transferred into the tracking worker, with
+  `copyTo()` performed there rather than on the UI thread;
+- or keeping the frame on the GPU — upload to a WebGL2/WebGPU texture and compute the
+  grayscale pyramid in a shader, reading back only the feature list.
+
+This is exactly the kind of assumption §H exists to expose. It is recorded here rather
+than discovered in Phase 2.
+
 Per-frame budget at BASIC (960×540), tracking worker, target ≤ 33 ms:
 
 | Stage | Budget |
 | --- | --- |
-| frame acquire + grayscale + pyramid (3 levels) | ≤ 6 ms |
+| frame acquire + grayscale + pyramid (3 levels) | ≤ 6 ms — **not reachable via main-thread `getImageData`; see §H.1** |
 | Shi-Tomasi (only on refill frames) | ≤ 8 ms amortised |
 | pyramidal LK, ~700 points, 21×21, 3 levels | ≤ 14 ms |
 | forward/backward validation | ≤ 4 ms |

@@ -54,6 +54,15 @@ export interface FrameStats {
   readonly framesAfterLastOrientationChange: number;
   readonly msFromOrientationChangeToNextFrame: number | null;
   readonly sampleCostMsMean: number;
+  /**
+   * Largest video-element dimensions seen while frames were arriving.
+   *
+   * The element reports 0x0 once the stream is detached, so reading it at export time says
+   * nothing about whether the preview ever rendered. This remembers what was actually
+   * observed, which is the question CAM-001 asks.
+   */
+  readonly videoWidthObserved: number;
+  readonly videoHeightObserved: number;
 }
 
 function median(values: number[]): number {
@@ -81,6 +90,8 @@ export class FrameIntegrityMonitor {
   private firstFrameAt: number | null = null;
   private lastFrameAt: number | null = null;
   private maxGapMs = 0;
+  private videoWidthObserved = 0;
+  private videoHeightObserved = 0;
 
   private samples: FrameSample[] = [];
   private previousGray: Uint8ClampedArray | null = null;
@@ -185,6 +196,12 @@ export class FrameIntegrityMonitor {
     this.lastFrameAt = now;
     this.frameCount++;
 
+    const v = this.video;
+    if (v) {
+      if (v.videoWidth > this.videoWidthObserved) this.videoWidthObserved = v.videoWidth;
+      if (v.videoHeight > this.videoHeightObserved) this.videoHeightObserved = v.videoHeight;
+    }
+
     if (this.orientationChangedAt !== null) {
       this.framesAfterLastOrientationChange++;
       if (this.msFromOrientationChangeToNextFrame === null) {
@@ -257,6 +274,8 @@ export class FrameIntegrityMonitor {
     this.firstFrameAt = null;
     this.lastFrameAt = null;
     this.maxGapMs = 0;
+    this.videoWidthObserved = 0;
+    this.videoHeightObserved = 0;
     this.samples = [];
     this.previousGray = null;
     this.lastSampleAt = 0;
@@ -304,6 +323,8 @@ export class FrameIntegrityMonitor {
       sampleCostMsMean: this.sampleCosts.length
         ? round(this.sampleCosts.reduce((a, b) => a + b, 0) / this.sampleCosts.length, 3)
         : 0,
+      videoWidthObserved: this.videoWidthObserved,
+      videoHeightObserved: this.videoHeightObserved,
     };
   }
 

@@ -38,6 +38,8 @@ function stats(over: Partial<FrameStats> = {}): FrameStats {
     orientationChanges: 1, lastOrientationAngle: 90,
     framesAfterLastOrientationChange: 120, msFromOrientationChangeToNextFrame: 33,
     sampleCostMsMean: 0.4,
+    videoWidthObserved: 1280,
+    videoHeightObserved: 720,
     ...over,
   };
 }
@@ -244,6 +246,63 @@ describe('CAM-003 — 30 seconds of continuous capture', () => {
   });
 });
 
+describe('a completed session is not undone by stopping the camera', () => {
+  // Reproduces a real-device false negative: a 40.6 s session at 1280x720 with two
+  // rotations survived, then STOP CAMERA was pressed before exporting. The track went
+  // null and the element reported 0x0, and CAM-001 and CAM-005 — which were reading
+  // "is it live now" — flipped a demonstrated success to FAIL.
+  const afterStop = (): Phase1Context =>
+    ctx({
+      cameraState: CameraState.IDLE,
+      trackLive: false,
+      videoWidth: 0,
+      videoHeight: 0,
+      previewPresented: false,
+      cameraEverOpened: true,
+      cameraEndedUnexpectedly: false,
+      stats: stats({ videoWidthObserved: 1280, videoHeightObserved: 720 }),
+    });
+
+  it('CAM-001 stays PASS after the camera is stopped', () => {
+    expect(verdictOf(afterStop(), 'CAM-001')).toBe(Verdict.PASS);
+  });
+
+  it('CAM-005 stays PASS after the camera is stopped', () => {
+    expect(verdictOf(afterStop(), 'CAM-005')).toBe(Verdict.PASS);
+  });
+
+  it('CAM-003 stays PASS after the camera is stopped', () => {
+    expect(verdictOf(afterStop(), 'CAM-003')).toBe(Verdict.PASS);
+  });
+
+  it('CAM-005 still FAILS when the track ended on its own', () => {
+    const c = ctx({ trackLive: false, cameraEndedUnexpectedly: true });
+    const r = runPhase1Tests(c).find((x) => x.spec.id === 'CAM-005');
+    expect(r?.verdict).toBe(Verdict.FAIL);
+    expect(r?.reason).toMatch(/ended on its own/);
+  });
+
+  it('CAM-001 FAILS when the element never rendered despite an open stream', () => {
+    const c = ctx({
+      videoWidth: 0,
+      videoHeight: 0,
+      stats: stats({ videoWidthObserved: 0, videoHeightObserved: 0, frameCount: 40 }),
+    });
+    const r = runPhase1Tests(c).find((x) => x.spec.id === 'CAM-001');
+    expect(r?.verdict).toBe(Verdict.FAIL);
+    expect(r?.reason).toMatch(/never reported a size/);
+  });
+
+  it('CAM-001 is PENDING between opening the stream and the first frame', () => {
+    const c = ctx({
+      videoWidth: 0,
+      videoHeight: 0,
+      stats: stats({ frameCount: 0, videoWidthObserved: 0, videoHeightObserved: 0 }),
+    });
+    expect(verdictOf(c, 'CAM-001')).toBe(Verdict.PENDING);
+  });
+});
+
 describe('CAM-001 / CAM-002 — the two scenarios are independent', () => {
   it('CAM-002 is PENDING when only the granted path was seen', () => {
     expect(verdictOf(ctx({ denied: null }), 'CAM-002')).toBe(Verdict.PENDING);
@@ -301,8 +360,18 @@ describe('CAM-001 / CAM-002 — the two scenarios are independent', () => {
     expect(r?.reason).toMatch(/carried over/);
   });
 
-  it('CAM-001 FAILS on a zero-size stream that claims to be live', () => {
-    expect(verdictOf(ctx({ videoWidth: 0, videoHeight: 0 }), 'CAM-001')).toBe(Verdict.FAIL);
+  it('CAM-001 FAILS when the track itself reports a zero-size frame', () => {
+    const c = ctx({
+      openResult: {
+        state: CameraState.LIVE, stream: {} as MediaStream,
+        settings: {
+          width: 0, height: 0, frameRate: 30, facingMode: 'environment',
+          deviceId: 'abc', label: 'Back Camera', aspectRatio: 0,
+        },
+        rungUsed: 1, attempts: [], failure: null, totalDurationMs: 120,
+      },
+    });
+    expect(verdictOf(c, 'CAM-001')).toBe(Verdict.FAIL);
   });
 });
 
