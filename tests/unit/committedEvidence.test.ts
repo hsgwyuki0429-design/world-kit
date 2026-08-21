@@ -19,15 +19,28 @@ import type { CapabilityRecord, EvidenceBundle } from '../../src/core/types';
 import { PhaseRegistry } from '../../src/core/PhaseRegistry';
 import { findIntegrityIssues } from '../../src/core/validate';
 
-const EVIDENCE_DIR = join(process.cwd(), 'docs', 'phase0', 'evidence');
+const EVIDENCE_DIRS = [
+  join(process.cwd(), 'docs', 'phase0', 'evidence'),
+  join(process.cwd(), 'docs', 'phase1', 'evidence'),
+];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
-  return readdirSync(EVIDENCE_DIR)
-    .filter((f) => f.endsWith('.json'))
-    .map((file) => ({
-      file,
-      bundle: JSON.parse(readFileSync(join(EVIDENCE_DIR, file), 'utf-8')) as EvidenceBundle,
-    }));
+  const out: { file: string; bundle: EvidenceBundle }[] = [];
+  for (const dir of EVIDENCE_DIRS) {
+    let files: string[];
+    try {
+      files = readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const file of files.filter((f) => f.endsWith('.json'))) {
+      out.push({
+        file,
+        bundle: JSON.parse(readFileSync(join(dir, file), 'utf-8')) as EvidenceBundle,
+      });
+    }
+  }
+  return out;
 }
 
 const bundles = loadBundles();
@@ -147,7 +160,10 @@ describe('committed evidence', () => {
 
 describe('Phase 0 pass evidence', () => {
   const passing = bundles.filter(
-    (b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE && b.bundle.overallVerdict === PhaseState.PASSED,
+    (b) =>
+      b.bundle.phase === 0 &&
+      b.bundle.leg === EvidenceLeg.REAL_DEVICE &&
+      b.bundle.overallVerdict === PhaseState.PASSED,
   );
 
   it('exists — Phase 0 may only be marked PASSED against a real-device bundle', () => {
@@ -169,17 +185,75 @@ describe('Phase 0 pass evidence', () => {
       }
     });
 
-    it('Phase Lock had opened Phase 1, and the UI still refused to offer it', () => {
+    it('Phase Lock had opened, and the UI agreed with the engine about the control', () => {
       const lock = bundle.testResults.find((t) => t.spec.id === 'CAP-0011');
       expect(lock?.metrics['phase0State']).toBe(PhaseState.PASSED);
       expect(lock?.metrics['canEnterPhase1']).toBe(true);
-      // Phase 1 is unwritten, so the control must stay disabled despite the lock opening.
-      expect(lock?.metrics['phase1Implemented']).toBe(false);
-      expect(lock?.metrics['startScanDisabled']).toBe(true);
+      // The invariant, not the historical values. This bundle was recorded when Phase 1 was
+      // unwritten, so it shows implemented=false and the control disabled. A bundle
+      // recorded now would show implemented=true and the control open — equally correct.
+      // Asserting the specific pair would make a later, valid run fail this gate.
+      const implemented = lock?.metrics['phase1Implemented'] === true;
+      const canEnter = lock?.metrics['canEnterPhase1'] === true;
+      expect(lock?.metrics['startScanDisabled']).toBe(!canEnter || !implemented);
     });
 
     it('ran clean — no errors logged during the passing run', () => {
       expect(bundle.errorLog).toEqual([]);
     });
+  });
+});
+
+/**
+ * Phase 1 coverage gate.
+ *
+ * CAM-001 and CAM-002 cannot both be observed in one session, so Phase 1 needs two device
+ * runs. The in-app ledger carries an observation between runs for the tester's benefit;
+ * this gate deliberately ignores it and requires each scenario to have been observed
+ * *directly* in some committed bundle. A phase must not pass on a carried-over result.
+ */
+describe('Phase 1 evidence coverage', () => {
+  const phase1Device = bundles.filter(
+    (b) => b.bundle.phase === 1 && b.bundle.leg === EvidenceLeg.REAL_DEVICE,
+  );
+
+  it.runIf(phase1Device.length > 0)(
+    'covers both permission scenarios with a direct observation',
+    () => {
+      const directly = (id: string): boolean =>
+        phase1Device.some((b) =>
+          b.bundle.testResults.some(
+            (r) =>
+              r.spec.id === id &&
+              r.verdict === Verdict.PASS &&
+              r.metrics['observedDirectly'] === true,
+          ),
+        );
+      expect(directly('CAM-001'), 'CAM-001 observed directly in a committed bundle').toBe(true);
+      expect(directly('CAM-002'), 'CAM-002 observed directly in a committed bundle').toBe(true);
+    },
+  );
+
+  it.runIf(phase1Device.length > 0)('never passed Phase 1 through the dev override', () => {
+    for (const { file, bundle } of phase1Device) {
+      const ctxData = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctxData?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  it('the desktop Phase 1 bundles record that they used a synthetic camera', () => {
+    const desktop = bundles.filter(
+      (b) => b.bundle.phase === 1 && b.bundle.leg === EvidenceLeg.DESKTOP_DEV,
+    );
+    for (const { file, bundle } of desktop) {
+      const ctxData = (bundle as unknown as {
+        phaseContext?: { devEntry?: boolean; camera?: Record<string, unknown> };
+      }).phaseContext;
+      // The dev override is how the desktop leg reaches Phase 1 at all, and it must be in
+      // the record rather than invisible.
+      expect(ctxData, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctxData?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctxData?.camera, `${file} camera context`).toBeTruthy();
+    }
   });
 });

@@ -19,6 +19,15 @@ import type {
 import { PhaseRegistry, PHASE_NAMES } from './core/PhaseRegistry';
 import { CapabilityDetector, collectDeviceInfo } from './capture/CapabilityDetector';
 import { probeMotionSensors } from './capture/MotionCapabilityProbe';
+import { CameraSource, CameraState } from './capture/CameraSource';
+import { FrameIntegrityMonitor } from './capture/FrameIntegrityMonitor';
+import { ScenarioLedger } from './capture/ScenarioLedger';
+import { runPhase1Tests, PHASE1_SPECS } from './testkit/Phase1Tests';
+import {
+  renderPhase1Screen,
+  getPreviewVideo,
+  isPreviewPresented,
+} from './ui/Phase1Screen';
 import { logger } from './debug/Logger';
 import {
   buildEvidenceBundle,
@@ -34,7 +43,12 @@ import type { Phase0ViewModel } from './ui/Phase0Screen';
 
 const APP_VERSION = __APP_VERSION__;
 const PHASE = 0;
+const PHASE1 = 1;
 const PROBE_BUDGET_MS = 1500;
+/** How often the SCAN screen re-evaluates while the camera is live. */
+const PHASE1_TICK_MS = 500;
+
+type Screen = 'phase0' | 'phase1';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -50,6 +64,25 @@ class Phase0App {
   private sensorProbeRunning = false;
   private sensorProbeDone = false;
   private integrityIssues: readonly { path: string; problem: string }[] = [];
+
+  private screen: Screen = 'phase0';
+  private readonly camera = new CameraSource();
+  private readonly monitor = new FrameIntegrityMonitor();
+  private readonly ledger = new ScenarioLedger(APP_VERSION);
+  private phase1Results: TestResult[] = [];
+  private phase1Bundle: EvidenceBundle | null = null;
+  private cameraOpening = false;
+  private phase1Timer: number | null = null;
+  /**
+   * Set only when Phase 1 was opened through the desktop development override. It is
+   * recorded in the evidence bundle, and it is unreachable on a device: the override is
+   * gated on the leg being DESKTOP_DEV, which is itself derived from navigator.webdriver
+   * and a local origin. A DESKTOP_DEV bundle cannot pass a phase in any case (Rule 004).
+   */
+  private phase1DevEntry = false;
+  private cameraEverOpened = false;
+  /** Set by the track's own 'ended' event, never by the user pressing stop. */
+  private cameraEndedUnexpectedly = false;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -248,27 +281,27 @@ class Phase0App {
     this.evaluate();
   }
 
-  private onDownloadEvidence(): void {
-    if (!this.bundle) return;
-    const json = serialiseEvidence(this.bundle);
+  private onDownloadEvidence(bundle: EvidenceBundle | null): void {
+    if (!bundle) return;
+    const json = serialiseEvidence(bundle);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = evidenceFilename(this.bundle);
+    a.download = evidenceFilename(bundle);
     document.body.append(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    logger.info(PHASE, 'Evidence', 'evidence download started', { file: a.download });
+    logger.info(bundle.phase, 'Evidence', 'evidence download started', { file: a.download });
   }
 
-  private async onCopyEvidence(): Promise<void> {
-    if (!this.bundle) return;
-    const json = serialiseEvidence(this.bundle);
+  private async onCopyEvidence(bundle: EvidenceBundle | null): Promise<void> {
+    if (!bundle) return;
+    const json = serialiseEvidence(bundle);
     try {
       await navigator.clipboard.writeText(json);
-      logger.info(PHASE, 'Evidence', 'evidence copied to clipboard', { bytes: json.length });
+      logger.info(bundle.phase, 'Evidence', 'evidence copied to clipboard', { bytes: json.length });
     } catch (err) {
       logger.error(
         PHASE, 'Evidence', 'clipboard write failed',
@@ -298,12 +331,247 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase1') {
+      renderPhase1Screen(
+        this.root,
+        {
+          phase1: this.registry.get(PHASE1),
+          cameraState: this.camera.getState(),
+          openResult: this.camera.getLastResult(),
+          settings: this.camera.currentSettings(),
+          stats: this.monitor.getStats(),
+          results: this.phase1Results,
+          granted: this.ledger.get('GRANTED'),
+          denied: this.ledger.get('DENIED'),
+          opening: this.cameraOpening,
+          trackLive: this.camera.isLive(),
+        },
+        {
+          onStartCamera: () => void this.onStartCamera(),
+          onStopCamera: () => this.onStopCamera('user stopped the camera'),
+          onBack: () => this.leavePhase1(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase1Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase1Bundle),
+        },
+      );
+      return;
+    }
     renderPhase0Screen(this.root, this.viewModel(), {
+      onStartScan: () => this.enterPhase1(),
       onProbeSensors: () => void this.onProbeSensors(),
-      onDownloadEvidence: () => this.onDownloadEvidence(),
-      onCopyEvidence: () => void this.onCopyEvidence(),
+      onDownloadEvidence: () => this.onDownloadEvidence(this.bundle),
+      onCopyEvidence: () => void this.onCopyEvidence(this.bundle),
       onRerun: () => void this.detect(),
     });
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Phase 1 — Camera Capture                                                */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Enter the SCAN screen.
+   *
+   * Refused unless Phase Lock permits it. `devOverride` exists so the automated desktop
+   * leg can exercise Phase 1 at all — on that leg Phase 0 correctly stops at TESTING, so
+   * the lock never opens. It is gated on the leg being DESKTOP_DEV and is recorded in the
+   * evidence, and a DESKTOP_DEV bundle cannot pass a phase regardless.
+   */
+  private enterPhase1(devOverride = false): boolean {
+    if (!this.registry.canEnter(PHASE1)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE1, 'App', 'refused entry to Phase 1', {
+          reason: this.registry.blockedReason(PHASE1),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase1DevEntry = true;
+      logger.warn(
+        PHASE1, 'App',
+        'Phase 1 opened through the desktop development override',
+        {
+          note: 'this path is unreachable on a real device and the resulting bundle is ' +
+            'DESKTOP_DEV, which cannot pass a phase',
+        },
+      );
+    }
+    this.screen = 'phase1';
+    if (this.registry.get(PHASE1).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE1, PhaseState.IMPLEMENTING, 'SCAN screen opened');
+    }
+    this.evaluatePhase1();
+    this.render();
+    return true;
+  }
+
+  private leavePhase1(): void {
+    this.onStopCamera('left the SCAN screen');
+    this.screen = 'phase0';
+    this.render();
+  }
+
+  /** MUST be reached from the click handler: getUserMedia needs the user gesture. */
+  private async onStartCamera(): Promise<void> {
+    if (this.cameraOpening || this.camera.isLive()) return;
+    this.cameraOpening = true;
+    this.render();
+
+    const result = await this.camera.open();
+    this.cameraOpening = false;
+
+    if (result.state === CameraState.LIVE && result.stream) {
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      const video = getPreviewVideo();
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE1, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and the frame monitor still runs; if no frames arrive, ' +
+            'CAM-003 fails rather than the stall being hidden',
+          err,
+        );
+      }
+      this.camera.onEnded((reason) => {
+        this.cameraEndedUnexpectedly = true;
+        logger.error(
+          PHASE1, 'CameraSource', `camera track ended: ${reason}`,
+          'the preview is removed and the state reported as CAMERA_ENDED; no last frame is ' +
+            'left on screen',
+        );
+        this.onStopCamera(reason);
+      });
+      this.monitor.start(video);
+      this.ledger.observe(
+        'GRANTED',
+        `${result.settings?.width}x${result.settings?.height} @ ` +
+          `${result.settings?.frameRate}fps, facingMode=${result.settings?.facingMode}, ` +
+          `ladder rung ${result.rungUsed}`,
+      );
+      logger.info(PHASE1, 'CameraSource', 'camera opened', {
+        rung: result.rungUsed,
+        settings: result.settings as unknown as Record<string, never>,
+      });
+      this.startPhase1Ticking();
+    } else if (result.state === CameraState.PERMISSION_DENIED) {
+      this.ledger.observe(
+        'DENIED',
+        `${result.failure?.errorName ?? 'unknown'} — no stream held, no image presented`,
+      );
+      logger.error(
+        PHASE1, 'CameraSource', 'camera permission denied',
+        result.failure?.recovery ?? 'no stream is held',
+        undefined,
+        { errorName: result.failure?.errorName ?? null },
+      );
+    } else {
+      logger.error(
+        PHASE1, 'CameraSource', `camera unavailable: ${result.failure?.errorName ?? 'unknown'}`,
+        result.failure?.recovery ?? 'the camera is reported unavailable',
+        undefined,
+        { attempts: result.attempts as unknown as Record<string, never> },
+      );
+    }
+
+    this.evaluatePhase1();
+    this.render();
+  }
+
+  private onStopCamera(reason: string): void {
+    this.stopPhase1Ticking();
+    this.monitor.stop();
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase1();
+    this.render();
+  }
+
+  private startPhase1Ticking(): void {
+    this.stopPhase1Ticking();
+    // Re-render on a timer so the measured values stay live. The preview element is
+    // re-appended synchronously inside the same render call, which the HTML spec's
+    // "await a stable state" rule makes a no-op for playback — and CAM-003 measures the
+    // longest frame gap, so if that reasoning were wrong the test would say so.
+    this.phase1Timer = window.setInterval(() => {
+      this.evaluatePhase1();
+      this.render();
+    }, PHASE1_TICK_MS);
+  }
+
+  private stopPhase1Ticking(): void {
+    if (this.phase1Timer !== null) {
+      clearInterval(this.phase1Timer);
+      this.phase1Timer = null;
+    }
+  }
+
+  private evaluatePhase1(): void {
+    const video = getPreviewVideo();
+    const previous = this.registry.get(PHASE1).state;
+
+    this.phase1Results = runPhase1Tests({
+      cameraState: this.camera.getState(),
+      openResult: this.camera.getLastResult(),
+      trackLive: this.camera.isLive(),
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      stats: this.monitor.getStats(),
+      granted: this.ledger.get('GRANTED'),
+      denied: this.ledger.get('DENIED'),
+      previewPresented: isPreviewPresented(),
+      cameraEverOpened: this.cameraEverOpened,
+      cameraEndedUnexpectedly: this.cameraEndedUnexpectedly,
+    });
+
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(this.phase1Results, leg);
+    this.registry.applyEvaluation(PHASE1, evaluation);
+    const next = this.registry.get(PHASE1).state;
+    if (previous !== next) {
+      logger.info(PHASE1, 'App', `phase ${PHASE1}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    this.buildPhase1Evidence(evaluation.state, evaluation.reason);
+  }
+
+  private buildPhase1Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE1,
+      phaseName: PHASE_NAMES[PHASE1] ?? 'Camera Capture',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase1Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        frames: this.monitor.describe(),
+        scenarioLedger: this.ledger.describe(),
+        devEntry: this.phase1DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase1Bundle = built.bundle;
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        PHASE1, 'EvidenceRecorder',
+        `Phase 1 evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
   }
 
   /**
@@ -323,6 +591,18 @@ class Phase0App {
       getPhases: () => this.registry.all(),
       getUiSnapshot: () => readUiSnapshot(),
       getIntegrityIssues: () => this.currentIntegrityIssues(),
+      phase1Specs: PHASE1_SPECS,
+      getScreen: () => this.screen,
+      enterPhase1: (devOverride = false) => this.enterPhase1(devOverride),
+      leavePhase1: () => this.leavePhase1(),
+      startCamera: () => this.onStartCamera(),
+      stopCamera: () => this.onStopCamera('debug API'),
+      getPhase1Results: () => this.phase1Results,
+      getPhase1Evidence: () => this.phase1Bundle,
+      getPhase1EvidenceJson: () => (this.phase1Bundle ? serialiseEvidence(this.phase1Bundle) : null),
+      getPhase1State: () => this.registry.get(PHASE1),
+      getFrameStats: () => this.monitor.getStats(),
+      getCamera: () => this.camera.describe(),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

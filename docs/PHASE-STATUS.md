@@ -9,8 +9,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | Phase | Name | State | Notes |
 | --- | --- | --- | --- |
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
-| 1 | Camera Capture | **NOT_STARTED** | Phase Lock is open. Not yet implemented — CAM-001..005 are next. |
-| 2 | Frame Pipeline | BLOCKED | |
+| 1 | Camera Capture | **TESTING** | Implemented. Desktop leg exercises both permission scenarios; **awaiting two real-device bundles** (granted and denied). |
+| 2 | Frame Pipeline | BLOCKED | Phase Lock — Phase 1 has not PASSED. |
 | 3 | Feature Detection | BLOCKED | |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
@@ -79,9 +79,34 @@ Neither touches a probe result or a pass criterion, and the committed bundle is 
 re-derived to `PASSED` by the current code on every test run. If you want the record to
 correspond exactly to HEAD, one more export from the device takes about thirty seconds.
 
+## Phase 1 — TESTING
+
+Implemented and exercised end to end on the automated DESKTOP_DEV leg, which drives two
+browsers: one with a synthetic camera and permission granted, one with permission refused.
+Between them CAM-001, CAM-002, CAM-003, CAM-005 and CAM-006 are decided.
+
+| Measured on the desktop leg | |
+| --- | --- |
+| Stream | 1280×720, constraint ladder rung 2 (`facingMode: {exact:'environment'}` refused, looser rung succeeded) |
+| Capture | ~808 frames over 40.4 s at ~20 fps, longest gap 69–273 ms across runs, via `requestVideoFrameCallback` |
+| Rotation | 2 orientation changes, next frame 21 ms later |
+| Denial | `NotAllowedError` → `CAMERA_PERMISSION_DENIED`, no stream held, no preview element in the DOM |
+
+**CAM-004 cannot be decided on that leg.** Chromium's synthetic camera is not a moving
+camera, and its peak frame-to-frame difference straddles the 8.0 floor between runs — 6.79
+and 9.70 both observed. The harness therefore excludes CAM-004 from the gate rather than
+letting a meaningless verdict flap, and prints the measured values. Feeding in a video file
+chosen to clear the bar would make the leg green without making it informative. The
+threshold logic is covered by unit tests; the behaviour needs the device.
+
+**To pass Phase 1:** two device runs, granted and denied — see
+`docs/phase1/HOW-TO-RUN-DEVICE-TEST.md`. `tests/unit/committedEvidence.test.ts` requires a
+committed bundle for each scenario with `observedDirectly: true`, ignoring the in-app
+carry-over ledger.
+
 ## What "implemented" means here
 
 `IMPLEMENTED_PHASES` in `src/core/PhaseRegistry.ts` is the codebase's own statement of what
-exists — currently `{0}`. The START SCAN control reads it, and stays disabled with the
-label `PHASE 1 — NOT IMPLEMENTED` even after Phase Lock would permit entry. Nothing in the
-UI implies a capability that has not been built.
+exists — currently `{0, 1}`. The START SCAN control reads it alongside Phase Lock, and a
+control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
+implies a capability that has not been built.

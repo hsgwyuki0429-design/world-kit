@@ -38,6 +38,7 @@ export interface Phase0ViewModel {
 }
 
 export interface Phase0Handlers {
+  onStartScan: () => void;
   onProbeSensors: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
@@ -139,7 +140,8 @@ function renderPrimary(vm: Phase0ViewModel, handlers: Phase0Handlers): HTMLEleme
     id: 'start-scan',
     disabled: scan.disabled,
     textContent: scan.label,
-  });
+    onclick: handlers.onStartScan,
+  } as never);
 
   const children: (Node | string)[] = [button];
   if (scan.note) children.push(el('p', { class: 'locked-note' }, [scan.note]));

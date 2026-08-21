@@ -98,6 +98,12 @@ export interface BuildBundleInput {
   readonly overallReason: string;
   readonly transitions: readonly StateTransition[];
   readonly log: readonly LogEntry[];
+  /**
+   * Phase-specific measurements — the camera ladder and frame statistics for Phase 1, and
+   * whatever later phases need. Kept out of the fixed schema so each phase can record what
+   * it actually measured without every other phase carrying empty fields.
+   */
+  readonly context?: Record<string, JsonValue>;
 }
 
 export interface BuiltEvidence {
@@ -136,6 +142,7 @@ export function buildEvidenceBundle(input: BuildBundleInput): BuiltEvidence {
   const withLeg = {
     ...bundle,
     legDetermination: { signals: leg.signals, explanation: leg.explanation },
+    ...(input.context ? { phaseContext: input.context } : {}),
   } as EvidenceBundle & { legDetermination: unknown };
 
   const issues = findIntegrityIssues(withLeg, '$');

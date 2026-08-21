@@ -1,0 +1,275 @@
+#!/usr/bin/env node
+/**
+ * Phase 1 DESKTOP_DEV leg.
+ *
+ * Phase 1 needs two permission scenarios that cannot occur in one session, so this drives
+ * two separate browsers: one with a synthetic camera and camera permission granted, one
+ * with the permission refused. Between them they exercise CAM-001..CAM-006.
+ *
+ * Two things this leg is honest about:
+ *
+ *  - The camera is Chromium's synthetic device, not a camera. It is a moving test pattern,
+ *    which is exactly what CAM-004 needs to prove it can tell motion from a frozen frame,
+ *    but it is simulation (§28). The leg is DESKTOP_DEV, so nothing here can pass a phase.
+ *  - Phase 1 is reached through the development override, because on this leg Phase 0
+ *    correctly stops at TESTING and the lock never opens. That is recorded in the bundle.
+ */
+
+import { execFileSync } from 'node:child_process';
+import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { extname, join, resolve } from 'node:path';
+import { chromium } from 'playwright';
+
+const ROOT = resolve(new URL('..', import.meta.url).pathname);
+const DIST = join(ROOT, 'dist');
+const OUT_DIR = join(ROOT, 'docs', 'phase1', 'evidence');
+const CHROMIUM = '/opt/pw-browsers/chromium';
+
+/** §9 requires 30 s; allow margin for start-up before the first frame. */
+const CAPTURE_WAIT_MS = 34_000;
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+};
+
+function serve(dir) {
+  return new Promise((res) => {
+    const server = createServer((req, r) => {
+      const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
+      let f = join(dir, p === '/' ? 'index.html' : p);
+      if (!existsSync(f)) f = join(dir, 'index.html');
+      r.writeHead(200, { 'content-type': MIME[extname(f)] ?? 'application/octet-stream' });
+      createReadStream(f).pipe(r);
+    });
+    server.listen(0, '127.0.0.1', () => res(server));
+  });
+}
+
+const BASE_ARGS = ['--enable-unsafe-swiftshader', '--use-fake-device-for-media-stream'];
+
+/**
+ * Drive `startCamera()` with a ceiling.
+ *
+ * getUserMedia never settles if a permission prompt is displayed and nothing answers it,
+ * and `page.evaluate` would then wait forever. Racing a timer turns that into an
+ * observable state ("still REQUESTING after 8 s") instead of a hung run.
+ */
+async function startCameraBounded(page, ms = 8000) {
+  return page.evaluate(async (limit) => {
+    let timedOut = false;
+    await Promise.race([
+      window.__SPATIAL_DEBUG__.startCamera(),
+      new Promise((r) => setTimeout(() => { timedOut = true; r(undefined); }, limit)),
+    ]);
+    return { timedOut, state: window.__SPATIAL_DEBUG__.getCamera().state };
+  }, ms);
+}
+
+async function openApp(browser, url, { mobile = true } = {}) {
+  const context = await browser.newContext({
+    viewport: { width: 430, height: 932 },
+    deviceScaleFactor: 2,
+    isMobile: mobile,
+    hasTouch: mobile,
+  });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const ok = await page.evaluate(() => window.__SPATIAL_READY__);
+  if (!ok) throw new Error('app failed to start');
+  return { context, page, errors };
+}
+
+console.log('[p1] building…');
+execFileSync('npx', ['vite', 'build'], { cwd: ROOT, stdio: 'inherit' });
+
+const server = await serve(DIST);
+const url = `http://localhost:${server.address().port}/`;
+console.log(`[p1] serving ${url}`);
+mkdirSync(OUT_DIR, { recursive: true });
+
+let exitCode = 0;
+const summaries = [];
+
+/* ------------------------------------------------------------------ */
+/* Run A — permission granted, synthetic camera                        */
+/* ------------------------------------------------------------------ */
+{
+  console.log('[p1] run A: permission granted');
+  const browser = await chromium.launch({
+    executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
+    args: [...BASE_ARGS, '--use-fake-ui-for-media-stream'],
+  });
+  try {
+    const { context, page, errors } = await openApp(browser, url);
+    await context.grantPermissions(['camera'], { origin: new URL(url).origin });
+
+    const entered = await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase1(true));
+    if (!entered) throw new Error('could not enter Phase 1 even with the desktop override');
+
+    const startA = await startCameraBounded(page, 15_000);
+    if (startA.timedOut) throw new Error(`camera open did not settle; state ${startA.state}`);
+    await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getFrameStats().frameCount > 0, undefined, {
+      timeout: 15_000,
+    });
+    console.log('[p1]   frames flowing; rotating the device at ~5 s');
+
+    const cdp = await context.newCDPSession(page);
+    await page.waitForTimeout(5000);
+    // Screen-orientation change, which is what CAM-005 observes.
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 932, height: 430, deviceScaleFactor: 2, mobile: true,
+      screenOrientation: { type: 'landscapePrimary', angle: 90 },
+    });
+    await page.waitForTimeout(1500);
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 430, height: 932, deviceScaleFactor: 2, mobile: true,
+      screenOrientation: { type: 'portraitPrimary', angle: 0 },
+    });
+
+    console.log(`[p1]   holding the camera open for ${CAPTURE_WAIT_MS / 1000} s (CAM-003)…`);
+    await page.waitForTimeout(CAPTURE_WAIT_MS);
+
+    const snap = await page.evaluate(() => ({
+      results: window.__SPATIAL_DEBUG__.getPhase1Results(),
+      evidence: window.__SPATIAL_DEBUG__.getPhase1EvidenceJson(),
+      stats: window.__SPATIAL_DEBUG__.getFrameStats(),
+      camera: window.__SPATIAL_DEBUG__.getCamera(),
+      phase: window.__SPATIAL_DEBUG__.getPhase1State(),
+    }));
+
+    writeFileSync(join(OUT_DIR, 'phase1-desktop-chromium-granted.json'), snap.evidence);
+    await page.screenshot({ path: join(OUT_DIR, 'phase1-desktop-chromium-granted.png'), fullPage: true });
+
+    console.log(`[p1]   camera: rung ${snap.camera.rungUsed}, ` +
+      `${snap.camera.achievedSettings?.width}x${snap.camera.achievedSettings?.height} ` +
+      `facing=${snap.camera.achievedSettings?.facingMode}`);
+    console.log(`[p1]   frames: ${snap.stats.frameCount} in ${(snap.stats.observedMs / 1000).toFixed(1)} s ` +
+      `(${snap.stats.meanFps} fps, longest gap ${snap.stats.maxGapMs} ms, via ${snap.stats.source})`);
+    console.log(`[p1]   image:  MAD median ${snap.stats.madMedian} / max ${snap.stats.madMax}, ` +
+      `luma ${snap.stats.lumaMin}..${snap.stats.lumaMax}, ${snap.stats.orientationChanges} rotation(s)`);
+    summaries.push({ run: 'granted', results: snap.results, errors });
+  } finally {
+    await browser.close();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Run B — permission denied                                           */
+/* ------------------------------------------------------------------ */
+{
+  console.log('[p1] run B: permission denied');
+  const browser = await chromium.launch({
+    executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
+    // --deny-permission-prompts auto-refuses the camera request, which is what a user
+    // tapping "Don't Allow" produces: a NotAllowedError rejection. Without it the prompt
+    // would simply sit there unanswered and getUserMedia would never settle.
+    args: [...BASE_ARGS, '--deny-permission-prompts'],
+  });
+  try {
+    const { context, page, errors } = await openApp(browser, url);
+    await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase1(true));
+    const startB = await startCameraBounded(page, 8000);
+    if (startB.timedOut) {
+      console.error(`[p1]   camera request never settled; state ${startB.state}`);
+      exitCode = 1;
+    }
+    await page.waitForTimeout(500);
+
+    const snap = await page.evaluate(() => ({
+      results: window.__SPATIAL_DEBUG__.getPhase1Results(),
+      evidence: window.__SPATIAL_DEBUG__.getPhase1EvidenceJson(),
+      camera: window.__SPATIAL_DEBUG__.getCamera(),
+      previewPresented: !!document.getElementById('camera-preview')?.isConnected,
+    }));
+
+    writeFileSync(join(OUT_DIR, 'phase1-desktop-chromium-denied.json'), snap.evidence);
+    await page.screenshot({ path: join(OUT_DIR, 'phase1-desktop-chromium-denied.png'), fullPage: true });
+
+    console.log(`[p1]   state: ${snap.camera.state}, error ${snap.camera.failure?.errorName}, ` +
+      `preview element present: ${snap.previewPresented}`);
+    if (snap.camera.state !== 'CAMERA_PERMISSION_DENIED') {
+      console.error(`[p1]   FAIL: expected CAMERA_PERMISSION_DENIED, got ${snap.camera.state}`);
+      exitCode = 1;
+    }
+    if (snap.previewPresented) {
+      console.error('[p1]   FAIL: a preview element is in the DOM after a denial');
+      exitCode = 1;
+    }
+    summaries.push({ run: 'denied', results: snap.results, errors });
+  } finally {
+    await browser.close();
+  }
+}
+
+server.close();
+
+/* ------------------------------------------------------------------ */
+
+console.log('\n=== PHASE 1 — DESKTOP_DEV LEG =========================================');
+for (const s of summaries) {
+  console.log(`--- run: ${s.run} ---`);
+  for (const r of s.results) {
+    console.log(`${r.verdict.padEnd(7)} ${r.spec.required ? 'REQ' : 'ADV'} ${r.spec.id}  ${r.spec.title}`);
+    console.log(`             ${r.observed}`);
+  }
+  if (s.errors.length) {
+    console.error(`  console errors: ${s.errors.join(' | ')}`);
+    exitCode = 1;
+  }
+}
+console.log('=======================================================================\n');
+
+// Between the two runs every required test must have been decided at least once. A test
+// left PENDING in both is one this leg never exercised, which is a gap in the harness.
+const decided = new Map();
+for (const s of summaries) {
+  for (const r of s.results) {
+    if (r.verdict !== 'PENDING') decided.set(r.spec.id, r.verdict);
+  }
+}
+// Chromium's synthetic camera is not a moving camera, and its peak frame-to-frame
+// difference straddles CAM-004's floor of 8 from run to run — 6.79 and 9.70 have both been
+// observed. So this leg's CAM-004 verdict is not meaningful in either direction, and it is
+// excluded from the gate rather than being allowed to flap. Swapping in a video file chosen
+// to clear the bar would make the leg green without making it informative.
+// The threshold logic is covered by tests/unit/phase1Tests.test.ts; the behaviour needs a
+// real camera.
+const NOT_EXERCISABLE_BY_SYNTHETIC_CAMERA = new Set(['CAM-004']);
+
+const required = summaries[0].results
+  .filter((r) => r.spec.required && !NOT_EXERCISABLE_BY_SYNTHETIC_CAMERA.has(r.spec.id))
+  .map((r) => r.spec.id);
+const undecided = required.filter((id) => !decided.has(id));
+
+for (const id of NOT_EXERCISABLE_BY_SYNTHETIC_CAMERA) {
+  const r = summaries.flatMap((s) => s.results).find((x) => x.spec.id === id);
+  console.log(
+    `[p1] ${id} excluded from the gate: the synthetic camera is not a moving camera and its ` +
+      `peak straddles the floor across runs. Verdict this run: ${r?.verdict}. Observed: ${r?.observed}`,
+  );
+}
+const failed = [...decided.entries()]
+  .filter(([id, v]) => v === 'FAIL' && !NOT_EXERCISABLE_BY_SYNTHETIC_CAMERA.has(id))
+  .map(([id]) => id);
+
+if (undecided.length) {
+  console.error(`[p1] never decided in either run: ${undecided.join(', ')}`);
+  exitCode = 1;
+}
+if (failed.length) {
+  console.error(`[p1] FAILED: ${failed.join(', ')}`);
+  exitCode = 1;
+}
+console.log(`[p1] evidence: ${OUT_DIR}`);
+console.log(`[p1] exit ${exitCode}`);
+process.exit(exitCode);

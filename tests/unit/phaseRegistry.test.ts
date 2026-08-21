@@ -148,7 +148,11 @@ describe('PhaseRegistry.evaluate — verdict algebra (fail closed)', () => {
 describe('implemented phases', () => {
   it('claims only what has actually been written', () => {
     expect(isPhaseImplemented(0)).toBe(true);
-    expect(isPhaseImplemented(1)).toBe(false);
-    expect([...IMPLEMENTED_PHASES]).toEqual([0]);
+    expect(isPhaseImplemented(1)).toBe(true);
+    // Phase 2 (Frame Pipeline) has not been written. This assertion is the tripwire that
+    // makes someone update the set deliberately rather than letting the UI offer a screen
+    // that does not exist.
+    expect(isPhaseImplemented(2)).toBe(false);
+    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1]);
   });
 });
