@@ -26,6 +26,9 @@ already read `PASSED` on the device, or the START SCAN control stays locked.
      lock is on — turn it off in Control Centre.
 6. When the verdict panel shows what you want, tap
    **DOWNLOAD EVIDENCE JSON**. The verdict is in the filename.
+   - Stopping the camera first is fine. CAM-001, CAM-003 and CAM-005 judge what was
+     demonstrated during the session, not whether the stream is still open at the moment
+     you export.
 7. Screenshot the screen.
 
 ## Run 2 — permission denied (CAM-002)

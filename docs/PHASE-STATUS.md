@@ -99,7 +99,27 @@ letting a meaningless verdict flap, and prints the measured values. Feeding in a
 chosen to clear the bar would make the leg green without making it informative. The
 threshold logic is covered by unit tests; the behaviour needs the device.
 
-**To pass Phase 1:** two device runs, granted and denied — see
+### First device runs — one clean, one that found a bug in the harness
+
+Both are committed under `docs/phase1/evidence/`.
+
+**The denied run is valid and complete.** `NotAllowedError` → `CAMERA_PERMISSION_DENIED`,
+no stream held, no preview element, recovery recorded. CAM-002 PASS, `observedDirectly`.
+
+**The granted run reported FAILED, and was wrong to.** The camera worked: rung 1 of the
+ladder, `facingMode: environment`, 1280×720 at 30 fps, 1213 frames over 40.6 s at 29.83 fps
+with a longest gap of 151 ms, two rotations survived with the next frame 40 ms later, and
+a peak image difference of 75.2 against a floor of 12.2. CAM-003 and CAM-004 passed on that
+data. CAM-001 and CAM-005 failed — because the tester pressed STOP CAMERA before exporting,
+and both were reading *is the track live now* rather than *what was demonstrated*. Fixed;
+see the amendment in `docs/phase1/TEST-PLAN.md`.
+
+That run also validated the earlier CAM-004 correction with real data: median 45.31, peak
+75.18, a ratio of 1.66. The `maxMad >= 4 × medianMad` gate removed before any device run
+would have failed a perfect capture.
+
+**To pass Phase 1:** one more granted run on the fixed build, since the committed granted
+bundle predates the fix. The denied run stands. See
 `docs/phase1/HOW-TO-RUN-DEVICE-TEST.md`. `tests/unit/committedEvidence.test.ts` requires a
 committed bundle for each scenario with `observedDirectly: true`, ignoring the in-app
 carry-over ledger.

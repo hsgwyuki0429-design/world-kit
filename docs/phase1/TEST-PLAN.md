@@ -65,9 +65,20 @@ observed, leaving the other `PENDING`. Two mechanisms, deliberately separate:
 - **Input:** user tap → `getUserMedia` with the constraint ladder below.
 - **Expected:** a `MediaStream` carrying at least one video track with
   `readyState === 'live'`, and `getSettings()` reporting real width, height and frameRate.
-- **Pass criteria:** a live video track exists; settings report finite width ≥ 1 and
-  height ≥ 1; the element reports `videoWidth`/`videoHeight` matching the track within
-  rounding; the achieved `facingMode` is recorded.
+- **Pass criteria:** a stream opened with settings reporting finite width ≥ 1 and
+  height ≥ 1, **and** the video element reported a non-zero size while frames were
+  arriving; the achieved `facingMode` is recorded.
+
+> **Plan amendment, after the first device run.** The criteria originally read "a *live*
+> video track exists … the element reports `videoWidth`/`videoHeight`", both evaluated
+> against the state at the moment of judging. That is wrong for a test whose subject is an
+> event: on the device, a 40.6 s session at 1280×720 that survived two rotations flipped
+> from PASS to FAIL the instant the tester pressed STOP CAMERA before exporting, because
+> the track had gone null and the detached element reported 0×0. The criteria now read
+> what was *demonstrated* — the stream opened, and the element rendered while frames were
+> arriving — which is what the test always meant. CAM-005 had the same defect and the same
+> fix; CAM-003 already worked this way. This narrows nothing: a stream that never opens,
+> or never renders, still fails.
 - **Failure condition:** `getUserMedia` throws while permission was granted; no live track;
   zero-size settings.
 - **PENDING when:** permission was denied in this run (that is CAM-002's scenario).
@@ -173,7 +184,9 @@ wall reaches only 1–3.
 - **Expected:** the app observes the change, capture continues across it, and the recorded
   preview geometry follows the new orientation.
 - **Pass criteria:** at least one orientation change observed with a changed angle; frames
-  continue within 2000 ms of the change; the track does not end.
+  continue within 2000 ms of the change; the track does not end **on its own** during the
+  session. Deliberately stopping the camera afterwards is not a failure — see the CAM-001
+  amendment above.
 - **Failure condition:** capture stalls or the track ends on rotation.
 - **PENDING when:** no orientation change has been observed. Rotation lock must be off.
 

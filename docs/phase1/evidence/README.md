@@ -4,7 +4,8 @@
 | --- | --- | --- | --- |
 | `phase1-desktop-chromium-granted.json` | `DESKTOP_DEV` | granted, synthetic camera | No (Rule 004) |
 | `phase1-desktop-chromium-denied.json` | `DESKTOP_DEV` | denied | No (Rule 004) |
-| `phase1-real-device-*.json` | `REAL_DEVICE` | granted **and** denied | Yes — **not yet produced** |
+| `phase1-real-device-TESTING-2026-08-21T09-50-49-632Z.json` | `REAL_DEVICE` | denied | Valid; CAM-002 `observedDirectly` |
+| `phase1-real-device-FAILED-2026-08-21T09-48-59-133Z.json` | `REAL_DEVICE` | granted | **No** — a harness bug, see below |
 
 Regenerate the desktop pair with `npm run test:e2e:phase1`. Produce the device pair by
 following `../HOW-TO-RUN-DEVICE-TEST.md`.
@@ -14,6 +15,32 @@ following `../HOW-TO-RUN-DEVICE-TEST.md`.
 Two browsers, because the two permission scenarios cannot occur in one session. Both
 bundles carry `phaseContext` with the constraint-ladder attempts, the frame statistics and
 the scenario ledger.
+
+### How the denial is induced, and why it takes two attempts
+
+Which `DOMException` a Chromium build raises for a refused camera permission is not stable.
+The `--deny-permission-prompts` flag produced `NotAllowedError` in the dev container and
+`NotSupportedError` on the GitHub runner; setting the origin's permission set to empty
+(`context.grantPermissions([], { origin })`) works in the dev container and still does not
+produce a user denial on the runner.
+
+So the harness tries the browser first and falls back:
+
+1. **Browser refusal.** Empty permission set for the origin, no prompt. When this yields
+   `NotAllowedError`, CAM-002 is exercised against the real platform and `deniedVia` reads
+   `browser permission refusal`.
+2. **Injected rejection.** If the browser refused in some other way, `getUserMedia` is
+   replaced with one that rejects with a genuine `NotAllowedError`, and the app's own path
+   runs end to end from there. `deniedVia` records this, along with what the browser
+   actually produced, and the failure message in the bundle says the rejection was injected.
+
+The native attempt comes first on purpose: it is what surfaced the `NotSupportedError`
+difference in the first place, and going straight to injection would have hidden it.
+
+`NotSupportedError` was **not** remapped to `CAMERA_PERMISSION_DENIED` to make this easier.
+It means the request was refused by policy, not by a person; reporting it as a denial would
+send the user to a permission screen with nothing on it to change. It is mapped to
+`CAMERA_UNAVAILABLE` with a recovery that names the real cause.
 
 Two things in them are simulation, and both are recorded rather than hidden:
 
@@ -64,3 +91,49 @@ real camera.
 Phase 0's, re-derives the verdict from the bundle's own test results, verifies the leg
 against its own recorded signals, and rejects any NaN, infinity, `undefined` or reference
 cycle.
+
+
+## The first two device runs
+
+**Denied run — valid.** `NotAllowedError` → `CAMERA_PERMISSION_DENIED`, `stream=none`,
+`preview=false`, recovery recorded, `errorLog` carrying the failure with its recovery
+action. CAM-002 PASS with `observedDirectly: true`. This bundle stands as the denied half
+of Phase 1's evidence.
+
+**Granted run — reported FAILED, and was wrong.** What the run actually measured:
+
+| | |
+| --- | --- |
+| Stream | rung 1, `facingMode: environment`, 1280×720 @ 30 fps, `背面デュアル広角カメラ`, opened in 746 ms |
+| Capture | 1213 frames over 40.6 s at 29.83 fps, longest gap 151 ms |
+| Image change | 152 samples; MAD min 12.19 / median 45.31 / **max 75.18**; luma 118–186 |
+| Rotation | 2 changes, next frame 40 ms later, 941 frames after |
+
+CAM-003 and CAM-004 passed on that. CAM-001 and CAM-005 failed with
+"the video track is not live; the video element reports 0x0" and "the video track ended
+across the rotation" — the second directly contradicted by its own metric of 941 frames
+after the rotation.
+
+The cause was the tester pressing STOP CAMERA before exporting. `camera.close()` nulls the
+track and `srcObject = null` leaves the detached element at 0×0, and both evaluators were
+reading the state at the moment of judging rather than what had been demonstrated. CAM-003
+already had this right — it grew `cameraEverOpened` and `cameraEndedUnexpectedly` for
+exactly this reason — and the same treatment simply had not been applied to its two
+siblings.
+
+Fixed, with regression tests that reproduce the sequence. The bundle is kept because it is
+the record of a real defect and of a camera session that worked.
+
+### It also validated the CAM-004 correction
+
+Real camera motion measured median 45.31 and peak 75.18 — a ratio of **1.66**. The
+`maxMad >= 4 × medianMad` gate, removed before any device run on the argument that it
+would reject a continuously panned camera, would have failed this capture. The argument was
+right and the device proved it.
+
+### One measurement for Phase 2
+
+`sampleCostMsMean` was **13.797 ms** on the device, against 0.4 ms in headless Chromium, for
+a `drawImage` + `getImageData` producing 3 kB. That is a GPU→CPU readback stall, not pixel
+work. Phase 1 samples at 4 Hz and can afford it; Phase 2 at 30 Hz cannot. Recorded in
+§H.1 of the implementation plan.

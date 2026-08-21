@@ -70,8 +70,8 @@ const CAM_001: Phase1Test = {
     required: true,
     input: 'user tap -> getUserMedia walking the constraint ladder (rear camera, 1280x720 ideal)',
     expected: 'a MediaStream with a live video track reporting real width, height and frameRate',
-    passCriteria: 'a live video track exists; settings report finite width >= 1 and height >= 1; the element reports matching dimensions',
-    failureCondition: 'getUserMedia throws while permission was granted; no live track; zero-size settings',
+    passCriteria: 'a stream opened with settings reporting finite width >= 1 and height >= 1, and the video element reported a non-zero size while frames were arriving',
+    failureCondition: 'getUserMedia throws while permission was granted; zero-size settings; the element never reported a size despite an open stream',
   },
   evaluate: (ctx) => {
     const entry = ctx.granted;
@@ -93,37 +93,76 @@ const CAM_001: Phase1Test = {
       };
     }
 
+    // Judge what was demonstrated, not what is live at this instant. The stream having
+    // opened and rendered is a past event; stopping the camera afterwards does not undo it.
+    // Reading `trackLive` here made a completed, successful session flip to FAIL the moment
+    // the tester pressed STOP CAMERA before exporting.
     const s = ctx.openResult?.settings ?? null;
-    const problems: string[] = [];
-    if (!ctx.trackLive) problems.push('the video track is not live');
-    if (!s) problems.push('no track settings were readable');
-    if (s && (s.width < 1 || s.height < 1)) {
-      problems.push(`track reports a zero-size frame (${s.width}x${s.height})`);
+    const openedOk =
+      ctx.openResult?.state === CameraState.LIVE && !!s && s.width >= 1 && s.height >= 1;
+
+    // Element geometry as seen while frames were arriving; falls back to the current
+    // reading, which is the only source before the first frame.
+    const elementW = Math.max(ctx.stats.videoWidthObserved, ctx.videoWidth);
+    const elementH = Math.max(ctx.stats.videoHeightObserved, ctx.videoHeight);
+
+    const geometry =
+      `${s?.width}x${s?.height}@${s?.frameRate}fps, facingMode=${s?.facingMode}, ` +
+      `ladder rung ${ctx.openResult?.rungUsed}, element ${elementW}x${elementH}`;
+    const metrics: Record<string, JsonValue> = {
+      observedDirectly: true,
+      width: s?.width ?? null,
+      height: s?.height ?? null,
+      frameRate: s?.frameRate ?? null,
+      facingMode: s?.facingMode ?? null,
+      deviceLabel: s?.label ?? null,
+      rungUsed: ctx.openResult?.rungUsed ?? null,
+      openDurationMs: ctx.openResult?.totalDurationMs ?? null,
+      elementWidthObserved: elementW,
+      elementHeightObserved: elementH,
+      frameCount: ctx.stats.frameCount,
+      attempts: (ctx.openResult?.attempts ?? []) as unknown as JsonValue,
+    };
+
+    if (!openedOk) {
+      const why = !s
+        ? 'no track settings were readable'
+        : `track reports a zero-size frame (${s.width}x${s.height})`;
+      return {
+        verdict: Verdict.FAIL,
+        observed: `open result ${ctx.openResult?.state ?? 'none'}; ${geometry}`,
+        reason: why,
+        metrics,
+      };
     }
-    if (ctx.videoWidth < 1 || ctx.videoHeight < 1) {
-      problems.push(`the video element reports ${ctx.videoWidth}x${ctx.videoHeight}`);
+
+    if (ctx.stats.frameCount === 0 && ctx.trackLive) {
+      return {
+        verdict: Verdict.PENDING,
+        observed: `stream open at ${geometry}, no frame delivered yet`,
+        reason: 'the stream is open but has not produced a frame yet; waiting',
+        metrics,
+      };
     }
+
+    if (elementW < 1 || elementH < 1) {
+      return {
+        verdict: Verdict.FAIL,
+        observed: geometry,
+        reason:
+          'the stream opened but the video element never reported a size, so nothing was ' +
+          'ever rendered from it',
+        metrics,
+      };
+    }
+
     return {
-      verdict: problems.length === 0 ? Verdict.PASS : Verdict.FAIL,
-      observed:
-        `LIVE at ${s?.width}x${s?.height}@${s?.frameRate}fps, facingMode=${s?.facingMode}, ` +
-        `ladder rung ${ctx.openResult?.rungUsed}, element ${ctx.videoWidth}x${ctx.videoHeight}`,
+      verdict: Verdict.PASS,
+      observed: geometry,
       reason:
-        problems.length === 0
-          ? 'a real stream is open and reporting real geometry; the achieved facing mode ' +
-            'and ladder rung are recorded as achieved rather than as requested'
-          : problems.join('; '),
-      metrics: {
-        observedDirectly: true,
-        width: s?.width ?? null,
-        height: s?.height ?? null,
-        frameRate: s?.frameRate ?? null,
-        facingMode: s?.facingMode ?? null,
-        deviceLabel: s?.label ?? null,
-        rungUsed: ctx.openResult?.rungUsed ?? null,
-        openDurationMs: ctx.openResult?.totalDurationMs ?? null,
-        attempts: (ctx.openResult?.attempts ?? []) as unknown as JsonValue,
-      } as Record<string, JsonValue>,
+        'a real stream opened and rendered real geometry; the achieved facing mode and ' +
+        'ladder rung are recorded as achieved rather than as requested',
+      metrics,
     };
   },
 };
@@ -326,8 +365,8 @@ const CAM_005: Phase1Test = {
     required: true,
     input: 'the device is rotated; screen.orientation change and orientationchange events',
     expected: 'the change is observed, capture continues across it, and the track survives',
-    passCriteria: 'at least one orientation change with a changed angle; a frame within 2000 ms of the change; the track does not end',
-    failureCondition: 'capture stalls or the track ends on rotation',
+    passCriteria: 'at least one orientation change with a changed angle; a frame within 2000 ms of the change; the track does not end on its own during the session',
+    failureCondition: 'capture stalls across the rotation, or the track ends on its own',
   },
   evaluate: (ctx) => {
     const s = ctx.stats;
@@ -349,7 +388,12 @@ const CAM_005: Phase1Test = {
     }
     const recovery = s.msFromOrientationChangeToNextFrame;
     const problems: string[] = [];
-    if (!ctx.trackLive) problems.push('the video track ended across the rotation');
+    // The question is whether the track survived the rotation, not whether it is live now.
+    // A tester who rotates, watches capture continue, then presses STOP has demonstrated
+    // exactly what this test asks for.
+    if (ctx.cameraEndedUnexpectedly) {
+      problems.push('the video track ended on its own during the session');
+    }
     if (s.framesAfterLastOrientationChange === 0) {
       problems.push('no frame arrived after the rotation — capture stalled');
     } else if (recovery !== null && recovery > MAX_ORIENTATION_RECOVERY_MS) {

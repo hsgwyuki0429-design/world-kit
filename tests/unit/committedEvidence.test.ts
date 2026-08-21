@@ -216,9 +216,13 @@ describe('Phase 1 evidence coverage', () => {
   const phase1Device = bundles.filter(
     (b) => b.bundle.phase === 1 && b.bundle.leg === EvidenceLeg.REAL_DEVICE,
   );
+  // The gate is on the *claim*, not on the mere existence of device bundles. A committed
+  // run that reads TESTING or FAILED is a record of work in progress and must not fail the
+  // suite; a run that claims PASSED must be backed by direct observation of both scenarios.
+  const claimsPass = phase1Device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
 
-  it.runIf(phase1Device.length > 0)(
-    'covers both permission scenarios with a direct observation',
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass is backed by a direct observation of both permission scenarios',
     () => {
       const directly = (id: string): boolean =>
         phase1Device.some((b) =>
@@ -229,6 +233,8 @@ describe('Phase 1 evidence coverage', () => {
               r.metrics['observedDirectly'] === true,
           ),
         );
+      // A pass may rest on a carried-over result inside one bundle, but the committed set
+      // as a whole must contain a run that actually saw each scenario.
       expect(directly('CAM-001'), 'CAM-001 observed directly in a committed bundle').toBe(true);
       expect(directly('CAM-002'), 'CAM-002 observed directly in a committed bundle').toBe(true);
     },

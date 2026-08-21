@@ -1,29 +1,29 @@
 {
   "schemaVersion": 1,
-  "leg": "DESKTOP_DEV",
+  "leg": "REAL_DEVICE",
   "phase": 1,
   "phaseName": "Camera Capture",
-  "createdAt": "2026-08-21T09:56:36.585Z",
+  "createdAt": "2026-08-21T09:48:59.133Z",
   "appVersion": "0.1.0",
-  "origin": "http://localhost:43285",
+  "origin": "https://hsgwyuki0429-design.github.io",
   "secureContext": true,
   "device": {
-    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
-    "platformHint": "Linux x86_64",
-    "osGuess": "Linux",
-    "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
-    "isLikelyIOS": false,
-    "maxTouchPoints": 1,
-    "screenWidth": 430,
-    "screenHeight": 932,
-    "viewportWidth": 430,
-    "viewportHeight": 932,
-    "devicePixelRatio": 2,
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    "platformHint": "iPhone",
+    "osGuess": "iOS/iPadOS 18.7",
+    "browserGuess": "Safari / WebKit",
+    "isLikelyIOS": true,
+    "maxTouchPoints": 5,
+    "screenWidth": 393,
+    "screenHeight": 852,
+    "viewportWidth": 393,
+    "viewportHeight": 695,
+    "devicePixelRatio": 3,
     "hardwareConcurrency": 4,
     "languages": [
-      "en-US"
+      "ja"
     ],
-    "timezone": "UTC"
+    "timezone": "Asia/Tokyo"
   },
   "capabilityMatrix": {
     "records": [
@@ -33,30 +33,30 @@
         "label": "Secure context (HTTPS)",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "secure context over http://localhost:43285",
+        "detail": "secure context over https://hsgwyuki0429-design.github.io",
         "data": {
           "isSecureContext": true,
-          "protocol": "http:",
-          "host": "localhost:43285",
+          "protocol": "https:",
+          "host": "hsgwyuki0429-design.github.io",
           "crossOriginIsolated": false
         },
-        "durationMs": 0.3,
-        "timestamp": 1787306196469
+        "durationMs": 0,
+        "timestamp": 1787305691630
       },
       {
         "id": "platform.iosSafariGuess",
         "group": "platform",
         "label": "iOS/Safari (UA guess)",
-        "state": "UNAVAILABLE",
+        "state": "AVAILABLE",
         "method": "INFERENCE",
         "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
         "data": {
-          "osGuess": "Linux",
-          "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
-          "maxTouchPoints": 1
+          "osGuess": "iOS/iPadOS 18.7",
+          "browserGuess": "Safari / WebKit",
+          "maxTouchPoints": 5
         },
-        "durationMs": 0.1,
-        "timestamp": 1787306196469
+        "durationMs": 0,
+        "timestamp": 1787305691630
       },
       {
         "id": "camera.getUserMedia",
@@ -70,8 +70,8 @@
           "hasGetUserMedia": true,
           "secureContext": true
         },
-        "durationMs": 0,
-        "timestamp": 1787306196469
+        "durationMs": 1,
+        "timestamp": 1787305691630
       },
       {
         "id": "camera.enumerateDevices",
@@ -83,12 +83,12 @@
         "data": {
           "videoInputCount": 1,
           "audioInputCount": 1,
-          "totalDevices": 3,
+          "totalDevices": 2,
           "labelsHidden": true,
           "deviceIdsHidden": true
         },
-        "durationMs": 35.6,
-        "timestamp": 1787306196504
+        "durationMs": 9,
+        "timestamp": 1787305691639
       },
       {
         "id": "camera.supportedConstraints",
@@ -98,7 +98,7 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
         "data": {
-          "supportedCount": 36,
+          "supportedCount": 17,
           "facingMode": true,
           "width": true,
           "height": true,
@@ -107,8 +107,8 @@
           "deviceId": true,
           "missing": []
         },
-        "durationMs": 0.2,
-        "timestamp": 1787306196505
+        "durationMs": 0,
+        "timestamp": 1787305691640
       },
       {
         "id": "camera.trackControl",
@@ -122,8 +122,8 @@
           "getSettings": true,
           "applyConstraints": true
         },
-        "durationMs": 0.2,
-        "timestamp": 1787306196505
+        "durationMs": 0,
+        "timestamp": 1787305691640
       },
       {
         "id": "compute.webassembly",
@@ -138,8 +138,8 @@
           "hasInstantiateStreaming": true,
           "hasMemory": true
         },
-        "durationMs": 0.5,
-        "timestamp": 1787306196505
+        "durationMs": 1,
+        "timestamp": 1787305691641
       },
       {
         "id": "compute.worker",
@@ -147,13 +147,13 @@
         "label": "Web Worker round-trip",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "blob worker round-trip succeeded in 6.8 ms",
+        "detail": "blob worker round-trip succeeded in 3 ms",
         "data": {
-          "roundTripMs": 6.8,
+          "roundTripMs": 3,
           "tokenMatched": true
         },
-        "durationMs": 7.9,
-        "timestamp": 1787306196513
+        "durationMs": 5,
+        "timestamp": 1787305691645
       },
       {
         "id": "compute.offscreenCanvas",
@@ -171,8 +171,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.6,
-        "timestamp": 1787306196514
+        "durationMs": 4,
+        "timestamp": 1787305691650
       },
       {
         "id": "compute.transferControlToOffscreen",
@@ -185,8 +185,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 0.4,
-        "timestamp": 1787306196514
+        "durationMs": 0,
+        "timestamp": 1787305691650
       },
       {
         "id": "compute.offscreenInWorker",
@@ -205,8 +205,8 @@
           ],
           "exact": true
         },
-        "durationMs": 6.3,
-        "timestamp": 1787306196520
+        "durationMs": 6,
+        "timestamp": 1787305691655
       },
       {
         "id": "compute.sharedArrayBuffer",
@@ -219,7 +219,7 @@
           "crossOriginIsolated": false
         },
         "durationMs": 0,
-        "timestamp": 1787306196520
+        "timestamp": 1787305691655
       },
       {
         "id": "graphics.webgl2",
@@ -227,36 +227,63 @@
         "label": "WebGL2",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "WebGL2 context created on ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "detail": "WebGL2 context created on Apple GPU",
         "data": {
-          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
-          "vendor": "Google Inc. (Google)",
+          "renderer": "Apple GPU",
+          "vendor": "Apple Inc.",
           "rendererMasked": false,
-          "maxTextureSize": 8192,
+          "maxTextureSize": 16384,
           "maxViewportDims": [
-            8192,
-            8192
+            16384,
+            16384
           ],
           "colorBufferFloat": true,
           "textureFloatLinear": true,
-          "extensionCount": 29
+          "extensionCount": 36
         },
-        "durationMs": 10.6,
-        "timestamp": 1787306196531
+        "durationMs": 2,
+        "timestamp": 1787305691657
       },
       {
         "id": "graphics.webgpu",
         "group": "graphics",
         "label": "WebGPU",
-        "state": "UNAVAILABLE",
+        "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+        "detail": "requestAdapter() and requestDevice() both succeeded — a real GPU device was created",
         "data": {
-          "hasNavigatorGpu": true,
-          "adapter": null
+          "vendor": "apple",
+          "architecture": "apple",
+          "device": "apple",
+          "description": "apple",
+          "features": [
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "timestamp-query",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "texture-compression-etc2",
+            "texture-compression-astc",
+            "texture-compression-astc-sliced-3d",
+            "indirect-first-instance",
+            "shader-f16",
+            "rg11b10ufloat-renderable",
+            "bgra8unorm-storage",
+            "float32-filterable",
+            "float32-blendable",
+            "float16-renderable",
+            "float32-renderable",
+            "core-features-and-limits",
+            "texture-formats-tier1"
+          ],
+          "maxTextureDimension2D": 8192,
+          "maxComputeWorkgroupSizeX": 256,
+          "maxComputeInvocationsPerWorkgroup": 256,
+          "maxStorageBufferBindingSize": 134217728,
+          "maxBufferSize": 268435456
         },
-        "durationMs": 1.6,
-        "timestamp": 1787306196533
+        "durationMs": 1,
+        "timestamp": 1787305691659
       },
       {
         "id": "graphics.createImageBitmap",
@@ -269,8 +296,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 1.6,
-        "timestamp": 1787306196534
+        "durationMs": 1,
+        "timestamp": 1787305691659
       },
       {
         "id": "graphics.canvas2dReadback",
@@ -288,8 +315,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.2,
-        "timestamp": 1787306196534
+        "durationMs": 1,
+        "timestamp": 1787305691660
       },
       {
         "id": "media.imageCapture",
@@ -300,7 +327,7 @@
         "detail": "ImageCapture is present",
         "data": {},
         "durationMs": 0,
-        "timestamp": 1787306196535
+        "timestamp": 1787305691660
       },
       {
         "id": "media.webcodecs",
@@ -314,8 +341,8 @@
           "VideoDecoder": true,
           "VideoEncoder": true
         },
-        "durationMs": 0.2,
-        "timestamp": 1787306196535
+        "durationMs": 0,
+        "timestamp": 1787305691660
       },
       {
         "id": "media.videoFrameCallback",
@@ -327,8 +354,8 @@
         "data": {
           "playsInline": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787306196535
+        "durationMs": 0,
+        "timestamp": 1787305691660
       },
       {
         "id": "storage.estimate",
@@ -336,13 +363,13 @@
         "label": "Storage quota",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "storage quota reported by the platform: 1.0 GB (used 0.0 B)",
+        "detail": "storage quota reported by the platform: 38.4 GB (used 1.1 MB)",
         "data": {
-          "quotaBytes": 1098722494,
-          "usageBytes": 0
+          "quotaBytes": 41231686042,
+          "usageBytes": 1187406
         },
-        "durationMs": 4.3,
-        "timestamp": 1787306196539
+        "durationMs": 0,
+        "timestamp": 1787305691661
       },
       {
         "id": "storage.localStorage",
@@ -352,8 +379,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "wrote, read and removed a real localStorage key",
         "data": {},
-        "durationMs": 1,
-        "timestamp": 1787306196540
+        "durationMs": 0,
+        "timestamp": 1787305691661
       },
       {
         "id": "storage.indexedDB",
@@ -363,21 +390,21 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
         "data": {},
-        "durationMs": 1.9,
-        "timestamp": 1787306196542
+        "durationMs": 12,
+        "timestamp": 1787305691673
       },
       {
         "id": "storage.performanceMemory",
         "group": "storage",
         "label": "JS heap metrics",
-        "state": "AVAILABLE",
+        "state": "UNAVAILABLE",
         "method": "PRESENCE_CHECK",
-        "detail": "performance.memory is present; heap numbers in the debug HUD will be real",
+        "detail": "performance.memory is absent (expected on WebKit) — the debug HUD must show MEMORY: UNAVAILABLE rather than a fabricated figure",
         "data": {
-          "deviceMemory": 8
+          "deviceMemory": null
         },
-        "durationMs": 0.1,
-        "timestamp": 1787306196542
+        "durationMs": 0,
+        "timestamp": 1787305691673
       },
       {
         "id": "spatial.webxr",
@@ -385,14 +412,12 @@
         "label": "WebXR",
         "state": "UNAVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "WebXR present; immersive-ar=false, immersive-vr=false",
+        "detail": "navigator.xr is absent — WebXR is the only standards-track route to device depth or AR pose from a browser, so neither is reachable here",
         "data": {
-          "hasNavigatorXr": true,
-          "immersiveAR": false,
-          "immersiveVR": false
+          "hasNavigatorXr": false
         },
-        "durationMs": 6.2,
-        "timestamp": 1787306196548
+        "durationMs": 1,
+        "timestamp": 1787305691673
       },
       {
         "id": "spatial.nativeBridge",
@@ -404,8 +429,8 @@
         "data": {
           "handlerNames": []
         },
-        "durationMs": 0.1,
-        "timestamp": 1787306196549
+        "durationMs": 0,
+        "timestamp": 1787305691673
       },
       {
         "id": "spatial.cameraDepth",
@@ -418,8 +443,8 @@
           "depthConstraintKeys": [],
           "webxrAvailable": false
         },
-        "durationMs": 0.3,
-        "timestamp": 1787306196549
+        "durationMs": 0,
+        "timestamp": 1787305691673
       },
       {
         "id": "spatial.arkit",
@@ -432,7 +457,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787306196549
+        "timestamp": 1787305691673
       },
       {
         "id": "spatial.roomplan",
@@ -445,7 +470,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787306196549
+        "timestamp": 1787305691673
       },
       {
         "id": "spatial.metricScale",
@@ -458,39 +483,88 @@
           "scaleStatus": "UNKNOWN",
           "units": "LOCAL_UNITS"
         },
-        "durationMs": 0.1,
-        "timestamp": 1787306196549
+        "durationMs": 0,
+        "timestamp": 1787305691673
       },
       {
         "id": "motion.deviceMotion",
         "group": "motion",
         "label": "DeviceMotion",
-        "state": "UNKNOWN",
-        "method": "NOT_ATTEMPTED",
-        "detail": "DeviceMotionEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "received 119 events carrying finite sensor values in 2000 ms (59.99 Hz measured)",
         "data": {
-          "requiresPermission": false
+          "permission": "granted",
+          "permissionGated": true,
+          "listenMs": 2000,
+          "eventCount": 119,
+          "eventsWithFiniteData": 119,
+          "measuredHz": 59.99,
+          "fields": {
+            "acceleration": true,
+            "accelerationIncludingGravity": true,
+            "rotationRate": true,
+            "interval": true
+          },
+          "firstSample": {
+            "acceleration": {
+              "x": -0.26082082757130265,
+              "y": -0.05484685795307159,
+              "z": -0.15447802952826023
+            },
+            "accelerationIncludingGravity": {
+              "x": -2.093729790198058,
+              "y": -8.449438102942704,
+              "z": -4.8811771733388305
+            },
+            "rotationRate": {
+              "alpha": -29.580852616029883,
+              "beta": 1.7358199000771035,
+              "gamma": 4.527800702693153
+            },
+            "interval": 0.01666666753590107
+          }
         },
-        "durationMs": 0,
-        "timestamp": 1787306196549
+        "durationMs": 2002,
+        "timestamp": 1787305694747
       },
       {
         "id": "motion.deviceOrientation",
         "group": "motion",
         "label": "DeviceOrientation",
-        "state": "UNKNOWN",
-        "method": "NOT_ATTEMPTED",
-        "detail": "DeviceOrientationEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "received 119 orientation events with finite values in 2000 ms (60.02 Hz measured); absolute=false, webkitCompassHeading=true",
         "data": {
-          "requiresPermission": false
+          "permission": "granted",
+          "permissionGated": true,
+          "listenMs": 2000,
+          "eventCount": 119,
+          "eventsWithFiniteData": 119,
+          "measuredHz": 60.02,
+          "fields": {
+            "alpha": true,
+            "beta": true,
+            "gamma": true
+          },
+          "absolute": false,
+          "webkitCompassHeading": true,
+          "compassAccuracy": 15.835444450378418,
+          "firstSample": {
+            "alpha": 12.059670150372842,
+            "beta": 58.87150276073626,
+            "gamma": -21.195186234287984,
+            "absolute": null,
+            "webkitCompassHeading": 0
+          }
         },
-        "durationMs": 0,
-        "timestamp": 1787306196549
+        "durationMs": 2002,
+        "timestamp": 1787305694747
       }
     ],
-    "startedAt": 1787306196453,
-    "completedAt": 1787306196549,
-    "totalDurationMs": 80.4
+    "startedAt": 1787305691629,
+    "completedAt": 1787305694747,
+    "totalDurationMs": 4048
   },
   "testResults": [
     {
@@ -500,14 +574,31 @@
         "required": true,
         "input": "user tap -> getUserMedia walking the constraint ladder (rear camera, 1280x720 ideal)",
         "expected": "a MediaStream with a live video track reporting real width, height and frameRate",
-        "passCriteria": "a stream opened with settings reporting finite width >= 1 and height >= 1, and the video element reported a non-zero size while frames were arriving",
-        "failureCondition": "getUserMedia throws while permission was granted; zero-size settings; the element never reported a size despite an open stream"
+        "passCriteria": "a live video track exists; settings report finite width >= 1 and height >= 1; the element reports matching dimensions",
+        "failureCondition": "getUserMedia throws while permission was granted; no live track; zero-size settings"
       },
-      "verdict": "PENDING",
-      "observed": "camera state CAMERA_PERMISSION_DENIED; no grant observed in this run or carried over",
-      "reason": "the granted path has not been exercised. Tap START CAMERA and allow access; PENDING holds Phase 1 at TESTING rather than rounding up",
-      "metrics": {},
-      "timestamp": 1787306196585
+      "verdict": "FAIL",
+      "observed": "LIVE at 1280x720@30fps, facingMode=environment, ladder rung 1, element 0x0",
+      "reason": "the video track is not live; the video element reports 0x0",
+      "metrics": {
+        "observedDirectly": true,
+        "width": 1280,
+        "height": 720,
+        "frameRate": 30,
+        "facingMode": "environment",
+        "deviceLabel": "背面デュアル広角カメラ",
+        "rungUsed": 1,
+        "openDurationMs": 746,
+        "attempts": [
+          {
+            "rung": 1,
+            "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
+            "ok": true,
+            "durationMs": 745
+          }
+        ]
+      },
+      "timestamp": 1787305739133
     },
     {
       "spec": {
@@ -519,16 +610,11 @@
         "passCriteria": "the rejection maps to CAMERA_PERMISSION_DENIED; no video track is held; no preview is presented; the error carries a recovery action",
         "failureCondition": "the denial is swallowed, or any placeholder or previously captured image is presented"
       },
-      "verdict": "PASS",
-      "observed": "CAMERA_PERMISSION_DENIED from NotAllowedError; stream=none, preview=false",
-      "reason": "the denial is reported as itself: no stream, no image, and a stated recovery",
-      "metrics": {
-        "observedDirectly": true,
-        "errorName": "NotAllowedError",
-        "unmappedError": false,
-        "recovery": "no stream is held and no image is presented; the user must grant camera access in Safari website settings and reload"
-      },
-      "timestamp": 1787306196585
+      "verdict": "PENDING",
+      "observed": "camera state IDLE; no denial observed in this run or carried over",
+      "reason": "a session in which permission was granted contains no evidence about the denial path, and it may not be inferred. Deny camera access in Safari website settings and reload to exercise it",
+      "metrics": {},
+      "timestamp": 1787305739133
     },
     {
       "spec": {
@@ -540,20 +626,20 @@
         "passCriteria": "observed >= 30 000 ms; mean delivered fps >= 15; longest gap <= 2000 ms; the track does not end on its own before the window fills; page never hidden",
         "failureCondition": "any of the above unmet; backgrounding counts as a failure, not an exclusion. Never opening a stream is PENDING, not FAIL"
       },
-      "verdict": "PENDING",
-      "observed": "no stream was opened in this run (camera state CAMERA_PERMISSION_DENIED)",
-      "reason": "CAM-003 measures a stream that exists. With no camera open there is nothing to measure, which is an absence of an attempt rather than a failure of continuity",
+      "verdict": "PASS",
+      "observed": "40.6 s, 1213 frames, 29.83 fps, longest gap 151 ms, via requestVideoFrameCallback",
+      "reason": "frames arrived continuously for the full window with no stall beyond tolerance",
       "metrics": {
-        "observedMs": 0,
-        "frameCount": 0,
-        "meanFps": 0,
-        "maxGapMs": 0,
-        "source": "none",
+        "observedMs": 40629,
+        "frameCount": 1213,
+        "meanFps": 29.83,
+        "maxGapMs": 151,
+        "source": "requestVideoFrameCallback",
         "wasEverHidden": false,
-        "cameraEverOpened": false,
+        "cameraEverOpened": true,
         "cameraEndedUnexpectedly": false
       },
-      "timestamp": 1787306196585
+      "timestamp": 1787305739133
     },
     {
       "spec": {
@@ -565,20 +651,20 @@
         "passCriteria": ">= 20 samples; maxMad >= 8 (a level a static scene cannot reach after downsampling); peak luma > 2",
         "failureCondition": "difference stays at the noise floor (frozen or still image), or the frame is uniformly black"
       },
-      "verdict": "PENDING",
-      "observed": "0/20 samples so far",
-      "reason": "not enough samples yet to separate motion from sensor noise; move the camera slowly",
+      "verdict": "PASS",
+      "observed": "152 samples; MAD min 12.194 / median 45.31 / max 75.178; luma 118.28..186.41",
+      "reason": "peak difference 75.178 against a floor of 12.194 and a median of 45.31 (1.7x the median), luma up to 186.41",
       "metrics": {
-        "sampleCount": 0,
-        "madMin": 0,
-        "madMedian": 0,
-        "madMean": 0,
-        "madMax": 0,
-        "lumaMin": 0,
-        "lumaMax": 0,
-        "sampleCostMsMean": 0
+        "sampleCount": 152,
+        "madMin": 12.194,
+        "madMedian": 45.31,
+        "madMean": 45.217,
+        "madMax": 75.178,
+        "lumaMin": 118.28,
+        "lumaMax": 186.41,
+        "sampleCostMsMean": 13.797
       },
-      "timestamp": 1787306196585
+      "timestamp": 1787305739133
     },
     {
       "spec": {
@@ -587,19 +673,19 @@
         "required": true,
         "input": "the device is rotated; screen.orientation change and orientationchange events",
         "expected": "the change is observed, capture continues across it, and the track survives",
-        "passCriteria": "at least one orientation change with a changed angle; a frame within 2000 ms of the change; the track does not end on its own during the session",
-        "failureCondition": "capture stalls across the rotation, or the track ends on its own"
+        "passCriteria": "at least one orientation change with a changed angle; a frame within 2000 ms of the change; the track does not end",
+        "failureCondition": "capture stalls or the track ends on rotation"
       },
-      "verdict": "PENDING",
-      "observed": "no orientation change observed (angle unreported)",
-      "reason": "rotate the device while the camera is open. If nothing happens, rotation lock is on — turn it off in Control Centre",
+      "verdict": "FAIL",
+      "observed": "2 change(s), now at 0°, next frame after 40 ms, 941 frames since",
+      "reason": "the video track ended across the rotation",
       "metrics": {
-        "orientationChanges": 0,
-        "lastOrientationAngle": null,
-        "framesAfterLastOrientationChange": 0,
-        "msFromOrientationChangeToNextFrame": null
+        "orientationChanges": 2,
+        "lastOrientationAngle": 0,
+        "framesAfterLastOrientationChange": 941,
+        "msFromOrientationChangeToNextFrame": 40
       },
-      "timestamp": 1787306196585
+      "timestamp": 1787305739133
     },
     {
       "spec": {
@@ -612,10 +698,10 @@
         "failureCondition": "any gap — advisory, since it is a property of the code and is covered by unit tests"
       },
       "verdict": "PASS",
-      "observed": "12 names mapped",
+      "observed": "11 names mapped",
       "reason": "every getUserMedia rejection the platform can raise maps to a declared state with a recovery action; an unrecognised name still fails closed to UNAVAILABLE",
       "metrics": {
-        "mappedCount": 12,
+        "mappedCount": 11,
         "mappedNames": [
           "NotAllowedError",
           "PermissionDeniedError",
@@ -627,84 +713,113 @@
           "NotReadableError",
           "TrackStartError",
           "AbortError",
-          "TypeError",
-          "NotSupportedError"
+          "TypeError"
         ]
       },
-      "timestamp": 1787306196585
+      "timestamp": 1787305739133
     }
   ],
-  "overallVerdict": "TESTING",
-  "overallReason": "PENDING: CAM-001, CAM-003, CAM-004, CAM-005 — not yet evaluable",
+  "overallVerdict": "FAILED",
+  "overallReason": "FAILED: CAM-001, CAM-005",
   "stateTransitions": [
     {
-      "timestamp": 1787306196437,
+      "timestamp": 1787305691625,
       "subject": "phase[0] Environment / Capability",
       "from": "NOT_STARTED",
       "to": "IMPLEMENTING",
       "reason": "capability detection starting"
     },
     {
-      "timestamp": 1787306196554,
+      "timestamp": 1787305691677,
       "subject": "phase[0] Environment / Capability",
       "from": "IMPLEMENTING",
       "to": "TESTING",
       "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
     },
     {
-      "timestamp": 1787306196574,
-      "subject": "phase[1] Camera Capture",
-      "from": "BLOCKED",
-      "to": "TESTING",
-      "reason": "PENDING: CAM-001, CAM-002, CAM-003, CAM-004, CAM-005 — not yet evaluable"
+      "timestamp": 1787305694755,
+      "subject": "phase[0] Environment / Capability",
+      "from": "TESTING",
+      "to": "PASSED",
+      "reason": "all 11 required tests PASS on a real device"
     },
     {
-      "timestamp": 1787306196585,
+      "timestamp": 1787305694755,
+      "subject": "phase[1] Camera Capture",
+      "from": "BLOCKED",
+      "to": "NOT_STARTED",
+      "reason": "phase 0 PASSED; this phase may now be started"
+    },
+    {
+      "timestamp": 1787305695567,
+      "subject": "phase[1] Camera Capture",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "SCAN screen opened"
+    },
+    {
+      "timestamp": 1787305695569,
+      "subject": "phase[1] Camera Capture",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-002, CAM-003, CAM-004, CAM-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787305704007,
       "subject": "phase[1] Camera Capture",
       "from": "TESTING",
       "to": "TESTING",
-      "reason": "PENDING: CAM-001, CAM-003, CAM-004, CAM-005 — not yet evaluable"
-    }
-  ],
-  "errorLog": [
+      "reason": "PENDING: CAM-002, CAM-003, CAM-005 — not yet evaluable"
+    },
     {
-      "timestamp": 1787306196585,
-      "level": "ERROR",
-      "phase": 1,
-      "source": "CameraSource",
-      "message": "camera permission denied",
-      "data": {
-        "errorName": "NotAllowedError"
-      },
-      "recovery": "no stream is held and no image is presented; the user must grant camera access in Safari website settings and reload"
+      "timestamp": 1787305704510,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-002, CAM-003 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787305728715,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-002 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787305739133,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "FAILED",
+      "reason": "FAILED: CAM-001, CAM-005"
     }
   ],
+  "errorLog": [],
   "fullLog": [
     {
-      "timestamp": 1787306196451,
+      "timestamp": 1787305691626,
       "level": "INFO",
       "phase": 0,
       "source": "App",
       "message": "Phase 0 starting",
       "data": {
         "appVersion": "0.1.0",
-        "leg": "DESKTOP_DEV",
-        "origin": "http://localhost:43285"
+        "leg": "REAL_DEVICE",
+        "origin": "https://hsgwyuki0429-design.github.io"
       }
     },
     {
-      "timestamp": 1787306196549,
+      "timestamp": 1787305691674,
       "level": "INFO",
       "phase": 0,
       "source": "CapabilityDetector",
       "message": "capability detection complete",
       "data": {
         "records": 31,
-        "totalProbeMs": 80.4
+        "totalProbeMs": 44
       }
     },
     {
-      "timestamp": 1787306196558,
+      "timestamp": 1787305691679,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -714,78 +829,95 @@
       }
     },
     {
-      "timestamp": 1787306196573,
-      "level": "WARN",
-      "phase": 1,
-      "source": "App",
-      "message": "Phase 1 opened through the desktop development override",
+      "timestamp": 1787305694747,
+      "level": "INFO",
+      "phase": 0,
+      "source": "MotionProbe",
+      "message": "sensor probe finished",
       "data": {
-        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+        "motion": "AVAILABLE",
+        "orientation": "AVAILABLE",
+        "motionEvents": 119,
+        "orientationEvents": 119
       }
     },
     {
-      "timestamp": 1787306196574,
+      "timestamp": 1787305694758,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "phase 0: TESTING -> PASSED",
+      "data": {
+        "reason": "all 11 required tests PASS on a real device"
+      }
+    },
+    {
+      "timestamp": 1787305695569,
       "level": "INFO",
       "phase": 1,
       "source": "App",
-      "message": "phase 1: BLOCKED -> TESTING",
+      "message": "phase 1: IMPLEMENTING -> TESTING",
       "data": {
-        "reason": "PENDING: CAM-001, CAM-002, CAM-003, CAM-004, CAM-005 — not yet evaluable"
+        "reason": "PENDING: CAM-002, CAM-003, CAM-004, CAM-005 — not yet evaluable"
       }
     },
     {
-      "timestamp": 1787306196585,
-      "level": "ERROR",
+      "timestamp": 1787305698473,
+      "level": "INFO",
       "phase": 1,
       "source": "CameraSource",
-      "message": "camera permission denied",
+      "message": "camera opened",
       "data": {
-        "errorName": "NotAllowedError"
-      },
-      "recovery": "no stream is held and no image is presented; the user must grant camera access in Safari website settings and reload"
+        "rung": 1,
+        "settings": {
+          "width": 1280,
+          "height": 720,
+          "frameRate": 30,
+          "facingMode": "environment",
+          "deviceId": "143AA840D6AE7750A3C6E738C7B09A597D6AADCD",
+          "label": "背面デュアル広角カメラ",
+          "aspectRatio": 1.778
+        }
+      }
+    },
+    {
+      "timestamp": 1787305739133,
+      "level": "INFO",
+      "phase": 1,
+      "source": "App",
+      "message": "phase 1: TESTING -> FAILED",
+      "data": {
+        "reason": "FAILED: CAM-001, CAM-005"
+      }
     }
   ],
   "legDetermination": {
     "signals": {
-      "uaSuggestsIOS": false,
+      "uaSuggestsIOS": true,
       "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
-      "maxTouchPoints": 1,
-      "protocol": "http:",
-      "hostname": "localhost",
-      "isLocalHost": true,
-      "navigatorWebdriver": true,
+      "maxTouchPoints": 5,
+      "protocol": "https:",
+      "hostname": "hsgwyuki0429-design.github.io",
+      "isLocalHost": false,
+      "navigatorWebdriver": false,
       "hardwareConcurrency": 4,
-      "devicePixelRatio": 2,
-      "screen": "430x932",
-      "failedChecks": [
-        "UA does not look like iOS/iPadOS",
-        "protocol is http:, not https:",
-        "host is local, so this is not a device reaching a real origin",
-        "navigator.webdriver is true (automated browser)"
-      ]
+      "devicePixelRatio": 3,
+      "screen": "393x852"
     },
-    "explanation": "Classified as DESKTOP_DEV because: UA does not look like iOS/iPadOS; protocol is http:, not https:; host is local, so this is not a device reaching a real origin; navigator.webdriver is true (automated browser). Rule 004 means this run cannot pass a phase, only catch regressions."
+    "explanation": "All real-device signals hold. Note that the iOS check is a user-agent inference; a reviewer should confirm with the device screenshot required by §60 before treating this bundle as proof."
   },
   "phaseContext": {
     "camera": {
-      "state": "CAMERA_PERMISSION_DENIED",
+      "state": "IDLE",
       "live": false,
       "trackReadyState": null,
-      "rungUsed": null,
+      "rungUsed": 1,
       "attempts": [
         {
           "rung": 1,
           "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
-          "ok": false,
-          "errorName": "OverconstrainedError",
-          "durationMs": 1
-        },
-        {
-          "rung": 2,
-          "label": "rear camera (preferred), 1280x720 ideal",
-          "ok": false,
-          "errorName": "NotAllowedError",
-          "durationMs": 2
+          "ok": true,
+          "durationMs": 745
         }
       ],
       "requestedLadder": [
@@ -807,39 +939,31 @@
         }
       ],
       "achievedSettings": null,
-      "openDurationMs": 3,
-      "failure": {
-        "state": "CAMERA_PERMISSION_DENIED",
-        "errorName": "NotAllowedError",
-        "message": "NotAllowedError: Permission denied",
-        "recovery": "no stream is held and no image is presented; the user must grant camera access in Safari website settings and reload",
-        "unmapped": false
-      }
+      "openDurationMs": 746,
+      "failure": null
     },
     "frames": {
-      "frameCount": 0,
-      "firstFrameAt": null,
-      "lastFrameAt": null,
-      "observedMs": 0,
-      "meanFps": 0,
-      "maxGapMs": 0,
-      "source": "none",
-      "sampleCount": 0,
-      "madMin": 0,
-      "madMedian": 0,
-      "madMean": 0,
-      "madMax": 0,
-      "lumaMin": 0,
-      "lumaMax": 0,
+      "frameCount": 1213,
+      "firstFrameAt": 7162,
+      "lastFrameAt": 47791.00000000001,
+      "observedMs": 40629,
+      "meanFps": 29.83,
+      "maxGapMs": 151,
+      "source": "requestVideoFrameCallback",
+      "sampleCount": 152,
+      "madMin": 12.194,
+      "madMedian": 45.31,
+      "madMean": 45.217,
+      "madMax": 75.178,
+      "lumaMin": 118.28,
+      "lumaMax": 186.41,
       "hiddenCount": 0,
       "wasEverHidden": false,
-      "orientationChanges": 0,
-      "lastOrientationAngle": null,
-      "framesAfterLastOrientationChange": 0,
-      "msFromOrientationChangeToNextFrame": null,
-      "sampleCostMsMean": 0,
-      "videoWidthObserved": 0,
-      "videoHeightObserved": 0,
+      "orientationChanges": 2,
+      "lastOrientationAngle": 0,
+      "framesAfterLastOrientationChange": 941,
+      "msFromOrientationChangeToNextFrame": 40,
+      "sampleCostMsMean": 13.797,
       "sampleGridWidth": 64,
       "sampleGridHeight": 48,
       "sampleIntervalMs": 250,
@@ -848,20 +972,20 @@
     "scenarioLedger": {
       "storageKey": "ssm.phase1.scenarios.v1",
       "appVersion": "0.1.0",
-      "granted": null,
-      "denied": {
-        "scenario": "DENIED",
-        "at": 1787306196585,
-        "origin": "http://localhost:43285",
+      "granted": {
+        "scenario": "GRANTED",
+        "at": 1787305698472,
+        "origin": "https://hsgwyuki0429-design.github.io",
         "appVersion": "0.1.0",
-        "detail": "NotAllowedError — no stream held, no image presented",
+        "detail": "1280x720 @ 30fps, facingMode=environment, ladder rung 1",
         "observedDirectly": true,
         "ageMs": 0
       },
+      "denied": null,
       "storageError": null,
       "note": "Carried-over observations are a convenience for a two-run test. The repository gate ignores this ledger and requires committed bundles that observed each scenario directly."
     },
-    "devEntry": true,
+    "devEntry": false,
     "previewPresented": false
   }
 }
