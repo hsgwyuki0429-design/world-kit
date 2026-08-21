@@ -2,15 +2,43 @@
 
 ## Files
 
-| File | Leg | Can it pass a phase? |
-| --- | --- | --- |
-| `phase0-desktop-chromium.json` | `DESKTOP_DEV` | **No** (Rule 004) |
-| `phase0-desktop-chromium.png` | `DESKTOP_DEV` | — |
-| `phase0-desktop-chromium.summary.txt` | `DESKTOP_DEV` | — |
-| `phase0-real-device-*.json` | `REAL_DEVICE` | Yes — not yet produced |
+| File | Leg | Verdict | Can it pass the phase? |
+| --- | --- | --- | --- |
+| `phase0-desktop-chromium.json` | `DESKTOP_DEV` | TESTING | **No** (Rule 004) |
+| `phase0-desktop-chromium.png` | `DESKTOP_DEV` | — | — |
+| `phase0-desktop-chromium.summary.txt` | `DESKTOP_DEV` | — | — |
+| `phase0-real-device-TESTING-2026-08-21T07-57-50-291Z.json` | `REAL_DEVICE` | **TESTING** | **No** — see below |
+| `phase0-real-device-PASSED-*.json` | `REAL_DEVICE` | PASSED | Yes — **not yet committed** |
 
 Regenerate the desktop leg with `npm run test:e2e`. Produce the real-device leg by
 following `../HOW-TO-RUN-DEVICE-TEST.md`.
+
+## The committed real-device bundle does not pass Phase 0
+
+iPhone / iOS 18.7 / Safari 26.6 / HTTPS. Twenty-nine of its thirty-one capability records
+are final and are the authoritative measurement of this platform. But it was exported
+**before the sensor-probe tap**, so `motion.deviceMotion` and `motion.deviceOrientation`
+are still `PERMISSION_REQUIRED` / `NOT_ATTEMPTED`, CAP-0004 and CAP-0005 are `PENDING`, and
+the bundle reads:
+
+```json
+"overallVerdict": "TESTING",
+"overallReason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+```
+
+A device screenshot from the same session shows the app reaching `PASSED` with
+`13 PASS · 0 FAIL · 0 PENDING` after the tap, which is good evidence that the device leg
+does pass. It is not this file. Phase 0 stays `TESTING` in `docs/PHASE-STATUS.md` until a
+bundle whose own `overallVerdict` is `PASSED` is committed here — recording a pass against
+a file that says `TESTING` is precisely the fake completion §2 prohibits, and the fact that
+the screen once showed something better is not a substitute for the record.
+
+**What changed because of this.** The export was possible, and looked identical to a
+passing one, while required tests were still `PENDING`. Two fixes: the verdict is now part
+of the filename (`phase0-real-device-TESTING-…json` versus `…-PASSED-…json`), and the
+evidence card warns, and names the verdict on the download button, whenever a required test
+is `PENDING`. Both are covered by tests — `tests/unit/evidence.test.ts` and an assertion in
+the desktop leg that the warning is present before the tap and gone after it.
 
 ## Reading the desktop bundle
 
@@ -33,7 +61,9 @@ detail says exactly what was seen: `1 events arrived but only 0 carried finite v
 
 **`CAP-0013` FAILs.** There is no camera in the container, so `enumerateDevices()` returns
 no `videoinput`. It is advisory, so it does not fail the phase — see the plan amendment in
-`../TEST-PLAN.md` for why that criterion is advisory rather than required.
+`../TEST-PLAN.md` for why that criterion is advisory rather than required. On the real
+device it passes: one `videoinput`, labels and ids hidden until permission, exactly the
+behaviour the amendment predicted.
 
 ## What a bundle contains (§60)
 

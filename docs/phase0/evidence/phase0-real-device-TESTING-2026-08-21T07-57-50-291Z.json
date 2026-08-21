@@ -1,29 +1,29 @@
 {
   "schemaVersion": 1,
-  "leg": "DESKTOP_DEV",
+  "leg": "REAL_DEVICE",
   "phase": 0,
   "phaseName": "Environment / Capability",
-  "createdAt": "2026-08-21T08:03:25.267Z",
+  "createdAt": "2026-08-21T07:57:50.291Z",
   "appVersion": "0.1.0",
-  "origin": "http://localhost:42479",
+  "origin": "https://hsgwyuki0429-design.github.io",
   "secureContext": true,
   "device": {
-    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
-    "platformHint": "Linux x86_64",
-    "osGuess": "Linux",
-    "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
-    "isLikelyIOS": false,
-    "maxTouchPoints": 0,
-    "screenWidth": 430,
-    "screenHeight": 932,
-    "viewportWidth": 430,
-    "viewportHeight": 932,
-    "devicePixelRatio": 2,
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    "platformHint": "iPhone",
+    "osGuess": "iOS/iPadOS 18.7",
+    "browserGuess": "Safari / WebKit",
+    "isLikelyIOS": true,
+    "maxTouchPoints": 5,
+    "screenWidth": 393,
+    "screenHeight": 852,
+    "viewportWidth": 393,
+    "viewportHeight": 695,
+    "devicePixelRatio": 3,
     "hardwareConcurrency": 4,
     "languages": [
-      "en-US"
+      "ja"
     ],
-    "timezone": "UTC"
+    "timezone": "Asia/Tokyo"
   },
   "capabilityMatrix": {
     "records": [
@@ -33,30 +33,30 @@
         "label": "Secure context (HTTPS)",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "secure context over http://localhost:42479",
+        "detail": "secure context over https://hsgwyuki0429-design.github.io",
         "data": {
           "isSecureContext": true,
-          "protocol": "http:",
-          "host": "localhost:42479",
+          "protocol": "https:",
+          "host": "hsgwyuki0429-design.github.io",
           "crossOriginIsolated": false
         },
-        "durationMs": 0.2,
-        "timestamp": 1787299403024
+        "durationMs": 0,
+        "timestamp": 1787299070253
       },
       {
         "id": "platform.iosSafariGuess",
         "group": "platform",
         "label": "iOS/Safari (UA guess)",
-        "state": "UNAVAILABLE",
+        "state": "AVAILABLE",
         "method": "INFERENCE",
         "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
         "data": {
-          "osGuess": "Linux",
-          "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
-          "maxTouchPoints": 0
+          "osGuess": "iOS/iPadOS 18.7",
+          "browserGuess": "Safari / WebKit",
+          "maxTouchPoints": 5
         },
-        "durationMs": 0.2,
-        "timestamp": 1787299403024
+        "durationMs": 0,
+        "timestamp": 1787299070253
       },
       {
         "id": "camera.getUserMedia",
@@ -71,24 +71,24 @@
           "secureContext": true
         },
         "durationMs": 0,
-        "timestamp": 1787299403024
+        "timestamp": 1787299070253
       },
       {
         "id": "camera.enumerateDevices",
         "group": "camera",
         "label": "Video input devices",
-        "state": "UNAVAILABLE",
+        "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "no videoinput devices enumerated; on some browsers the list stays empty until camera permission is granted, so this is not conclusive before Phase 1",
+        "detail": "1 videoinput device(s) enumerated (labels hidden until camera permission is granted — expected)",
         "data": {
-          "videoInputCount": 0,
-          "audioInputCount": 0,
-          "totalDevices": 0,
+          "videoInputCount": 1,
+          "audioInputCount": 1,
+          "totalDevices": 2,
           "labelsHidden": true,
           "deviceIdsHidden": true
         },
-        "durationMs": 46.7,
-        "timestamp": 1787299403071
+        "durationMs": 8,
+        "timestamp": 1787299070260
       },
       {
         "id": "camera.supportedConstraints",
@@ -98,7 +98,7 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
         "data": {
-          "supportedCount": 36,
+          "supportedCount": 17,
           "facingMode": true,
           "width": true,
           "height": true,
@@ -107,8 +107,8 @@
           "deviceId": true,
           "missing": []
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403071
+        "durationMs": 0,
+        "timestamp": 1787299070260
       },
       {
         "id": "camera.trackControl",
@@ -122,8 +122,8 @@
           "getSettings": true,
           "applyConstraints": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403071
+        "durationMs": 0,
+        "timestamp": 1787299070260
       },
       {
         "id": "compute.webassembly",
@@ -138,8 +138,8 @@
           "hasInstantiateStreaming": true,
           "hasMemory": true
         },
-        "durationMs": 0.5,
-        "timestamp": 1787299403072
+        "durationMs": 1,
+        "timestamp": 1787299070262
       },
       {
         "id": "compute.worker",
@@ -147,13 +147,13 @@
         "label": "Web Worker round-trip",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "blob worker round-trip succeeded in 13 ms",
+        "detail": "blob worker round-trip succeeded in 2 ms",
         "data": {
-          "roundTripMs": 13,
+          "roundTripMs": 2,
           "tokenMatched": true
         },
-        "durationMs": 14.2,
-        "timestamp": 1787299403086
+        "durationMs": 3,
+        "timestamp": 1787299070264
       },
       {
         "id": "compute.offscreenCanvas",
@@ -171,8 +171,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.7,
-        "timestamp": 1787299403087
+        "durationMs": 2,
+        "timestamp": 1787299070266
       },
       {
         "id": "compute.transferControlToOffscreen",
@@ -185,8 +185,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 0.2,
-        "timestamp": 1787299403087
+        "durationMs": 0,
+        "timestamp": 1787299070266
       },
       {
         "id": "compute.offscreenInWorker",
@@ -205,8 +205,8 @@
           ],
           "exact": true
         },
-        "durationMs": 8.5,
-        "timestamp": 1787299403095
+        "durationMs": 3,
+        "timestamp": 1787299070269
       },
       {
         "id": "compute.sharedArrayBuffer",
@@ -218,8 +218,8 @@
         "data": {
           "crossOriginIsolated": false
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403096
+        "durationMs": 0,
+        "timestamp": 1787299070269
       },
       {
         "id": "graphics.webgl2",
@@ -227,36 +227,63 @@
         "label": "WebGL2",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "WebGL2 context created on ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "detail": "WebGL2 context created on Apple GPU",
         "data": {
-          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
-          "vendor": "Google Inc. (Google)",
+          "renderer": "Apple GPU",
+          "vendor": "Apple Inc.",
           "rendererMasked": false,
-          "maxTextureSize": 8192,
+          "maxTextureSize": 16384,
           "maxViewportDims": [
-            8192,
-            8192
+            16384,
+            16384
           ],
           "colorBufferFloat": true,
           "textureFloatLinear": true,
-          "extensionCount": 29
+          "extensionCount": 36
         },
-        "durationMs": 19.5,
-        "timestamp": 1787299403115
+        "durationMs": 1,
+        "timestamp": 1787299070271
       },
       {
         "id": "graphics.webgpu",
         "group": "graphics",
         "label": "WebGPU",
-        "state": "UNAVAILABLE",
+        "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+        "detail": "requestAdapter() and requestDevice() both succeeded — a real GPU device was created",
         "data": {
-          "hasNavigatorGpu": true,
-          "adapter": null
+          "vendor": "apple",
+          "architecture": "apple",
+          "device": "apple",
+          "description": "apple",
+          "features": [
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "timestamp-query",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "texture-compression-etc2",
+            "texture-compression-astc",
+            "texture-compression-astc-sliced-3d",
+            "indirect-first-instance",
+            "shader-f16",
+            "rg11b10ufloat-renderable",
+            "bgra8unorm-storage",
+            "float32-filterable",
+            "float32-blendable",
+            "float16-renderable",
+            "float32-renderable",
+            "core-features-and-limits",
+            "texture-formats-tier1"
+          ],
+          "maxTextureDimension2D": 8192,
+          "maxComputeWorkgroupSizeX": 256,
+          "maxComputeInvocationsPerWorkgroup": 256,
+          "maxStorageBufferBindingSize": 134217728,
+          "maxBufferSize": 268435456
         },
-        "durationMs": 2.8,
-        "timestamp": 1787299403118
+        "durationMs": 1,
+        "timestamp": 1787299070271
       },
       {
         "id": "graphics.createImageBitmap",
@@ -269,8 +296,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 1.9,
-        "timestamp": 1787299403120
+        "durationMs": 0,
+        "timestamp": 1787299070272
       },
       {
         "id": "graphics.canvas2dReadback",
@@ -288,8 +315,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.3,
-        "timestamp": 1787299403120
+        "durationMs": 1,
+        "timestamp": 1787299070272
       },
       {
         "id": "media.imageCapture",
@@ -300,7 +327,7 @@
         "detail": "ImageCapture is present",
         "data": {},
         "durationMs": 0,
-        "timestamp": 1787299403120
+        "timestamp": 1787299070272
       },
       {
         "id": "media.webcodecs",
@@ -314,8 +341,8 @@
           "VideoDecoder": true,
           "VideoEncoder": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403120
+        "durationMs": 0,
+        "timestamp": 1787299070272
       },
       {
         "id": "media.videoFrameCallback",
@@ -327,8 +354,8 @@
         "data": {
           "playsInline": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403120
+        "durationMs": 1,
+        "timestamp": 1787299070273
       },
       {
         "id": "storage.estimate",
@@ -336,13 +363,13 @@
         "label": "Storage quota",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "storage quota reported by the platform: 942.6 MB (used 0.0 B)",
+        "detail": "storage quota reported by the platform: 38.4 GB (used 1.1 MB)",
         "data": {
-          "quotaBytes": 988392962,
-          "usageBytes": 0
+          "quotaBytes": 41231686042,
+          "usageBytes": 1187270
         },
-        "durationMs": 2.1,
-        "timestamp": 1787299403123
+        "durationMs": 0,
+        "timestamp": 1787299070273
       },
       {
         "id": "storage.localStorage",
@@ -352,8 +379,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "wrote, read and removed a real localStorage key",
         "data": {},
-        "durationMs": 0.8,
-        "timestamp": 1787299403123
+        "durationMs": 0,
+        "timestamp": 1787299070273
       },
       {
         "id": "storage.indexedDB",
@@ -363,21 +390,21 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
         "data": {},
-        "durationMs": 2.2,
-        "timestamp": 1787299403126
+        "durationMs": 12,
+        "timestamp": 1787299070285
       },
       {
         "id": "storage.performanceMemory",
         "group": "storage",
         "label": "JS heap metrics",
-        "state": "AVAILABLE",
+        "state": "UNAVAILABLE",
         "method": "PRESENCE_CHECK",
-        "detail": "performance.memory is present; heap numbers in the debug HUD will be real",
+        "detail": "performance.memory is absent (expected on WebKit) — the debug HUD must show MEMORY: UNAVAILABLE rather than a fabricated figure",
         "data": {
-          "deviceMemory": 8
+          "deviceMemory": null
         },
-        "durationMs": 0.2,
-        "timestamp": 1787299403126
+        "durationMs": 0,
+        "timestamp": 1787299070285
       },
       {
         "id": "spatial.webxr",
@@ -385,14 +412,12 @@
         "label": "WebXR",
         "state": "UNAVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "WebXR present; immersive-ar=false, immersive-vr=false",
+        "detail": "navigator.xr is absent — WebXR is the only standards-track route to device depth or AR pose from a browser, so neither is reachable here",
         "data": {
-          "hasNavigatorXr": true,
-          "immersiveAR": false,
-          "immersiveVR": false
+          "hasNavigatorXr": false
         },
-        "durationMs": 8.2,
-        "timestamp": 1787299403134
+        "durationMs": 0,
+        "timestamp": 1787299070285
       },
       {
         "id": "spatial.nativeBridge",
@@ -404,8 +429,8 @@
         "data": {
           "handlerNames": []
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403134
+        "durationMs": 0,
+        "timestamp": 1787299070285
       },
       {
         "id": "spatial.cameraDepth",
@@ -418,8 +443,8 @@
           "depthConstraintKeys": [],
           "webxrAvailable": false
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403134
+        "durationMs": 0,
+        "timestamp": 1787299070285
       },
       {
         "id": "spatial.arkit",
@@ -432,7 +457,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787299403134
+        "timestamp": 1787299070285
       },
       {
         "id": "spatial.roomplan",
@@ -445,7 +470,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787299403134
+        "timestamp": 1787299070285
       },
       {
         "id": "spatial.metricScale",
@@ -458,60 +483,39 @@
           "scaleStatus": "UNKNOWN",
           "units": "LOCAL_UNITS"
         },
-        "durationMs": 0.1,
-        "timestamp": 1787299403134
+        "durationMs": 0,
+        "timestamp": 1787299070285
       },
       {
         "id": "motion.deviceMotion",
         "group": "motion",
         "label": "DeviceMotion",
-        "state": "UNAVAILABLE",
-        "method": "FUNCTIONAL_PROBE",
-        "detail": "1 events arrived but only 0 carried finite values (need >= 5)",
+        "state": "PERMISSION_REQUIRED",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceMotionEvent requires requestPermission() from inside a user gesture (iOS 13+). Not attempted automatically — tap the sensor probe button.",
         "data": {
-          "permission": "no permission gate on this platform",
-          "permissionGated": false,
-          "listenMs": 2000,
-          "eventCount": 1,
-          "eventsWithFiniteData": 0,
-          "measuredHz": 0,
-          "fields": {
-            "acceleration": false,
-            "accelerationIncludingGravity": false,
-            "rotationRate": false,
-            "interval": true
-          },
-          "firstSample": null
+          "requiresPermission": true
         },
-        "durationMs": 2000.6,
-        "timestamp": 1787299405259
+        "durationMs": 0,
+        "timestamp": 1787299070285
       },
       {
         "id": "motion.deviceOrientation",
         "group": "motion",
         "label": "DeviceOrientation",
-        "state": "UNAVAILABLE",
-        "method": "FUNCTIONAL_PROBE",
-        "detail": "1 events arrived but only 0 carried finite values",
+        "state": "PERMISSION_REQUIRED",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceOrientationEvent requires requestPermission() from inside a user gesture (iOS 13+). Not attempted automatically — tap the sensor probe button.",
         "data": {
-          "permission": "no permission gate on this platform",
-          "permissionGated": false,
-          "listenMs": 2000,
-          "eventCount": 1,
-          "eventsWithFiniteData": 0,
-          "measuredHz": 0,
-          "absolute": false,
-          "webkitCompassHeading": false,
-          "compassAccuracy": null,
-          "firstSample": null
+          "requiresPermission": true
         },
-        "durationMs": 2000.6,
-        "timestamp": 1787299405260
+        "durationMs": 0,
+        "timestamp": 1787299070285
       }
     ],
-    "startedAt": 1787299403024,
-    "completedAt": 1787299405260,
-    "totalDurationMs": 4111.2
+    "startedAt": 1787299070252,
+    "completedAt": 1787299070285,
+    "totalDurationMs": 33
   },
   "testResults": [
     {
@@ -525,13 +529,13 @@
         "failureCondition": "plain http on a non-localhost origin — camera can never work there"
       },
       "verdict": "PASS",
-      "observed": "isSecureContext=true at http://localhost:42479",
+      "observed": "isSecureContext=true at https://hsgwyuki0429-design.github.io",
       "reason": "secure context confirmed by direct measurement",
       "metrics": {
-        "protocol": "http:",
+        "protocol": "https:",
         "crossOriginIsolated": false
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -547,11 +551,11 @@
       "observed": "getUserMedia=AVAILABLE; constraints=AVAILABLE",
       "reason": "the camera API surface Phase 1 needs is present; opening a stream is deferred to CAM-001",
       "metrics": {
-        "supportedConstraintCount": 36,
+        "supportedConstraintCount": 17,
         "facingMode": true,
         "frameRate": true
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -564,15 +568,15 @@
         "failureCondition": "state UNKNOWN/ERROR, or decided from the UA string instead of the API"
       },
       "verdict": "PASS",
-      "observed": "UNAVAILABLE via FUNCTIONAL_PROBE — navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+      "observed": "AVAILABLE via FUNCTIONAL_PROBE — requestAdapter() and requestDevice() both succeeded — a real GPU device was created",
       "reason": "WebGPU state was decided by actually calling the API; UNAVAILABLE is a passing outcome because §8 asks for a correct report, not for WebGPU to exist",
       "metrics": {
-        "vendor": null,
-        "architecture": null,
-        "maxComputeInvocationsPerWorkgroup": null,
-        "probeMs": 2.8
+        "vendor": "apple",
+        "architecture": "apple",
+        "maxComputeInvocationsPerWorkgroup": 256,
+        "probeMs": 1
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -584,13 +588,11 @@
         "passCriteria": "state in {AVAILABLE, UNAVAILABLE, PERMISSION_DENIED}; AVAILABLE requires real data",
         "failureCondition": "AVAILABLE claimed with no arriving events, or non-finite sample values"
       },
-      "verdict": "PASS",
-      "observed": "UNAVAILABLE — 1 events arrived but only 0 carried finite values (need >= 5)",
-      "reason": "DeviceMotion was correctly determined to be unavailable; the engine will run vision-only and must display that state rather than implying IMU support",
-      "metrics": {
-        "eventCount": 1
-      },
-      "timestamp": 1787299405266
+      "verdict": "PENDING",
+      "observed": "PERMISSION_REQUIRED — DeviceMotionEvent requires requestPermission() from inside a user gesture (iOS 13+). Not attempted automatically — tap the sensor probe button.",
+      "reason": "DeviceMotion cannot be determined until the user taps the sensor probe; PENDING holds Phase 0 at TESTING rather than rounding up to PASS",
+      "metrics": {},
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -602,13 +604,11 @@
         "passCriteria": "state in {AVAILABLE, UNAVAILABLE, PERMISSION_DENIED}; AVAILABLE requires real data",
         "failureCondition": "AVAILABLE claimed with no arriving events, or non-finite sample values"
       },
-      "verdict": "PASS",
-      "observed": "UNAVAILABLE — 1 events arrived but only 0 carried finite values",
-      "reason": "DeviceOrientation was correctly determined to be unavailable; the engine will run vision-only and must display that state rather than implying IMU support",
-      "metrics": {
-        "eventCount": 1
-      },
-      "timestamp": 1787299405266
+      "verdict": "PENDING",
+      "observed": "PERMISSION_REQUIRED — DeviceOrientationEvent requires requestPermission() from inside a user gesture (iOS 13+). Not attempted automatically — tap the sensor probe button.",
+      "reason": "DeviceOrientation cannot be determined until the user taps the sensor probe; PENDING holds Phase 0 at TESTING rather than rounding up to PASS",
+      "metrics": {},
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -625,9 +625,9 @@
       "reason": "a real module was compiled and executed, so wasm is usable for Phase 3/4 hot loops",
       "metrics": {
         "moduleBytes": 41,
-        "probeMs": 0.5
+        "probeMs": 1
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -640,12 +640,12 @@
         "failureCondition": "timeout, error event, or token mismatch"
       },
       "verdict": "PASS",
-      "observed": "AVAILABLE — blob worker round-trip succeeded in 13 ms",
+      "observed": "AVAILABLE — blob worker round-trip succeeded in 2 ms",
       "reason": "workers function, so §21 (no long image processing on the UI thread) is achievable",
       "metrics": {
-        "roundTripMs": 13
+        "roundTripMs": 2
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -669,7 +669,7 @@
         ],
         "workerTransfer": "AVAILABLE"
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -689,7 +689,7 @@
         "depthConstraintKeys": [],
         "scaleStatus": "UNKNOWN"
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070290
     },
     {
       "spec": {
@@ -712,9 +712,9 @@
         "inferenceRecordIds": [
           "platform.iosSafariGuess"
         ],
-        "totalProbeMs": 4111.2
+        "totalProbeMs": 33
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070291
     },
     {
       "spec": {
@@ -736,7 +736,7 @@
         "phase1Implemented": false,
         "startScanDisabled": true
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070291
     },
     {
       "spec": {
@@ -749,18 +749,18 @@
         "failureCondition": "exceeded — advisory only, a slow adapter query is a performance fact"
       },
       "verdict": "PASS",
-      "observed": "110 ms of probing (budget 1500 ms); slowest: camera.enumerateDevices=46.7ms, graphics.webgl2=19.5ms, compute.worker=14.2ms",
+      "observed": "33 ms of probing (budget 1500 ms); slowest: storage.indexedDB=12ms, camera.enumerateDevices=8ms, compute.worker=3ms",
       "reason": "capability detection is within its time budget",
       "metrics": {
-        "totalProbeMs": 110,
+        "totalProbeMs": 33,
         "budgetMs": 1500,
         "slowest": [
-          "camera.enumerateDevices=46.7ms",
-          "graphics.webgl2=19.5ms",
-          "compute.worker=14.2ms"
+          "storage.indexedDB=12ms",
+          "camera.enumerateDevices=8ms",
+          "compute.worker=3ms"
         ]
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070291
     },
     {
       "spec": {
@@ -772,44 +772,30 @@
         "passCriteria": "videoInputCount >= 1",
         "failureCondition": "zero video inputs — advisory, since an empty pre-permission list is a known browser behaviour"
       },
-      "verdict": "FAIL",
-      "observed": "0 videoinput device(s); labelsHidden=true",
-      "reason": "no cameras enumerated; this is inconclusive before permission is granted, so it is advisory. If Phase 1 CAM-002 also fails to open a stream, that pair is the real signal",
+      "verdict": "PASS",
+      "observed": "1 videoinput device(s); labelsHidden=true",
+      "reason": "at least one camera is enumerable before permission",
       "metrics": {
-        "videoInputCount": 0,
+        "videoInputCount": 1,
         "labelsHidden": true,
-        "totalDevices": 0
+        "totalDevices": 2
       },
-      "timestamp": 1787299405266
+      "timestamp": 1787299070291
     }
   ],
   "overallVerdict": "TESTING",
-  "overallReason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED",
+  "overallReason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable",
   "stateTransitions": [
     {
-      "timestamp": 1787299403005,
+      "timestamp": 1787299070241,
       "subject": "phase[0] Environment / Capability",
       "from": "NOT_STARTED",
       "to": "IMPLEMENTING",
       "reason": "capability detection starting"
     },
     {
-      "timestamp": 1787299403139,
+      "timestamp": 1787299070290,
       "subject": "phase[0] Environment / Capability",
-      "from": "IMPLEMENTING",
-      "to": "TESTING",
-      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
-    },
-    {
-      "timestamp": 1787299405264,
-      "subject": "phase[0] Environment / Capability",
-      "from": "TESTING",
-      "to": "TESTING",
-      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
-    },
-    {
-      "timestamp": 1787299403149,
-      "subject": "phase[0]",
       "from": "IMPLEMENTING",
       "to": "TESTING",
       "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
@@ -818,72 +804,42 @@
   "errorLog": [],
   "fullLog": [
     {
-      "timestamp": 1787299403022,
+      "timestamp": 1787299070251,
       "level": "INFO",
       "phase": 0,
       "source": "App",
       "message": "Phase 0 starting",
       "data": {
         "appVersion": "0.1.0",
-        "leg": "DESKTOP_DEV",
-        "origin": "http://localhost:42479"
+        "leg": "REAL_DEVICE",
+        "origin": "https://hsgwyuki0429-design.github.io"
       }
     },
     {
-      "timestamp": 1787299403134,
+      "timestamp": 1787299070285,
       "level": "INFO",
       "phase": 0,
       "source": "CapabilityDetector",
       "message": "capability detection complete",
       "data": {
         "records": 31,
-        "totalProbeMs": 110
-      }
-    },
-    {
-      "timestamp": 1787299403149,
-      "level": "INFO",
-      "phase": -1,
-      "source": "StateTransition",
-      "message": "phase[0]: IMPLEMENTING -> TESTING",
-      "data": {
-        "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
-      }
-    },
-    {
-      "timestamp": 1787299405260,
-      "level": "INFO",
-      "phase": 0,
-      "source": "MotionProbe",
-      "message": "sensor probe finished",
-      "data": {
-        "motion": "UNAVAILABLE",
-        "orientation": "UNAVAILABLE",
-        "motionEvents": 0,
-        "orientationEvents": 0
+        "totalProbeMs": 33
       }
     }
   ],
   "legDetermination": {
     "signals": {
-      "uaSuggestsIOS": false,
+      "uaSuggestsIOS": true,
       "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
-      "maxTouchPoints": 0,
-      "protocol": "http:",
-      "hostname": "localhost",
-      "isLocalHost": true,
-      "navigatorWebdriver": true,
+      "maxTouchPoints": 5,
+      "protocol": "https:",
+      "hostname": "hsgwyuki0429-design.github.io",
+      "isLocalHost": false,
+      "navigatorWebdriver": false,
       "hardwareConcurrency": 4,
-      "devicePixelRatio": 2,
-      "screen": "430x932",
-      "failedChecks": [
-        "UA does not look like iOS/iPadOS",
-        "maxTouchPoints is 0",
-        "protocol is http:, not https:",
-        "host is local, so this is not a device reaching a real origin",
-        "navigator.webdriver is true (automated browser)"
-      ]
+      "devicePixelRatio": 3,
+      "screen": "393x852"
     },
-    "explanation": "Classified as DESKTOP_DEV because: UA does not look like iOS/iPadOS; maxTouchPoints is 0; protocol is http:, not https:; host is local, so this is not a device reaching a real origin; navigator.webdriver is true (automated browser). Rule 004 means this run cannot pass a phase, only catch regressions."
+    "explanation": "All real-device signals hold. Note that the iOS check is a user-agent inference; a reviewer should confirm with the device screenshot required by §60 before treating this bundle as proof."
   }
 }

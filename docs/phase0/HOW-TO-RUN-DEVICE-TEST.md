@@ -66,16 +66,24 @@ context, and CAP-0001 will correctly fail.
      engine records that it must run vision-only.
 3. Read the **PHASE 0 VERDICT** panel. It will show `PASSED`, `TESTING` or `FAILED`, and
    the reason.
-4. Tap **DOWNLOAD EVIDENCE JSON** (or **COPY EVIDENCE JSON**, or expand *Show evidence
-   JSON* and select it by hand).
+4. Tap **DOWNLOAD EVIDENCE JSON — PASSED**. The button names the verdict it is about to
+   export, and so does the filename.
+
+   **Export after the tap, not before.** Exporting while CAP-0004/0005 are still `PENDING`
+   produces a `…-TESTING-….json` that cannot pass the phase. If a yellow warning is showing
+   above the export buttons, the sensor probe has not completed — go back to step 2. (Also
+   available: **COPY EVIDENCE JSON**, or expand *Show evidence JSON* and select it by hand.)
 5. Take a screenshot of the screen.
 
 ## Committing the evidence (§60)
 
 ```
-docs/phase0/evidence/phase0-real-device-<date>.json
-docs/phase0/evidence/phase0-real-device-<date>.png
+docs/phase0/evidence/phase0-real-device-PASSED-<timestamp>.json
+docs/phase0/evidence/phase0-real-device-PASSED-<timestamp>.png
 ```
+
+If the filename says `TESTING` or `FAILED`, the run did not pass and committing it will not
+change that — the verdict inside the file is what `docs/PHASE-STATUS.md` must reflect.
 
 Then update `docs/PHASE-STATUS.md`. Phase 1 work may begin only once the committed bundle
 reads:

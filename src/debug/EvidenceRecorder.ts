@@ -147,8 +147,18 @@ export function serialiseEvidence(bundle: EvidenceBundle): string {
   return JSON.stringify(bundle, null, 2);
 }
 
+/**
+ * Filename carries the verdict, not just the leg and the timestamp.
+ *
+ * The evidence file is exportable at any point, including while required tests are still
+ * PENDING — which is useful for diagnosis and impossible to forbid without hiding the
+ * button when it is most needed. But a `TESTING` bundle and a `PASSED` bundle look almost
+ * identical at a glance, and mistaking one for the other means recording a phase pass that
+ * did not happen. Putting the verdict in the name makes them impossible to confuse in a
+ * downloads folder or a file picker.
+ */
 export function evidenceFilename(bundle: EvidenceBundle): string {
   const stamp = bundle.createdAt.replace(/[:.]/g, '-');
   const leg = bundle.leg.toLowerCase().replace(/_/g, '-');
-  return `phase${bundle.phase}-${leg}-${stamp}.json`;
+  return `phase${bundle.phase}-${leg}-${bundle.overallVerdict}-${stamp}.json`;
 }
