@@ -4,8 +4,9 @@
 | --- | --- | --- | --- |
 | `phase1-desktop-chromium-granted.json` | `DESKTOP_DEV` | granted, synthetic camera | No (Rule 004) |
 | `phase1-desktop-chromium-denied.json` | `DESKTOP_DEV` | denied | No (Rule 004) |
-| `phase1-real-device-TESTING-2026-08-21T09-50-49-632Z.json` | `REAL_DEVICE` | denied | Valid; CAM-002 `observedDirectly` |
-| `phase1-real-device-FAILED-2026-08-21T09-48-59-133Z.json` | `REAL_DEVICE` | granted | **No** — a harness bug, see below |
+| `phase1-real-device-PASSED-2026-08-21T10-07-53-690Z.json` | `REAL_DEVICE` | granted | **Yes — this is the Phase 1 pass** |
+| `phase1-real-device-TESTING-2026-08-21T09-50-49-632Z.json` | `REAL_DEVICE` | denied | Supplies CAM-002 `observedDirectly` |
+| `phase1-real-device-FAILED-2026-08-21T09-48-59-133Z.json` | `REAL_DEVICE` | granted | No — a harness bug, see below |
 
 Regenerate the desktop pair with `npm run test:e2e:phase1`. Produce the device pair by
 following `../HOW-TO-RUN-DEVICE-TEST.md`.
@@ -92,6 +93,24 @@ Phase 0's, re-derives the verdict from the bundle's own test results, verifies t
 against its own recorded signals, and rejects any NaN, infinity, `undefined` or reference
 cycle.
 
+
+## The Phase 1 pass
+
+`…PASSED-2026-08-21T10-07-53-690Z.json`, on the build with the CAM-001/CAM-005 fix.
+1263 frames over 42.3 s at 29.84 fps, longest gap 128 ms; peak image difference 68.81
+against a floor of 8.0; two rotations survived with the next frame 38 ms later; empty error
+log. It sat at `TESTING` through five re-evaluations as each test became evaluable and
+reached `PASSED` only when the 30 s window filled.
+
+Its CAM-002 is a carry-over (`observedDirectly: false`) from the denied run. The gate does
+not accept that on its own — it requires a direct observation of each scenario somewhere in
+the committed set, which the denied bundle supplies.
+
+One defect found by reading it, since fixed: CAM-001 reported `element 1280x1280` for a
+1280×720 camera. The observed size was a per-axis maximum and rotation had produced both
+1280×720 and 720×1280, so the reported pair was a size no frame ever had. It is now taken
+from the largest frame by area, and every distinct size is listed — which turned out to
+matter: see §H.0 of the implementation plan on rotation changing the camera intrinsics.
 
 ## The first two device runs
 

@@ -102,13 +102,17 @@ const CAM_001: Phase1Test = {
       ctx.openResult?.state === CameraState.LIVE && !!s && s.width >= 1 && s.height >= 1;
 
     // Element geometry as seen while frames were arriving; falls back to the current
-    // reading, which is the only source before the first frame.
-    const elementW = Math.max(ctx.stats.videoWidthObserved, ctx.videoWidth);
-    const elementH = Math.max(ctx.stats.videoHeightObserved, ctx.videoHeight);
+    // reading, which is the only source before the first frame. Taken as a pair so the
+    // reported size is one the element genuinely had.
+    const seen = ctx.stats.videoWidthObserved > 0 && ctx.stats.videoHeightObserved > 0;
+    const elementW = seen ? ctx.stats.videoWidthObserved : ctx.videoWidth;
+    const elementH = seen ? ctx.stats.videoHeightObserved : ctx.videoHeight;
+    const sizes = ctx.stats.videoSizesObserved;
 
     const geometry =
       `${s?.width}x${s?.height}@${s?.frameRate}fps, facingMode=${s?.facingMode}, ` +
-      `ladder rung ${ctx.openResult?.rungUsed}, element ${elementW}x${elementH}`;
+      `ladder rung ${ctx.openResult?.rungUsed}, element ${elementW}x${elementH}` +
+      (sizes.length > 1 ? ` (renegotiated: ${sizes.join(' -> ')})` : '');
     const metrics: Record<string, JsonValue> = {
       observedDirectly: true,
       width: s?.width ?? null,
@@ -120,6 +124,7 @@ const CAM_001: Phase1Test = {
       openDurationMs: ctx.openResult?.totalDurationMs ?? null,
       elementWidthObserved: elementW,
       elementHeightObserved: elementH,
+      elementSizesObserved: [...sizes],
       frameCount: ctx.stats.frameCount,
       attempts: (ctx.openResult?.attempts ?? []) as unknown as JsonValue,
     };

@@ -8,16 +8,15 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phase 0 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS.
-Phase 1 (Camera Capture) implemented and `TESTING` — the automated leg exercises both
-permission scenarios; awaiting two device runs. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+**Current state: Phases 0 and 1 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
+with committed, machine-checked evidence. Phase 2 (Frame Pipeline) is unlocked and not yet
+written. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
-npm test          # anti-fake audits + typecheck + 154 unit tests, incl. evidence re-derivation
+npm test          # anti-fake audits + typecheck + 193 unit tests, incl. evidence re-derivation
 npm run test:e2e  # automated DESKTOP_DEV legs for both phases, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
@@ -148,6 +147,18 @@ From the passing run (full matrix in the evidence bundle):
 | Depth / ARKit / RoomPlan | UNAVAILABLE, each by probe |
 | Scale | UNKNOWN |
 
+## Two measurements that shape Phase 2
+
+Both from the device, both recorded in the implementation plan:
+
+- **A main-thread `getImageData` costs 13.8 ms** (0.4 ms in headless Chromium) for a 3 kB
+  result. That is a GPU→CPU readback stall. Phase 1 samples at 4 Hz and can afford it;
+  Phase 2 at 30 Hz cannot, so frames must reach the worker as `VideoFrame` or stay on the
+  GPU. (§H.1)
+- **Rotating the device swaps the frame dimensions**, 1280×720 ↔ 720×1280, on the same
+  track — so frame size is per-frame data, and a rotation mid-scan changes the camera
+  intrinsics. (§H.0)
+
 ## Next
 
-Phase 2 — Frame Pipeline (§10). Blocked until Phase 1 passes on a device.
+Phase 2 — Frame Pipeline (§10).

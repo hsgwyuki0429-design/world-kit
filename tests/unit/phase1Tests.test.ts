@@ -40,6 +40,7 @@ function stats(over: Partial<FrameStats> = {}): FrameStats {
     sampleCostMsMean: 0.4,
     videoWidthObserved: 1280,
     videoHeightObserved: 720,
+    videoSizesObserved: ['1280x720'],
     ...over,
   };
 }
@@ -286,18 +287,39 @@ describe('a completed session is not undone by stopping the camera', () => {
     const c = ctx({
       videoWidth: 0,
       videoHeight: 0,
-      stats: stats({ videoWidthObserved: 0, videoHeightObserved: 0, frameCount: 40 }),
+      stats: stats({
+        videoWidthObserved: 0, videoHeightObserved: 0, videoSizesObserved: [], frameCount: 40,
+      }),
     });
     const r = runPhase1Tests(c).find((x) => x.spec.id === 'CAM-001');
     expect(r?.verdict).toBe(Verdict.FAIL);
     expect(r?.reason).toMatch(/never reported a size/);
   });
 
+  it('reports a size the element genuinely had, and names a renegotiation', () => {
+    // Rotation swaps the frame dimensions on iOS. Taking each axis's maximum independently
+    // reported "1280x1280" for a 1280x720 camera — a size no frame ever had.
+    const c = ctx({
+      stats: stats({
+        videoWidthObserved: 1280,
+        videoHeightObserved: 720,
+        videoSizesObserved: ['1280x720', '720x1280'],
+      }),
+    });
+    const r = runPhase1Tests(c).find((x) => x.spec.id === 'CAM-001');
+    expect(r?.verdict).toBe(Verdict.PASS);
+    expect(r?.observed).toContain('element 1280x720');
+    expect(r?.observed).not.toContain('1280x1280');
+    expect(r?.observed).toContain('renegotiated: 1280x720 -> 720x1280');
+  });
+
   it('CAM-001 is PENDING between opening the stream and the first frame', () => {
     const c = ctx({
       videoWidth: 0,
       videoHeight: 0,
-      stats: stats({ frameCount: 0, videoWidthObserved: 0, videoHeightObserved: 0 }),
+      stats: stats({
+        frameCount: 0, videoWidthObserved: 0, videoHeightObserved: 0, videoSizesObserved: [],
+      }),
     });
     expect(verdictOf(c, 'CAM-001')).toBe(Verdict.PENDING);
   });
