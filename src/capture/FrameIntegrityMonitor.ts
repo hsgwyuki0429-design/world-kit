@@ -55,14 +55,25 @@ export interface FrameStats {
   readonly msFromOrientationChangeToNextFrame: number | null;
   readonly sampleCostMsMean: number;
   /**
-   * Largest video-element dimensions seen while frames were arriving.
+   * Dimensions of the largest frame actually seen, as a pair.
    *
    * The element reports 0x0 once the stream is detached, so reading it at export time says
-   * nothing about whether the preview ever rendered. This remembers what was actually
-   * observed, which is the question CAM-001 asks.
+   * nothing about whether the preview ever rendered. This remembers what was observed.
+   *
+   * Kept as a pair rather than a per-axis maximum: rotating the device swaps the frame
+   * dimensions, and taking each axis's maximum independently reported "1280x1280" for a
+   * 1280x720 camera — a size no frame ever had.
    */
   readonly videoWidthObserved: number;
   readonly videoHeightObserved: number;
+  /**
+   * Every distinct frame size seen, in the order first seen.
+   *
+   * More than one entry means the stream re-negotiated mid-session, which rotation does on
+   * iOS. Phase 6 derives camera intrinsics from the frame dimensions, so a size change is
+   * an intrinsics change and cannot be treated as noise.
+   */
+  readonly videoSizesObserved: readonly string[];
 }
 
 function median(values: number[]): number {
@@ -92,6 +103,7 @@ export class FrameIntegrityMonitor {
   private maxGapMs = 0;
   private videoWidthObserved = 0;
   private videoHeightObserved = 0;
+  private videoSizesObserved: string[] = [];
 
   private samples: FrameSample[] = [];
   private previousGray: Uint8ClampedArray | null = null;
@@ -197,9 +209,18 @@ export class FrameIntegrityMonitor {
     this.frameCount++;
 
     const v = this.video;
-    if (v) {
-      if (v.videoWidth > this.videoWidthObserved) this.videoWidthObserved = v.videoWidth;
-      if (v.videoHeight > this.videoHeightObserved) this.videoHeightObserved = v.videoHeight;
+    if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+      // Largest by area, so the recorded pair is a size the element genuinely reported.
+      if (v.videoWidth * v.videoHeight > this.videoWidthObserved * this.videoHeightObserved) {
+        this.videoWidthObserved = v.videoWidth;
+        this.videoHeightObserved = v.videoHeight;
+      }
+      const size = `${v.videoWidth}x${v.videoHeight}`;
+      // Bounded: a stream that renegotiates constantly would otherwise grow this without
+      // limit, and eight distinct sizes is already the interesting fact.
+      if (!this.videoSizesObserved.includes(size) && this.videoSizesObserved.length < 8) {
+        this.videoSizesObserved.push(size);
+      }
     }
 
     if (this.orientationChangedAt !== null) {
@@ -276,6 +297,7 @@ export class FrameIntegrityMonitor {
     this.maxGapMs = 0;
     this.videoWidthObserved = 0;
     this.videoHeightObserved = 0;
+    this.videoSizesObserved = [];
     this.samples = [];
     this.previousGray = null;
     this.lastSampleAt = 0;
@@ -325,6 +347,7 @@ export class FrameIntegrityMonitor {
         : 0,
       videoWidthObserved: this.videoWidthObserved,
       videoHeightObserved: this.videoHeightObserved,
+      videoSizesObserved: [...this.videoSizesObserved],
     };
   }
 

@@ -324,6 +324,21 @@ Derived from §53–§56. These are **targets to measure against**, not claims.
 | BASIC (default start) | 960×540 | 20–30 | 600–800 | reduced BA |
 | REDUCED | 640×360 | 15–20 | 300 | minimal |
 
+### H.0 Rotation changes the camera intrinsics
+
+Measured in Phase 1: rotating the device swaps the video frame dimensions, 1280×720 ↔
+720×1280, on the same track. §15 derives the intrinsics matrix K from the frame geometry,
+so this is not a display concern — **a rotation mid-scan changes `fx`, `fy`, `cx`, `cy`**.
+
+Consequences for later phases, recorded now rather than discovered later:
+
+- Phase 2's frame pipeline must treat frame size as per-frame data, not a constant read
+  once at open.
+- Phase 6 must carry intrinsics per keyframe, and Phase 27's bundle adjustment must not
+  assume a single shared K across the session.
+- A keyframe's intrinsics must travel with it into `SpatialWorld` (§20 already lists
+  `intrinsics` in the keyframe schema; this is why it matters).
+
 ### H.1 A measurement that puts the acquire budget in doubt
 
 Phase 1's frame sampler measured **13.8 ms per sample** on the device for

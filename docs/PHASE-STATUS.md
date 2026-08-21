@@ -9,8 +9,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | Phase | Name | State | Notes |
 | --- | --- | --- | --- |
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
-| 1 | Camera Capture | **TESTING** | Implemented. Desktop leg exercises both permission scenarios; **awaiting two real-device bundles** (granted and denied). |
-| 2 | Frame Pipeline | BLOCKED | Phase Lock — Phase 1 has not PASSED. |
+| 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
+| 2 | Frame Pipeline | **NOT_STARTED** | Phase Lock is open. Not yet implemented — §10 is next. |
 | 3 | Feature Detection | BLOCKED | |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
@@ -79,50 +79,54 @@ Neither touches a probe result or a pass criterion, and the committed bundle is 
 re-derived to `PASSED` by the current code on every test run. If you want the record to
 correspond exactly to HEAD, one more export from the device takes about thirty seconds.
 
-## Phase 1 — TESTING
+## Phase 1 — PASSED
 
-Implemented and exercised end to end on the automated DESKTOP_DEV leg, which drives two
-browsers: one with a synthetic camera and permission granted, one with permission refused.
-Between them CAM-001, CAM-002, CAM-003, CAM-005 and CAM-006 are decided.
+**Evidence:** three `REAL_DEVICE` bundles under `docs/phase1/evidence/`, all from
+iPhone / iOS 18.7 / Safari 26.6 over HTTPS.
 
-| Measured on the desktop leg | |
+| Bundle | Verdict | What it contributes |
+| --- | --- | --- |
+| `…PASSED-2026-08-21T10-07-53-690Z.json` | **PASSED** | CAM-001, CAM-003, CAM-004, CAM-005 observed directly |
+| `…TESTING-2026-08-21T09-50-49-632Z.json` | TESTING | CAM-002 observed directly — the denial |
+| `…FAILED-2026-08-21T09-48-59-133Z.json` | FAILED | the record of a harness defect, kept deliberately |
+
+From the passing run:
+
+| | |
 | --- | --- |
-| Stream | 1280×720, constraint ladder rung 2 (`facingMode: {exact:'environment'}` refused, looser rung succeeded) |
-| Capture | ~808 frames over 40.4 s at ~20 fps, longest gap 69–273 ms across runs, via `requestVideoFrameCallback` |
-| Rotation | 2 orientation changes, next frame 21 ms later |
-| Denial | `NotAllowedError` → `CAMERA_PERMISSION_DENIED`, no stream held, no preview element in the DOM |
+| Stream | rung 1 of the ladder, `facingMode: environment`, 1280×720 @ 30 fps, opened in 705 ms |
+| Capture | **1263 frames over 42.3 s at 29.84 fps**, longest gap 128 ms, via `requestVideoFrameCallback` |
+| Image change | 158 samples; MAD min 15.92 / median 38.62 / **peak 68.81** against a floor of 8.0 |
+| Rotation | 2 changes, next frame 38 ms later, 1043 frames after |
+| Denial | `NotAllowedError` → `CAMERA_PERMISSION_DENIED`, no stream, no preview element |
+| Error log | empty |
 
-**CAM-004 cannot be decided on that leg.** Chromium's synthetic camera is not a moving
-camera, and its peak frame-to-frame difference straddles the 8.0 floor between runs — 6.79
-and 9.70 both observed. The harness therefore excludes CAM-004 from the gate rather than
-letting a meaningless verdict flap, and prints the measured values. Feeding in a video file
-chosen to clear the bar would make the leg green without making it informative. The
-threshold logic is covered by unit tests; the behaviour needs the device.
+The transition history shows it was not passed by assertion: the run sat at `TESTING`
+through five successive re-evaluations as CAM-001, then CAM-005, then CAM-004, then CAM-003
+each became evaluable, and reached `PASSED` only when the 30 s window filled.
 
-### First device runs — one clean, one that found a bug in the harness
+**Two runs, because two scenarios.** The passing bundle carries CAM-002 as a carry-over
+(`observedDirectly: false`) from the denied run 894 s earlier. The repository gate ignores
+that carry-over: `tests/unit/committedEvidence.test.ts` requires the committed set to
+contain a direct observation of *each* scenario, and it does — CAM-001 in the passing
+bundle, CAM-002 in the denied one.
 
-Both are committed under `docs/phase1/evidence/`.
+### Code changed after the pass
 
-**The denied run is valid and complete.** `NotAllowedError` → `CAMERA_PERMISSION_DENIED`,
-no stream held, no preview element, recovery recorded. CAM-002 PASS, `observedDirectly`.
+The pass attests to `appVersion 0.1.0`. One reporting defect found by reading the bundle
+has since been fixed: CAM-001 reported `element 1280x1280` for a 1280×720 camera, because
+the observed size was kept as a per-axis maximum and rotation had produced both 1280×720
+and 720×1280. The pair is now taken from the largest frame by area, so the reported size is
+one the element genuinely had, and every distinct size is listed. No probe result or pass
+criterion is affected — both axes were ≥ 1 either way.
 
-**The granted run reported FAILED, and was wrong to.** The camera worked: rung 1 of the
-ladder, `facingMode: environment`, 1280×720 at 30 fps, 1213 frames over 40.6 s at 29.83 fps
-with a longest gap of 151 ms, two rotations survived with the next frame 40 ms later, and
-a peak image difference of 75.2 against a floor of 12.2. CAM-003 and CAM-004 passed on that
-data. CAM-001 and CAM-005 failed — because the tester pressed STOP CAMERA before exporting,
-and both were reading *is the track live now* rather than *what was demonstrated*. Fixed;
-see the amendment in `docs/phase1/TEST-PLAN.md`.
+### What rotation does to the frame, and why Phase 6 needs to know
 
-That run also validated the earlier CAM-004 correction with real data: median 45.31, peak
-75.18, a ratio of 1.66. The `maxMad >= 4 × medianMad` gate removed before any device run
-would have failed a perfect capture.
-
-**To pass Phase 1:** one more granted run on the fixed build, since the committed granted
-bundle predates the fix. The denied run stands. See
-`docs/phase1/HOW-TO-RUN-DEVICE-TEST.md`. `tests/unit/committedEvidence.test.ts` requires a
-committed bundle for each scenario with `observedDirectly: true`, ignoring the in-app
-carry-over ledger.
+That defect exposed a real platform behaviour: **rotating the device swaps the video frame
+dimensions**, 1280×720 ↔ 720×1280. Phase 6 derives camera intrinsics (`fx`, `fy`, `cx`,
+`cy`) from the frame dimensions, so a rotation mid-scan is an intrinsics change, not a
+cosmetic one. The monitor now records every distinct size seen so the change is visible in
+evidence rather than having to be inferred.
 
 ## What "implemented" means here
 
