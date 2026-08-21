@@ -15,16 +15,31 @@ Two browsers, because the two permission scenarios cannot occur in one session. 
 bundles carry `phaseContext` with the constraint-ladder attempts, the frame statistics and
 the scenario ledger.
 
-The denial is induced by setting the origin's permission set to empty
-(`context.grantPermissions([], { origin })`), so the request is refused without a prompt.
-An earlier version used the `--deny-permission-prompts` command-line flag, which produced
-`NotAllowedError` on one Chromium build and `NotSupportedError` on another — a difference
-that failed CI. The permission-set route goes through CDP rather than a flag and is stable
-across builds. If a browser nonetheless refuses the camera in some way other than a user
-denial, the harness says so and excludes CAM-002 from its gate rather than pretending
-otherwise: mapping `NotSupportedError` to "denied" would make the product report a policy
-block as a user decision, which sends the user to a permission screen with nothing to
-change.
+### How the denial is induced, and why it takes two attempts
+
+Which `DOMException` a Chromium build raises for a refused camera permission is not stable.
+The `--deny-permission-prompts` flag produced `NotAllowedError` in the dev container and
+`NotSupportedError` on the GitHub runner; setting the origin's permission set to empty
+(`context.grantPermissions([], { origin })`) works in the dev container and still does not
+produce a user denial on the runner.
+
+So the harness tries the browser first and falls back:
+
+1. **Browser refusal.** Empty permission set for the origin, no prompt. When this yields
+   `NotAllowedError`, CAM-002 is exercised against the real platform and `deniedVia` reads
+   `browser permission refusal`.
+2. **Injected rejection.** If the browser refused in some other way, `getUserMedia` is
+   replaced with one that rejects with a genuine `NotAllowedError`, and the app's own path
+   runs end to end from there. `deniedVia` records this, along with what the browser
+   actually produced, and the failure message in the bundle says the rejection was injected.
+
+The native attempt comes first on purpose: it is what surfaced the `NotSupportedError`
+difference in the first place, and going straight to injection would have hidden it.
+
+`NotSupportedError` was **not** remapped to `CAMERA_PERMISSION_DENIED` to make this easier.
+It means the request was refused by policy, not by a person; reporting it as a denial would
+send the user to a permission screen with nothing on it to change. It is mapped to
+`CAMERA_UNAVAILABLE` with a recovery that names the real cause.
 
 Two things in them are simulation, and both are recorded rather than hidden:
 
