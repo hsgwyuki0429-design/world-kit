@@ -8,13 +8,13 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0, 1 and 2 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 3 (Feature Detection) is `IMPLEMENTING`.
-Three device runs: two found plumbing defects that stopped detection from starting at all,
-and the third detected and then `FAILED` on FEAT-002 — a blank wall still produced 800
-features, because the corner floor was relative to each frame's own maximum. All three are
-fixed; a fourth device run is what the phase waits on. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+**Current state: Phases 0–3 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
+committed, machine-checked evidence. Phase 3 took four device runs and each failure was a
+real defect; the passing run detected 2494 frames, scored **91.1 %** above chance, and saw
+the population fall from a median of 353 features on a textured wall to 64 on a blank one.
+One known defect is carried forward — the overlay rotates in portrait on the device — and the
+app now measures it rather than relying on the eye. Phase 4 (Optical Flow Tracking, §12) is
+unlocked. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -333,5 +333,9 @@ costs; the device run decides the budget.
 
 ## Next
 
-The Phase 3 device run — [`docs/phase3/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase3/HOW-TO-RUN-DEVICE-TEST.md).
-Then Phase 4 — Optical Flow Tracking (§12).
+Phase 4 — Optical Flow Tracking (§12), carrying one open defect from Phase 3: the overlay
+rotates in portrait on the device. Every existing check is blind to it — the detector's unit
+tests never cross the video→worker path, Phase 2's provenance check compares *mean* luma, and
+FEAT-001's contrast statistic runs in the worker on the worker's own buffer — so the app now
+measures it directly, and abandons the acquisition route rather than correcting the drawing,
+because Phase 4 reads the same positions.

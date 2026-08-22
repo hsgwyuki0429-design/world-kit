@@ -17,6 +17,7 @@ import type {
   TestResult,
 } from './core/types';
 import { PhaseRegistry, PHASE_NAMES, isPhaseImplemented } from './core/PhaseRegistry';
+import { Rng } from './core/Rng';
 import { CapabilityDetector, collectDeviceInfo } from './capture/CapabilityDetector';
 import { probeMotionSensors } from './capture/MotionCapabilityProbe';
 import { CameraSource, CameraState } from './capture/CameraSource';
@@ -33,6 +34,12 @@ import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
 import { getPreviewVideo, isPreviewPresented } from './ui/PreviewVideo';
+import {
+  isMisoriented,
+  scoreAlignment,
+  MIN_IDENTITY_OVER_RANDOM,
+} from './debug/OverlayAlignmentProbe';
+import type { AlignmentReading } from './debug/OverlayAlignmentProbe';
 import { logger } from './debug/Logger';
 import {
   buildEvidenceBundle,
@@ -125,6 +132,11 @@ class Phase0App {
   private trackingRequested = false;
   private trackingFrames = 0;
   private lastOverlay: Float32Array | null = null;
+  private alignment: AlignmentReading | null = null;
+  private misorientedProbes = 0;
+  private routeRejectedForOrientation: string | null = null;
+  private alignmentCanvas: HTMLCanvasElement | null = null;
+  private readonly alignmentRng = new Rng(0xa11a_11ed);
   private lastOverlayWidth = 0;
   private lastOverlayHeight = 0;
   private phase2Results: TestResult[] = [];
@@ -413,6 +425,7 @@ class Phase0App {
           // one predicate, this one included.
           running: this.isDetecting(),
           stats,
+          alignment: this.alignment,
           overlay: this.lastOverlay,
           overlayWidth: this.lastOverlayWidth,
           overlayHeight: this.lastOverlayHeight,
@@ -931,6 +944,90 @@ class Phase0App {
    * detection asked for, and a pipeline running to serve it — because in Phase 3 they come
    * apart: the pipeline is inherited from Phase 2 and is running before detection starts.
    */
+  /**
+   * Measure whether the overlay is drawing on the picture the camera is showing.
+   *
+   * The main thread takes its *own* reading of the video element — the same independent-read
+   * idea as Phase 2's provenance cross-check — and scores the detected positions against it
+   * under each candidate transform. Phase 2's check compares means, which a rotation leaves
+   * untouched; this compares positions, which it does not.
+   *
+   * When the reading says another transform fits the image better, the buffer the worker
+   * measured is not the picture on screen. The overlay is not corrected to compensate: the
+   * same positions go to Phase 4, so a corrected drawing over rotated data would be a lie
+   * with a working-looking screen. The acquisition route is abandoned instead, and the
+   * ladder's next rung is defined on what the element displays rather than on what the
+   * sensor produced.
+   */
+  private probeAlignment(): void {
+    const points = this.lastOverlay;
+    if (!points || this.lastOverlayWidth < 1 || this.lastOverlayHeight < 1) return;
+    const video = getPreviewVideo();
+    if (video.videoWidth < 8 || video.videoHeight < 8) return;
+
+    // Small: this runs on the UI thread, and the statistic needs structure, not resolution.
+    const w = 160;
+    const h = Math.max(8, Math.round((w * video.videoHeight) / video.videoWidth));
+    let canvas = this.alignmentCanvas;
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      this.alignmentCanvas = canvas;
+    }
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    try {
+      ctx.drawImage(video, 0, 0, w, h);
+    } catch {
+      // The element is not painting yet. Nothing to measure, and nothing to report.
+      return;
+    }
+    const rgba = ctx.getImageData(0, 0, w, h).data;
+    const gray = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      gray[i] = (rgba[i * 4] ?? 0) * 0.299 + (rgba[i * 4 + 1] ?? 0) * 0.587 +
+        (rgba[i * 4 + 2] ?? 0) * 0.114;
+    }
+
+    // The overlay buffer is (x, y, quality) triples; the probe wants (x, y) pairs.
+    const xy: number[] = [];
+    for (let i = 0; i < points.length; i += 3) {
+      xy.push(points[i] ?? 0, points[i + 1] ?? 0);
+    }
+    const reading = scoreAlignment(
+      gray, w, h, xy, this.lastOverlayWidth, this.lastOverlayHeight,
+      () => this.alignmentRng.next(),
+    );
+    if (!reading) return;
+    this.alignment = reading;
+
+    if (isMisoriented(reading)) {
+      this.misorientedProbes++;
+      // Three in a row, so one blurred or moving frame cannot condemn a working route.
+      if (this.misorientedProbes >= 3 && this.routeRejectedForOrientation === null) {
+        const reason =
+          `the acquired buffer matches the video under ${reading.best} rather than ` +
+          `identity (${reading.bestOverIdentity.toFixed(2)}x), so the frames the worker ` +
+          'measured are not oriented like the picture on screen';
+        this.routeRejectedForOrientation = reading.best;
+        logger.error(
+          PHASE3, 'OverlayAlignment', 'the acquisition route produced a misoriented buffer',
+          'the route is abandoned and the next rung, which is defined on what the video ' +
+            'element displays, is tried; the overlay is not corrected because Phase 4 ' +
+            'consumes the same positions',
+          undefined,
+          { best: reading.best, scores: reading.scores, samples: reading.samples },
+        );
+        this.pipeline.rejectRoute(reason);
+      }
+    } else {
+      this.misorientedProbes = 0;
+    }
+  }
+
   private isDetecting(): boolean {
     return this.trackingRequested && this.pipeline.isRunning();
   }
@@ -1080,6 +1177,7 @@ class Phase0App {
     this.stopPhase3Ticking();
     this.phase3Timer = window.setInterval(() => {
       this.pipeline.setTrackingOptions(this.trackingOptions());
+      this.probeAlignment();
       this.evaluatePhase3();
       this.render();
     }, PHASE3_TICK_MS);
@@ -1132,6 +1230,19 @@ class Phase0App {
         features: this.features.describe(),
         devEntry: this.phase3DevEntry,
         previewPresented: isPreviewPresented(),
+        overlayAlignment: this.alignment
+          ? {
+              ...this.alignment,
+              scores: { ...this.alignment.scores },
+              routeRejectedFor: this.routeRejectedForOrientation,
+              minIdentityOverRandom: MIN_IDENTITY_OVER_RANDOM,
+              note:
+                'The main thread reads the video element itself and scores the detected ' +
+                'positions against it under each transform. Identity winning is the only ' +
+                'result meaning the overlay and the tracking data describe the same ' +
+                'picture; Phase 2\'s cross-check compares means and cannot see a rotation.',
+            }
+          : null,
       },
     });
     this.phase3Bundle = built.bundle;
@@ -1205,6 +1316,7 @@ class Phase0App {
        * the detector's unit tests, Phase 2's mean-luma cross-check, the contrast statistic —
        * is invariant to a rotation, a flip or a transpose of the buffer.
        */
+      getOverlayAlignment: () => this.alignment,
       getOverlayPositions: () => ({
         width: this.lastOverlayWidth,
         height: this.lastOverlayHeight,

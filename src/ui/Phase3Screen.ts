@@ -27,6 +27,8 @@ import {
   TEXTURE_RICH_FLOOR,
 } from '../tracking/featureTypes';
 import type { TrackingStats } from '../tracking/trackingStats';
+import { MIN_IDENTITY_OVER_RANDOM } from '../debug/OverlayAlignmentProbe';
+import type { AlignmentReading } from '../debug/OverlayAlignmentProbe';
 
 export interface Phase3ViewModel {
   readonly phase3: PhaseInfo;
@@ -36,6 +38,7 @@ export interface Phase3ViewModel {
   readonly running: boolean;
   readonly stats: TrackingStats;
   /** `[x0, y0, quality] × count`, in processing-level coordinates, straight from the worker. */
+  readonly alignment: AlignmentReading | null;
   readonly overlay: Float32Array | null;
   readonly overlayWidth: number;
   readonly overlayHeight: number;
@@ -323,6 +326,23 @@ function renderProvenance(vm: Phase3ViewModel): HTMLElement {
       ),
       stat('Samples', s.contrastSamples > 0 ? String(s.contrastSamples) : null),
       stat('Grid comparisons', s.grid.samples > 0 ? String(s.grid.samples) : null),
+      // §51: the overlay must sit on the picture, and on a phone that is not the same claim
+      // as the contrast statistic above — which is computed in the worker on the worker's
+      // own buffer and so cannot see a rotated one.
+      stat(
+        'Overlay matches video',
+        vm.alignment
+          ? vm.alignment.best === 'identity'
+            ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
+            : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
+          : null,
+        vm.alignment
+          ? vm.alignment.best === 'identity' &&
+            vm.alignment.identityOverRandom >= MIN_IDENTITY_OVER_RANDOM
+            ? 's-AVAILABLE'
+            : 's-PERMISSION_DENIED'
+          : '',
+      ),
       stat(
         'Clustering',
         s.grid.samples > 0
@@ -335,6 +355,14 @@ function renderProvenance(vm: Phase3ViewModel): HTMLElement {
         'a seeded-random position in the same frame. A detector emitting coordinates ' +
         'unrelated to the image scores 50% exactly, by construction — so the distance from ' +
         `50% measures the detector rather than the scene. FEAT-001 needs ${Math.round(MIN_CONTRAST_ABOVE_CHANCE * 100)}%.`,
+    ]),
+    el('p', { class: 'footnote' }, [
+      'Overlay matches video is measured on this thread, from this element: the page reads ' +
+        'the video itself and scores the drawn positions against each rotation, flip and ' +
+        'transpose. Identity has to win. The check above it cannot see this — it runs in ' +
+        'the worker on the worker’s own buffer, so a buffer rotated against the screen ' +
+        'scores just as well. If this says NO the acquisition route is abandoned rather ' +
+        'than the drawing corrected, because Phase 4 reads the same positions.',
     ]),
     el('p', { class: 'footnote' }, [
       'Clustering compares the largest single-cell share with the 8×6 quota against an ' +
