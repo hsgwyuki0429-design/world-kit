@@ -1,0 +1,150 @@
+# Spec versions, and the numbers v4.0 stopped stating
+
+The project was built to `Safari Spatial Mapping Prototype v3.0`. On 2026-08-22, after Phase 4
+passed on the device, the spec was replaced by `Safari Spatial Game — Version 4.0`.
+
+This file exists for one reason. **v4 is shorter than v3, and several of the numbers v3 fixed
+are simply absent from it.** §29 requires a phase's thresholds to be written down before its
+code and not relaxed after a result is seen. A threshold that vanishes when the document is
+rewritten is a threshold relaxed by omission, so every one is recorded here with where it came
+from and what the code does with it.
+
+---
+
+## What changed, and why it matters
+
+v3's goal was a reusable Spatial World; the game layer was the thing that proved it.
+**v4 inverts that**: the Spatial World is now an internal substrate, and the deliverable is a
+ball game generated from the surfaces actually observed in the room.
+
+> 「部屋をスキャンすること」自体は目的ではなく、「その部屋で遊べるゲームを生成すること」が目的である。
+> — v4 §14
+
+Consequences that reach the code:
+
+- **§41 removes the 3D export requirement.** OBJ / GLB / USDZ are out of Prototype v1. What is
+  saved is what a game needs to resume (v4 §42).
+- **§16 redefines the Spatial World** as "the set of observed spatial information the game
+  needs", not a complete 3D reconstruction. 観測できない形状を推測して完全なGeometryとして扱わない。
+- **§45's prohibitions grew** two entries that are about the game rather than the map:
+  *goal placed using nonexistent geometry*, and *game success based on data unrelated to
+  observed space*. Both are Phase 17–20's to enforce, and both are the same idea as §80's fake
+  data one layer up.
+- **§44 Fail Closed** now names game-level degradations: `TRACKING LOST → pause or rescan`,
+  `SURFACE UNKNOWN → do not use for collision`, `GOAL INVALID → regenerate`,
+  `POSE LOW CONFIDENCE → do not commit new stage state`.
+
+### The phase list
+
+22 phases rather than 20. **Phases 0–4 are untouched** — the ones already passed on a device,
+so no committed bundle names a phase that no longer exists. `PHASE_NAMES` carries the v4 list
+and `tests/unit/phaseRegistry.test.ts` pins it.
+
+| Index | v3.0 | v4.0 |
+| --- | --- | --- |
+| 11 | Plane Detection | Surface Understanding |
+| 13 | World Viewer | Spatial Game Viewer |
+| 14 | Save / Load | Save / Resume |
+| 15 | Collision Geometry | Spatial Collision |
+| 17 | Golden Test | **Stage Generator** |
+| 18 | Performance / Stress | **Goal Ring System** |
+| 19 | Final Audit | **Ball Physics** |
+| 20 | — | **Gameplay Validation** |
+| 21 | — | Final Audit |
+
+Performance / Stress is no longer a phase of its own; v4 §43 states it as an architectural
+requirement instead. The golden test became v4 §52's **Golden Gameplay Test**, which runs the
+whole chain from capability check to a ball entering a generated ring.
+
+---
+
+## Numbers v3 fixed that v4 does not restate
+
+**These are still in force.** Each was fixed before the thing it governs was measured, which is
+exactly the property §29 asks for; re-deriving them now, with Phase 4's data in hand, would be
+choosing thresholds against known results.
+
+### v3 §14 — Phase 5, Geometric Verification
+
+v4 §17 says only: *Outlierが十分除外され、Pose計算へ利用可能なInlierが安定して得られること*. No
+numbers at all. v3 gave four:
+
+| Threshold | v3 §14 |
+| --- | --- |
+| Minimum inliers | **30** |
+| GOOD candidate | **> 100** |
+| Usable inlier ratio | **> 0.35** |
+| GOOD inlier ratio | **> 0.50** |
+
+Phase 4's device run makes the first of these the live question rather than a formality: it
+delivered a **median of 41 tracked correspondences** in a dim room. 30 inliers out of 41
+correspondences is a demanding bar, and >100 is unreachable there. Phase 5 measures the
+correspondence count it actually receives and reports when the scene cannot supply what the
+threshold needs — it does not lower the threshold, and it does not verify a pose on a handful
+of points and call it good. §H.8 records the measurement.
+
+### v3 §33 — Tracking State
+
+v4 §25 lists "Tracking State" as a field of the Spatial World runtime state and does not
+enumerate the states or their conditions. v3 §33 did:
+
+| | v3 §33 |
+| --- | --- |
+| States | `READY`, `TRACKING`, `GOOD`, `DEGRADED`, `LOST`, `RELOCALIZING` |
+| GOOD candidate | features ≥ 300 **AND** inlierRatio ≥ 0.50 **AND** reprojectionError ≤ 2.0 px |
+| LOST | inliers < 20, or consecutive pose-estimation failures |
+| | 1 Frame失敗だけでLOSTにしない — 初期: 3 consecutive failed frames → LOST |
+
+`src/tracking/trackingState.ts` implements these and cites §33 throughout. Those citations mean
+**v3 §33**. Phase 4 already passed against them on the device, so dropping a conjunct because
+the newer document is quieter would be relaxing a criterion after a result — the thing §29
+exists to prevent.
+
+Note that v4 §25 does add a requirement in the same area: 低Confidenceの情報は、ゲーム生成や
+Collisionで重要度を下げるか使用禁止にする. That is Phase 11 onward, and it is consistent with
+§33 rather than a replacement for it.
+
+### v3 §15, §16, §17, §18, §19 — pose, planar scenes, IMU, EKF, pose confidence
+
+v4 compresses all five into three short sections (§18, §19). What v3 stated and v4 does not:
+
+- **§15** the intrinsics matrix K and its form, and `INTRINSICS: ESTIMATED` when it cannot be
+  obtained accurately. v4 §18 keeps only the LOCAL UNITS rule.
+- **§16 Planar Scene Handling** — evaluate both Essential matrix and Homography, and where the
+  Homography wins, mark `PLANAR SCENE` and lower translation confidence. **Absent from v4
+  entirely.** It is not optional: a room scan is largely planar, and using an Essential matrix
+  on a planar scene produces a degenerate pose that looks fine. Phase 6 implements it.
+- **§18 EKF** — the fused state (position, velocity, orientation, gyroBias, accelBias) and
+  "Quaternion優先, Euler角だけで長時間Pose管理しない".
+- **§19 Pose Confidence** — the eight inputs confidence may be derived from, and 不確実なPoseを
+  強制的に高confidenceにしない.
+
+### v3 §20 — Keyframe conditions
+
+v4 §20 says keyframes should be kept and updated, without conditions. v3 gave them:
+rotation ≥ 10°, **or** relative translation ≥ 0.10 local unit, **or** median feature
+displacement ≥ 30 px, **or** a significant change in tracking quality; minimum interval 0.5 s,
+maximum 5 s.
+
+### v3 §65, §66… — the per-phase test tables
+
+v3 named the tests for every phase (`CAM-001`, `FRAME-001`, `FEAT-001`, `FLOW-001`, `GEO-001`…).
+v4 keeps only short `テスト：` lines for Phases 17–19 and the Golden Gameplay Test.
+
+The four phases already passed keep their v3 test IDs, because the committed evidence names
+them. Phase 5 onward keeps the same convention for the same reason: an evidence bundle has to
+name the test that produced its verdict, and a phase whose tests have no identifiers cannot do
+that.
+
+---
+
+## The rule this file encodes
+
+**A number that disappears from the spec has not been withdrawn — it has stopped being
+restated.** Where v4 is silent and v3 was specific, the v3 figure stands and is cited as
+"v3 §N". Where v4 states something new, v4 governs. Where the two conflict, that is a decision
+for the spec's author and this file records it as an open question rather than picking a side.
+
+No conflicts have been found so far. v4 §11, §12 and §13 — Phase 3's feature parameters, Phase
+4's Lucas-Kanade parameters and the forward/backward bands — are **identical to v3's**, which is
+why Phases 3 and 4 needed no change when the spec version moved.

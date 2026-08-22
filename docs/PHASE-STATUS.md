@@ -1,5 +1,10 @@
 # Phase status
 
+**Spec version: `Safari Spatial Game v4.0` from Phase 5 on.** Phases 0–4 were built and passed
+against `v3.0`; v4 leaves §11, §12 and §13 — their governing sections — identical, so nothing
+already passed changed. What v4 *stopped stating* is recorded in
+[`SPEC-VERSIONS.md`](SPEC-VERSIONS.md), including the four numbers v3 §14 fixed for Phase 5.
+
 Rule 005 (Phase Lock): a phase may not be started until the previous one has PASSED.
 Rule 004: only evidence from **iPhone + Safari + HTTPS** can pass a phase.
 
@@ -19,15 +24,17 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
-| 11 | Plane Detection | BLOCKED | |
+| 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
 | 12 | Spatial World | BLOCKED | |
-| 13 | World Viewer | BLOCKED | |
-| 14 | Save / Load | BLOCKED | |
-| 15 | Collision Geometry | BLOCKED | |
+| 13 | Spatial Game Viewer | BLOCKED | v4 — renamed from World Viewer |
+| 14 | Save / Resume | BLOCKED | v4 §42 — renamed from Save / Load |
+| 15 | Spatial Collision | BLOCKED | v4 — renamed from Collision Geometry |
 | 16 | Game Integration | BLOCKED | |
-| 17 | Golden Test | BLOCKED | |
-| 18 | Performance / Stress | BLOCKED | |
-| 19 | Final Audit | BLOCKED | |
+| 17 | Stage Generator | BLOCKED | **new in v4** (§48) |
+| 18 | Goal Ring System | BLOCKED | **new in v4** (§49) |
+| 19 | Ball Physics | BLOCKED | **new in v4** (§50) |
+| 20 | Gameplay Validation | BLOCKED | **new in v4** (§51) |
+| 21 | Final Audit | BLOCKED | |
 
 ## Phase 0 — PASSED
 

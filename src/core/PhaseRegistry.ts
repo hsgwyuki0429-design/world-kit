@@ -16,7 +16,32 @@
 import { PhaseState, Verdict, EvidenceLeg } from './types';
 import type { PhaseInfo, StateTransition, TestResult } from './types';
 
-/** Phase list from §4. Kept complete so unimplemented phases are visible, not hidden. */
+/**
+ * Phase list from §4, as spec **v4.0** states it. Kept complete so unimplemented phases are
+ * visible, not hidden.
+ *
+ * **Six of these changed when the spec went from v3.0 to v4.0**, and the change is a change of
+ * product rather than of wording. v3 treated the Spatial World as the deliverable and ended at
+ * a golden test over it; v4 treats it as the substrate for a ball game played against the
+ * surfaces actually observed in the room, and adds three phases to build that game. Phases 0–4
+ * are untouched — the ones already passed on the device — and the renames begin at 11:
+ *
+ * | Index | v3.0 | v4.0 |
+ * | --- | --- | --- |
+ * | 11 | Plane Detection | Surface Understanding |
+ * | 13 | World Viewer | Spatial Game Viewer |
+ * | 14 | Save / Load | Save / Resume |
+ * | 15 | Collision Geometry | Spatial Collision |
+ * | 17 | Golden Test | **Stage Generator** |
+ * | 18 | Performance / Stress | **Goal Ring System** |
+ * | 19 | Final Audit | **Ball Physics** |
+ * | 20 | — | **Gameplay Validation** |
+ * | 21 | — | Final Audit |
+ *
+ * The list is 22 long now rather than 20. Nothing in this file depends on the length, and the
+ * registry's own tests pin it so a future edit that drops a phase is a visible failure rather
+ * than a silently shorter roadmap.
+ */
 export const PHASE_NAMES: readonly string[] = [
   'Environment / Capability',
   'Camera Capture',
@@ -29,14 +54,16 @@ export const PHASE_NAMES: readonly string[] = [
   'Keyframe System',
   'Triangulation',
   'Landmark Map',
-  'Plane Detection',
+  'Surface Understanding',
   'Spatial World',
-  'World Viewer',
-  'Save / Load',
-  'Collision Geometry',
+  'Spatial Game Viewer',
+  'Save / Resume',
+  'Spatial Collision',
   'Game Integration',
-  'Golden Test',
-  'Performance / Stress',
+  'Stage Generator',
+  'Goal Ring System',
+  'Ball Physics',
+  'Gameplay Validation',
   'Final Audit',
 ];
 

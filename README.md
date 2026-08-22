@@ -4,7 +4,13 @@ Turning what an iPhone's Safari can actually observe — camera frames and motio
 reusable **Spatial World**, and letting a game layer collide with the geometry that was
 reconstructed from the real room.
 
-Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The governing
+Built strictly to spec, phase by phase — `Safari Spatial Mapping Prototype v3.0` through
+Phase 4, and `Safari Spatial Game v4.0` from Phase 5 on. v4 re-scopes the product: the Spatial
+World stops being the deliverable and becomes the substrate for a ball game played against the
+surfaces actually observed in the room. It is also shorter, and several numbers v3 fixed are
+simply absent from it — [`docs/SPEC-VERSIONS.md`](docs/SPEC-VERSIONS.md) records each one,
+because a threshold that vanishes when the document is rewritten is a threshold relaxed by
+omission. The governing
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 

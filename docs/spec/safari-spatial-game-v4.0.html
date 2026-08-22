@@ -1,0 +1,738 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<title>Safari Spatial Game — Version 4.0</title>
+<meta name="Generator" content="Cocoa HTML Writer">
+
+</head>
+<body>
+<p class="p1"><span class="s1">Safari Spatial Game Prototype</span></p>
+<p class="p2"><span class="s2">Version 4.0 — AI実装統合・実機検証・Spatial Game技術仕様書</span></p>
+<p class="p3"><span class="s3">Target:</span><span class="s4"> iPhone Safari / iOS 26+ / HTTPS / 実機<br>
+</span><span class="s3">Primary Goal:</span><span class="s4"> Safariで実際に取得できるデータだけから現実空間を観測・追跡し、ゲームが利用できる空間情報を取得する。<br>
+</span><span class="s3">Game Goal:</span><span class="s4"> 現実の床・壁・家具などの形状や位置をゲーム空間として利用し、その場にゴール・障害物・ボールゲームを自動生成する。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">0. 本書の位置付け</span></p>
+<p class="p6"><span class="s4">本書は企画書ではなく、AIコーディングエージェントが直接実装に使用する</span><span class="s3">統合技術仕様書</span><span class="s4">である。</span></p>
+<p class="p6"><span class="s4">AIは、本書を「参考アイデア」として扱ってはならない。</span></p>
+<p class="p7"><span class="s4">本書に記載された以下を実装上の強制仕様とする。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>REQUIRED</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>禁止</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>完成条件</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Pass Criteria</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Stop Condition</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>実機検証条件</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>データ整合性条件</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Capability条件</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Performance条件</span></p>
+<p class="p3"><span class="s4">AIがより簡単な実装を思いついた場合でも、それによってReal Data性、Correctness、Robustness、Reproducibility、Data Integrityが低下する場合は採用してはならない。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">1. Version 4.0で追加された最重要思想</span></p>
+<p class="p6"><span class="s4">Version 4.0では、Version 3.0までの「本物のデータだけを使う」という思想を維持したまま、Spatial Worldを最終成果物ではなくゲーム体験を成立させるための内部基盤として扱う。</span></p>
+<p class="p2"><span class="s2">1.1 成功とはUI完成ではない</span></p>
+<p class="p7"><span class="s4">以下だけでは完成と認めない。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Cameraが映る</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Feature Pointが表示される</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking GOODと表示される</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>3D点が表示される</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Planeが表示される</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Coverageが増える</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ballが飛ぶ</span></p>
+<p class="p3"><span class="s4">これらは内部データが正しい場合にのみ意味を持つ。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">1.2 Single Source of Truth</span></p>
+<p class="p6"><span class="s4">ゲームに利用するSpatial情報の唯一の正規データ源はSpatialWorldとする。</span></p>
+<p class="p7"><span class="s4">以下が独自の空間データを保持してはならない。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>GameEngine</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>CollisionSystem</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Renderer</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Debug UI</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>UI state</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>temporary visual mock</span></p>
+<p class="p3"><span class="s4">Game、Stage Generator、Collision、Renderer、DebugはSpatialWorldを参照し、独自の現実空間データを勝手に生成・保持しない。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">1.3 Observable State</span></p>
+<p class="p6"><span class="s4">内部状態は可能な限り外部から検証可能にする。</span></p>
+<p class="p7"><span class="s4">最低限、以下を観測可能にする。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Feature Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracked Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Match Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Inlier Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Inlier Ratio</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Reprojection Error</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Pose Confidence</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Keyframe Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Landmark Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Plane Count</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Coverage</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking State</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Mapping State</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>GPU/CPU Mode</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Frame Time</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Memory Pressure</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">1.4 Fail Closed</span></p>
+<p class="p6"><span class="s4">不確実な場合、AIは「成功」と判断してはならない。</span></p>
+<p class="p6"><span class="s4">例：</span></p>
+<p class="p6"><span class="s4">Depthを取得できない<br>
+→ DEPTH: UNAVAILABLE</span></p>
+<p class="p6"><span class="s4">Scaleが分からない<br>
+→ SCALE: UNKNOWN</span></p>
+<p class="p6"><span class="s4">Pose信頼度が低い<br>
+→ POSE: LOW CONFIDENCE</span></p>
+<p class="p6"><span class="s4">Plane確信度が低い<br>
+→ PLANE: UNKNOWN</span></p>
+<p class="p6"><span class="s4">Trackingに失敗<br>
+→ TRACKING: LOST</span></p>
+<p class="p3"><span class="s4">実データが存在しない<br>
+→ そのデータを生成しない。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">2. 最終ビジョン</span></p>
+<p class="p6"><span class="s4">現実世界<br>
+↓<br>
+Camera<br>
+↓<br>
+Frame Capture<br>
+↓<br>
+Preprocessing<br>
+↓<br>
+Feature Detection<br>
+↓<br>
+Feature Tracking<br>
+↓<br>
+Geometric Verification<br>
+↓<br>
+Relative Pose<br>
+↓<br>
+Visual-Inertial Support<br>
+↓<br>
+Spatial Understanding<br>
+↓<br>
+Spatial World<br>
+↓<br>
+Game Stage Generator<br>
+↓<br>
+Goal / Ring Generation<br>
+↓<br>
+Ball Physics<br>
+↓<br>
+Spatial Collision<br>
+↓<br>
+Gameplay</span></p>
+<p class="p6"><span class="s4">ユーザー体験としては、</span></p>
+<p class="p6"><span class="s4">「スマートフォンを持って部屋を見回すと、現実空間そのものがゲームステージになり、その形に合わせて遊べるゲームが生成される」</span></p>
+<p class="p3"><span class="s4">ことを目標とする。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p1"><span class="s1">3. 絶対原則</span></p>
+<p class="p2"><span class="s2">Rule 001 — 実際に取得できない情報は禁止</span></p>
+<p class="p7"><span class="s4">禁止：</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>ARKit APIの偽装</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>RoomPlan APIの偽装</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Scene Reconstruction Meshの偽装</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Native Depth取得の偽装</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>LiDARデータの偽装</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Camera Pose</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Random Spatial Data</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fixed Floor</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fixed Wall</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Plane</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Collision</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Coverage</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Confidence</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Tracking State</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">Rule 002 — UIによる完成偽装禁止</span></p>
+<p class="p7"><span class="s4">以下は禁止。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>実際の内部状態と無関係にTRACKING GOOD</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>時間経過だけでCoverage増加</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>起動直後からPlane生成</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>起動直後からPoint Cloud生成</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>固定Geometry表示</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ballが固定Invisible Wallへ衝突</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Scan Completeボタンによる強制完成</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>実データがない状態でWORLD READY</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">Rule 003 — Browser Capability First</span></p>
+<p class="p6"><span class="s4">起動時にFeature Detectionを行う。</span></p>
+<p class="p7"><span class="s4">最低限：</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MediaDevices</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>DeviceMotion</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>DeviceOrientation</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>WebAssembly</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>OffscreenCanvas</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>ImageCapture</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>WebGPU</span></p>
+<p class="p3"><span class="s4">Depth / ARKit / RoomPlanは別項目として明示する。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">Rule 004 — Real Device First</span></p>
+<p class="p7"><span class="s4">最終判定環境：</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>iPhone</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>iOS 26+</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Safari</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>HTTPS</span></p>
+<p class="p3"><span class="s4">PC Chrome動作のみではPhase Passとしない。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p2"><span class="s2">Rule 005 — Phase Lock</span></p>
+<p class="p6"><span class="s4">前PhaseがPASSしていない場合、次Phaseへ進んではならない。</span></p>
+<p class="p7"><span class="s4">Phase状態：</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>NOT_STARTED</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>IMPLEMENTING</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>TESTING</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>FAILED</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>BLOCKED</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>PASSED</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">4. Version 3.0 Phase Architecture</span></p>
+<p class="p6"><span class="s4">Version 2.0の5段階を、AIが段階的に検証できるよう以下へ細分化する。</span></p>
+<p class="p2"><span class="s2">Phase 0 — Environment / Capability</span></p>
+<p class="p2"><span class="s2">Phase 1 — Camera Capture</span></p>
+<p class="p2"><span class="s2">Phase 2 — Frame Pipeline</span></p>
+<p class="p2"><span class="s2">Phase 3 — Feature Detection</span></p>
+<p class="p2"><span class="s2">Phase 4 — Optical Flow Tracking</span></p>
+<p class="p2"><span class="s2">Phase 5 — Geometric Verification</span></p>
+<p class="p2"><span class="s2">Phase 6 — Relative Pose</span></p>
+<p class="p2"><span class="s2">Phase 7 — IMU Support / Fusion</span></p>
+<p class="p2"><span class="s2">Phase 8 — Keyframe System</span></p>
+<p class="p2"><span class="s2">Phase 9 — Triangulation</span></p>
+<p class="p2"><span class="s2">Phase 10 — Landmark Map</span></p>
+<p class="p2"><span class="s2">Phase 11 — Surface Understanding</span></p>
+<p class="p2"><span class="s2">Phase 12 — Spatial World</span></p>
+<p class="p2"><span class="s2">Phase 13 — Spatial Game Viewer</span></p>
+<p class="p2"><span class="s2">Phase 14 — Save / Resume</span></p>
+<p class="p2"><span class="s2">Phase 15 — Spatial Collision</span></p>
+<p class="p2"><span class="s2">Phase 16 — Game Integration</span></p>
+<p class="p2"><span class="s2">Phase 17 — Stage Generator</span></p>
+<p class="p2"><span class="s2">Phase 18 — Goal Ring System</span></p>
+<p class="p2"><span class="s2">Phase 19 — Ball Physics</span></p>
+<p class="p2"><span class="s2">Phase 20 — Gameplay Validation</span></p>
+<p class="p11"><span class="s2">Phase 21 — Final Audit</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">5. AI実装ループ</span></p>
+<p class="p6"><span class="s4">各Phaseで必ず以下を実行する。</span></p>
+<p class="p6"><span class="s4">Implement<br>
+↓<br>
+Build<br>
+↓<br>
+Run<br>
+↓<br>
+Real Device Test<br>
+↓<br>
+Collect Metrics<br>
+↓<br>
+Inspect Logs<br>
+↓<br>
+Detect Failure<br>
+↓<br>
+Fix<br>
+↓<br>
+Retest<br>
+↓<br>
+Pass / Fail</span></p>
+<p class="p3"><span class="s4">PASSしない限り次Phaseへ進まない。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">6. Stop Condition</span></p>
+<p class="p7"><span class="s4">以下の場合、AIは次Phaseへ進むことを禁止する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>実機Camera取得失敗</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Frame取得失敗</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Feature取得失敗</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Trackingが成立しない</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Poseが不安定</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Reprojection Errorが異常</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SpatialWorldに無効値が存在</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake dataが混入</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Collisionが固定Geometryを参照</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>UI状態と内部状態が不一致</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Memory pressureが継続</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>FPSが最低ラインを下回り続ける</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">7. Capability Matrix</span></p>
+<p class="p6"><span class="s4">起動時にCapability Matrixを生成する。</span></p>
+<p class="p6"><span class="s4">例：</span></p>
+<p class="p6"><span class="s4">Camera<span class="Apple-converted-space">              </span>AVAILABLE<br>
+Motion<span class="Apple-converted-space">              </span>AVAILABLE<br>
+Orientation <span class="Apple-converted-space">        </span>AVAILABLE<br>
+WebGPU<span class="Apple-converted-space">              </span>AVAILABLE<br>
+WebAssembly <span class="Apple-converted-space">        </span>AVAILABLE<br>
+OffscreenCanvas <span class="Apple-converted-space">    </span>AVAILABLE<br>
+ImageCapture<span class="Apple-converted-space">        </span>AVAILABLE<br>
+Depth <span class="Apple-converted-space">              </span>UNAVAILABLE<br>
+Native ARKit<span class="Apple-converted-space">        </span>UNAVAILABLE<br>
+RoomPlan<span class="Apple-converted-space">            </span>UNAVAILABLE</span></p>
+<p class="p3"><span class="s4">Capability Matrixは保存可能にする。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p1"><span class="s1">8. Phase 0 — Environment / Capability</span></p>
+<p class="p2"><span class="s2">Objective</span></p>
+<p class="p6"><span class="s4">実機Safariの能力を最初に把握する。</span></p>
+<p class="p2"><span class="s2">必須</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>HTTPS</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Browser detection</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>OS detection</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>API feature detection</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera capability detection</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Motion capability detection</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>GPU capability detection</span></p>
+<p class="p2"><span class="s2">Test</span></p>
+<p class="p6"><span class="s4">CAP-0001 HTTPS<br>
+期待：PASS</span></p>
+<p class="p6"><span class="s4">CAP-0002 Camera API<br>
+期待：AVAILABLE</span></p>
+<p class="p6"><span class="s4">CAP-0003 WebGPU<br>
+期待：AVAILABLEまたはUNAVAILABLEを正しく表示</span></p>
+<p class="p6"><span class="s4">CAP-0004 Motion<br>
+期待：AVAILABLEまたはUNAVAILABLE</span></p>
+<p class="p2"><span class="s2">Pass</span></p>
+<p class="p3"><span class="s4">Capability Matrixが実測結果と一致すること。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p1"><span class="s1">9. Phase 1 — Camera Capture</span></p>
+<p class="p2"><span class="s2">Objective</span></p>
+<p class="p6"><span class="s4">実機Cameraから本物のVideo Streamを取得する。</span></p>
+<p class="p2"><span class="s2">Input</span></p>
+<p class="p6"><span class="s4">navigator.mediaDevices.getUserMedia()</span></p>
+<p class="p2"><span class="s2">Camera</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>rear camera優先</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>facingMode = environment</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>target 1280×720</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>非対応時nearest fallback</span></p>
+<p class="p2"><span class="s2">Permission</span></p>
+<p class="p6"><span class="s4">ユーザー操作後に要求。</span></p>
+<p class="p2"><span class="s2">Error</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>CAMERA PERMISSION DENIED</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>CAMERA UNAVAILABLE</span></p>
+<p class="p2"><span class="s2">Test</span></p>
+<p class="p6"><span class="s4">CAM-001<br>
+Camera permission許可</span></p>
+<p class="p6"><span class="s4">CAM-002<br>
+Camera permission拒否</span></p>
+<p class="p6"><span class="s4">CAM-003<br>
+30秒連続Frame取得</span></p>
+<p class="p6"><span class="s4">CAM-004<br>
+カメラ移動で画像変化</span></p>
+<p class="p2"><span class="s2">Pass</span></p>
+<p class="p3"><span class="s4">Videoが実データを表示し、30秒間Frame取得が継続する。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p1"><span class="s1">10. Phase 2 — Frame Pipeline</span></p>
+<p class="p2"><span class="s2">Objective</span></p>
+<p class="p6"><span class="s4">CameraからTracking Engineまで効率的にFrameを供給する。</span></p>
+<p class="p6"><span class="s4">Camera<br>
+↓<br>
+HTMLVideoElement<br>
+↓<br>
+Frame Scheduler<br>
+↓<br>
+Frame<br>
+↓<br>
+Preprocessing<br>
+↓<br>
+Tracking Worker</span></p>
+<p class="p2"><span class="s2">原則</span></p>
+<p class="p6"><span class="s4">重い画像処理をUI Threadで連続実行しない。</span></p>
+<p class="p7"><span class="s4">優先：</span></p>
+<p class="p12"><span class="s4"><span class="Apple-tab-span">	</span>1.<span class="Apple-tab-span">	</span>Worker</span></p>
+<p class="p12"><span class="s4"><span class="Apple-tab-span">	</span>2.<span class="Apple-tab-span">	</span>OffscreenCanvas</span></p>
+<p class="p12"><span class="s4"><span class="Apple-tab-span">	</span>3.<span class="Apple-tab-span">	</span>WebAssembly</span></p>
+<p class="p13"><span class="s4"><span class="Apple-tab-span">	</span>4.<span class="Apple-tab-span">	</span>WebGPU</span></p>
+<p class="p2"><span class="s2">Processing Resolution</span></p>
+<p class="p6"><span class="s4">初期：</span></p>
+<p class="p6"><span class="s4">960×540</span></p>
+<p class="p6"><span class="s4">Low：</span></p>
+<p class="p6"><span class="s4">640×360</span></p>
+<p class="p6"><span class="s4">High：</span></p>
+<p class="p6"><span class="s4">1280×720</span></p>
+<p class="p6"><span class="s4">4K直接Trackingは禁止。</span></p>
+<p class="p2"><span class="s2">Processing FPS</span></p>
+<p class="p6"><span class="s4">初期30 FPS</span></p>
+<p class="p6"><span class="s4">Low 20 FPS</span></p>
+<p class="p6"><span class="s4">Minimum 15 FPS</span></p>
+<p class="p3"><span class="s4">Renderingは可能な限り60 FPS。</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p1"><span class="s1">11. Phase 3 — Feature Detection</span></p>
+<p class="p2"><span class="s2">Primary Detector</span></p>
+<p class="p6"><span class="s4">Shi-Tomasi Good Features to Track</span></p>
+<p class="p2"><span class="s2">Feature Target</span></p>
+<p class="p6"><span class="s4">初期：<br>
+800</span></p>
+<p class="p6"><span class="s4">Maximum：<br>
+1200</span></p>
+<p class="p6"><span class="s4">Minimum：<br>
+200</span></p>
+<p class="p6"><span class="s4">Critical：<br>
+80</span></p>
+<p class="p2"><span class="s2">Grid</span></p>
+<p class="p6"><span class="s4">8×6 grid</span></p>
+<p class="p6"><span class="s4">局所集中を防止する。</span></p>
+<p class="p2"><span class="s2">Feature Metadata</span></p>
+<p class="p7"><span class="s4">各Feature：</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>id</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>position</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>cornerStrength</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>age</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>trackLength</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>forwardBackwardError</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>reprojectionError</span></p>
+<p class="p9"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>qualityScore</span></p>
+<p class="p2"><span class="s2">Regeneration</span></p>
+<p class="p6"><span class="s4">Feature &lt;500<br>
+→ 補充</span></p>
+<p class="p6"><span class="s4">Feature &lt;200<br>
+→ 緊急補充</span></p>
+<p class="p3"><span class="s4">Feature &lt;80<br>
+→ TRACKING DEGRADED</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p1"><span class="s1">12. Phase 4 — Optical Flow Tracking</span></p>
+<p class="p2"><span class="s2">Primary Tracker</span></p>
+<p class="p6"><span class="s4">Pyramidal Lucas-Kanade Optical Flow</span></p>
+<p class="p6"><span class="s4">初期値：</span></p>
+<p class="p6"><span class="s4">window = 21×21<br>
+pyramid levels = 3<br>
+maxIterations = 30<br>
+epsilon = 0.01</span></p>
+<p class="p6"><span class="s4">High performance：</span></p>
+<p class="p3"><span class="s4">levels = 4</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">13. Forward / Backward Validation</span></p>
+<p class="p6"><span class="s4">Frame A<br>
+↓<br>
+Frame B<br>
+↓<br>
+Frame A</span></p>
+<p class="p6"><span class="s4">Threshold：</span></p>
+<p class="p6"><span class="s4">FB error &lt;= 1.5 px<br>
+→ acceptable</span></p>
+<p class="p14"><span class="s4">1.5–3.0 px<br>
+→ reduced confidence</span></p>
+<p class="p15"><span class="s6">&gt; 3.0 px<br>
+&gt; → reject</span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p4"><span class="s4"></span></p>
+<p class="p5"><span class="s1">14. Version 4.0 Final Vision</span></p>
+<p class="p6"><span class="s4">このアプリの最終目的は「現実空間をきれいな3Dモデルとして保存すること」ではない。現実空間をゲームが理解できる状態にし、その場そのものを遊び場へ変換することである。</span></p>
+<p class="p6"><span class="s4">ユーザーがスマートフォンを持って部屋を見回すと、床・壁・机・椅子・ソファなど、実際に観測できた空間情報をもとにゲームステージが構成される。</span></p>
+<p class="p3"><span class="s4">その上にゲーム用のリング、ターゲット、スタート地点などが配置され、ユーザーはボールを現実空間の形に沿って投げる。</span></p>
+<p class="p2"><span class="s2">最終体験</span></p>
+<p class="p6"><span class="s4">現実空間 → Camera → Tracking → Spatial Understanding → Spatial World → Game Stage Generation → Goal Placement → Ball Physics → Gameplay</span></p>
+<p class="p3"><span class="s4">「部屋をスキャンすること」自体は目的ではなく、「その部屋で遊べるゲームを生成すること」が目的である。</span></p>
+<p class="p5"><span class="s1">15. Core Product Definition</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real Camera Data Only</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real Tracking / Pose Data</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Observed Spatial Surfaces</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Spatial World as Single Source of Truth</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Procedurally generated game elements</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Physical ball interaction</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real-space dependent collision</span></p>
+<p class="p3"><span class="s4">3Dモデルファイルの出力、汎用3Dアセットへの変換、完全な部屋の再現はPrototype v1の必須条件から外す。</span></p>
+<p class="p5"><span class="s1">16. Spatial World Policy</span></p>
+<p class="p6"><span class="s4">SpatialWorldは「現実空間の完全な3Dデータ」ではなく、「ゲームが必要とする観測済み空間情報の集合」と定義する。</span></p>
+<p class="p2"><span class="s2">最低限保持する情報</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera Pose History</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracked Landmarks</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Plane / Surface Candidates</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Surface Orientation</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Surface Confidence</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Approximate Spatial Relationships</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>World Origin</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking / Mapping Confidence</span></p>
+<p class="p3"><span class="s4">不要な情報を無理に生成しない。観測できない形状を推測して完全なGeometryとして扱わない。</span></p>
+<p class="p5"><span class="s1">17. Phase 5 — Geometric Verification</span></p>
+<p class="p6"><span class="s4">Phase 4までに取得したFeature Correspondenceを、RANSAC等で検証し、安定したPose推定に利用できる対応点だけを残す。</span></p>
+<p class="p2"><span class="s2">Pass</span></p>
+<p class="p3"><span class="s4">Outlierが十分除外され、Pose計算へ利用可能なInlierが安定して得られること。</span></p>
+<p class="p5"><span class="s1">18. Phase 6 — Relative Pose</span></p>
+<p class="p6"><span class="s4">Cameraの相対的な移動と回転を推定する。ゲーム空間の基準座標を保つために利用する。</span></p>
+<p class="p3"><span class="s4">Absolute scaleを保証できない場合はLOCAL UNITSとして扱い、無条件に1 unit = 1 meterと仮定しない。</span></p>
+<p class="p5"><span class="s1">19. Phase 7 — IMU Support / Fusion</span></p>
+<p class="p6"><span class="s4">Visual Poseを中心に、利用可能なMotion / Orientation情報を補助として利用する。</span></p>
+<p class="p3"><span class="s4">IMU単独で長時間の絶対位置を生成しない。</span></p>
+<p class="p5"><span class="s1">20. Phase 8 — Keyframe System</span></p>
+<p class="p6"><span class="s4">空間理解に有効な視点をKeyframeとして保持し、カメラ移動による観測情報を時系列で安定させる。</span></p>
+<p class="p3"><span class="s4">Keyframeはゲーム開始後も必要に応じて更新し、古い情報を盲目的に永久利用しない。</span></p>
+<p class="p5"><span class="s1">21. Phase 9 — Triangulation</span></p>
+<p class="p6"><span class="s4">十分な視差がある観測だけからSparse Spatial Informationを取得する。</span></p>
+<p class="p3"><span class="s4">低視差から無理に大量の3D点を生成しない。Sparse informationは空間理解と追跡を補助するために利用する。</span></p>
+<p class="p5"><span class="s1">22. Phase 10 — Landmark Map</span></p>
+<p class="p6"><span class="s4">観測されたLandmarkを時系列で管理し、Camera PoseとSpatial Worldの安定性を支える。</span></p>
+<p class="p3"><span class="s4">Landmark Map自体を最終的な3Dモデルとして扱わない。</span></p>
+<p class="p5"><span class="s1">23. Phase 11 — Surface Understanding</span></p>
+<p class="p6"><span class="s4">現実空間をゲームに利用するため、床・壁・水平面・その他の安定した表面候補を検出する。</span></p>
+<p class="p2"><span class="s2">優先順位</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Floor / Ground-like Surface</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Large Horizontal Surface</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Vertical Surface / Wall</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Obstacle-like Surface</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Unknown Surface</span></p>
+<p class="p3"><span class="s4">単一Frameだけで家具の種類を断定しない。ゲームに必要な「当たり面」「支え面」「遮蔽面」が得られることを優先する。</span></p>
+<p class="p5"><span class="s1">24. Spatial Object Classification</span></p>
+<p class="p6"><span class="s4">ゲーム生成に必要な範囲で、Spatial Objectを「意味のあるゲーム用カテゴリ」に分類する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>GROUND</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>WALL</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>PLATFORM</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>OBSTACLE SURFACE</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>UNKNOWN</span></p>
+<p class="p3"><span class="s4">「机」「椅子」「ソファ」などの物体名認識は必須条件ではない。まず、実際にゲームで利用できる表面の位置・向き・大きさ・信頼度を取得する。</span></p>
+<p class="p5"><span class="s1">25. Spatial World Runtime State</span></p>
+<p class="p6"><span class="s4">SpatialWorldは常時更新され、ゲームはその最新の信頼できる状態を参照する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>World Origin</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera Pose</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Surface List</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Landmark Quality</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking State</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Mapping State</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Confidence</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Last Updated Timestamp</span></p>
+<p class="p3"><span class="s4">低Confidenceの情報は、ゲーム生成やCollisionで重要度を下げるか使用禁止にする。</span></p>
+<p class="p5"><span class="s1">26. Game World Abstraction</span></p>
+<p class="p6"><span class="s4">SpatialWorldからゲームが利用する抽象化レイヤーを生成する。これは3Dモデル変換ではなく、「ゲームに必要な地形情報の解釈」である。</span></p>
+<p class="p6"><span class="s4">例：床候補 → ボールが転がる面、垂直面 → 反射・停止可能な面、高さのある水平面 → ボールが乗る/落ちる可能性のある面。</span></p>
+<p class="p5"><span class="s1">27. Game Stage Generator</span></p>
+<p class="p6"><span class="s4">実際に観測されたSpatial Worldを入力として、プレイ可能なステージを自動生成する。</span></p>
+<p class="p2"><span class="s2">生成要素</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Start Point</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Target Ring / Goal</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Optional Checkpoint</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Optional Boundary</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Optional Visual Guidance</span></p>
+<p class="p3"><span class="s4">固定された部屋形状に合わせてステージを作らず、その場で得られた空間情報から生成する。</span></p>
+<p class="p5"><span class="s1">28. Goal Ring Generation</span></p>
+<p class="p6"><span class="s4">ゲームの代表的なゴールとしてリングを生成する。リング位置は「適当に空中に置く」のではなく、Spatial Worldの形状とCamera / Playerの位置関係から決定する。</span></p>
+<p class="p2"><span class="s2">Placement Constraints</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>十分なConfidenceのある空間内に置く</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>現実物体内部へ埋め込まない</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>到達可能性を考慮する</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>画面から視認可能な位置を優先する</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>ユーザーが狙いを作れる距離・高さに調整する</span></p>
+<p class="p5"><span class="s1">29. Goal Difficulty</span></p>
+<p class="p6"><span class="s4">環境の違いによって難易度を自動調整する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>EASY: 床上・近距離・障害物少</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>NORMAL: 障害物回避や角度調整が必要</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>HARD: バウンド・狭い隙間・高低差を利用</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>EXPERT: 複数の現実物体を利用した複雑な経路</span></p>
+<p class="p3"><span class="s4">難易度はランダム値だけでは決めず、観測されたSpatial Worldの条件から算出する。</span></p>
+<p class="p5"><span class="s1">30. Start Point Generation</span></p>
+<p class="p6"><span class="s4">ボールを放つ開始地点を、ユーザーが安全かつ操作しやすい場所に生成する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>User reachable area</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Clear line of sight to target</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Sufficient free space</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Stable ground or virtual spawn plane</span></p>
+<p class="p5"><span class="s1">31. Ball Interaction Model</span></p>
+<p class="p6"><span class="s4">プレイヤーは画面操作によってボールの投射方向と強さを決定する。</span></p>
+<p class="p2"><span class="s2">基本操作</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Aim Direction</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Charge / Power</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Release</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Optional Spin / Curve in later version</span></p>
+<p class="p3"><span class="s4">ボールの物理挙動はSpatial World由来のCollision Surfaceを参照する。見えない固定壁をゲーム都合で設置してはいけない。</span></p>
+<p class="p5"><span class="s1">32. Ball Physics</span></p>
+<p class="p6"><span class="s4">ボールには重力、速度、反発、摩擦、Collisionを適用する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Position</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Velocity</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Acceleration / Gravity</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Radius</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Mass</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Restitution</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Friction</span></p>
+<p class="p3"><span class="s4">現実空間のScaleが未知の場合、ゲーム内のLOCAL UNITSとボールサイズを一貫させ、無根拠な実寸換算をしない。</span></p>
+<p class="p5"><span class="s1">33. Collision Policy</span></p>
+<p class="p6"><span class="s4">Collisionの唯一の空間情報源はSpatialWorldから生成された実測ベースのSurface情報とする。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>No Fixed Invisible Wall</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>No Fake Floor</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>No Random Collision Surface</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Collision Surface Confidence Required</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Collision Provenance Logged</span></p>
+<p class="p3"><span class="s4">ゲームプレイを成立させるために必要な仮想オブジェクトは生成してよい。ただし、それが「現実空間のCollision」と偽装されてはならない。</span></p>
+<p class="p5"><span class="s1">34. Goal Collision / Success</span></p>
+<p class="p6"><span class="s4">ボールがリング内部のGoal Volumeを通過した場合にSuccessとする。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball enters target volume</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Velocity / direction constraints if stage requires</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Target remains spatially stable</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Success state is observable and logged</span></p>
+<p class="p5"><span class="s1">35. Procedural Stage Validation</span></p>
+<p class="p6"><span class="s4">自動生成されたステージが「遊べる」と判断できるか検証する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Start and Goal are inside known space</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal is not embedded in obstacles</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Target is visible or reasonably discoverable</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>At least one plausible ball trajectory exists</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Collision geometry is stable</span></p>
+<p class="p3"><span class="s4">完全な数学的解の保証をPrototype v1の必須条件にはしないが、明らかに到達不能なゴールはRejectする。</span></p>
+<p class="p5"><span class="s1">36. Stage Regeneration</span></p>
+<p class="p6"><span class="s4">Tracking / Mappingにより空間認識が大きく更新された場合、ゲームステージを更新できる。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Confidence improved → refine stage</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Spatial contradiction → invalidate affected object</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal becomes blocked → regenerate goal</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking lost → freeze gameplay or request rescan</span></p>
+<p class="p5"><span class="s1">37. Game State Machine</span></p>
+<p class="p6"><span class="s4">ゲーム状態を明確に分離する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SCAN</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SPATIALIZING</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>STAGE_GENERATING</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>READY</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>AIMING</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>THROWING</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SUCCESS</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>RETRY</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>PAUSED</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>TRACKING_LOST</span></p>
+<p class="p3"><span class="s4">状態とUI表示は必ず一致する。</span></p>
+<p class="p5"><span class="s1">38. UI / AR Presentation</span></p>
+<p class="p6"><span class="s4">カメラ映像を中心とし、その上にゲーム要素を重ねる。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Target Ring</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Start Indicator</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Aim Guide</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Power Indicator</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Success Feedback</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking Warning</span></p>
+<p class="p3"><span class="s4">現実の家具そのものを完全に3D再現して表示する必要はない。ゲームに必要なリング・ガイド・ボール等を明確に表示する。</span></p>
+<p class="p5"><span class="s1">39. SCAN Screen</span></p>
+<p class="p6"><span class="s4">ユーザーが部屋をゆっくり見回す画面。</span></p>
+<p class="p6"><span class="s4">表示例：TRACKING GOOD / SURFACES 12 / CONFIDENCE 0.84 / READY AREA 4</span></p>
+<p class="p3"><span class="s4">すべて実測値。</span></p>
+<p class="p5"><span class="s1">40. GAME Screen</span></p>
+<p class="p6"><span class="s4">SCAN完了後、自動生成されたステージでプレイする。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera View</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Target Ring</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Aim Guide</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Power Gauge</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Retry</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking State</span></p>
+<p class="p5"><span class="s1">41. No 3D Export Requirement</span></p>
+<p class="p6"><span class="s4">Prototype v1では、OBJ / GLB / USDZ等の汎用3Dデータとしての書き出しを要求しない。</span></p>
+<p class="p3"><span class="s4">保存対象はゲーム再開に必要なSpatialWorldとGame Stateに限定する。</span></p>
+<p class="p5"><span class="s1">42. Save / Resume</span></p>
+<p class="p6"><span class="s4">必要に応じてSpatialWorld、Stage Seed、Goal、Game Stateを保存できる。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SpatialWorld runtime state</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Stage generation parameters</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal pose</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Game progress</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Confidence / provenance</span></p>
+<p class="p5"><span class="s1">43. Performance Architecture</span></p>
+<p class="p6"><span class="s4">Spatial trackingとゲーム描画・物理を同時に実行しても、iPhoneで継続利用できる性能を目標とする。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Heavy vision processing off UI Thread</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Adaptive tracking rate</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Lightweight collision representation</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Particle / effect limits</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Memory pressure monitoring</span></p>
+<p class="p5"><span class="s1">44. Fail Closed</span></p>
+<p class="p6"><span class="s4">空間情報の信頼性が不足した場合は、ゲームを都合よく成立させるのではなく状態を下げる。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>TRACKING LOST → pause or rescan</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SURFACE UNKNOWN → do not use for collision</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>GOAL INVALID → regenerate</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>POSE LOW CONFIDENCE → do not commit new stage state</span></p>
+<p class="p5"><span class="s1">45. Absolute Prohibitions</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake ARKit / RoomPlan data</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Depth / LiDAR</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fixed Floor / Fixed Wall as reality collision</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Coverage</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Fake Confidence</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Invisible fixed collision</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal placed using nonexistent geometry</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Game success based on data unrelated to observed space</span></p>
+<p class="p5"><span class="s1">46. Development Architecture</span></p>
+<p class="p6"><span class="s4">CaptureManager → TrackingEngine → Spatial Understanding → SpatialWorld → StageGenerator → GameWorld → BallPhysics / Collision → Renderer / UI</span></p>
+<p class="p3"><span class="s4">GameWorldはSpatialWorldを入力とし、現実空間の代わりになる独自Geometryを勝手に生成しない。</span></p>
+<p class="p5"><span class="s1">47. Phase 5〜16 Roadmap</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 5 — Geometric Verification</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 6 — Relative Pose</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 7 — IMU Support / Fusion</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 8 — Keyframe System</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 9 — Triangulation</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 10 — Landmark Map</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 11 — Surface Understanding</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 12 — Spatial World</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 13 — Spatial Game Viewer</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 14 — Save / Resume</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 15 — Spatial Collision</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Phase 16 — Game Integration</span></p>
+<p class="p5"><span class="s1">48. Phase 17 — Stage Generator</span></p>
+<p class="p6"><span class="s4">SpatialWorldを受け取り、Start / Goal / Optional Obstaclesを自動生成する。</span></p>
+<p class="p3"><span class="s4">テスト：同じ空間・同じ入力条件なら再現可能なステージを生成できること。</span></p>
+<p class="p5"><span class="s1">49. Phase 18 — Goal Ring System</span></p>
+<p class="p6"><span class="s4">リングの位置・向き・サイズ・難易度をSpatial Worldから決定する。</span></p>
+<p class="p3"><span class="s4">テスト：現実物体内部や低Confidence領域への配置がRejectされること。</span></p>
+<p class="p5"><span class="s1">50. Phase 19 — Ball Physics</span></p>
+<p class="p6"><span class="s4">ボールの投射、重力、速度、反発、摩擦、Collisionを実装する。</span></p>
+<p class="p3"><span class="s4">テスト：同一条件で同一入力を与えた場合の挙動が再現可能であること。</span></p>
+<p class="p5"><span class="s1">51. Phase 20 — Gameplay Validation</span></p>
+<p class="p6"><span class="s4">実際の部屋で、スキャン → ステージ生成 → ボール投射 → ゴール成立までを一連で検証する。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real room</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real furniture / surfaces</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real tracking</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Generated target</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real-time camera overlay</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball collision</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal success</span></p>
+<p class="p5"><span class="s1">52. Golden Gameplay Test</span></p>
+<p class="p3"><span class="s4">Safari起動 → Capability Check → Camera Permission → 部屋をゆっくり観測 → Tracking成立 → Surface取得 → SpatialWorld READY → Stage Generation → Ring生成 → Ball AIM → THROW → Spatial Collision → Ring Hit → SUCCESS</span></p>
+<p class="p5"><span class="s1">53. Golden Gameplay Success</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera works</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking works</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Observed surfaces are real</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Stage is generated from current SpatialWorld</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal placement is valid</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball interacts with observed surfaces</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Success depends on entering the generated goal</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>No fixed reality collision exists</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real device evidence exists</span></p>
+<p class="p5"><span class="s1">54. Testing Evidence</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Screenshot</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Metrics</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Logs</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>State transition history</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Spatial provenance</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Real-device recording</span></p>
+<p class="p3"><span class="s4">「動いた」という自己申告だけでPASSにしない。</span></p>
+<p class="p5"><span class="s1">55. Prototype v1 Quality Target</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Feature Tracking：良好</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Relative Pose：実用可能</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Surface Understanding：限定的ながら実用可能</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SpatialWorld：ゲームに必要な情報を保持</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Stage Generation：現実空間依存</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball Physics：安定</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Gameplay：一連の体験として成立</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Dense Mesh：対象外</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>汎用3D Export：対象外</span></p>
+<p class="p5"><span class="s1">56. CORE</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Camera</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Tracking</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Relative Pose</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Surface Understanding</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>SpatialWorld</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Stage Generator</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Goal Ring</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Ball Physics</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Collision</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Gameplay Loop</span></p>
+<p class="p5"><span class="s1">57. ADVANCED</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Object semantic recognition</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Advanced trajectory planning</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Multiple goals</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Dynamic obstacles</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Spin / Curve</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Multiplayer</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>Persistent room states</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>More sophisticated procedural generation</span></p>
+<p class="p5"><span class="s1">58. 最終的な成功の定義</span></p>
+<p class="p6"><span class="s4">ユーザーがスマートフォンを持って自分の部屋を見回す。すると、その部屋の床・壁・家具など、実際に観測された空間の特徴を利用して、その場専用のゲームステージが生成される。</span></p>
+<p class="p3"><span class="s4">ユーザーは現実の空間を見ながらボールを投げ、現実空間に合わせて生成されたリングを狙う。ボールの挙動とCollisionは実際に観測された空間情報に依存する。</span></p>
+<p class="p3"><span class="s4">これがVersion 4.0の最終成功条件である。</span></p>
+<p class="p5"><span class="s1">59. AIへの実装指示</span></p>
+<p class="p6"><span class="s4">AIは本書を参考アイデアではなく実装仕様として扱う。</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: Real data first</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: Real-device validation</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: SpatialWorld as single source of truth</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: Game uses observed spatial information</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: Invalid spatial data fails closed</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: Stage generation is reproducible</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST: Collision provenance is inspectable</span></p>
+<p class="p8"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST NOT: fake spatial data</span></p>
+<p class="p10"><span class="s4"><span class="Apple-tab-span">	</span></span><span class="s5">●</span><span class="s4"><span class="Apple-tab-span">	</span>MUST NOT: finish with a visual mock only</span></p>
+<p class="p3"><span class="s4">最重要事項は「3Dモデルを作ること」ではなく、「現実空間に依存したゲームプレイを実機で成立させること」である。</span></p>
+<p class="p5"><span class="s1">60. Final Declaration</span></p>
+<p class="p3"><span class="s4">このプロジェクトは、現実空間を観測・追跡し、その空間情報を使ってゲームを生成するSpatial Gameである。</span></p>
+<p class="p3"><span class="s4">現実の部屋ごとに異なる地形が生まれ、その地形に合わせてリングやゴールが配置され、プレイヤーはボールを投げて攻略する。</span></p>
+<p class="p3"><span class="s4">3Dデータの完全な再構成は目的ではない。現実空間そのものを、遊べるゲームステージとして利用することが目的である。</span></p>
+</body>
+</html>
