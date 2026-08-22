@@ -45,6 +45,23 @@ import {
 } from './trackingState';
 import type { StateDerivation, TrackingMeasurement } from './trackingState';
 
+/**
+ * What §11's refill actually did with what detection produced.
+ *
+ * Three numbers rather than one, because they answer different questions and the device run
+ * of 2026-08-22 could not distinguish them. A population well below §11's minimum can mean
+ * the detector found little, or that almost everything it found is *already being tracked* —
+ * which is a healthy tracker, not a failing one — or that the frame's corners sit where the
+ * solver's window cannot reach. `admitted` plus the two declines is what detection offered.
+ */
+export interface MergeOutcome {
+  readonly admitted: number;
+  /** Within the separation radius of a point already in the population. */
+  readonly declinedTooClose: number;
+  /** Inside the border band the solver's 21×21 window cannot cover. */
+  readonly declinedOutOfReach: number;
+}
+
 /** Cells with fewer than this many tracked points say nothing about the local flow. */
 export const MIN_CELL_POINTS_FOR_SPREAD = 3;
 /** ...and a spread over fewer than this many cells is not a description of a field. */
@@ -439,8 +456,10 @@ export class FlowTracker {
     width: number,
     height: number,
     levelScale: number,
-  ): number {
-    if (detected.length === 0) return 0;
+  ): MergeOutcome {
+    if (detected.length === 0) return { admitted: 0, declinedTooClose: 0, declinedOutOfReach: 0 };
+    let declinedTooClose = 0;
+    let declinedOutOfReach = 0;
     const m = this.trackableMargin;
     const sep = Math.max(1, separation0);
     const sepSq = sep * sep;
@@ -482,6 +501,7 @@ export class FlowTracker {
         f.x0 >= width - m - 1 ||
         f.y0 >= height - m - 1
       ) {
+        declinedOutOfReach++;
         continue;
       }
       const bx = Math.min(gw - 1, Math.max(0, Math.floor(f.x0 / sep)));
@@ -501,7 +521,10 @@ export class FlowTracker {
           }
         }
       }
-      if (tooClose) continue;
+      if (tooClose) {
+        declinedTooClose++;
+        continue;
+      }
       place(f.x0, f.y0);
       this.population.push({
         ...f,
@@ -522,7 +545,7 @@ export class FlowTracker {
       });
       added++;
     }
-    return added;
+    return { admitted: added, declinedTooClose, declinedOutOfReach };
   }
 
   /** §33's state for the population as it now stands, from the one shared function. */

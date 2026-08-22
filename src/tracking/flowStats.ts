@@ -13,7 +13,21 @@ import type { FeatureRecordSample, TrackingFlow, TrackingSceneShift } from './tr
 
 /** Everything accumulated for one measured motion class. */
 export interface MotionClassStats {
+  /**
+   * Frames of this class in which the tracker was given something to follow.
+   *
+   * Every median below is over these. A frame that offered nothing has no survival and no
+   * displacement, and folding it in as a zero would read as a tracker that lost everything.
+   */
   readonly frames: number;
+  /**
+   * ...and every frame classified into this class, whether or not anything was offered.
+   *
+   * The two differ most where it matters: a covered lens empties the population on its first
+   * frame, so a 679-frame occlusion on the device contributed *four* frames to `frames`.
+   * Reporting only that read as a four-frame occlusion, which is not what happened.
+   */
+  readonly framesSeen: number;
   readonly medianSurvival: number;
   readonly medianDisplacementPx: number;
   readonly medianFbErrorPx: number;
@@ -36,6 +50,7 @@ export interface MotionClassStats {
 
 export const EMPTY_CLASS: MotionClassStats = {
   frames: 0,
+  framesSeen: 0,
   medianSurvival: -1,
   medianDisplacementPx: -1,
   medianFbErrorPx: -1,
@@ -111,6 +126,15 @@ export interface FlowStats {
    * recorded so a run whose population was rebuilt a dozen times reads as one.
    */
   readonly geometryChanges: number;
+  /**
+   * Median features §11's refill offered per frame, and why each was declined.
+   *
+   * `declinedTooClose` is the healthy case — the point is already in the population — and
+   * distinguishing it from `declinedOutOfReach` is what makes a small population diagnosable.
+   */
+  readonly medianDetectionOffered: number;
+  readonly medianDeclinedTooClose: number;
+  readonly medianDeclinedOutOfReach: number;
 
   /* §13 */
   readonly medianFbErrorPx: number;

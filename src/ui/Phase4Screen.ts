@@ -42,7 +42,7 @@ import {
 import { FAST_SHIFT_PX, STATIC_SHIFT_PX } from '../tracking/SceneShift';
 import { DEGRADED_FEATURES, GOOD_FEATURES, TrackingState } from '../tracking/trackingState';
 import { ROTATING_DEG, ROTATION_WINDOW_MS } from '../tracking/FlowSession';
-import type { FlowStats } from '../tracking/flowStats';
+import type { FlowStats, MotionClassStats } from '../tracking/flowStats';
 import { MIN_IDENTITY_OVER_RANDOM } from '../debug/OverlayAlignmentProbe';
 import type { AlignmentReading } from '../debug/OverlayAlignmentProbe';
 
@@ -294,6 +294,10 @@ function renderPopulation(vm: Phase4ViewModel): HTMLElement {
       stat('State mismatches', String(s.stateMismatches),
         s.stateMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
       stat('Geometry changes', String(s.geometryChanges)),
+      stat('Refill offered', s.medianDetectionOffered >= 0
+        ? `${s.medianDetectionOffered} − ${s.medianDeclinedTooClose} already tracked` : null),
+      stat('Out of solver reach', s.medianDeclinedOutOfReach >= 0
+        ? String(s.medianDeclinedOutOfReach) : null),
     ]),
     el('p', { class: 'footnote' }, [
       'Tracked and redetected are separate numbers on purpose. §11’s refill ladder tops the ' +
@@ -392,17 +396,17 @@ function renderCrossCheck(vm: Phase4ViewModel): HTMLElement {
 
 function renderMotion(vm: Phase4ViewModel): HTMLElement {
   const s = vm.stats;
-  const row = (
-    label: string,
-    c: { frames: number; medianSurvival: number; medianDisplacementPx: number; medianFbErrorPx: number },
-  ): HTMLElement =>
+  const row = (label: string, c: MotionClassStats): HTMLElement =>
     el('div', { class: 'cap-row' }, [
       el('span', { class: 'cap-label' }, [label]),
       el('span', { class: 'cap-method' }, [c.frames > 0 ? px(c.medianDisplacementPx) : '']),
-      el('span', { class: `cap-state ${c.frames > 0 ? 's-AVAILABLE' : ''}` }, [
+      el('span', { class: `cap-state ${c.framesSeen > 0 ? 's-AVAILABLE' : ''}` }, [
         c.frames > 0
-          ? `${c.frames} frames · ${pct(c.medianSurvival)} survive · FB ${px(c.medianFbErrorPx)}`
-          : 'none yet',
+          ? `${c.framesSeen} frames (${c.frames} judged) · ${pct(c.medianSurvival)} survive · ` +
+            `FB ${px(c.medianFbErrorPx)}`
+          : c.framesSeen > 0
+            ? `${c.framesSeen} frames, none with points to follow`
+            : 'none yet',
       ]),
     ]);
 

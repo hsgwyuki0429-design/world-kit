@@ -337,6 +337,30 @@ describe('a covered lens', () => {
     expect(episode?.recovered).toBe(true);
   });
 
+  it('counts every occluded frame, not only the ones that had points to lose', () => {
+    // The device run of 2026-08-22 recorded a 679-frame occlusion as *four* frames in the
+    // class statistics, because a covered lens empties the population on its first frame and
+    // every frame after it offers the tracker nothing. Four is the number of frames that
+    // could be judged; it is not the length of the occlusion, and reporting only it read as
+    // an occlusion that lasted four frames.
+    const c = outcome.stats.occludedFrames;
+    expect(c.framesSeen).toBeGreaterThan(c.frames);
+    expect(c.framesSeen).toBeGreaterThanOrEqual(10);
+  });
+
+  it('says what the refill offered and what merge declined', () => {
+    // Without these a population well below §11's minimum cannot be told apart from a
+    // detector that found little — which is exactly the question the device run left open.
+    expect(outcome.stats.medianDetectionOffered).toBeGreaterThan(0);
+    // Split by reason: "already being tracked" is a healthy tracker, "outside the solver's
+    // reach" is a border artefact, and one number could not tell them apart.
+    expect(outcome.stats.medianDeclinedTooClose).toBeGreaterThan(0);
+    expect(outcome.stats.medianDeclinedOutOfReach).toBeGreaterThanOrEqual(0);
+    expect(
+      outcome.stats.medianDeclinedTooClose + outcome.stats.medianDeclinedOutOfReach,
+    ).toBeLessThanOrEqual(outcome.stats.medianDetectionOffered);
+  });
+
   it('does not go LOST on a single bad frame — §33 requires three in a row', () => {
     const states = outcome.frames.map((f) => f.flow?.state);
     const firstLost = states.indexOf(TrackingState.LOST);

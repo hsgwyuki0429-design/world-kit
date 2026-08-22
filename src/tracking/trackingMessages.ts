@@ -165,6 +165,12 @@ export interface TrackingFlow {
   readonly meanLuma: number;
   readonly topLevelMad: number;
   readonly detectedThisFrame: boolean;
+  /** Features §11's refill produced this frame, before merging. `0` on a frame with no refill. */
+  readonly detectionOffered: number;
+  /** ...how many were declined because the point is already in the population — a healthy sign. */
+  readonly declinedTooClose: number;
+  /** ...and how many sat where the solver's 21×21 window cannot reach. */
+  readonly declinedOutOfReach: number;
   readonly refillUrgency: string;
 }
 

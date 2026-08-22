@@ -8,15 +8,16 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0–3 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
+**Current state: Phases 0–4 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
 committed, machine-checked evidence. Phase 3 took four device runs and each failure was a
 real defect; the passing run detected 2494 frames, scored **91.1 %** above chance, and saw
 the population fall from a median of 353 features on a textured wall to 64 on a blank one.
-One known defect is carried forward — the overlay rotates in portrait on the device — and the
-app now measures it rather than relying on the eye. **Phase 4 (Optical Flow Tracking, §12) is
-written and green on its automated leg**, including the cross-check that separates a working
-tracker from one that returns its input; it has had no device run, so Rule 004 holds it at
-`IMPLEMENTING`. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+**Phase 4's device run settled the defect Phase 3 carried forward**: the `VIDEO_FRAME`
+acquisition route really does produce a buffer turned 90° against the video on this device, the
+alignment probe measured it after 5265 frames, and the app abandoned the route rather than
+correcting the drawing. It also passed the cross-check that separates a working tracker from
+one that returns its input — 4.741 px against an independently measured 4.000 px. Phase 5
+(Geometric Verification) is unlocked. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -339,10 +340,10 @@ costs; the device run decides the budget.
 
 ## What Phase 4 does
 
-Phase 4 — Optical Flow Tracking (§12, §13, §65) — is written and green on its automated leg.
-It has had no device run, so Rule 004 holds it at `IMPLEMENTING`;
-[`docs/phase4/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase4/HOW-TO-RUN-DEVICE-TEST.md) is the run
-that would settle it.
+Phase 4 — Optical Flow Tracking (§12, §13, §65) — **passed on the device on 2026-08-22**:
+5/5 required and 2/2 advisory, `devEntry: false`, with the transition log showing the phase
+moving `FAILED → PASSED → FAILED → PASSED` as the operator worked through §65's five
+conditions. It was not passed by assertion.
 
 Pyramidal Lucas-Kanade at §12's parameters — 21×21 window, 3 levels, 30 iterations, epsilon
 0.01 — follows the corners Phase 3 finds, and §13 grades every round trip: 1.5 px acceptable,
@@ -393,6 +394,20 @@ a separately named 90 ms tripwire gates instead.
 been written, and a `null` fails its conjunct — so `GOOD` cannot be reached, and the state
 carries `goodBlockedBy` naming the missing terms rather than quietly dropping two conditions
 out of three.
+
+### What the device settled, and what it did not
+
+The `VIDEO_FRAME` route produced a buffer **turned 90° against the video** for 5265 frames.
+The probe measured it, the app abandoned the route, and after the fallback identity wins at
+10.1× chance. The report Phase 3 could not reproduce is real; the mechanism §H.7 called for
+works; the defect is contained rather than fixed.
+
+Three things the pass does not demonstrate, recorded because the tests are satisfied and the
+run is narrower than it looks: the population never reached §11's 200 minimum (median 41–74,
+so `DEGRADED` on 1211 of 2717 frames, and two criteria were met without being exercised); the
+bundle could not say **why**, which was an evidence gap and is now fixed; and FLOW-006's
+2.668 ms was measured at 41 points, not at the ~700 the budget was written for. The
+independent scene-shift search cost **7.648 ms — nearly three times the solver it checks**.
 
 ### Four defects found before any device saw the code
 

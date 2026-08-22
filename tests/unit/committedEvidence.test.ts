@@ -29,6 +29,13 @@ import {
   MIN_CONTRAST_SAMPLES,
   POOR_COUNT_FRACTION,
 } from '../../src/testkit/Phase3Tests';
+import {
+  MIN_CLASS_FRAMES,
+  MIN_SHIFT_SAMPLES,
+  MIN_SURVIVAL_SLOW,
+  STATIC_DRIFT_PX,
+} from '../../src/testkit/Phase4Tests';
+import { SHIFT_AGREEMENT_FRACTION, SHIFT_AGREEMENT_PX } from '../../src/tracking/SceneShift';
 import { findIntegrityIssues } from '../../src/core/validate';
 
 const EVIDENCE_DIRS = [
@@ -36,6 +43,7 @@ const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase1', 'evidence'),
   join(process.cwd(), 'docs', 'phase2', 'evidence'),
   join(process.cwd(), 'docs', 'phase3', 'evidence'),
+  join(process.cwd(), 'docs', 'phase4', 'evidence'),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
@@ -444,6 +452,158 @@ describe('Phase 3 evidence', () => {
       }
       const f3 = bundle.testResults.find((r) => r.spec.id === 'FEAT-003');
       expect(Number(f3?.metrics['quotaBreaches']), `${file} quota breaches`).toBe(0);
+    }
+  });
+});
+
+describe('Phase 4 evidence', () => {
+  const phase4 = bundles.filter((b) => b.bundle.phase === 4);
+  const device = phase4.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 4 bundle carries the flow context that produced its verdict', () => {
+    for (const { file, bundle } of phase4) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { devEntry?: boolean; flow?: Record<string, unknown> };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.flow, `${file} flow context`).toBeTruthy();
+      // The paired measurements FLOW-002 is decided on. Without them a reader cannot tell a
+      // tracker that followed the image from one that returned its input.
+      expect(ctx?.flow?.['shiftCrossCheck'], `${file} cross-check context`).toBeTruthy();
+      expect(ctx?.flow?.['byMotion'], `${file} motion classes`).toBeTruthy();
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 4 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  /**
+   * The one gate that separates a working tracker from one that returns its input.
+   *
+   * Re-derived here from the bundle's own numbers rather than read off its verdict: the
+   * tracker must have moved at all, an independent search must have measured the image
+   * moving, and the two must agree inside the tolerance the plan derives. A bundle whose
+   * FLOW-002 says PASS while these numbers do not support it fails this test.
+   */
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass is backed by an agreement that could have failed',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f2 = bundle.testResults.find((r) => r.spec.id === 'FLOW-002');
+        expect(f2?.verdict, `${file} FLOW-002`).toBe(Verdict.PASS);
+
+        const samples = Number(f2?.metrics['shiftCheckSamples']);
+        const measured = Number(f2?.metrics['medianMeasuredShiftPx']);
+        const tracked = Number(f2?.metrics['medianTrackedDisplacementPx']);
+        const disagreement = Number(f2?.metrics['medianDisagreementPx']);
+
+        expect(samples, `${file} paired cross-checks`).toBeGreaterThanOrEqual(MIN_SHIFT_SAMPLES);
+        // The image has to have moved, or the agreement is trivial (criterion 3).
+        expect(measured, `${file} measured scene shift`).toBeGreaterThan(0);
+        expect(tracked, `${file} tracked displacement`).toBeGreaterThanOrEqual(1.0);
+        // ...and the two have to agree, inside the tolerance the plan derives from the
+        // coarse search's own 4 px quantisation.
+        const tolerance = Math.max(SHIFT_AGREEMENT_PX, SHIFT_AGREEMENT_FRACTION * measured);
+        expect(disagreement, `${file} disagreement`).toBeLessThanOrEqual(tolerance);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass shows the tracker holding still on a still scene and surviving a slow one',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f1 = bundle.testResults.find((r) => r.spec.id === 'FLOW-001');
+        expect(Number(f1?.metrics['staticFrames']), `${file} static frames`)
+          .toBeGreaterThanOrEqual(MIN_CLASS_FRAMES);
+        expect(Number(f1?.metrics['medianDisplacementPx']), `${file} static drift`)
+          .toBeLessThanOrEqual(STATIC_DRIFT_PX);
+
+        const f2 = bundle.testResults.find((r) => r.spec.id === 'FLOW-002');
+        expect(Number(f2?.metrics['medianSurvival']), `${file} slow survival`)
+          .toBeGreaterThanOrEqual(MIN_SURVIVAL_SLOW);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass shows the tracker failing honestly under motion and occlusion',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        // §65 asks for the transition, not for success. Survival must fall under motion the
+        // 21 px window cannot span, and the points lost must be rejected by §13 rather than
+        // vanishing silently.
+        const f4 = bundle.testResults.find((r) => r.spec.id === 'FLOW-004');
+        expect(Number(f4?.metrics['fastSurvival']), `${file} fast survival`)
+          .toBeLessThan(Number(f4?.metrics['slowSurvival']));
+        expect(Number(f4?.metrics['fastRejectFraction']), `${file} fast reject fraction`)
+          .toBeGreaterThan(Number(f4?.metrics['slowRejectFraction']));
+        expect(Number(f4?.metrics['stateMismatches']), `${file} state mismatches`).toBe(0);
+
+        const f5 = bundle.testResults.find((r) => r.spec.id === 'FLOW-005');
+        const episodes = (f5?.metrics['episodes'] ?? []) as {
+          frames: number;
+          msToLost: number;
+          survivedWithGoodFb: number;
+          recovered: boolean;
+        }[];
+        const complete = episodes.filter((e) => e.frames >= 10);
+        expect(complete.length, `${file} occlusion episodes`).toBeGreaterThan(0);
+        for (const e of complete) {
+          expect(e.msToLost, `${file} time to LOST`).toBeGreaterThanOrEqual(0);
+          // A point that "tracks" across a covered lens was never tracked.
+          expect(e.survivedWithGoodFb, `${file} tracks through the dark`).toBe(0);
+          expect(e.recovered, `${file} recovery`).toBe(true);
+        }
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)('a claimed pass invents no metadata it cannot know', () => {
+    for (const { file, bundle } of claimsPass) {
+      const f7 = bundle.testResults.find((r) => r.spec.id === 'FLOW-007');
+      const records = (f7?.metrics['records'] ?? []) as {
+        age?: number;
+        trackLength?: number;
+        forwardBackwardError?: unknown;
+        reprojectionError?: unknown;
+      }[];
+      expect(records.length, `${file} sampled records`).toBeGreaterThan(0);
+      for (const r of records) {
+        // §13's error exists exactly where a round trip was measured, and nowhere else.
+        if ((r.age ?? 0) > 0) expect(r.forwardBackwardError, `${file} tracked FB`).not.toBeNull();
+        else expect(r.forwardBackwardError, `${file} fresh FB`).toBeNull();
+        // Phase 6 measures this one, and Phase 6 has not been written.
+        expect(r.reprojectionError, `${file} reprojectionError`).toBeNull();
+        expect(r.trackLength ?? 0, `${file} trackLength`).toBeLessThanOrEqual((r.age ?? 0) + 1);
+      }
+    }
+  });
+
+  /**
+   * §33's GOOD is three conjuncts and Phase 4 can evaluate one of them.
+   *
+   * A bundle that reached GOOD reached it by dropping the two terms Phases 5 and 6 measure,
+   * which is a claim about measurements that do not exist (§80). Checked against the
+   * *evidence* rather than only against the code, because this is exactly the kind of thing
+   * a later change could quietly reintroduce.
+   */
+  it.runIf(device.length > 0)('never claims §33 GOOD, which needs Phase 5 and Phase 6', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { flow?: { state?: { frames?: Record<string, number>; goodBlockedBy?: string[] } } };
+      }).phaseContext;
+      const frames = ctx?.flow?.state?.frames ?? {};
+      expect(frames['GOOD'] ?? 0, `${file} GOOD frames`).toBe(0);
+      const blocked = ctx?.flow?.state?.goodBlockedBy ?? [];
+      expect(blocked.join(' '), `${file} names the missing terms`).toContain('inlierRatio');
+      expect(blocked.join(' '), `${file} names the missing terms`).toContain('reprojectionError');
     }
   });
 });

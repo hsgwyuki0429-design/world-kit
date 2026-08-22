@@ -12,8 +12,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 4 | Optical Flow Tracking | **IMPLEMENTING** | Written and green on the automated leg; no device run yet, so Rule 004 holds it. |
-| 5 | Geometric Verification | BLOCKED | |
+| 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
+| 5 | Geometric Verification | NOT_STARTED | Phase Lock is open. v3 §14 is next; v4 §17 restates it without the numbers. |
 | 6 | Relative Pose | BLOCKED | |
 | 7 | IMU Support / Fusion | BLOCKED | |
 | 8 | Keyframe System | BLOCKED | |
@@ -446,11 +446,93 @@ exists — currently `{0, 1, 2, 3}`. The START SCAN control reads it alongside P
 control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
 implies a capability that has not been built.
 
-## Phase 4 — IMPLEMENTING
+## Phase 4 — PASSED
 
-**Not passed, and cannot be from what is committed.** The only Phase 4 bundle in the
-repository is `docs/phase4/evidence/phase4-desktop-chromium.json`, leg `DESKTOP_DEV`. Rule 004
-stands. `docs/phase4/HOW-TO-RUN-DEVICE-TEST.md` describes the run that would settle it.
+**Evidence:** `docs/phase4/evidence/phase4-real-device-PASSED-2026-08-22T14-47-06-539Z.json`
+plus the device screenshot from the same session.
+
+| | |
+| --- | --- |
+| Device | iPhone, iOS 18.7, Safari 26.6, `https://hsgwyuki0429-design.github.io` |
+| Leg | `REAL_DEVICE`, `devEntry: false` — the lock opened because Phases 0–3 passed in the same session |
+| Required tests | 5 / 5 PASS, 0 PENDING, 0 FAIL |
+| Advisory tests | 2 / 2 PASS |
+| Flow frames | 2717, of which 1941 had a predecessor to track from |
+| **FLOW-002** | **400 cross-checks: tracker 4.741 px against image 4 px, median disagreement 0.95 px inside a 2 px tolerance, 90.5 % of frames agreeing** |
+| FLOW-001 | 400 static frames, median displacement **0.025 px**, FB 0.001 px, survival 100 % |
+| FLOW-003 | 400 rotating frames at a median 5.57°/s: survival 96.3 %, grid spread **0.813 px turning against 0.464 px panning** |
+| FLOW-004 | 329 fast frames: survival 87.5 % against 97.2 % slow, §13 rejecting 7.1 % against 0 % |
+| FLOW-005 | 3 occlusions, `LOST` reached in 64–94 ms, all recovered, **0 tracks claimed a good round trip through the dark** |
+| §13 over the run | 164 202 acceptable, 362 reduced, 2 511 rejected; median 0.006 px |
+| §33 | 746 TRACKING, 1211 DEGRADED, 759 LOST, 1 READY — **0 state mismatches** |
+| Longest track | **467 frames** |
+| Geometry changes | 12 — the tier ladder stepping, and the device rotating (720×1280 ↔ 1280×720) |
+| LK solve | 2.668 ms at 41 points, against §H's 14 ms |
+
+The number that carries the phase is **4.741 against 4.000**: what the tracker says the points
+did, beside what an integer SAD translation search — sharing no code with the solver, never
+reading the feature list, keeping its own copy of the previous frame — says the image did.
+
+**It was not passed by assertion.** The transition log records the phase moving
+`FAILED → PASSED → FAILED → PASSED` as the operator worked through the conditions: FLOW-001 and
+FLOW-005 failed first, then FLOW-002 failed once more after that, and the pass came only when
+every required test held at the same time.
+
+### The Phase 3 defect reproduced, and the probe caught it
+
+This is the answer to the question Phase 3 left open, and it is the most important thing in
+the bundle.
+
+```
+routeRejectedFor: "rot90"
+routeProbes[0]: VIDEO_FRAME — 5265/5265 successes, "abandoned"
+routeProbes[1]: IMAGE_BITMAP — 4772/4773 successes, "selected"
+```
+
+The `VIDEO_FRAME` route — the one that carries the sensor's orientation rather than what the
+element displays — produced a buffer **turned 90° against the video**, for 5265 frames. The
+alignment probe measured it, three readings in a row, and the app abandoned the route rather
+than correcting the drawing. After the fallback the probe reads `best: identity` at
+**10.1× chance**, with `rot90` at 12.5 against identity's 369.9.
+
+So: the report was real, the mechanism §H.7 called for works, and the defect is contained
+rather than fixed — the platform still produces a misoriented buffer on that route, and what
+the app does is decline to use it. The error log carries the rejection with its reason.
+
+**One consequence to hold on to**: the run spans the route change, so its early frames were
+measured in a rotated buffer. That does not invalidate FLOW-002 — the tracker and the
+independent search read the *same* buffer, so their agreement is unaffected by a shared
+rotation — but Phase 6 derives intrinsics from the frame geometry, and a phase that mixes two
+acquisition routes must know it did.
+
+### Three things this pass does not demonstrate
+
+Recorded because the tests as written are satisfied and the run is still narrower than it
+looks:
+
+**The population never reached §11's minimum.** It sat at a median of 74 tracked points on
+static frames and 41 on slow ones, against §11's minimum of 200 and DEGRADED threshold of 80 —
+so the state read `DEGRADED` on 1211 of 2717 frames. FLOW-001's fifth criterion ("never LOST
+while static *and the count is above 80*") was therefore vacuous, and FLOW-004's fourth
+("reaches DEGRADED when the count falls") was already true before the fast motion started.
+Both criteria are met; neither was exercised.
+
+**The bundle could not say why**, which is the defect this found. Phase 4 routes its results
+to `FlowSession` rather than `FeaturePopulation`, so it carried no detection statistics at
+all: a reader cannot tell a detector that found 90 corners in a dim room from a merge step
+declining 700. That is fixed — the flow record now reports what §11's refill offered and why
+each point was declined, split into *already being tracked* (the healthy case) and *outside
+the solver's reach*. On the automated leg it reads **353 offered — 319 already tracked, 14 out
+of reach, 20 admitted**, which is a tracker holding what it has rather than one losing it. The
+next device run answers the same question directly.
+
+**FLOW-006 passed at 41 points, not at §H's ~700.** 2.668 ms is comfortably inside the 14 ms
+budget, but the budget was written for a population an order of magnitude larger and the run
+never had one. Worth pairing with the other half of that measurement: **the independent
+scene-shift search cost 7.648 ms, nearly three times the solver it checks.** On the automated
+leg the ratio is the other way round. §H.8 records both.
+
+### What exists
 
 What exists: pyramidal Lucas-Kanade at §12's parameters, §13's forward/backward bands, an
 independent scene-motion measurement that shares no code with the solver, frame-to-frame
