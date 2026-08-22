@@ -116,6 +116,29 @@ try {
   if (!(await page.evaluate(() => window.__SPATIAL_READY__))) throw new Error('app failed to start');
   await context.grantPermissions(['camera'], { origin: new URL(url).origin });
 
+  // Take the device's path, not a shortcut to it. On a phone Phase 3 is reached from a
+  // PIPELINE screen whose pipeline is still running — it has to be, to have passed — so the
+  // FEATURES screen inherits a live pipeline and a live camera. Entering Phase 3 cold, as
+  // this leg used to, exercises a sequence no device ever takes, and it missed a bug that
+  // made START DETECTION a no-op on every real run: the guard saw a running pipeline and
+  // returned before the tracking options were ever sent.
+  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase2(true)))) {
+    throw new Error('could not enter Phase 2 even with the desktop override');
+  }
+  await page.evaluate(() => window.__SPATIAL_DEBUG__.startPipeline());
+  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getPipelineStats().completed > 30, undefined, {
+    timeout: 25_000,
+  });
+  // Leave Phase 2's injected load on across the transition, so the leg also covers the
+  // pipeline arriving in a state Phase 3 must not measure in.
+  await page.evaluate(() => window.__SPATIAL_DEBUG__.setStress(true));
+  await page.waitForTimeout(1_000);
+  const handover = await page.evaluate(() => window.__SPATIAL_DEBUG__.getPipelineStats());
+  console.log(
+    `[p3] handing over a live pipeline: ${handover.completed} frames, ` +
+      `${handover.stressPasses} stress pass(es), tier ${handover.tierLabel}`,
+  );
+
   const entered = await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase3(true));
   if (!entered) throw new Error('could not enter Phase 3 even with the desktop override');
 
@@ -123,6 +146,14 @@ try {
   await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getTrackingStats().detections > 0, undefined, {
     timeout: 25_000,
   });
+
+  const afterStart = await page.evaluate(() => window.__SPATIAL_DEBUG__.getPipelineStats());
+  if (afterStart.stressPasses !== 0) {
+    throw new Error(
+      `detection started with ${afterStart.stressPasses} stress pass(es) still injected — ` +
+        'Phase 2 stress moves the tier, which sets the resolution Phase 3 detects on',
+    );
+  }
 
   const first = await page.evaluate(() => window.__SPATIAL_DEBUG__.getTrackingStats());
   console.log(
@@ -266,6 +297,18 @@ if (undecided.length) {
 }
 if (failed.length) {
   console.error(`[p3] FAILED: ${failed.join(', ')}`);
+  exitCode = 1;
+}
+
+// Rule 002, as a tripwire the leg can state in one line: the screen reports DETECTING from
+// the same function this reads, so a run that claims to be detecting and has detected
+// nothing is the UI and the engine disagreeing. That is the exact signature of the device
+// bug this sequence now reproduces — 2190 frames preprocessed, 0 detected, button lit.
+if (snap.stats.running && snap.stats.detections === 0) {
+  console.error(
+    `[p3] the screen reported DETECTING for the whole ${DETECT_MS / 1000} s hold and ` +
+      'detection ran on 0 frames — the control and the engine disagree (Rule 002)',
+  );
   exitCode = 1;
 }
 

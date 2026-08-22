@@ -113,6 +113,16 @@ class Phase0App {
   private phase3Timer: number | null = null;
   private phase3DevEntry = false;
   private detectionEverRan = false;
+  /**
+   * Whether detection has been asked for — which is NOT the same as the pipeline running.
+   *
+   * Phase 3 is reached from a Phase 2 screen whose pipeline is still live, and it adopts
+   * that pipeline rather than restarting the camera. So `pipeline.isRunning()` says nothing
+   * about whether anything is detecting, and using it as if it did is what made
+   * START DETECTION a no-op on the device: the guard saw a running pipeline, returned early,
+   * and the tracking options were never sent to the worker while the screen said DETECTING.
+   */
+  private trackingRequested = false;
   private trackingFrames = 0;
   private lastOverlay: Float32Array | null = null;
   private lastOverlayWidth = 0;
@@ -387,7 +397,7 @@ class Phase0App {
 
   private render(): void {
     if (this.screen === 'phase3') {
-      const stats = this.features.stats(this.pipeline.isRunning());
+      const stats = this.features.stats(this.isDetecting());
       const p = this.pipeline.getStats();
       renderPhase3Screen(
         this.root,
@@ -909,6 +919,18 @@ class Phase0App {
   }
 
   /**
+   * Whether anything is actually detecting.
+   *
+   * Rule 002: the screen, the tests and the evidence all read this one function, so the
+   * control cannot say DETECTING while the engine detects nothing. It takes both halves —
+   * detection asked for, and a pipeline running to serve it — because in Phase 3 they come
+   * apart: the pipeline is inherited from Phase 2 and is running before detection starts.
+   */
+  private isDetecting(): boolean {
+    return this.trackingRequested && this.pipeline.isRunning();
+  }
+
+  /**
    * What the tracking stage is asked to do on the next frames.
    *
    * The contrast check and the paired grid control each cost an extra pass, so they are
@@ -965,7 +987,7 @@ class Phase0App {
 
   /** MUST be reached from the click handler: getUserMedia needs the user gesture. */
   private async onStartPhase3(): Promise<void> {
-    if (this.cameraOpening || this.pipeline.isRunning()) return;
+    if (this.cameraOpening || this.trackingRequested) return;
     const video = getPreviewVideo();
 
     if (!this.camera.isLive()) {
@@ -999,13 +1021,39 @@ class Phase0App {
       }
     }
 
+    // Phase 2's pipeline may still be running — the user gets here from a PIPELINE screen
+    // that had to stay live to pass. Adopt it rather than restarting the camera; only start
+    // one if there is none. A running pipeline with no tracking options is a pipeline that
+    // preprocesses and detects nothing, which is exactly the state this screen used to sit
+    // in while claiming to detect.
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      // Stress is Phase 2's stimulus and it inflates worker latency, which moves the tier,
+      // which changes the resolution Phase 3 detects on. It does not belong in a run whose
+      // numbers describe the detector.
+      if (this.pipeline.isStressed()) {
+        this.pipeline.setStress(false);
+        logger.info(PHASE3, 'App', 'injected load turned off for detection', {
+          why: 'Phase 2 stress moves the tier, and the tier sets the detection resolution',
+        });
+      }
+      logger.info(PHASE3, 'App', 'adopted the running Phase 2 pipeline', {
+        note: 'the camera and worker stay as they are; only the tracking options change',
+      });
+    }
+
     // The options are recomputed per frame by the pipeline calling back into the seam; this
     // sets the first set and the tick refreshes them.
     this.pipeline.setTrackingOptions(this.trackingOptions());
-    if (this.pipeline.start(video)) {
+    if (adopted || this.pipeline.start(video)) {
+      this.trackingRequested = true;
       this.pipelineEverStarted = true;
       this.detectionEverRan = true;
       this.startPhase3Ticking();
+    } else {
+      // The pipeline refused to start, so nothing will consume the options. Take them back
+      // rather than leaving a request standing that no worker will ever see.
+      this.pipeline.setTrackingOptions(undefined);
     }
     this.evaluatePhase3();
     this.render();
@@ -1013,6 +1061,7 @@ class Phase0App {
 
   private onStopPhase3(reason: string): void {
     this.stopPhase3Ticking();
+    this.trackingRequested = false;
     this.pipeline.stop(reason);
     this.pipeline.setTrackingOptions(undefined);
     const video = getPreviewVideo();
@@ -1044,7 +1093,7 @@ class Phase0App {
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
       detectionEverRan: this.detectionEverRan,
-      stats: this.features.stats(this.pipeline.isRunning()),
+      stats: this.features.stats(this.isDetecting()),
     });
 
     const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
@@ -1142,7 +1191,7 @@ class Phase0App {
       leavePhase3: () => this.leavePhase3(),
       startDetection: () => this.onStartPhase3(),
       stopDetection: () => this.onStopPhase3('debug API'),
-      getTrackingStats: () => this.features.stats(this.pipeline.isRunning()),
+      getTrackingStats: () => this.features.stats(this.isDetecting()),
       getPhase3Results: () => this.phase3Results,
       getPhase3Evidence: () => this.phase3Bundle,
       getPhase3EvidenceJson: () => (this.phase3Bundle ? serialiseEvidence(this.phase3Bundle) : null),

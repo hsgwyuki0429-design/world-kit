@@ -9,10 +9,10 @@ constraint is that no number is displayed that was not measured, and no phase is
 passed on anything but real-device evidence.
 
 **Current state: Phases 0, 1 and 2 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 3 (Feature Detection) is built and covered
-by unit tests plus an automated leg, but is `IMPLEMENTING`, not passed — three of its four
-required tests need a real camera pointed at a textured surface and a blank one. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+with committed, machine-checked evidence. Phase 3 (Feature Detection) is `IMPLEMENTING` — its
+first device run recorded `TESTING` and found a defect that stopped detection from ever
+starting on a phone; that is fixed and reproduced by the automated leg, and a second device
+run is what the phase now waits on. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -274,9 +274,26 @@ rather than the platform:
 That leaves roughly 22 ms per frame at 30 Hz for Phases 3–6, against the 32 ms §H budgets
 them — the first sign that the per-frame budget is tight rather than generous.
 
+## What Phase 3's device run found
+
+**The pipeline preprocessed 2190 frames on the phone and detection ran on none of them**,
+while the screen said `DETECTING` and the error log stayed empty. Phase 3 is reached from a
+PIPELINE screen whose pipeline is still running — it has to be, to have passed — and
+`onStartPhase3` guarded on `pipeline.isRunning()`, which on that path means "Phase 2 is still
+going", not "detection already started". So the handler returned before the tracking options
+were ever sent to the worker. The screen's running flag was the same expression, so a lit
+control sat over a stage that had never been switched on (Rule 002), which is what made a
+dead stage look like a rendering bug.
+
+Detection now has its own state, a running pipeline is adopted rather than treated as an
+obstacle, and one `isDetecting()` is read by the screen, the tests and the evidence. The
+automated leg missed this because it entered Phase 3 cold — a sequence no device takes — and
+now walks the device's path instead; against the old code it times out waiting for the first
+detection.
+
 ## What Phase 3's own leg found
 
-Three defects, each from a test failing rather than from review, and each recorded in
+Three more defects, each from a test failing rather than from review, and each recorded in
 [`docs/phase3/evidence/README.md`](docs/phase3/evidence/README.md):
 
 - **A single box-filter pass makes the corner response a plateau**, so suppression keeps the
@@ -293,15 +310,14 @@ The last two are amendments to the test plan, written with their reasons; both n
 test rather than relax it.
 
 The leg also measures the alternative to its own design choice on every run: detection at
-pyramid level 1 costs **9.4 ms** on that machine, where level 0 would cost **49.3 ms** for
-1.3× the features.
+pyramid level 1 costs **7.5 ms** on that machine, where level 0 would cost **83.7 ms**.
 
-That 9.4 ms is over §H's 8 ms budget, and the leg prints the `FAIL` and then declines to gate
-on it — because §H's budget is the iPhone's, and consecutive runs of identical code measured
-7.98 ms and 9.36 ms on a shared CPU. A number that flips a verdict without the code changing
-decides nothing about the code. A named 24 ms tripwire gates instead, sitting between that
-spread and the 45–49 ms that detecting at the wrong level would cost; the device run decides
-the budget.
+FEAT-005 gates on §H's 8 ms, and the leg prints its verdict and then declines to gate on it —
+because §H's budget is the iPhone's, and consecutive runs of identical code measured 7.49,
+7.98 and 9.36 ms on a shared CPU, landing on both sides of the line. A number that flips a
+verdict without the code changing decides nothing about the code. A named 24 ms tripwire
+gates instead, sitting between that spread and the 45–84 ms that detecting at the wrong level
+costs; the device run decides the budget.
 
 ## Next
 

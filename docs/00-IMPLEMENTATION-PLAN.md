@@ -473,30 +473,31 @@ camera, 451 detections:
 
 | Level | Size | Cost per detection | Features |
 | --- | --- | --- | --- |
-| 1 (selected) | 480×270 | **9.36 ms** | median 44 |
-| 0 (calibration) | 960×540 | **49.3 ms** | 56 |
+| 1 (selected) | 480×270 | **7.5–9.4 ms** | median 45 |
+| 0 (calibration) | 960×540 | **45–84 ms** | 56–114 |
 
-Four times the pixels cost 5.3× the time for 1.3× the features. Three things follow for later
-phases.
+Four times the pixels cost 6–10× the time for 1.3–2.5× the features; the spread is a shared
+CPU and a single calibration detection, so the ratio is the durable part. Three things follow
+for later phases.
 
 **Detection level is a per-phase decision, not a global one.** Phase 4's optical flow is
 pyramidal and runs on levels 0–2; Phase 3's detection runs on level 1 and reports positions
 scaled back to level 0 (`x0`, `y0` in every record). Nothing downstream should assume one
 "the" working resolution — the record carries both.
 
-**§H.3's remaining 22 ms is now roughly 13 ms.** Phase 2 left about 22 ms per frame at 30 Hz
-for Phases 3–6 after its measured 10–11 ms of preprocessing. Detection at level 1 took 9.4 ms
-of that on a desktop; the device figure will differ and the device run will report it. What
+**§H.3's remaining 22 ms is now roughly 14 ms.** Phase 2 left about 22 ms per frame at 30 Hz
+for Phases 3–6 after its measured 10–11 ms of preprocessing. Detection at level 1 took
+7.5–9.4 ms of that on a desktop; the device figure will differ and the device run will report it. What
 does not depend on the device is the shape: pyramidal LK on ~700 points (§H's 14 ms line) has
 to fit in what is left, and the first budget line to come under real pressure is Phase 4's,
 not Phase 3's.
 
 **A budget written for the device cannot be adjudicated off the device.** Consecutive runs of
-identical Phase 3 code measured 7.98 ms and 9.36 ms on the same headless machine — either
-side of the 8 ms line — because the CPU is shared and the synthetic camera's texture varies
+identical Phase 3 code measured 7.49, 7.98 and 9.36 ms on the same headless machine — both
+sides of the 8 ms line — because the CPU is shared and the synthetic camera's texture varies
 through its cycle. The automated leg therefore prints FEAT-005's verdict and declines to gate
 on it, gating instead on a separately named 24 ms configuration tripwire that sits between
-that spread and the 45–49 ms a wrong-level regression would cost. Every later phase with a
+that spread and the 45–84 ms a wrong-level regression would cost. Every later phase with a
 device budget in this section — Phase 4's 14 ms, Phase 5's 6 ms, §27's BA cadence — inherits
 the distinction: an off-device leg can catch a regression in what the code *does*, and cannot
 answer what the device *affords*.
@@ -509,6 +510,37 @@ box passes (a triangular kernel) restore a single peak. Recorded here because ev
 stage that separably smooths a response map — the plane-fitting of §17, any score map
 Phase 5 suppresses over — has the same failure mode, and its symptom is a systematic
 positional bias that no count-based test can see.
+
+### H.5 A phase inherits the previous phase's live machinery, and must say what it does with it
+
+Phase 3's first device run preprocessed 2190 frames and detected on none of them, because
+the FEATURES screen is reached from a PIPELINE screen whose pipeline is still running — it
+has to be still running, since that is how Phase 2 passes. The start handler guarded on
+`pipeline.isRunning()`, which on that path means "the previous phase is still going", and
+returned before ever asking the worker to detect.
+
+Every phase from here on inherits something live from the one before it: Phase 4 inherits
+Phase 3's feature population, Phase 6 inherits Phase 5's verified correspondences, Phase 9
+inherits keyframes that are still being inserted. Three rules follow, and they cost nothing
+to apply in advance:
+
+- **A stage's own "am I running" state is not the state of the stage below it.** Deriving one
+  from the other reads correctly on the path where nothing is running yet, and silently
+  inverts on the path a device actually takes.
+- **Inherited machinery is adopted, not restarted and not treated as an obstacle** — and what
+  is adopted must be brought to a defined state. Phase 2's injected load survives into Phase
+  3 unless it is cleared, and it moves the tier, which sets the resolution Phase 3 detects
+  at; a measurement of the detector would have been a measurement of the stress.
+- **One predicate, read by the screen, the tests and the evidence.** Phase 3 had the same
+  wrong expression in the control and in the harness, so the button said `DETECTING` over a
+  stage that had never started and no test disagreed. §57's UI states and Rule 002 are only
+  worth anything if there is a single place the answer comes from.
+
+The automated leg missed it because it entered the phase cold, through the development
+override, with nothing running — a sequence no device ever takes. **A leg that reaches a
+phase differently from the way a device reaches it is not testing the path that matters.**
+Phase 3's leg now enters Phase 2, starts the pipeline, turns stress on and hands it over;
+every later leg should reach its phase the way the device does.
 
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because
