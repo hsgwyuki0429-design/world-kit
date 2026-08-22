@@ -47,6 +47,27 @@ export interface AlignmentReading {
   readonly bestOverIdentity: number;
   /** `identity` over the random baseline. Below ~2 the overlay is on nothing. */
   readonly identityOverRandom: number;
+  /**
+   * `best` over the random baseline — whether the probe had any discrimination at all.
+   *
+   * A scene can be so densely and repetitively textured that *every* transform lands on
+   * corner-like pixels and all seven scores sit within a few per cent of one another. The
+   * winner is then noise, and acting on it would abandon a working acquisition route because
+   * the camera was pointed at a brick wall. Measured on the Phase 4 leg's generated feed,
+   * which is periodic by construction: identity 1117, rot180 1412, identity/random 0.93 —
+   * a "winner" with no discrimination behind it.
+   */
+  readonly bestOverRandom: number;
+  /**
+   * Whether this frame could say anything at all.
+   *
+   * `false` when the probe's own reading of the video has no local texture anywhere — a black
+   * frame, which is exactly what Phase 4's FLOW-005 produces on purpose by having the lens
+   * covered. Every transform then scores zero and the ratios are meaningless. A reading that
+   * is not measurable is not evidence of misorientation and is not evidence against it; the
+   * screens say so rather than showing a number, and `isMisoriented` refuses to act on it.
+   */
+  readonly measurable: boolean;
   readonly samples: number;
 }
 
@@ -124,21 +145,64 @@ export function scoreAlignment(
     if ((scores[name] ?? 0) > (scores[best] ?? 0)) best = name;
   }
   const identity = scores.identity ?? 0;
+  // Both ratios divide by a variance that can legitimately be zero, and the two zeroes mean
+  // different things:
+  //
+  //  - identity 0 while another transform scores well is the *strongest* possible evidence of
+  //    misorientation — the points sit on nothing where they were drawn and on structure
+  //    where the rotation puts them;
+  //  - identity 0 with everything else 0 is a black frame, which says nothing at all. Phase 4
+  //    produces those on purpose: FLOW-005 has the lens covered.
+  //
+  // Flooring the denominator at one intensity level of variance keeps the first case large and
+  // finite, and `measurable` separates it from the second. Returning `Infinity` for either put
+  // a non-finite number into every Phase 4 bundle and had the evidence recorder log an
+  // integrity error on a run where nothing was wrong.
   return {
     scores,
     randomBaseline,
     best,
-    bestOverIdentity: identity > 0 ? (scores[best] ?? 0) / identity : Infinity,
-    identityOverRandom: randomBaseline > 0 ? identity / randomBaseline : Infinity,
+    bestOverIdentity: (scores[best] ?? 0) / Math.max(identity, MIN_MEASURABLE_VARIANCE),
+    identityOverRandom: identity / Math.max(randomBaseline, MIN_MEASURABLE_VARIANCE),
+    bestOverRandom: (scores[best] ?? 0) / Math.max(randomBaseline, MIN_MEASURABLE_VARIANCE),
+    measurable: randomBaseline >= MIN_MEASURABLE_VARIANCE || identity >= MIN_MEASURABLE_VARIANCE,
     samples: n,
   };
 }
+
+/**
+ * The least local variance that counts as texture, in squared intensity levels.
+ *
+ * One level: the image is 8-bit, so a window whose variance is under a single level squared is
+ * flat to within the quantisation of the data it is made of. Used only as a denominator floor
+ * and as the "did this frame say anything" test — never as a pass criterion.
+ */
+export const MIN_MEASURABLE_VARIANCE = 1;
 
 /** Identity must win, and must beat "the points are on nothing" by a clear margin. */
 export const MIN_IDENTITY_OVER_RANDOM = 2.0;
 /** How much better another transform must be before the buffer is called misoriented. */
 export const MISORIENTED_RATIO = 1.5;
 
+/**
+ * Whether the reading is evidence that the acquired buffer is turned against the screen.
+ *
+ * Three conditions, and the third was added after the Phase 4 leg produced a "winner" with no
+ * discrimination behind it (see `bestOverRandom`). Acting on this abandons the acquisition
+ * route, so a reading that cannot tell the transforms apart must not be allowed to:
+ *
+ *  1. the frame had texture to measure at all (`measurable`);
+ *  2. something beat identity by a clear margin;
+ *  3. **and that something beat chance**, by the same margin identity itself is required to.
+ *     A dense repetitive scene — a brick wall, a tiled floor, the periodic pan this project's
+ *     Phase 4 leg generates — puts every transform on corner-like pixels, and the ordering
+ *     between them is then noise.
+ */
 export function isMisoriented(r: AlignmentReading): boolean {
-  return r.best !== 'identity' && r.bestOverIdentity >= MISORIENTED_RATIO;
+  return (
+    r.measurable &&
+    r.best !== 'identity' &&
+    r.bestOverIdentity >= MISORIENTED_RATIO &&
+    r.bestOverRandom >= MIN_IDENTITY_OVER_RANDOM
+  );
 }

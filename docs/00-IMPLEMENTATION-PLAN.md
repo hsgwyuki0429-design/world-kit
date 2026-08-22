@@ -598,6 +598,86 @@ known, asymmetric landmarks, and an assertion about *where* things are rather th
 of them there is. `scripts/run-e2e-phase3-alignment.mjs` is the pattern: three blocks and one
 deliberately empty quadrant, so no rotation or reflection maps the set onto itself.
 
+### H.8 What Phase 4 measured, and the shapes of mistake it exposed
+
+Phase 4 is the first stage whose output can be produced without looking at the data, so most
+of what it taught is about *checking*, not about optical flow. Recorded here for the phases
+that inherit the same problem — Phase 5's inlier ratio, Phase 6's pose, Phase 9's
+triangulation are all quantities a plausible-looking implementation can invent.
+
+**The budget line came under real pressure, and about a third of the pressure was mine.**
+§H's table allows ≤ 14 ms for pyramidal LK on ~700 points. The first implementation measured
+**65 ms per frame at 165 points** on the automated leg, which would have been reported as what
+the platform affords. It was not: the solver called a shared `sample(x, y)` helper 441 times
+per iteration, recomputing two `Math.floor`s and four interpolation weights each time, when
+the whole 21×21 window shares one sub-pixel offset. Computing them once and walking consecutive
+indices gives **22.5 ms** at identical results — the accuracy tests hold to 0.05 px either way.
+
+Two things follow. **A cost measured before the obvious inefficiency is removed is not a
+measurement of the platform**, and §34's "correctness before performance" is not a licence to
+skip that step — it is a licence to *report* the remaining gap rather than closing it by
+changing what the code computes. And the gap is real: 22.5 ms on a desktop against a 14 ms
+device budget means Phase 4 is the first stage where §12's specified parameters may genuinely
+not fit, and FLOW-006 is advisory so that the device can say so rather than the parameters
+being quietly reduced until they fit. §H.3's remaining budget is now the thing to watch.
+
+**A threshold borrowed from a later phase measures the wrong quantity, even when the number is
+right.** §33 gives LOST two branches: `inliers < 20`, or consecutive failures. Inliers are
+§14's, which is Phase 5. Reusing the *number* for tracked points — the quantity Phase 4
+actually has — made every frame of a 20-feature scene a failure, because survival of 19 out of
+20 is a tracker working perfectly, and the state sat at LOST for a run in which nothing had been
+lost. The general form: **a criterion from a later phase is not available early by
+substituting a quantity with the same units.** A population too small to work with is what
+DEGRADED says; LOST is about losing what you had. Phase 5 has the same trap waiting with
+`inlierRatio`, and Phase 6 with `reprojectionError` — both appear in §33's GOOD condition, both
+are `null` in Phase 4, and a null must fail its conjunct rather than be dropped from it.
+`GOOD` is unreachable in Phase 4 *by construction* as a result, and the state carries
+`goodBlockedBy` naming the missing terms, so the absence is visible instead of looking like a
+tracker that never got good enough.
+
+**Two criteria about different conditions cannot share one run-wide tally.** FLOW-001 requires
+the state never to be LOST *while the scene is static*. FLOW-005 requires a deliberate
+occlusion during which it certainly is. Implemented against a single `stateFrames` count, the
+two contradict each other and no correct implementation exists. Every later phase with
+per-condition tests — Phase 5's high- and low-texture scenes, Phase 18's stress segments — has
+to accumulate per condition, not per run, or it will write a suite that cannot be satisfied.
+
+**A discontinuity whose cause is known is neither a failure nor a fresh start.** §53's tier
+ladder steps and §H.0's rotation both change the frame geometry mid-run, and a level-0 position
+from a 1280×720 frame means nothing in a 640×360 one. The tracker empties its population — it
+has to. The first version also cleared its "has anything ever been tracked" flag, which put
+§33's state back to READY in the middle of a run that had tracked thousands and restarted the
+consecutive-failure counter with it; a tier step that landed inside a covered-lens segment then
+left a 14-frame occlusion never reaching LOST. FLOW-005 caught it and described it exactly as
+it looked from outside: *"tracking was maintained through a covered lens."* Every later stage
+that holds state across frames — Phase 8's keyframes, Phase 10's landmark map — needs the same
+three-way distinction: failed, restarted, and *interrupted for a reason we can name*. The count
+of interruptions goes into the evidence, because a run whose population was rebuilt a dozen
+times is not the same run as one that was not.
+
+**A stage must not be handed data its own machinery cannot use.** Detection runs at pyramid
+level 1 with a 5 px margin in that level's pixels — 10 in level-0 pixels. A 21×21 tracking
+window at level 0 needs 11. Points in that one-pixel band were detected, admitted, and lost on
+the next frame through no fault of the tracker: 15 % of the population, and FLOW-001's survival
+read **84.6 % on a perfectly static image the tracker had followed exactly**. The consumer
+declines them now, and reads the margin from the solver's own configuration rather than writing
+the number down — the same rule §H.6 gives for deriving a constant from the config.
+
+**And a check that cannot discriminate must say so rather than name a winner.** The overlay
+alignment probe scores the detected positions against an independent read of the video under
+each rotation, flip and transpose. On a scene that is dense and repetitive — a brick wall, a
+tiled floor, the periodic pan Phase 4's leg generates — *every* transform lands on corner-like
+pixels, all seven scores fall within a factor of 1.05, and the ordering between them is noise.
+The probe named `rot180`. Acting on that would have abandoned a working acquisition route.
+It now requires the winning transform to beat chance by the same margin identity is required
+to, and reports `measurable: false` on a frame with no texture at all — which a covered lens
+produces on purpose, and which used to put `Infinity` into every bundle and an integrity error
+into every log. This is the same lesson as Phase 3's contrast *ratio*, in a different place:
+**a statistic normalised against a baseline that is itself saturated says nothing, and the
+honest output is "cannot tell", not the argmax.**
+
+---
+
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because
 it waits for real sensor events rather than guessing).

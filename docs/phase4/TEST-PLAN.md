@@ -258,3 +258,148 @@ a measured absence of the gyroscope. Rule 004 stands: the automated leg cannot p
 The one number that carries the phase is **FLOW-002 criterion 2** — the agreement between what
 the tracker says the points did and what an independent search says the image did. Every other
 number in this plan can be produced by a tracker that never looked at frame B.
+
+---
+
+## Amendments
+
+Recorded in place, as §29 requires, and as Phases 2 and 3 both did. Every one of these
+either **fixes a number the plan named but did not fix**, or **narrows a criterion that was
+measuring the wrong frames** — none relaxes a threshold, and none was made after seeing a
+verdict it would have changed. Where a run is cited, the run is what produced the argument.
+
+### A1. `sceneShiftConfidence`'s floor is 1.10
+
+The plan names `sceneShiftConfidence` and requires FLOW-002's frames to clear "its floor"
+without saying what the floor is. Fixed here at **1.10** — the best shift must beat the
+median shift tried by 10 %.
+
+The derivation, which is in `src/tracking/SceneShift.ts` beside the constant: the residual is
+a mean absolute difference over 8-bit samples, so it is quantised at one intensity level. On
+the top pyramid level of a real scene the residual at the best shift runs a few levels per
+pixel, so a single level of quantisation is on the order of ten per cent of it. A smaller
+margin is not a measurement; a much larger one would require a scene to be strongly textured
+before its motion could be spoken about at all, which would silently exclude exactly the
+frames Phase 3 calls texture-poor.
+
+A flat or featureless pair scores at or barely above 1.0 by construction — every shift matches
+equally badly — and is excluded rather than reported as motionless, which is the distinction
+the number exists to draw.
+
+### A2. FLOW-003's "integrated gyro rotation" is integrated over 1000 ms
+
+The plan asks for "≥ 15 frames with integrated gyro rotation ≥ 5°" and does not name the
+window. Fixed at **1000 ms trailing**, in `src/tracking/FlowSession.ts`: long enough that 5°
+describes a deliberate slow turn rather than hand shake, short enough that the frames it marks
+are the frames that were actually rotating rather than a run that turned once at the start.
+Phase 0 measured `rotationRate` AVAILABLE at 60 Hz, so the window holds about 60 samples, and
+the integral is a trapezoid over the samples actually received rather than a rate times an
+assumed interval.
+
+### A3. §33's `inliers < 20` is Phase 5's branch, and Phase 4 does not evaluate it
+
+§33 gives LOST two conditions: `inliers < 20`, or consecutive pose-estimation failures.
+Inliers come from §14's geometric verification, which is Phase 5 and has not been written.
+
+The first implementation reused the *number* for tracked points, on the reasoning that it is
+the quantity Phase 4 actually has. **The first synthetic run said no.** On a scene yielding 20
+features, survival of 19 out of 20 is a tracker working perfectly, and every frame was
+nonetheless counted as a failure — so the state sat at `LOST` for a run in which nothing had
+been lost, and FLOW-005 could not distinguish a covered lens from a sparse one.
+
+A population too small to work with is what `DEGRADED` says, on the count, in §11's units.
+`LOST` is about losing what you had. So Phase 4 evaluates only §33's consecutive-failure
+branch, a failed frame is one where survival fell below `LOST_SURVIVAL`, and the constant is
+kept named and unused so Phase 5 wires it to the quantity it actually describes.
+
+This narrows what can reach `LOST`. It does not relax FLOW-005, which still requires `LOST`
+within 1.0 s of a covered lens — and which the automated leg now reaches in 75–110 ms.
+
+### A4. FLOW-001 and FLOW-004 count frames of their own motion class
+
+FLOW-001 criterion 5 says the state must never be `LOST` **while the scene is static**.
+FLOW-004 criterion 4 says the state must reach `DEGRADED` or `LOST` when the count falls under
+fast motion. Both were first implemented against a run-wide tally of `stateFrames`.
+
+That makes the two criteria contradict each other: FLOW-005 requires a deliberate occlusion
+during which the state is `LOST` on purpose, and a run-wide tally hands those frames to
+FLOW-001 as a failure. A correct implementation of both could not exist. `MotionClassStats`
+now carries `lostFrames` and `degradedFrames` per measured class, and each test reads the
+frames it is actually about.
+
+### A5. A geometry change is neither a tracking failure nor a fresh start
+
+Not a criterion change — a defect the automated leg found, recorded here because the
+behaviour it defines is what FLOW-005 measures.
+
+§53's tier ladder steps and §H.0's rotation both change the frame geometry mid-run, and a
+level-0 position from a 1280×720 frame means nothing in a 640×360 one. The tracker therefore
+empties its population. The first implementation also cleared `everTracked`, which put §33's
+state back to `READY` — "no frame pair has been tracked yet" — in the middle of a run that had
+tracked thousands, and restarted the consecutive-failure counter with it.
+
+Measured on the leg: a tier step landed inside a covered-lens segment, the counter restarted,
+and a 14-frame occlusion never reached `LOST`. **FLOW-005 caught it**, and reported it as
+"tracking was maintained through a covered lens", which is what it looked like from outside.
+
+A geometry change is a discontinuity whose cause is known. It does not count toward `LOST`
+and it does not report `READY`; the population is empty and the state says `DEGRADED` until
+detection rebuilds it, which is exactly true. `geometryChanges` is now counted and carried
+into the evidence, so a run whose population was rebuilt a dozen times reads as one.
+
+### A6. Detection may not hand the tracker a point its window cannot cover
+
+Also a defect rather than a criterion, and also found by measurement.
+
+Detection runs at pyramid level 1 and keeps a 5 px margin in *that level's* pixels — 10 in
+level-0 pixels. A 21×21 tracking window at level 0 needs 11. Points in that one-pixel band are
+detected, admitted to the population, and then fail to track on the very next frame, through
+no fault of the tracker.
+
+Measured: 15 % of the population on a synthetic scene, and it made FLOW-001's survival read
+**84.6 % on a perfectly static image the tracker had in fact followed exactly** — against the
+90 % the criterion requires. The criterion is not the thing to move: a point the solver's
+window cannot cover is not a trackable feature, and `FlowTracker.merge` now declines it. The
+margin is read from the solver's own configuration, so a change to §12's window cannot leave
+it stale.
+
+---
+
+## What the automated leg turned out to be able to decide
+
+Phase 3's leg had to exclude the three tests that carry its meaning, because Chromium's fake
+camera is a rolling gradient — neither a textured wall nor a blank one. Phase 4's conditions
+are about **motion**, and motion is something a video file can contain exactly.
+
+`scripts/run-e2e-phase4.mjs` therefore generates its own feed: a texture that holds still,
+pans by 4 px per frame, sweeps at 22, and goes black. Four of §65's five conditions are present
+in the pixels, measured from them by the same classifier the device uses, and judged by the
+same suite. **FLOW-002's cross-check is armed by that feed**, through the real
+`video → VideoFrame → worker → pyramid` path, which is the one place §H.7 records that unit
+tests cannot reach.
+
+Rule 004 is unaffected: the leg is `DESKTOP_DEV` and passes nothing. What it does is fail when
+the tracker stops following the image.
+
+Two things it still cannot decide, each excluded with its own reason printed:
+
+- **FLOW-003.** Headless Chromium delivers no `devicemotion` events, so there is no second
+  instrument and the test reports `PENDING` rather than being judged.
+- **FLOW-006.** It gates on §H's 14 ms budget for the iPhone's tracking worker; the leg
+  measures a shared CPU under SwiftShader. Its verdict is printed and a separately named
+  90 ms configuration tripwire gates instead — the same distinction §H.4 draws, and the same
+  one Phase 3's leg made for FEAT-005.
+
+And one it cannot arm, which is worth stating because the number looks alarming:
+**the overlay alignment probe**. The generated feed is periodic in x by construction — it has
+to be, so the pan loops — and densely textured, so every transform lands on corner-like pixels
+and all seven scores fall within a factor of 1.05 of each other. The probe names a winner
+(`rot90`, `rot180`, whichever) with `best/random` at 1.03. That is noise, and reading it as a
+finding would be the mistake FEAT-001's ratio taught in Phase 3. `run-e2e-phase3-alignment.mjs`
+is the leg that decides orientation, with a fixture built so no rotation or reflection maps its
+landmarks onto themselves; it scores identity at 70× random.
+
+The probe itself was changed as a result, and the change protects the device rather than the
+leg: `isMisoriented` now requires the winning transform to beat chance by the same margin
+identity is required to. Without it, pointing the phone at a brick wall or a tiled floor could
+abandon a working acquisition route.

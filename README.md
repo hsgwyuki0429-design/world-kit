@@ -13,15 +13,17 @@ committed, machine-checked evidence. Phase 3 took four device runs and each fail
 real defect; the passing run detected 2494 frames, scored **91.1 %** above chance, and saw
 the population fall from a median of 353 features on a textured wall to 64 on a blank one.
 One known defect is carried forward — the overlay rotates in portrait on the device — and the
-app now measures it rather than relying on the eye. Phase 4 (Optical Flow Tracking, §12) is
-unlocked. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+app now measures it rather than relying on the eye. **Phase 4 (Optical Flow Tracking, §12) is
+written and green on its automated leg**, including the cross-check that separates a working
+tracker from one that returns its input; it has had no device run, so Rule 004 holds it at
+`IMPLEMENTING`. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
 npm test          # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
-npm run test:e2e  # automated DESKTOP_DEV legs for all four phases, with evidence and screenshots
+npm run test:e2e  # automated DESKTOP_DEV legs for Phases 0-4, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
 
@@ -195,19 +197,23 @@ docs/
   phase3/TEST-PLAN.md            FEAT-001..006, written before the code
   phase3/HOW-TO-RUN-DEVICE-TEST.md
   phase3/evidence/
+  phase4/TEST-PLAN.md            FLOW-001..007, written before the code
+  phase4/HOW-TO-RUN-DEVICE-TEST.md
+  phase4/evidence/
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
-  capture/       CapabilityDetector, MotionCapabilityProbe, CameraSource,
-                 FrameIntegrityMonitor, ScenarioLedger, probe plumbing
-  debug/         Logger, EvidenceRecorder
+  capture/       CapabilityDetector, MotionCapabilityProbe, RotationRateMonitor,
+                 CameraSource, FrameIntegrityMonitor, ScenarioLedger, probe plumbing
+  debug/         Logger, EvidenceRecorder, OverlayAlignmentProbe
   pipeline/      tiers, pyramid maths, AdaptiveController, PipelineMetrics,
                  WorkerFramePipeline
-  tracking/      trackingWorker (preprocessing + detection), FeatureDetector,
-                 FeaturePopulation, feature types and messages
-  testkit/       Phase0Tests, Phase1Tests, Phase2Tests, Phase3Tests
-  ui/            Phase0Screen..Phase3Screen, PreviewVideo, styles
+  tracking/      trackingWorker (preprocessing + detection + flow), FeatureDetector,
+                 FeaturePopulation, LucasKanade, SceneShift, FlowTracker,
+                 FlowStage, FlowSession, trackingState, types and messages
+  testkit/       Phase0Tests..Phase4Tests
+  ui/            Phase0Screen..Phase4Screen, PreviewVideo, styles
   mapping/ world/ renderer/ game/   empty — later phases
-scripts/         audit-fake-data, audit-architecture, run-e2e
+scripts/         audit-fake-data, audit-architecture, run-e2e*
 ```
 
 ## What the device actually reported
@@ -331,11 +337,87 @@ verdict without the code changing decides nothing about the code. A named 24 ms 
 gates instead, sitting between that spread and the 45–84 ms that detecting at the wrong level
 costs; the device run decides the budget.
 
+## What Phase 4 does
+
+Phase 4 — Optical Flow Tracking (§12, §13, §65) — is written and green on its automated leg.
+It has had no device run, so Rule 004 holds it at `IMPLEMENTING`;
+[`docs/phase4/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase4/HOW-TO-RUN-DEVICE-TEST.md) is the run
+that would settle it.
+
+Pyramidal Lucas-Kanade at §12's parameters — 21×21 window, 3 levels, 30 iterations, epsilon
+0.01 — follows the corners Phase 3 finds, and §13 grades every round trip: 1.5 px acceptable,
+3.0 px reduced, above that rejected and dropped. Features have a history for the first time.
+
+### The one number that carries it
+
+**Everything else in this phase can be produced by a tracker that never looked at the second
+frame.** A tracker that returns the points it was given reports every point surviving, `age`
+and `trackLength` climbing honestly, and a forward/backward error of *exactly* 0.0 — §13's
+best band, because both directions are the same short circuit and they agree perfectly. On a
+static scene it is indistinguishable from a working tracker, and no statistic computed from
+its own output can tell.
+
+So the harness measures the scene's motion with a second instrument that shares nothing with
+the first: an integer sum-of-absolute-differences translation search on the pyramid's top
+level. It calls no part of the solver, duplicates none of its arithmetic, never reads the
+feature list, and keeps its own copy of the previous frame so it does not even share a buffer
+with what it checks. FLOW-002 gates on the two agreeing.
+
+`tests/unit/flowTracker.test.ts` drives the real frame stage with exactly that fake over a run
+whose motion is known by construction, and asserts the whole shape: the fake passes FLOW-001,
+passes the metadata test, scores a perfect §13 round trip, keeps 100 % of its population —
+**and fails FLOW-002**, because the search says the image moved 4 px while the tracker says 0.
+
+### The automated leg decides more than Phase 3's could
+
+Phase 3's leg had to exclude the three tests that carry its meaning: Chromium's fake camera is
+a rolling gradient, neither a textured wall nor a blank one. Phase 4's conditions are about
+*motion*, and a video file can contain motion exactly — so the leg generates its own feed that
+holds still, pans at 4 px per frame, sweeps at 22, and goes black. Every frame is classified
+from the pixels by the same code the device runs; the harness never tells the tracker what to
+expect.
+
+That arms the FLOW-002 cross-check through the real `video → VideoFrame → worker → pyramid`
+path, which §H.7 records as the one place unit tests cannot reach: **309 pairs, tracker 6 px
+against image 4 px, 93.9 % of frames agreeing**, with 0 §33 state mismatches and 11 occlusion
+episodes that all reached `LOST` and recovered.
+
+Rule 004 is unaffected — the leg is `DESKTOP_DEV` and passes nothing. FLOW-003 needs the
+device's gyroscope and reports `PENDING`; FLOW-006's 14 ms budget is the device's to answer and
+a separately named 90 ms tripwire gates instead.
+
+### §33's GOOD is unreachable here, and says so
+
+§33 makes `GOOD` three conjuncts: features ≥ 300, inlier ratio ≥ 0.50, reprojection error
+≤ 2.0 px. Phase 4 can measure the first. The other two are Phase 5's and Phase 6's, neither has
+been written, and a `null` fails its conjunct — so `GOOD` cannot be reached, and the state
+carries `goodBlockedBy` naming the missing terms rather than quietly dropping two conditions
+out of three.
+
+### Four defects found before any device saw the code
+
+A tier step inside an occlusion that left a 14-frame covered lens never reaching `LOST` —
+caught by FLOW-005, and described exactly as it looked from outside. Detection handing the
+tracker points its 21×21 window cannot cover, which made survival read 84.6 % on an image the
+tracker had followed exactly. §33's `inliers < 20` reused for tracked points, which made a
+20-feature scene permanently `LOST`. And a covered lens putting `Infinity` into every evidence
+bundle. All four are recorded as amendments in
+[`docs/phase4/TEST-PLAN.md`](docs/phase4/TEST-PLAN.md); no criterion was relaxed.
+
+One more measurement worth stating: the first solver cost **65 ms per frame** because it
+recomputed the bilinear weights 441 times per iteration when the whole window shares one
+sub-pixel offset. **22.5 ms** at identical results. Reporting the first number as what the
+device affords would have been reporting an inefficiency as a platform fact.
+
 ## Next
 
-Phase 4 — Optical Flow Tracking (§12), carrying one open defect from Phase 3: the overlay
-rotates in portrait on the device. Every existing check is blind to it — the detector's unit
-tests never cross the video→worker path, Phase 2's provenance check compares *mean* luma, and
-FEAT-001's contrast statistic runs in the worker on the worker's own buffer — so the app now
-measures it directly, and abandons the acquisition route rather than correcting the drawing,
-because Phase 4 reads the same positions.
+Phase 4's device run, and then Phase 5 — Geometric Verification (§14).
+
+The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
+It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement
+in the acquired buffer's frame — a buffer turned against the screen makes every number in the
+phase wrong while every average-based check still passes. The probe runs on the Phase 4 screen
+and in every Phase 4 bundle, and the acquisition route is abandoned rather than the drawing
+corrected. What changed in Phase 4 is that the probe learned to say when it *cannot tell*: on a
+dense repetitive scene every transform scores alike, and it now refuses to condemn a route on
+that rather than naming the argmax.

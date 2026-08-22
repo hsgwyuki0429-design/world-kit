@@ -31,8 +31,9 @@ import { GrayPyramid, rgbaToGray, stridedChecksum } from '../pipeline/pyramid';
 import { FeatureDetector, DEFAULT_DETECTOR_CONFIG } from './FeatureDetector';
 import { detectWithRefill, REFILL_QUALITY_FACTOR, REFILL_SEPARATION_FACTOR } from './FeaturePopulation';
 import { GRID_CELLS, featureStateFor } from './featureTypes';
+import { FlowStage } from './FlowStage';
 import { asTrackingOptions } from './trackingMessages';
-import type { FeatureRecordSample, TrackingResult } from './trackingMessages';
+import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
 import type {
   FrameMessage,
@@ -70,6 +71,17 @@ const refillDetector = new FeatureDetector({
 /** Runs once per worker, so the level choice is answerable from a measurement (FEAT-005). */
 const level0Detector = new FeatureDetector();
 let level0Calibration: TrackingResult['level0Calibration'] = null;
+
+/**
+ * Phase 4's frame stage.
+ *
+ * Given the two detectors above so a refill in Phase 4 is the *same* §11 ladder Phase 3 ran,
+ * with the same thresholds and the same relaxed second pass — not a second implementation of
+ * it that could drift.
+ */
+const flowStage = new FlowStage(detector, refillDetector);
+/** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
+let flowActive = false;
 
 function describeError(err: unknown): string {
   if (err instanceof Error) return `${err.name || 'Error'}: ${err.message}`;
@@ -233,7 +245,7 @@ function handleFrame(msg: FrameMessage): void {
     bytes: l.data.byteLength,
   }));
 
-  const tracking = runTracking(msg, p);
+  const tracking = runTracking(msg, p, meanLuma, topMad);
 
   const result: ResultMessage = {
     type: 'result',
@@ -262,6 +274,7 @@ function handleFrame(msg: FrameMessage): void {
   const transfer: Transferable[] = [];
   if (strip) transfer.push(strip);
   if (tracking?.overlay) transfer.push(tracking.overlay);
+  if (tracking?.flowAge) transfer.push(tracking.flowAge);
   post(result, transfer);
 }
 
@@ -272,14 +285,34 @@ function handleFrame(msg: FrameMessage): void {
  * whole reason detection lives in the same worker as preprocessing rather than a second one
  * behind another transfer.
  */
-function runTracking(msg: FrameMessage, p: GrayPyramid): TrackingResult | undefined {
+function runTracking(
+  msg: FrameMessage,
+  p: GrayPyramid,
+  meanLuma: number,
+  topLevelMad: number,
+): TrackingResult | undefined {
   const options = asTrackingOptions(msg.tracking);
-  if (!options || !options.detect) return undefined;
+  if (!options || (!options.detect && !options.track)) {
+    // Tracking was switched off. Forget the previous frame rather than keeping it: the next
+    // frame to arrive could be seconds later, and matching against a stale one would produce
+    // a displacement that describes the gap rather than the scene.
+    if (flowActive) {
+      flowStage.reset();
+      flowActive = false;
+    }
+    return undefined;
+  }
 
   const levelIndex = Math.min(Math.max(0, Math.floor(options.level)), p.levels.length - 1);
   const level = p.levels[levelIndex];
   if (!level) return undefined;
   const levelScale = 2 ** levelIndex;
+
+  if (options.track) return runFlow(options, p, levelIndex, meanLuma, topLevelMad);
+  if (flowActive) {
+    flowStage.reset();
+    flowActive = false;
+  }
 
   const outcome = detectWithRefill(
     detector,
@@ -367,7 +400,36 @@ function runTracking(msg: FrameMessage, p: GrayPyramid): TrackingResult | undefi
     recordSamples: samples,
     level0Calibration,
     overlay: overlay.buffer,
+    flow: null,
+    flowAge: null,
   };
+}
+
+/**
+ * One Phase 4 frame.
+ *
+ * Delegated whole to `FlowStage`, which is where the four steps and the reasons for their
+ * order are written down. Nothing is added here: the same code the device runs is the code
+ * `tests/unit/flowTracker.test.ts` drives with a substituted solver to show that a tracker
+ * returning its input is rejected. A copy of the loop in the worker would put that proof
+ * one step away from the thing it proves.
+ */
+function runFlow(
+  options: TrackingOptions,
+  p: GrayPyramid,
+  levelIndex: number,
+  meanLuma: number,
+  topLevelMad: number,
+): TrackingResult {
+  flowActive = true;
+  return flowStage.process({
+    levels: p.levels,
+    detectLevel: levelIndex,
+    target: options.target,
+    recordSamples: options.recordSamples,
+    meanLuma,
+    topLevelMad,
+  });
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

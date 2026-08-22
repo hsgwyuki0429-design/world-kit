@@ -12,7 +12,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 4 | Optical Flow Tracking | NOT_STARTED | Phase Lock is open. §12 is next. |
+| 4 | Optical Flow Tracking | **IMPLEMENTING** | Written and green on the automated leg; no device run yet, so Rule 004 holds it. |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
 | 7 | IMU Support / Fusion | BLOCKED | |
@@ -445,3 +445,101 @@ every test run.
 exists — currently `{0, 1, 2, 3}`. The START SCAN control reads it alongside Phase Lock, and a
 control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
 implies a capability that has not been built.
+
+## Phase 4 — IMPLEMENTING
+
+**Not passed, and cannot be from what is committed.** The only Phase 4 bundle in the
+repository is `docs/phase4/evidence/phase4-desktop-chromium.json`, leg `DESKTOP_DEV`. Rule 004
+stands. `docs/phase4/HOW-TO-RUN-DEVICE-TEST.md` describes the run that would settle it.
+
+What exists: pyramidal Lucas-Kanade at §12's parameters, §13's forward/backward bands, an
+independent scene-motion measurement that shares no code with the solver, frame-to-frame
+population tracking with `age` and `trackLength`, §33's state as one pure function, the
+seven-test Phase 4 suite, the TRACKING screen, a live `rotationRate` feed for FLOW-003, 63 new
+unit tests, and an automated leg that generates its own camera feed.
+
+### What the automated leg can decide, and it is more than Phase 3's could
+
+Phase 3's leg had to exclude the three tests that carry its meaning, because Chromium's fake
+camera is a rolling gradient. Phase 4's conditions are about **motion**, and a video file can
+contain motion exactly — so `scripts/run-e2e-phase4.mjs` builds a feed that holds still, pans
+at 4 px per frame, sweeps at 22, and goes black, and every frame is classified from the pixels
+by the same code the device runs.
+
+That arms **the one gate this phase exists for**, through the real
+`video → VideoFrame → worker → pyramid` path:
+
+| | Measured on the leg |
+| --- | --- |
+| FLOW-002 cross-check | **309 pairs: tracker 6 px vs image 4 px, median disagreement 0 px, 93.9 % agreeing** |
+| Motion classes | 133 static, 135 slow, 41 fast, 10 occluded |
+| §33 | 279 TRACKING, 47 DEGRADED, 120 LOST — **0 state mismatches** |
+| Occlusions | 11 episodes, `LOST` in 0–112 ms, every one recovered |
+| §13 | 77 232 acceptable, 985 reduced, 8 115 rejected |
+| LK solve | 22.5 ms at 165 points, at §12's parameters |
+
+FLOW-001, 002, 004, 005 and 007 PASS there. FLOW-003 is `PENDING` — headless Chromium has no
+gyroscope — and FLOW-006 is `FAIL` at 22.5 ms against §H's 14 ms, printed and excluded because
+a device budget cannot be adjudicated off the device (§H.4).
+
+### The number that carries the phase, and what a fake would do to it
+
+Everything else in Phase 4 can be produced by a tracker that never looked at the second frame.
+A tracker returning its input reports every point surviving, `age` and `trackLength` climbing
+honestly, and a forward/backward error of **exactly 0.0** — §13's best band. On a static scene
+it is indistinguishable from a working tracker, and **no statistic computed from its own output
+can tell.**
+
+So `tests/unit/flowTracker.test.ts` drives the real `FlowStage` with exactly that tracker over
+a run whose motion is known by construction, and asserts the whole shape of it: the fake passes
+FLOW-001, passes FLOW-007, scores a perfect §13 round trip, keeps 100 % of its population — and
+**fails FLOW-002**, because an integer SAD translation search on the pyramid's top level, which
+shares no code with the solver and never sees the feature list, says the image moved 4 px while
+the tracker says 0.
+
+### Four defects found before any device saw the code
+
+| Found by | Defect |
+| --- | --- |
+| The synthetic run | §33's `inliers < 20` reused for tracked points made a 20-feature scene permanently `LOST` — survival of 19/20 is a tracker working perfectly |
+| FLOW-005, on the leg | A tier step inside an occlusion cleared `everTracked`, put the state back to `READY` mid-run, and left a 14-frame covered lens never reaching `LOST` |
+| FLOW-001, on the leg | Detection handed the tracker points its 21×21 window cannot cover — 15 % of the population, making survival read 84.6 % on an image the tracker had followed exactly |
+| The evidence recorder | A covered lens put `Infinity` into every bundle: the alignment probe divided by a local variance that is legitimately zero on a black frame |
+
+All four are recorded as amendments in `docs/phase4/TEST-PLAN.md`. **No criterion was
+relaxed.** Two thresholds the plan named but left unnumbered were fixed with their derivations
+(the scene-shift confidence floor, and FLOW-003's integration window), and two criteria were
+narrowed to the frames they were always about.
+
+### One measurement that is about the implementation, not the platform
+
+The first version of the solver cost **65 ms per frame**, because it called a shared bilinear
+helper 441 times per iteration and recomputed the interpolation weights each time. The whole
+window shares one sub-pixel offset, so they are computed once and the loop walks consecutive
+indices: **22.5 ms**, at identical results — the accuracy tests hold to 0.05 px either way.
+Reporting the first number as what the device affords would have been reporting an inefficiency
+as a platform fact.
+
+### The Phase 3 defect carried in, and where it stands
+
+Phase 3 ended with an unresolved report: the overlay's points line up in landscape and are
+rotated in portrait. `src/debug/OverlayAlignmentProbe.ts` was added to measure it, and it runs
+in Phase 4 too — it has to, because Phase 4 measures every displacement in the acquired
+buffer's frame, so a buffer turned against the screen makes every number in this phase wrong
+while every average-based check still passes (§H.7).
+
+**It is still not confirmed fixed**, and the next device run is what would confirm it. What
+changed here is that the probe learned to say when it cannot tell:
+
+- on the Phase 4 leg's generated feed — periodic in x so the pan loops, and densely textured —
+  every transform lands on corner-like pixels and all seven scores fall within a factor of 1.05
+  of each other. The probe names a winner with `best/random` at **1.03**, which is noise;
+- `isMisoriented` now requires the winning transform to beat chance by the same margin identity
+  is required to. Without that, pointing the phone at a brick wall or a tiled floor could
+  abandon a working acquisition route;
+- and a black frame reports `measurable: false` rather than `Infinity`.
+
+`scripts/run-e2e-phase3-alignment.mjs` remains the leg that decides orientation, on a fixture
+built so no rotation or reflection maps its landmarks onto themselves. It scores identity at
+17.7× chance.
+
