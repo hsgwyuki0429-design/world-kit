@@ -21,6 +21,16 @@ import type { SceneTexture } from './featureTypes';
 export interface TrackingOptions {
   /** Whether to detect at all on frames this reaches. */
   readonly detect: boolean;
+  /**
+   * Whether to follow the existing population from the previous frame (Phase 4, §12).
+   *
+   * `false` in Phase 3, where detection is independent on every frame and no feature has a
+   * history. `true` in Phase 4, and it changes what `detect` means: detection stops running
+   * on every frame and becomes §11's refill, run only when the tracked population has fallen
+   * far enough to need topping up. The two counts stay separate in the result for the reason
+   * the Phase 4 test plan gives — a refill can hide a tracker that lost everything.
+   */
+  readonly track: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -36,6 +46,7 @@ export interface TrackingOptions {
 
 export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   detect: true,
+  track: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -89,6 +100,74 @@ export interface TrackingRefill {
   readonly stateAfter: string;
 }
 
+/**
+ * The independent scene-motion measurement, as it crosses the boundary.
+ *
+ * Produced by `SceneShift`, which shares no code with the Lucas-Kanade solver and never sees
+ * the feature list. FLOW-002 compares this against what the tracker says the points did, and
+ * that comparison is the one number that carries Phase 4 — see the test plan.
+ */
+export interface TrackingSceneShift {
+  readonly dx0: number;
+  readonly dy0: number;
+  readonly magnitude0: number;
+  readonly residual: number;
+  readonly medianResidual: number;
+  readonly confidence: number;
+  readonly zeroShiftResidual: number;
+  readonly samples: number;
+  readonly candidates: number;
+  readonly levelScale: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** One frame of Phase 4: what the tracker did, and what the image independently did. */
+export interface TrackingFlow {
+  /** Points carried forward from the previous frame and kept by §13. */
+  readonly tracked: number;
+  /** Points detection added this frame. Counted apart from `tracked`, always. */
+  readonly redetected: number;
+  /** The whole population after both. */
+  readonly total: number;
+  /** Points the tracker was given. `survival` is `tracked / offered`. */
+  readonly offered: number;
+  readonly survival: number;
+  readonly failedToTrack: number;
+  readonly rejectedByFb: number;
+  readonly reducedConfidence: number;
+  readonly medianDisplacementPx: number;
+  readonly medianFbErrorPx: number;
+  readonly fbAcceptable: number;
+  readonly fbReduced: number;
+  readonly fbRejected: number;
+  readonly cellSpread: number;
+  readonly occupiedFlowCells: number;
+  readonly maxTrackLength: number;
+  readonly medianAge: number;
+  readonly frameFailed: boolean;
+  readonly consecutiveFailedFrames: number;
+  /** Tier steps and device rotations so far — see `FlowStepResult.geometryChanges`. */
+  readonly geometryChanges: number;
+  readonly everTracked: boolean;
+  /** §33's state, computed by the one shared pure function — see `trackingState.ts`. */
+  readonly state: string;
+  readonly stateReason: string;
+  /** Which of §33's GOOD conjuncts could not be evaluated, named rather than assumed away. */
+  readonly goodBlockedBy: readonly string[];
+  /** Cost of the Lucas-Kanade solve including §13's backward pass. FLOW-006 judges this. */
+  readonly flowMs: number;
+  /** Cost of the independent search, measured separately so it is not charged to the solver. */
+  readonly shiftMs: number;
+  readonly sceneShift: TrackingSceneShift | null;
+  /** `STATIC` / `SLOW` / `FAST` / `OCCLUDED` / `INDETERMINATE`, measured from the image. */
+  readonly frameMotion: string;
+  readonly meanLuma: number;
+  readonly topLevelMad: number;
+  readonly detectedThisFrame: boolean;
+  readonly refillUrgency: string;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -118,6 +197,22 @@ export interface TrackingResult {
    * which it could invent them.
    */
   readonly overlay: ArrayBuffer | null;
+  /**
+   * Phase 4's frame, or `null` on a Phase 3 frame where nothing was tracked.
+   *
+   * Carried on the same message as the detection result rather than on a second one: the two
+   * describe one frame, and splitting them would let the screen show a population from one
+   * frame beside a state derived from another.
+   */
+  readonly flow: TrackingFlow | null;
+  /**
+   * `age` per overlay point, `Uint16Array`, aligned with `overlay`'s triples.
+   *
+   * The overlay's stride stays 3 so Phase 3's renderer and the overlay alignment probe read
+   * it unchanged; the ages ride alongside so Phase 4's screen can draw a tracked point
+   * differently from one detection has just replaced. `null` outside Phase 4.
+   */
+  readonly flowAge: ArrayBuffer | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

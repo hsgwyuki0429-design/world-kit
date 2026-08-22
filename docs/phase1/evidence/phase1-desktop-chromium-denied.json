@@ -3,9 +3,9 @@
   "leg": "DESKTOP_DEV",
   "phase": 1,
   "phaseName": "Camera Capture",
-  "createdAt": "2026-08-22T06:31:30.920Z",
+  "createdAt": "2026-08-22T14:14:44.622Z",
   "appVersion": "0.1.0",
-  "origin": "http://localhost:40619",
+  "origin": "http://localhost:33939",
   "secureContext": true,
   "device": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
@@ -33,15 +33,15 @@
         "label": "Secure context (HTTPS)",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "secure context over http://localhost:40619",
+        "detail": "secure context over http://localhost:33939",
         "data": {
           "isSecureContext": true,
           "protocol": "http:",
-          "host": "localhost:40619",
+          "host": "localhost:33939",
           "crossOriginIsolated": false
         },
-        "durationMs": 0.3,
-        "timestamp": 1787380290762
+        "durationMs": 0.2,
+        "timestamp": 1787408084500
       },
       {
         "id": "platform.iosSafariGuess",
@@ -55,8 +55,8 @@
           "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
           "maxTouchPoints": 1
         },
-        "durationMs": 0,
-        "timestamp": 1787380290762
+        "durationMs": 0.1,
+        "timestamp": 1787408084500
       },
       {
         "id": "camera.getUserMedia",
@@ -71,7 +71,7 @@
           "secureContext": true
         },
         "durationMs": 0.2,
-        "timestamp": 1787380290762
+        "timestamp": 1787408084500
       },
       {
         "id": "camera.enumerateDevices",
@@ -87,8 +87,8 @@
           "labelsHidden": true,
           "deviceIdsHidden": true
         },
-        "durationMs": 46.4,
-        "timestamp": 1787380290809
+        "durationMs": 37.8,
+        "timestamp": 1787408084538
       },
       {
         "id": "camera.supportedConstraints",
@@ -108,7 +108,7 @@
           "missing": []
         },
         "durationMs": 0.3,
-        "timestamp": 1787380290809
+        "timestamp": 1787408084538
       },
       {
         "id": "camera.trackControl",
@@ -123,7 +123,7 @@
           "applyConstraints": true
         },
         "durationMs": 0.1,
-        "timestamp": 1787380290809
+        "timestamp": 1787408084538
       },
       {
         "id": "compute.webassembly",
@@ -139,7 +139,7 @@
           "hasMemory": true
         },
         "durationMs": 0.7,
-        "timestamp": 1787380290810
+        "timestamp": 1787408084539
       },
       {
         "id": "compute.worker",
@@ -147,13 +147,13 @@
         "label": "Web Worker round-trip",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "blob worker round-trip succeeded in 8.3 ms",
+        "detail": "blob worker round-trip succeeded in 7 ms",
         "data": {
-          "roundTripMs": 8.3,
+          "roundTripMs": 7,
           "tokenMatched": true
         },
-        "durationMs": 9.9,
-        "timestamp": 1787380290820
+        "durationMs": 8.2,
+        "timestamp": 1787408084547
       },
       {
         "id": "compute.offscreenCanvas",
@@ -171,8 +171,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.8,
-        "timestamp": 1787380290821
+        "durationMs": 0.5,
+        "timestamp": 1787408084548
       },
       {
         "id": "compute.transferControlToOffscreen",
@@ -185,8 +185,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 0.5,
-        "timestamp": 1787380290821
+        "durationMs": 0.3,
+        "timestamp": 1787408084548
       },
       {
         "id": "compute.offscreenInWorker",
@@ -205,8 +205,8 @@
           ],
           "exact": true
         },
-        "durationMs": 9.1,
-        "timestamp": 1787380290830
+        "durationMs": 7.1,
+        "timestamp": 1787408084555
       },
       {
         "id": "compute.sharedArrayBuffer",
@@ -218,8 +218,8 @@
         "data": {
           "crossOriginIsolated": false
         },
-        "durationMs": 0.2,
-        "timestamp": 1787380290830
+        "durationMs": 0,
+        "timestamp": 1787408084555
       },
       {
         "id": "graphics.webgl2",
@@ -241,8 +241,8 @@
           "textureFloatLinear": true,
           "extensionCount": 29
         },
-        "durationMs": 18.4,
-        "timestamp": 1787380290849
+        "durationMs": 11.8,
+        "timestamp": 1787408084567
       },
       {
         "id": "graphics.webgpu",
@@ -255,8 +255,8 @@
           "hasNavigatorGpu": true,
           "adapter": null
         },
-        "durationMs": 2.3,
-        "timestamp": 1787380290851
+        "durationMs": 2.1,
+        "timestamp": 1787408084569
       },
       {
         "id": "graphics.createImageBitmap",
@@ -269,8 +269,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 1.9,
-        "timestamp": 1787380290853
+        "durationMs": 1.5,
+        "timestamp": 1787408084571
       },
       {
         "id": "graphics.canvas2dReadback",
@@ -288,8 +288,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.3,
-        "timestamp": 1787380290853
+        "durationMs": 0.2,
+        "timestamp": 1787408084571
       },
       {
         "id": "media.imageCapture",
@@ -299,8 +299,8 @@
         "method": "PRESENCE_CHECK",
         "detail": "ImageCapture is present",
         "data": {},
-        "durationMs": 0.1,
-        "timestamp": 1787380290853
+        "durationMs": 0,
+        "timestamp": 1787408084571
       },
       {
         "id": "media.webcodecs",
@@ -315,7 +315,7 @@
           "VideoEncoder": true
         },
         "durationMs": 0.2,
-        "timestamp": 1787380290853
+        "timestamp": 1787408084571
       },
       {
         "id": "media.videoFrameCallback",
@@ -327,8 +327,8 @@
         "data": {
           "playsInline": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787380290854
+        "durationMs": 0.2,
+        "timestamp": 1787408084571
       },
       {
         "id": "storage.estimate",
@@ -336,13 +336,13 @@
         "label": "Storage quota",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "storage quota reported by the platform: 814.5 MB (used 0.0 B)",
+        "detail": "storage quota reported by the platform: 830.5 MB (used 0.0 B)",
         "data": {
-          "quotaBytes": 854053276,
+          "quotaBytes": 870802990,
           "usageBytes": 0
         },
-        "durationMs": 2.2,
-        "timestamp": 1787380290856
+        "durationMs": 1.7,
+        "timestamp": 1787408084573
       },
       {
         "id": "storage.localStorage",
@@ -352,8 +352,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "wrote, read and removed a real localStorage key",
         "data": {},
-        "durationMs": 1,
-        "timestamp": 1787380290857
+        "durationMs": 0.9,
+        "timestamp": 1787408084574
       },
       {
         "id": "storage.indexedDB",
@@ -363,8 +363,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
         "data": {},
-        "durationMs": 3,
-        "timestamp": 1787380290860
+        "durationMs": 2,
+        "timestamp": 1787408084576
       },
       {
         "id": "storage.performanceMemory",
@@ -376,8 +376,8 @@
         "data": {
           "deviceMemory": 8
         },
-        "durationMs": 0.3,
-        "timestamp": 1787380290860
+        "durationMs": 0.2,
+        "timestamp": 1787408084576
       },
       {
         "id": "spatial.webxr",
@@ -391,8 +391,8 @@
           "immersiveAR": false,
           "immersiveVR": false
         },
-        "durationMs": 7.8,
-        "timestamp": 1787380290868
+        "durationMs": 5.6,
+        "timestamp": 1787408084582
       },
       {
         "id": "spatial.nativeBridge",
@@ -404,8 +404,8 @@
         "data": {
           "handlerNames": []
         },
-        "durationMs": 0.1,
-        "timestamp": 1787380290868
+        "durationMs": 0.2,
+        "timestamp": 1787408084582
       },
       {
         "id": "spatial.cameraDepth",
@@ -418,8 +418,8 @@
           "depthConstraintKeys": [],
           "webxrAvailable": false
         },
-        "durationMs": 0.2,
-        "timestamp": 1787380290868
+        "durationMs": 0.1,
+        "timestamp": 1787408084582
       },
       {
         "id": "spatial.arkit",
@@ -431,8 +431,8 @@
         "data": {
           "nativeBridgePresent": false
         },
-        "durationMs": 0.1,
-        "timestamp": 1787380290868
+        "durationMs": 0,
+        "timestamp": 1787408084582
       },
       {
         "id": "spatial.roomplan",
@@ -444,8 +444,8 @@
         "data": {
           "nativeBridgePresent": false
         },
-        "durationMs": 0,
-        "timestamp": 1787380290868
+        "durationMs": 0.1,
+        "timestamp": 1787408084582
       },
       {
         "id": "spatial.metricScale",
@@ -459,7 +459,7 @@
           "units": "LOCAL_UNITS"
         },
         "durationMs": 0,
-        "timestamp": 1787380290868
+        "timestamp": 1787408084582
       },
       {
         "id": "motion.deviceMotion",
@@ -472,7 +472,7 @@
           "requiresPermission": false
         },
         "durationMs": 0,
-        "timestamp": 1787380290868
+        "timestamp": 1787408084582
       },
       {
         "id": "motion.deviceOrientation",
@@ -485,12 +485,12 @@
           "requiresPermission": false
         },
         "durationMs": 0,
-        "timestamp": 1787380290868
+        "timestamp": 1787408084582
       }
     ],
-    "startedAt": 1787380290739,
-    "completedAt": 1787380290868,
-    "totalDurationMs": 106.5
+    "startedAt": 1787408084480,
+    "completedAt": 1787408084582,
+    "totalDurationMs": 82.3
   },
   "testResults": [
     {
@@ -507,7 +507,7 @@
       "observed": "camera state CAMERA_PERMISSION_DENIED; no grant observed in this run or carried over",
       "reason": "the granted path has not been exercised. Tap START CAMERA and allow access; PENDING holds Phase 1 at TESTING rather than rounding up",
       "metrics": {},
-      "timestamp": 1787380290920
+      "timestamp": 1787408084622
     },
     {
       "spec": {
@@ -528,7 +528,7 @@
         "unmappedError": false,
         "recovery": "no stream is held and no image is presented; the user must grant camera access in Safari website settings and reload"
       },
-      "timestamp": 1787380290920
+      "timestamp": 1787408084622
     },
     {
       "spec": {
@@ -553,7 +553,7 @@
         "cameraEverOpened": false,
         "cameraEndedUnexpectedly": false
       },
-      "timestamp": 1787380290920
+      "timestamp": 1787408084622
     },
     {
       "spec": {
@@ -578,7 +578,7 @@
         "lumaMax": 0,
         "sampleCostMsMean": 0
       },
-      "timestamp": 1787380290920
+      "timestamp": 1787408084622
     },
     {
       "spec": {
@@ -599,7 +599,7 @@
         "framesAfterLastOrientationChange": 0,
         "msFromOrientationChangeToNextFrame": null
       },
-      "timestamp": 1787380290920
+      "timestamp": 1787408084622
     },
     {
       "spec": {
@@ -631,35 +631,35 @@
           "NotSupportedError"
         ]
       },
-      "timestamp": 1787380290920
+      "timestamp": 1787408084622
     }
   ],
   "overallVerdict": "TESTING",
   "overallReason": "PENDING: CAM-001, CAM-003, CAM-004, CAM-005 — not yet evaluable",
   "stateTransitions": [
     {
-      "timestamp": 1787380290708,
+      "timestamp": 1787408084465,
       "subject": "phase[0] Environment / Capability",
       "from": "NOT_STARTED",
       "to": "IMPLEMENTING",
       "reason": "capability detection starting"
     },
     {
-      "timestamp": 1787380290874,
+      "timestamp": 1787408084587,
       "subject": "phase[0] Environment / Capability",
       "from": "IMPLEMENTING",
       "to": "TESTING",
       "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
     },
     {
-      "timestamp": 1787380290900,
+      "timestamp": 1787408084608,
       "subject": "phase[1] Camera Capture",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: CAM-001, CAM-002, CAM-003, CAM-004, CAM-005 — not yet evaluable"
     },
     {
-      "timestamp": 1787380290920,
+      "timestamp": 1787408084622,
       "subject": "phase[1] Camera Capture",
       "from": "TESTING",
       "to": "TESTING",
@@ -668,7 +668,7 @@
   ],
   "errorLog": [
     {
-      "timestamp": 1787380290919,
+      "timestamp": 1787408084622,
       "level": "ERROR",
       "phase": 1,
       "source": "CameraSource",
@@ -681,7 +681,7 @@
   ],
   "fullLog": [
     {
-      "timestamp": 1787380290737,
+      "timestamp": 1787408084478,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -689,22 +689,22 @@
       "data": {
         "appVersion": "0.1.0",
         "leg": "DESKTOP_DEV",
-        "origin": "http://localhost:40619"
+        "origin": "http://localhost:33939"
       }
     },
     {
-      "timestamp": 1787380290869,
+      "timestamp": 1787408084582,
       "level": "INFO",
       "phase": 0,
       "source": "CapabilityDetector",
       "message": "capability detection complete",
       "data": {
         "records": 31,
-        "totalProbeMs": 106.5
+        "totalProbeMs": 82.3
       }
     },
     {
-      "timestamp": 1787380290881,
+      "timestamp": 1787408084592,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -714,7 +714,7 @@
       }
     },
     {
-      "timestamp": 1787380290899,
+      "timestamp": 1787408084607,
       "level": "WARN",
       "phase": 1,
       "source": "App",
@@ -724,7 +724,7 @@
       }
     },
     {
-      "timestamp": 1787380290900,
+      "timestamp": 1787408084608,
       "level": "INFO",
       "phase": 1,
       "source": "App",
@@ -734,7 +734,7 @@
       }
     },
     {
-      "timestamp": 1787380290919,
+      "timestamp": 1787408084622,
       "level": "ERROR",
       "phase": 1,
       "source": "CameraSource",
@@ -778,7 +778,7 @@
           "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
           "ok": false,
           "errorName": "OverconstrainedError",
-          "durationMs": 5
+          "durationMs": 2
         },
         {
           "rung": 2,
@@ -807,7 +807,7 @@
         }
       ],
       "achievedSettings": null,
-      "openDurationMs": 9,
+      "openDurationMs": 6,
       "failure": {
         "state": "CAMERA_PERMISSION_DENIED",
         "errorName": "NotAllowedError",
@@ -852,8 +852,8 @@
       "granted": null,
       "denied": {
         "scenario": "DENIED",
-        "at": 1787380290919,
-        "origin": "http://localhost:40619",
+        "at": 1787408084622,
+        "origin": "http://localhost:33939",
         "appVersion": "0.1.0",
         "detail": "NotAllowedError — no stream held, no image presented",
         "observedDirectly": true,

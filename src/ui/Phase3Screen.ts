@@ -32,6 +32,10 @@ import type { AlignmentReading } from '../debug/OverlayAlignmentProbe';
 
 export interface Phase3ViewModel {
   readonly phase3: PhaseInfo;
+  readonly phase4: PhaseInfo;
+  readonly canEnterPhase4: boolean;
+  readonly phase4Implemented: boolean;
+  readonly phase4BlockedReason: string;
   readonly cameraState: CameraState;
   readonly trackLive: boolean;
   readonly opening: boolean;
@@ -51,6 +55,7 @@ export interface Phase3Handlers {
   onStart: () => void;
   onStop: () => void;
   onBack: () => void;
+  onEnterPhase4: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
 }
@@ -153,16 +158,41 @@ export function renderPhase3Screen(
   root.append(renderTests(vm));
   root.append(renderEvidence(vm, handlers));
 
-  root.append(
-    card('Navigation', [
+  root.append(renderNavigation(vm, handlers));
+}
+
+/** Phase Lock on screen, as on the screens before it: a closed door says which lock holds it. */
+function renderNavigation(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLElement {
+  const open = vm.canEnterPhase4 && vm.phase4Implemented;
+  const label = !vm.phase4Implemented
+    ? 'OPTICAL FLOW TRACKING — NOT IMPLEMENTED'
+    : !vm.canEnterPhase4
+      ? 'OPTICAL FLOW TRACKING — LOCKED'
+      : 'GO TO TRACKING';
+  const note = !vm.phase4Implemented
+    ? 'Phase 4 has not been written in this build.'
+    : !vm.canEnterPhase4
+      ? vm.phase4BlockedReason
+      : `Phase 4 is ${vm.phase4.state}.`;
+
+  return card('Navigation', [
+    el('div', { class: 'button-row' }, [
       el('button', {
         class: 'secondary',
         id: 'back-to-phase2',
         textContent: 'BACK TO PIPELINE',
         onclick: handlers.onBack,
       } as never),
+      el('button', {
+        class: 'primary',
+        id: 'go-to-phase4',
+        disabled: !open,
+        textContent: label,
+        onclick: handlers.onEnterPhase4,
+      } as never),
     ]),
-  );
+    el('p', { class: 'footnote' }, [note]),
+  ]);
 }
 
 function renderPreview(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLElement {
@@ -332,15 +362,19 @@ function renderProvenance(vm: Phase3ViewModel): HTMLElement {
       stat(
         'Overlay matches video',
         vm.alignment
-          ? vm.alignment.best === 'identity'
-            ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
-            : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
+          ? !vm.alignment.measurable
+            ? 'not measurable — no local texture in this frame'
+            : vm.alignment.best === 'identity'
+              ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
+              : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
           : null,
         vm.alignment
-          ? vm.alignment.best === 'identity' &&
-            vm.alignment.identityOverRandom >= MIN_IDENTITY_OVER_RANDOM
-            ? 's-AVAILABLE'
-            : 's-PERMISSION_DENIED'
+          ? !vm.alignment.measurable
+            ? ''
+            : vm.alignment.best === 'identity' &&
+                vm.alignment.identityOverRandom >= MIN_IDENTITY_OVER_RANDOM
+              ? 's-AVAILABLE'
+              : 's-PERMISSION_DENIED'
           : '',
       ),
       stat(

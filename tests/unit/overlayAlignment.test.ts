@@ -108,3 +108,46 @@ describe('overlay alignment probe', () => {
       .toBeNull();
   });
 });
+
+describe('scenes the probe cannot read', () => {
+  /** Dense and periodic: every transform lands on corner-like pixels. */
+  function repetitive(): Float32Array {
+    const g = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        g[y * W + x] = 128 + 90 * Math.sin((x * Math.PI) / 8) * Math.sin((y * Math.PI) / 8);
+      }
+    }
+    return g;
+  }
+
+  it('refuses to condemn a route on a scene where every transform scores alike', () => {
+    // The false positive this guard exists for. A brick wall, a tiled floor, or the periodic
+    // pan the Phase 4 leg generates puts corner-like pixels everywhere, so whichever transform
+    // wins does so by noise — and acting on it would abandon a working acquisition route.
+    const g = repetitive();
+    const pts: number[] = [];
+    for (let y = 12; y < H - 12; y += 16) for (let x = 12; x < W - 12; x += 16) pts.push(x, y);
+    const r = new Rng(0xa11a_11ed);
+    const reading = scoreAlignment(g, W, H, pts, W, H, () => r.next());
+    expect(reading).not.toBeNull();
+    // The probe has no discrimination here, whatever it names as the winner.
+    expect(reading!.bestOverRandom).toBeLessThan(2);
+    expect(isMisoriented(reading!)).toBe(false);
+  });
+
+  it('says a black frame is not measurable rather than reporting a ratio', () => {
+    // Phase 4's FLOW-005 produces these on purpose: the lens is covered. Every score is zero,
+    // and before this was handled the ratios were Infinity and the evidence recorder logged an
+    // integrity error on a run in which nothing was wrong.
+    const g = new Float32Array(W * H).fill(0);
+    const pts = cornersIn(W, H);
+    const r = new Rng(0xa11a_11ed);
+    const reading = scoreAlignment(g, W, H, pts, W, H, () => r.next());
+    expect(reading).not.toBeNull();
+    expect(reading!.measurable).toBe(false);
+    expect(Number.isFinite(reading!.bestOverIdentity)).toBe(true);
+    expect(Number.isFinite(reading!.identityOverRandom)).toBe(true);
+    expect(isMisoriented(reading!)).toBe(false);
+  });
+});

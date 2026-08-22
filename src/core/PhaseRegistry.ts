@@ -52,7 +52,7 @@ export const PHASE_NAMES: readonly string[] = [
  * passes is decided by `evaluate` against real-device evidence, exactly as for every other
  * phase.
  */
-export const IMPLEMENTED_PHASES: ReadonlySet<number> = new Set<number>([0, 1, 2, 3]);
+export const IMPLEMENTED_PHASES: ReadonlySet<number> = new Set<number>([0, 1, 2, 3, 4]);
 
 export function isPhaseImplemented(index: number): boolean {
   return IMPLEMENTED_PHASES.has(index);
