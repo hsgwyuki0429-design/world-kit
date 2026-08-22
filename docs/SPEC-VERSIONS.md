@@ -3,11 +3,29 @@
 The project was built to `Safari Spatial Mapping Prototype v3.0`. On 2026-08-22, after Phase 4
 passed on the device, the spec was replaced by `Safari Spatial Game — Version 4.0`.
 
-This file exists for one reason. **v4 is shorter than v3, and several of the numbers v3 fixed
-are simply absent from it.** §29 requires a phase's thresholds to be written down before its
-code and not relaxed after a result is seen. A threshold that vanishes when the document is
-rewritten is a threshold relaxed by omission, so every one is recorded here with where it came
-from and what the code does with it.
+## The rule
+
+Stated by the spec's author on 2026-08-22, and it settles every question this file was written
+to raise:
+
+> **基本的なことはバージョン3に則って、方針だけ変えたい。**
+> — follow v3 for the fundamentals; v4 changes the direction only.
+
+So the division is explicit rather than inferred:
+
+| | Authority |
+| --- | --- |
+| **Technical detail** — thresholds, algorithms, parameters, state conditions, test identifiers | **v3.0** |
+| **Direction** — what the product is for, the phase roadmap, what counts as done | **v4.0** |
+
+v4's silences are therefore not withdrawals. Where v4 says less than v3 about *how* something
+works, v3 still governs and the code cites "v3 §N". Where v4 sets a new destination — a ball
+game generated from observed surfaces rather than a reusable Spatial World — v4 governs.
+
+The rest of this file is the inventory: every number v3 fixed that v4 does not restate, so none
+of them can be lost by the document getting shorter. §29 requires a phase's thresholds to be
+written down before its code and not relaxed after a result is seen, and a threshold that
+vanishes when the document is rewritten is a threshold relaxed by omission.
 
 ---
 
@@ -138,13 +156,12 @@ that.
 
 ---
 
-## The rule this file encodes
+## Where the two would conflict
 
-**A number that disappears from the spec has not been withdrawn — it has stopped being
-restated.** Where v4 is silent and v3 was specific, the v3 figure stands and is cited as
-"v3 §N". Where v4 states something new, v4 governs. Where the two conflict, that is a decision
-for the spec's author and this file records it as an open question rather than picking a side.
-
-No conflicts have been found so far. v4 §11, §12 and §13 — Phase 3's feature parameters, Phase
+Nowhere, so far — and the rule above means a conflict would be resolved by *kind* rather than
+by date: a disagreement about a threshold or an algorithm goes to v3, a disagreement about what
+the product is trying to be goes to v4. Anything that cannot be sorted into one of those two is
+a question for the spec's author, and this file records it as an open question rather than
+picking a side. v4 §11, §12 and §13 — Phase 3's feature parameters, Phase
 4's Lucas-Kanade parameters and the forward/backward bands — are **identical to v3's**, which is
 why Phases 3 and 4 needed no change when the spec version moved.
