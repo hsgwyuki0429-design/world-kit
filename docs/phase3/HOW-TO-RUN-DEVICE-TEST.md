@@ -20,28 +20,31 @@ camera at each of them.
 1. Get Phase 1 and Phase 2 to `PASSED` as their own guides describe.
 2. From the pipeline screen, tap **GO TO FEATURE DETECTION**. Leave the pipeline running —
    Phase 3 adopts it rather than reopening the camera, and turns off any injected load.
-3. Tap **START DETECTION**. Corners appear on the preview within a second.
+3. **Before tapping anything, check the button says `START DETECTION` and is tappable.**
+   If it already reads `DETECTING` and is greyed out, stop and report it — the screen is
+   claiming a state the engine is not in and there is nothing you can press. That is the
+   02:35 defect on 2026-08-22; it is fixed, and this is the check that it stayed fixed.
+4. Tap **START DETECTION**. Corners appear on the preview within a second.
    - **If *Detections* stays at 0 while the button reads DETECTING, stop and report it.**
-     That is the defect the run of 2026-08-22 found, and the screen is claiming a state the
-     engine is not in. It is fixed, and this is the check that it stayed fixed.
+     That is the 01:57 defect from the same day — the button was pressable but inert.
    - **Check they land on things.** Circles should sit on edges, corners, text, the join
      between objects — not scattered evenly across a blank area. That is what FEAT-001
      measures numerically, and it is what the screenshot records.
-4. **Point at the textured surface and hold, moving slowly, for about 40 seconds.**
+5. **Point at the textured surface and hold, moving slowly, for about 40 seconds.**
    - *Texture-rich* under **Scene** counts up. FEAT-001 needs 15 frames and 10 contrast
      samples.
    - *Above chance* under **Are these real corners?** should sit well above 75 %. If it
      hovers near 50 %, the detector is not finding structure and the phase should fail.
    - *Features* should sit in the hundreds. *Cells occupied* should be most of 48.
-5. **Point at the blank wall for about 20 seconds.**
+6. **Point at the blank wall for about 20 seconds.**
    - *Texture-poor* counts up; FEAT-002 needs 15 frames.
    - *Features* should collapse — tens, not hundreds — and *State* should change to
      `LOW FEATURE COUNT` and then `TRACKING DEGRADED`.
    - This also drives FEAT-004: the count falling below 500 triggers a refill, below 200 an
      emergency one. Watch *Refills* climb.
-6. **Point back at the textured surface** and hold for another 20 seconds, so the population
+7. **Point back at the textured surface** and hold for another 20 seconds, so the population
    recovers and the comparison FEAT-002 makes has both halves.
-7. When the verdict panel shows what you want, tap **DOWNLOAD EVIDENCE JSON** — the verdict
+8. When the verdict panel shows what you want, tap **DOWNLOAD EVIDENCE JSON** — the verdict
    is in the filename — and screenshot the screen.
 
 ---

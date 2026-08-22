@@ -11,7 +11,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 3 | Feature Detection | **IMPLEMENTING** | §11 built. One device run so far, `TESTING`: it found a defect that made START DETECTION a no-op on the device. Fixed and reproduced by the automated leg; awaiting a second device run. |
+| 3 | Feature Detection | **IMPLEMENTING** | §11 built. Two device runs, both `TESTING`: the first found START DETECTION was a no-op, the second that the fix left the button *unpressable*. Both fixed and both reproduced by the automated leg; awaiting a third device run. |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
@@ -304,6 +304,29 @@ the first detection. Full account in `docs/phase3/evidence/README.md`.
 
 The bundle is kept for the reason Phase 1 keeps its `FAILED` one: the record of a defect is
 evidence, and removing it would leave the fix looking like a change with no cause.
+
+### The second device run found that the fix was incomplete
+
+`docs/phase3/evidence/phase3-real-device-TESTING-2026-08-22T02-35-08-088Z.json`, same
+session shape, 1662 frames preprocessed, 0 lost — **and 0 detections again.**
+
+The first fix routed the screen's stats, the tests and the evidence through one
+`isDetecting()` predicate and missed the one prop that drives the button:
+`running: this.pipeline.isRunning()` in the Phase 3 view model. `vm.running` sets both the
+label and `disabled`, so arriving at FEATURES over Phase 2's still-running pipeline the
+button rendered **`DETECTING`, disabled, before anyone touched it** — the user could not
+start the run at all. Strictly worse than the bug it replaced: unpressable rather than inert.
+
+The bundle proves it was that and not a stale deploy: `createdAt` sits 2 ms after the screen
+opened while the Phase 3 tick rebuilds it every 500 ms, and the adoption log line the fix
+emits unconditionally is absent — yet the screenshot shows `DETECTING`. Those cannot coexist
+unless the control never read `trackingRequested`.
+
+The leg missed it because it called `startDetection()` through the debug API: the engine was
+reachable, the button was not. It now presses the real control and asserts the label and
+`disabled` state either side of the click. Against the broken code it fails with the user's
+own experience — *"START DETECTION is not pressable on arrival: label "DETECTING", disabled
+true"*.
 
 ### Code changed after the Phase 2 pass
 

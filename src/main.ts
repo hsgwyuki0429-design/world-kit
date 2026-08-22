@@ -406,7 +406,12 @@ class Phase0App {
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
-          running: this.pipeline.isRunning(),
+          // Rule 002, and the reason START DETECTION was unpressable on the device: this
+          // drives the button's label AND its disabled state, so a bare `pipeline.isRunning()`
+          // here renders DETECTING — disabled — the instant the screen opens over Phase 2's
+          // still-running pipeline. Every reading of "is anything detecting" goes through the
+          // one predicate, this one included.
+          running: this.isDetecting(),
           stats,
           overlay: this.lastOverlay,
           overlayWidth: this.lastOverlayWidth,

@@ -142,10 +142,39 @@ try {
   const entered = await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase3(true));
   if (!entered) throw new Error('could not enter Phase 3 even with the desktop override');
 
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.startDetection());
+  // Press the control a person presses, not the debug API behind it. Calling
+  // startDetection() directly is how this leg missed a defect that left START DETECTION
+  // rendered as "DETECTING" and *disabled* the moment the screen opened over Phase 2's
+  // running pipeline: the engine was reachable, the button was not, and a harness that
+  // reaches past the DOM cannot tell the difference (Rule 002).
+  await page.waitForSelector('#start-detection', { timeout: 10_000 });
+  const before = await page.evaluate(() => {
+    const b = document.getElementById('start-detection');
+    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
+  });
+  if (before.disabled !== false || before.text !== 'START DETECTION') {
+    throw new Error(
+      `START DETECTION is not pressable on arrival: label ${JSON.stringify(before.text)}, ` +
+        `disabled ${before.disabled}. The screen is reporting a detection state the engine ` +
+        'is not in, and a person could not start the run at all',
+    );
+  }
+  await page.click('#start-detection');
+
   await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getTrackingStats().detections > 0, undefined, {
     timeout: 25_000,
   });
+
+  const after = await page.evaluate(() => {
+    const b = document.getElementById('start-detection');
+    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
+  });
+  if (after.text !== 'DETECTING' || after.disabled !== true) {
+    throw new Error(
+      `detection is running but the control says ${JSON.stringify(after.text)} ` +
+        `(disabled ${after.disabled}) — the control and the engine disagree (Rule 002)`,
+    );
+  }
 
   const afterStart = await page.evaluate(() => window.__SPATIAL_DEBUG__.getPipelineStats());
   if (afterStart.stressPasses !== 0) {

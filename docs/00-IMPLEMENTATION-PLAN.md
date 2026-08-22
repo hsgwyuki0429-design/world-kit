@@ -531,16 +531,27 @@ to apply in advance:
   is adopted must be brought to a defined state. Phase 2's injected load survives into Phase
   3 unless it is cleared, and it moves the tier, which sets the resolution Phase 3 detects
   at; a measurement of the detector would have been a measurement of the stress.
-- **One predicate, read by the screen, the tests and the evidence.** Phase 3 had the same
-  wrong expression in the control and in the harness, so the button said `DETECTING` over a
-  stage that had never started and no test disagreed. §57's UI states and Rule 002 are only
-  worth anything if there is a single place the answer comes from.
+- **One predicate, read by the screen, the tests and the evidence — every reader, including
+  the view model.** Phase 3 had the same wrong expression in the control and in the harness,
+  so the button said `DETECTING` over a stage that had never started and no test disagreed.
+  The first fix consolidated three of the four readers and left the fourth — the prop that
+  sets the button's label and its `disabled` flag — so the next device run found the control
+  not merely wrong but *unpressable*. A consolidation that misses the reader the user can see
+  is not a consolidation. §57's UI states and Rule 002 are only worth anything if there is a
+  single place the answer comes from and nothing reads around it.
 
 The automated leg missed it because it entered the phase cold, through the development
 override, with nothing running — a sequence no device ever takes. **A leg that reaches a
 phase differently from the way a device reaches it is not testing the path that matters.**
 Phase 3's leg now enters Phase 2, starts the pipeline, turns stress on and hands it over;
 every later leg should reach its phase the way the device does.
+
+It then missed the follow-on defect for the neighbouring reason: it drove the engine through
+the debug API rather than the DOM, so a control that had become *unpressable* was invisible
+to it — the engine was reachable, the button was not. **A leg must press the control a person
+presses, and assert what that control says either side of the press.** Every later phase's
+screen has a start control with the same shape; reaching past it tests everything except the
+thing the user touches.
 
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because

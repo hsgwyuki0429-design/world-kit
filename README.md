@@ -9,10 +9,11 @@ constraint is that no number is displayed that was not measured, and no phase is
 passed on anything but real-device evidence.
 
 **Current state: Phases 0, 1 and 2 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 3 (Feature Detection) is `IMPLEMENTING` — its
-first device run recorded `TESTING` and found a defect that stopped detection from ever
-starting on a phone; that is fixed and reproduced by the automated leg, and a second device
-run is what the phase now waits on. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+with committed, machine-checked evidence. Phase 3 (Feature Detection) is `IMPLEMENTING` — two
+device runs, both `TESTING`, found two faces of one defect that stopped detection from ever
+starting on a phone (the second introduced by the fix for the first). Both are fixed and both
+are reproduced by the automated leg; a third device run is what the phase now waits on. See
+[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -290,6 +291,16 @@ obstacle, and one `isDetecting()` is read by the screen, the tests and the evide
 automated leg missed this because it entered Phase 3 cold — a sequence no device takes — and
 now walks the device's path instead; against the old code it times out waiting for the first
 detection.
+
+**The second device run showed that fix was incomplete, and the leg missed that too.** Three
+of the four readers were consolidated onto `isDetecting()`; the fourth — the view-model prop
+that sets the button's label *and* its `disabled` flag — still read `pipeline.isRunning()`.
+So the button rendered `DETECTING`, greyed out, the instant the screen opened over Phase 2's
+pipeline: the user could not press it at all. Strictly worse than the bug it replaced. The
+leg had been calling `startDetection()` through the debug API — the engine was reachable, the
+button was not — and now presses the real control, asserting what it says either side of the
+click. Against the broken code it fails with the user's own experience: *"START DETECTION is
+not pressable on arrival: label "DETECTING", disabled true."*
 
 ## What Phase 3's own leg found
 
