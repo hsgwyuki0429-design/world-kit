@@ -2,8 +2,10 @@
 
 | File | Leg | Passes the phase? |
 | --- | --- | --- |
-| `phase3-real-device-TESTING-2026-08-22T01-57-31-596Z.json` | `REAL_DEVICE` | No — `TESTING`. Kept deliberately: it is the record of a defect only a device could find |
+| `phase3-real-device-TESTING-2026-08-22T01-57-31-596Z.json` | `REAL_DEVICE` | No — `TESTING`. The record of the first defect only a device could find |
 | `phase3-real-device-TESTING-2026-08-22T01-57-31-596Z.jpg` | `REAL_DEVICE` | The screen from that run |
+| `phase3-real-device-TESTING-2026-08-22T02-35-08-088Z.json` | `REAL_DEVICE` | No — `TESTING`. The record of the **second** defect: the first fix was incomplete |
+| `phase3-real-device-TESTING-2026-08-22T02-35-08-088Z.jpg` | `REAL_DEVICE` | The screen from that run |
 | `phase3-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004) |
 | `phase3-desktop-chromium.png` | `DESKTOP_DEV` | No — the screen at the end of that run |
 
@@ -84,6 +86,71 @@ path — bundle shape, verdict derivation, `PENDING` reporting, the download nam
 It is kept for the same reason Phase 1 keeps its `FAILED` bundle: the record of a defect is
 evidence too, and deleting it would leave the fix looking like a change with no cause.
 
+## The device run of 02:35, and the defect the first fix left behind
+
+Same session shape as before: Phases 0, 1 and 2 all `PASSED` on the device, `devEntry: false`,
+pipeline live at `HIGH 1280×720@30`, 1662 frames preprocessed, 0 lost, empty error log.
+**Detections: 0 again.**
+
+But for a different — and worse — reason, and the bundle proves which one.
+
+### The proof, from the evidence alone
+
+| Fact in the bundle | What it rules out |
+| --- | --- |
+| The last log line is `phase 3: IMPLEMENTING -> TESTING` at the moment the screen opened | Nothing ran afterwards |
+| `createdAt` is **2 ms after** that transition, and the Phase 3 tick rebuilds the bundle every 500 ms | The tick never started |
+| No `adopted the running Phase 2 pipeline` line, which the fix logs unconditionally | `onStartPhase3` was never entered |
+| The screenshot nonetheless shows **DETECTING**, greyed, with STOP enabled | The control was in a detecting state the engine was never in |
+
+The last two together are decisive. `trackingRequested` is set and the tick is started in the
+same block, immediately followed by `evaluatePhase3()`; any render showing `DETECTING` must
+come after that. A frozen `createdAt` and a lit `DETECTING` cannot both happen — unless the
+control was never reading `trackingRequested` at all.
+
+### The defect
+
+The previous fix routed the screen's *stats*, the tests and the evidence through one
+`isDetecting()` predicate — and left the one prop that actually drives the button behind:
+
+```ts
+running: this.pipeline.isRunning(),   // in the Phase 3 view model
+```
+
+`vm.running` sets both the label and `disabled`. So arriving at FEATURES over Phase 2's
+still-running pipeline, the button rendered **`DETECTING`, disabled, before anyone touched
+it**. The user could not start the run at all.
+
+That is strictly worse than the bug it replaced. Before, the button was pressable and did
+nothing. After, it was not pressable. Both are the same underlying error — "the pipeline is
+running" read as "detection is running" — and fixing it in three places out of four fixed
+nothing a person could see.
+
+```ts
+running: this.isDetecting(),
+```
+
+### Why the leg still missed it
+
+Because the leg called `startDetection()` through the debug API. **The engine was reachable;
+the button was not**, and a harness that reaches past the DOM cannot tell those apart.
+
+The leg now presses the control a person presses. Before clicking it asserts the button reads
+`START DETECTION` and is enabled; after detections begin it asserts the button reads
+`DETECTING` and is disabled. Run against the broken code it fails with exactly the user's
+experience:
+
+```
+Error: START DETECTION is not pressable on arrival: label "DETECTING", disabled true.
+The screen is reporting a detection state the engine is not in, and a person could not
+start the run at all
+```
+
+Two device runs found two faces of one error, and the second was introduced by the fix for
+the first. The lesson recorded in §H.5 stands and gains a clause: **one predicate is only one
+predicate if every reader uses it — including the view model.** A consolidation that misses
+the reader the user can see is not a consolidation.
+
 ## What the desktop leg exercises
 
 One browser, one continuous 30-second detection run against Chromium's synthetic camera,
@@ -92,9 +159,9 @@ being `DESKTOP_DEV`, exactly as in Phase 2).
 
 | | Measured |
 | --- | --- |
-| Detections | 565 frames, all at level 1 (480×270) of a 960×540 base |
-| Detection cost | **7.49 ms** mean against the §H budget of 8 ms; see below on why this leg does not gate on it |
-| Level 0 calibration | 960×540 would have cost **83.7 ms** for 114 features |
+| Detections | 568 frames, all at level 1 (480×270) of a 960×540 base |
+| Detection cost | **7.98 ms** mean against the §H budget of 8 ms; see below on why this leg does not gate on it |
+| Level 0 calibration | 960×540 would have cost **83.2 ms** for 90 features |
 | Scene | 565 frames `TEXTURE_POOR` (median gradient ~0.7), 0 rich, 0 ambiguous |
 | Population | median 45 features; `TRACKING_DEGRADED` throughout |
 | Contrast | 67 samples, **97.2 % above chance** (50 % would be a detector unrelated to the image) |
