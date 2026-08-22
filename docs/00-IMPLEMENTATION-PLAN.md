@@ -553,6 +553,51 @@ presses, and assert what that control says either side of the press.** Every lat
 screen has a start control with the same shape; reaching past it tests everything except the
 thing the user touches.
 
+### H.6 A threshold relative to the frame cannot say the frame is empty
+
+Phase 3's corner floor was `maxScore × 0.01` — a fraction of the strongest response *in that
+frame*. On a blank wall the strongest response is sensor noise, so the floor becomes 1 % of
+noise and the detector fills its target with it. Measured on the device: a surface at mean
+gradient 3.14 still produced 800 features, and the points drawn on screen sat on nothing.
+
+The general form, which every later phase has a version of: **a criterion normalised by the
+data it is judging cannot express "there is nothing here."** It always finds a best candidate
+and grades relative to it. Phase 5's inlier ratio, Phase 9's triangulation angle and Phase 11's
+plane-support count are all in this family — each needs a floor in the units of the physical
+quantity, not a percentile of whatever the frame happened to contain.
+
+Where such a floor is needed, prefer a constant the plan has **already fixed for another
+purpose** over a new one. Phase 3's is `TEXTURE_POOR_CEILING`: `gx` is a central difference
+halved, so it is intensity levels per pixel, the same units the texture classifier uses, and
+requiring a corner to be locally at least as strong as the boundary between "blank" and
+"ambiguous" needs no new number and cannot be tuned against the failing test.
+
+And derive the conversion from the config rather than writing the product down: the box
+filter is a running sum applied separably `blurPasses` times at radius r, so a flat field of
+v leaves `(2r+1)^(2·blurPasses)·v`. A unit test pins that arithmetic against the config so
+the constant stays right if the window changes.
+
+### H.7 Some errors are invisible to every check that averages
+
+The overlay was suspected of being rotated or mis-scaled, and clearing it took a new kind of
+test, because **nothing in the repository could have detected that class of error**:
+
+- unit tests on an in-memory image never cross the video → `VideoFrame` → canvas →
+  `getImageData` → pyramid path, which is where an orientation error lives;
+- Phase 2's provenance cross-check compares the **mean** luma of the worker's grayscale
+  against an independent read of the same frame — and a mean is invariant to a rotation, a
+  flip and a transpose, so a scrambled buffer passes it perfectly;
+- FEAT-001's contrast statistic is computed inside the worker on the buffer the detector
+  used, so it scores as well on a buffer unrelated to what the camera is pointing at;
+- and a synthetic camera that is a smooth gradient has no landmark whose position could
+  disagree with anything.
+
+The rule for every later phase: **an invariant that averages cannot verify a geometry.**
+Phase 6's pose and Phase 9's triangulation will need the same treatment — a fixture with
+known, asymmetric landmarks, and an assertion about *where* things are rather than how much
+of them there is. `scripts/run-e2e-phase3-alignment.mjs` is the pattern: three blocks and one
+deliberately empty quadrant, so no rotation or reflection maps the set onto itself.
+
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because
 it waits for real sensor events rather than guessing).

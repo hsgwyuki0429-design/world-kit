@@ -11,7 +11,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 3 | Feature Detection | **IMPLEMENTING** | §11 built. Two device runs, both `TESTING`: the first found START DETECTION was a no-op, the second that the fix left the button *unpressable*. Both fixed and both reproduced by the automated leg; awaiting a third device run. |
+| 3 | Feature Detection | **IMPLEMENTING** | §11 built. Three device runs. The third finally detected — and `FAILED` on FEAT-002, correctly: the corner floor was relative to each frame's own maximum, so a blank wall still yielded 800 features. Fixed with a floor derived from the plan's own texture threshold; awaiting a fourth device run. |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
@@ -327,6 +327,38 @@ reachable, the button was not. It now presses the real control and asserts the l
 `disabled` state either side of the click. Against the broken code it fails with the user's
 own experience — *"START DETECTION is not pressable on arrival: label "DETECTING", disabled
 true"*.
+
+### The third device run detected, and failed on its own merits
+
+`docs/phase3/evidence/phase3-real-device-FAILED-2026-08-22T03-00-47-526Z.json`. 2325
+detections, 556 features drawn, five of six tests PASS — and **FEAT-002 FAILED**, which is
+the first Phase 3 failure that is about feature detection rather than about plumbing.
+
+A blank surface (mean gradient 3.14 over 1127 frames) still produced a median of 429 features
+and reached the full 800 target. §11 requires the population to follow the image; it did not.
+The cause is that the corner-strength floor was `maxScore * 0.01` — a fraction of the frame's
+own strongest response and nothing else — so on a blank wall the floor becomes 1 % of noise
+and the detector fills its target with sensor noise. The same cause explains the contrast
+statistic sagging to 76.3 % (against 97 % on the desktop leg) and the user's report that the
+drawn points did not correspond to the camera image: most of them were on nothing.
+
+An absolute floor now applies alongside it, in intensity levels per pixel — the units `gx`
+is already in — set to `TEXTURE_POOR_CEILING`, the value the phase already uses to call a
+frame blank. No constant was invented and none was tuned against the failing test.
+
+**FEAT-002 itself was not touched.** The test was right, it failed, the code changed.
+
+### The overlay geometry was suspected and cleared
+
+`scripts/run-e2e-phase3-alignment.mjs` was written to settle it, because nothing in the
+repository could: the detector's unit tests never cross the video→worker path, Phase 2's
+provenance check compares a *mean* luma and is invariant to rotation, flip and transpose, and
+the synthetic camera has no landmark to disagree with. The leg feeds Chromium a video with
+bright blocks at known asymmetric positions and asserts the canvas covers the video's box,
+that their aspects agree, and that corners land on the blocks: **12 of 12, 4 per block, none
+in the empty quadrant.** Scoring the overlay against the main thread's own read of the video
+across seven transforms put the identity at 70× the random baseline and every rotation and
+reflection at zero. The overlay was drawing exactly where the detector found things.
 
 ### Code changed after the Phase 2 pass
 

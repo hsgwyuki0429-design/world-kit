@@ -6,6 +6,8 @@
 | `phase3-real-device-TESTING-2026-08-22T01-57-31-596Z.jpg` | `REAL_DEVICE` | The screen from that run |
 | `phase3-real-device-TESTING-2026-08-22T02-35-08-088Z.json` | `REAL_DEVICE` | No — `TESTING`. The record of the **second** defect: the first fix was incomplete |
 | `phase3-real-device-TESTING-2026-08-22T02-35-08-088Z.jpg` | `REAL_DEVICE` | The screen from that run |
+| `phase3-real-device-FAILED-2026-08-22T03-00-47-526Z.json` | `REAL_DEVICE` | No — **`FAILED`**. Detection finally ran; FEAT-002 caught the detector admitting noise |
+| `phase3-real-device-FAILED-2026-08-22T03-00-47-526Z.jpg` | `REAL_DEVICE` | The screen from that run |
 | `phase3-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004) |
 | `phase3-desktop-chromium.png` | `DESKTOP_DEV` | No — the screen at the end of that run |
 
@@ -150,6 +152,96 @@ Two device runs found two faces of one error, and the second was introduced by t
 the first. The lesson recorded in §H.5 stands and gains a clause: **one predicate is only one
 predicate if every reader uses it — including the view model.** A consolidation that misses
 the reader the user can see is not a consolidation.
+
+## The device run of 03:00 — detection ran, and the phase FAILED correctly
+
+The first run in which detection actually worked: 2325 detections, 556 features on screen,
+FEAT-001, 003, 004, 005 and 006 all PASS. **FEAT-002 FAILED**, and it was right to.
+
+| | Measured on the device |
+| --- | --- |
+| Blank surface | 1127 frames, mean gradient **3.14**, median **429** features, max **800** |
+| Textured surface | 39 frames, mean gradient 10.65, median 800 features |
+| Contrast above chance | **76.3 %** — against 97 % on the desktop leg, and a 75 % threshold |
+| States | `FEATURES_OK` 2290, `LOW_FEATURE_COUNT` 111, `TRACKING_DEGRADED` 5 |
+
+FEAT-002 requires the population to fall on a blank wall. It did not: 429 against 800, where
+the test asks for at most 400, and **blank frames still reached the full 800 target**.
+
+The user's report was that the points on screen did not correspond to the camera image at
+all. Both observations have one cause.
+
+### The cause
+
+```ts
+const threshold = maxScore * this.config.qualityLevel;   // qualityLevel = 0.01
+```
+
+The corner-strength floor was **a fraction of the frame's own strongest response, and
+nothing else**. On a blank wall the strongest response is noise, so the floor becomes 1 % of
+noise, every noise local-maximum clears it, and the detector fills to its 800 target with
+whatever the sensor happened to produce. That is why the count did not fall, why the contrast
+statistic sagged to 76 % — most points were on nothing, diluting the ones that were on
+corners — and why the overlay looked unrelated to the scene: **it was drawing hundreds of
+points that were not on anything a person could see.**
+
+A relative floor cannot express "this frame contains no corners", because it is defined
+relative to the best corner in the frame. It always finds one.
+
+### The fix, and why this constant
+
+```ts
+const threshold = Math.max(maxScore * this.config.qualityLevel, this.absoluteScoreFloor());
+```
+
+`gx` is a central difference halved, so it is exactly **intensity levels per pixel** — the
+same units as `TEXTURE_POOR_CEILING`, the value this phase already uses to call a whole frame
+blank. A corner is now required to be locally at least as strong as the boundary the phase
+already draws between "blank" and "ambiguous". No new number was invented, and none was
+chosen by trying values until FEAT-002 passed: it reuses a constant fixed in the test plan
+before any of this was measured.
+
+The floor is derived from the config rather than written down, because the box filter is a
+running *sum*: applied separably `blurPasses` times with radius r, a flat field of v leaves
+`(2r+1)^(2·blurPasses)·v` behind. At r=2 and 2 passes that is 625, so the floor is
+625 × 4² = 10 000. A unit test pins that arithmetic against the config rather than trusting
+the comment.
+
+**FEAT-002 was not touched.** The test was correct, it failed, and the code changed. That is
+the arrangement working.
+
+## The overlay geometry was investigated and is not the defect
+
+Worth recording, because the obvious reading of "the points do not match the image" is that
+the overlay is rotated or mis-scaled, and it is not.
+
+Nothing in the repository could previously have told the difference, and that is arithmetic
+rather than an oversight:
+
+- the detector's unit tests run on a Float32 image built in memory, never crossing the
+  video → `VideoFrame` → canvas → `getImageData` → pyramid path where an orientation error
+  would live;
+- Phase 2's provenance cross-check compares the **mean** luma of the worker's grayscale
+  against an independent read of the same frame — and a mean is invariant to a rotation, a
+  flip and a transpose, so a scrambled buffer passes it perfectly;
+- FEAT-001's contrast statistic is computed inside the worker on the same buffer the detector
+  used, so it scores just as well on a buffer unrelated to what the camera is pointing at;
+- and the synthetic camera the other legs use is a smooth rolling gradient with no landmark
+  whose position could disagree with anything.
+
+So `scripts/run-e2e-phase3-alignment.mjs` now feeds Chromium a video whose bright blocks sit
+at known, deliberately asymmetric positions — three blocks and one empty quadrant, so that no
+rotation or reflection maps the set onto itself — and asserts three things: that the overlay
+canvas covers exactly the video's box, that their aspects agree, and that the corners land on
+the blocks.
+
+It passes **12 of 12 points on the three blocks, 4 per block, 0 in the empty quadrant**. A
+direct scoring of the overlay positions against the main thread's own read of the video, over
+seven candidate transforms, put the identity at 70× the random baseline and every rotation,
+flip and transpose at zero.
+
+The overlay draws where the detector found things. The problem was what the detector was
+finding.
 
 ## What the desktop leg exercises
 

@@ -13,7 +13,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FeatureDetector, localVariance, rankAboveChance } from '../../src/tracking/FeatureDetector';
+import {
+  DEFAULT_DETECTOR_CONFIG,
+  FeatureDetector,
+  localVariance,
+  rankAboveChance,
+} from '../../src/tracking/FeatureDetector';
 import { Rng } from '../../src/core/Rng';
 import {
   GRID_CELLS,
@@ -25,6 +30,7 @@ import {
   DEGRADED_BELOW,
   FEATURE_MIN,
   REFILL_BELOW,
+  TEXTURE_POOR_CEILING,
 } from '../../src/tracking/featureTypes';
 
 function checkerboard(width: number, height: number, square: number): Uint8Array {
@@ -40,6 +46,23 @@ function checkerboard(width: number, height: number, square: number): Uint8Array
 
 function flat(width: number, height: number, value = 128): Uint8Array {
   return new Uint8Array(width * height).fill(value);
+}
+
+/**
+ * A blank surface as a real camera sees one: flat, plus reproducible sensor noise.
+ *
+ * This is the case the relative quality floor could not see. `flat()` is noiseless, so its
+ * strongest response is 0 and nothing is admitted for a reason that has nothing to do with
+ * the floor. A real blank wall has a few levels of noise, and 1% of that noise's own maximum
+ * admits the rest of it.
+ */
+function noisyFlat(width: number, height: number, amplitude: number): Uint8Array {
+  const out = new Uint8Array(width * height);
+  const rng = new Rng(0x51de_51de);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = Math.max(0, Math.min(255, Math.round(128 + (rng.next() * 2 - 1) * amplitude)));
+  }
+  return out;
 }
 
 /** A single vertical step: strong gradient in x, none in y. An edge, not a corner. */
@@ -108,6 +131,54 @@ describe('FeatureDetector', () => {
     expect(r.maxCornerStrength).toBe(0);
     expect(r.meanGradient).toBe(0);
     expect(r.texture).toBe(SceneTexture.POOR);
+  });
+
+  it('finds nothing in sensor noise on a blank wall — the absolute floor', () => {
+    // The device measured a blank surface at mean gradient 3.14 and still returned up to 800
+    // features, because the floor was a fraction of that frame's own noise maximum. §11 asks
+    // the population to follow the image; this is the case that proves it does.
+    const d = new FeatureDetector();
+    const noise = noisyFlat(160, 120, 3);
+    const r = d.detect(noise, 160, 120, opts);
+    expect(r.meanGradient).toBeLessThan(TEXTURE_POOR_CEILING);
+    expect(r.texture).toBe(SceneTexture.POOR);
+    expect(r.features.length).toBe(0);
+  });
+
+  it('still finds the corners when real structure sits in the same noise', () => {
+    // The floor must reject noise without rejecting a corner that happens to be noisy, or it
+    // would trade one failure for the other.
+    const d = new FeatureDetector();
+    const img = checkerboard(160, 120, 10);
+    const noise = noisyFlat(160, 120, 3);
+    for (let i = 0; i < img.length; i++) {
+      img[i] = Math.max(0, Math.min(255, img[i]! + (noise[i]! - 128)));
+    }
+    const r = d.detect(img, 160, 120, opts);
+    expect(r.features.length).toBeGreaterThan(20);
+    expect(r.texture).toBe(SceneTexture.RICH);
+  });
+
+  it('the population falls with the texture, which is what FEAT-002 asks', () => {
+    // The comparison FEAT-002 makes, at unit scale: the same detector on a textured frame
+    // and a blank one must not return comparable counts.
+    const d = new FeatureDetector();
+    const rich = d.detect(checkerboard(160, 120, 10), 160, 120, opts).features.length;
+    const poor = d.detect(noisyFlat(160, 120, 3), 160, 120, opts).features.length;
+    expect(rich).toBeGreaterThan(20);
+    expect(poor).toBeLessThanOrEqual(rich * 0.5);
+  });
+
+  it('the absolute floor is derived from the window, not written down', () => {
+    // Pins the arithmetic the floor's comment argues: the box filter is a running sum
+    // applied separably `blurPasses` times, so a flat field of v leaves (2r+1)^(2·passes)·v.
+    // A corner at exactly minGradient in both directions must sit at that product.
+    const cfg = { ...DEFAULT_DETECTOR_CONFIG };
+    const gain = (2 * cfg.windowRadius + 1) ** (2 * cfg.blurPasses);
+    expect(gain).toBe(625);
+    expect(gain * cfg.minGradient ** 2).toBe(10_000);
+    // And it is the plan's own blank/ambiguous boundary, not a number picked for this test.
+    expect(cfg.minGradient).toBe(TEXTURE_POOR_CEILING);
   });
 
   it('rejects a straight edge — one strong eigenvalue is not a corner', () => {
