@@ -250,9 +250,10 @@ convenient assertion the whole project is built to refuse. The screenshot corrob
 bundle's *shape* — pipeline running, worker output visible and tracking the preview, 6 tests
 PASS, `PASSED` verdict, 0 lost, 48.5/30 s unstressed, empty error log — not its every digit.
 
-**The screenshot image itself is not committed.** It was supplied in the working session
-rather than as a file in the repository, so §60's screenshot evidence is satisfied by review
-here as it was for Phases 0 and 1.
+**The screenshot is committed**, as
+`docs/phase2/evidence/phase2-real-device-PASSED-2026-08-21T15-00-01-120Z.jpg`, beside the
+bundle it belongs to — so §60's screenshot evidence is a file in the repository for this
+phase, where for Phases 0 and 1 it was supplied in the working session and reviewed there.
 
 ## Phase 3 — IMPLEMENTING
 

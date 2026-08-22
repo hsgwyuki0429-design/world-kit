@@ -3,6 +3,7 @@
 | File | Leg | Passes the phase? |
 | --- | --- | --- |
 | `phase2-real-device-PASSED-2026-08-21T15-00-01-120Z.json` | `REAL_DEVICE` | **Yes — this is the Phase 2 pass** |
+| `phase2-real-device-PASSED-2026-08-21T15-00-01-120Z.jpg` | `REAL_DEVICE` | The device screenshot from the same session (§60) |
 | `phase2-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004) |
 
 Regenerate the desktop bundle with `npm run test:e2e:phase2`. Produce a device bundle by
@@ -91,9 +92,17 @@ correctly held its tier because 21.85 against a reachable 22.46 is inside its fl
 
 Phase 1's screenshot matched its bundle exactly and that was recorded as a strength.
 This one does not, and recording that is the same discipline: the screenshot corroborates
-the run's shape — pipeline live, worker output tracking the preview, six tests PASS, 0 lost,
-48.5/30 s unstressed, empty error log — not its every digit. The image itself is not
-committed; it was supplied in the working session, as for Phases 0 and 1.
+the run's shape — pipeline live, worker output tracking the preview, six tests PASS and a
+`PASSED` verdict, 0 lost and a 0.00 % loss rate, 48.5/30 s unstressed — not its every digit.
+
+Two corrections to what that list used to claim, now that the image is committed and the
+claim is checkable. It said "empty error log": the screen has no error-log panel, so the
+screenshot cannot corroborate that — only the bundle's own `errorLog: []` does. And the
+image is now committed, as `…-120Z.jpg` beside the bundle it belongs to; for Phases 0 and 1
+the screenshots were supplied in the working session and remain uncommitted.
+
+One detail the image adds that the bundle does not: **admitted 2435, completed 2434** — one
+frame in flight at the instant of capture, which is what a live pipeline should look like.
 
 ## What the desktop leg exercises, for comparison
 
