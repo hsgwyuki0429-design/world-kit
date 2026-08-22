@@ -733,6 +733,30 @@ export class WorkerFramePipeline {
     }
   }
 
+  /**
+   * Abandon the current route for a reason other than an exception.
+   *
+   * A route can succeed on every call and still be wrong: on iOS a `VideoFrame` taken from a
+   * portrait video element can carry the sensor's own landscape orientation, so the buffer
+   * the worker measures is a rotation of the picture on screen. Every frame "succeeds"; the
+   * positions are all wrong. Correcting that in the drawing would hide it from Phase 4,
+   * which consumes the same positions — so the route that produced the buffer is what has to
+   * change. `createImageBitmap` on the element and the main-thread readback are both defined
+   * on what the element displays, so the next rung is unambiguous where this one was not.
+   */
+  rejectRoute(reason: string): boolean {
+    const current = ROUTE_ORDER[this.routeIndex];
+    if (current === undefined) return false;
+    const state = this.routeStates.get(current);
+    if (state) state.note = `abandoned: ${reason}`;
+    logger.warn(PHASE, 'FramePipeline', `acquisition route ${current} rejected on evidence`, {
+      reason,
+      note: 'the route worked; what it produced did not match the element it came from',
+    });
+    this.advanceRoute(current, reason);
+    return true;
+  }
+
   private advanceRoute(from: AcquireRoute, reason: string): void {
     this.routeIndex++;
     this.routeLocked = false;

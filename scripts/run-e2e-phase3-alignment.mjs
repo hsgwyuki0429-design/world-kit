@@ -157,6 +157,7 @@ try {
   await page.waitForTimeout(3_000);
 
   report = await page.evaluate(() => ({
+    alignment: window.__SPATIAL_DEBUG__.getOverlayAlignment(),
     overlay: window.__SPATIAL_DEBUG__.getOverlayPositions(),
     geometry: window.__SPATIAL_DEBUG__.getPreviewGeometry(),
     stats: window.__SPATIAL_DEBUG__.getTrackingStats(),
@@ -290,6 +291,28 @@ if (n === 0) {
     );
   }
   if (exitCode === 0) console.log('[align] PASS corners land on the blocks the video contains');
+}
+
+// The probe the device itself runs, checked here so it cannot rot: it is the only thing
+// that will report the portrait fault on a phone, where this fixture cannot reach.
+const a = report.alignment;
+if (!a) {
+  fail('the in-app alignment probe produced no reading');
+} else {
+  const ranked = Object.entries(a.scores)
+    .sort((x, y) => y[1] - x[1])
+    .map(([k, v]) => `${k} ${Math.round(v)}`)
+    .join(', ');
+  console.log(`[align] in-app probe: best ${a.best}, ${ranked}, random ${Math.round(a.randomBaseline)}`);
+  if (a.best !== 'identity') {
+    fail(`the in-app probe says the buffer matches the video under ${a.best}, not identity`);
+  } else if (a.identityOverRandom < 2) {
+    fail(`the in-app probe puts identity only ${a.identityOverRandom.toFixed(2)}x above chance`);
+  } else {
+    console.log(
+      `[align] PASS in-app probe agrees: identity at ${a.identityOverRandom.toFixed(1)}x chance`,
+    );
+  }
 }
 
 console.log(`[align] exit ${exitCode}`);

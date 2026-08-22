@@ -11,8 +11,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 3 | Feature Detection | **IMPLEMENTING** | §11 built. Three device runs. The third finally detected — and `FAILED` on FEAT-002, correctly: the corner floor was relative to each frame's own maximum, so a blank wall still yielded 800 features. Fixed with a floor derived from the plan's own texture threshold; awaiting a fourth device run. |
-| 4 | Optical Flow Tracking | BLOCKED | |
+| 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
+| 4 | Optical Flow Tracking | NOT_STARTED | Phase Lock is open. §12 is next. |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
 | 7 | IMU Support / Fusion | BLOCKED | |
@@ -327,6 +327,67 @@ reachable, the button was not. It now presses the real control and asserts the l
 `disabled` state either side of the click. Against the broken code it fails with the user's
 own experience — *"START DETECTION is not pressable on arrival: label "DETECTING", disabled
 true"*.
+
+## Phase 3 — PASSED
+
+**Evidence:** `docs/phase3/evidence/phase3-real-device-PASSED-2026-08-22T06-19-56-644Z.json`
+plus the device screenshot from the same session.
+
+| | |
+| --- | --- |
+| Device | iPhone, iOS 18.7, Safari 26.6, `https://hsgwyuki0429-design.github.io` |
+| Leg | `REAL_DEVICE`, `devEntry: false` — the lock opened because Phases 0–2 passed in the same session |
+| Required tests | 4 / 4 PASS, 0 PENDING, 0 FAIL |
+| Advisory tests | 2 / 2 PASS |
+| Detections | 2494, detection at level 1 (360×640) for **3.793 ms** against an 8 ms budget |
+| Contrast | **91.1 %** above chance over 288 samples, against a 75 % threshold and a 50 % chance value |
+| Texture-rich | 79 frames at mean gradient 8.398, median **353** features |
+| Texture-poor | 1113 frames at mean gradient 2.531, median **64** features |
+| Grid | 185 binding comparisons, 7.6 % vs 10.6 % largest-cell share |
+| Refills | 200, quota breaches 0, state mismatches 0 |
+| Level 0 calibration | 720×1280 would have cost 27 ms for 221 features |
+
+The number that carries the phase is the pair **353 → 64**: the population fell to 18 % of its
+textured value when the camera was pointed at a blank wall, having failed exactly this
+comparison one run earlier. That is the behaviour §11 asks for, and it is what the absolute
+corner floor bought.
+
+**91.1 % above chance** is the anti-fake claim: a detector emitting coordinates unrelated to
+the image scores 0.5 by construction, whatever the scene.
+
+### It took four device runs, and each failure was a real defect
+
+| Run | Verdict | What it found |
+| --- | --- | --- |
+| 01:57 | `TESTING` | START DETECTION was a no-op — the guard read Phase 2's running pipeline as "already detecting" |
+| 02:35 | `TESTING` | the fix left the button *unpressable* — three of four readers consolidated, the view model missed |
+| 03:00 | `FAILED` | FEAT-002: the corner floor was relative to each frame, so a blank wall still yielded 800 features |
+| 06:19 | **`PASSED`** | — |
+
+### Known defect, carried into Phase 4: the overlay rotates in portrait
+
+The user reports that on the device the drawn corners line up in landscape and are rotated in
+portrait. **Phase 3's own tests cannot see this**, and neither can any other check in the
+repository, because every one of them is invariant to the transform: the detector's unit
+tests never cross the video → `VideoFrame` → canvas → pyramid path, Phase 2's provenance
+cross-check compares *mean* luma, and FEAT-001's contrast statistic is computed inside the
+worker on the same buffer the detector used.
+
+So the app now measures it. `src/debug/OverlayAlignmentProbe.ts` has the main thread take its
+own reading of the video element and score the detected positions against it under identity,
+each rotation, each flip and the transpose; the winner is shown on screen and recorded in
+every Phase 3 bundle. On the desktop leg identity wins at 17–19× chance with every other
+transform far below.
+
+**The drawing is not corrected when it disagrees.** Phase 4 consumes the same positions, so a
+corrected overlay over rotated data would be a working-looking screen on wrong data. The
+acquisition route is abandoned instead — `VideoFrame` carries the sensor's orientation, while
+`createImageBitmap` on the element and the main-thread readback are both defined on what the
+element displays.
+
+This could not be reproduced on the desktop leg: Chromium's fake capture rescales a portrait
+file to square, so the orientation relationship iOS creates does not arise. The next device
+run reports the probe's verdict directly rather than requiring the eye.
 
 ### The third device run detected, and failed on its own merits
 
