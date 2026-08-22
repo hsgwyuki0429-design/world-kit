@@ -1197,6 +1197,33 @@ class Phase0App {
       startDetection: () => this.onStartPhase3(),
       stopDetection: () => this.onStopPhase3('debug API'),
       getTrackingStats: () => this.features.stats(this.isDetecting()),
+      /**
+       * What the overlay would draw, in the coordinate space it draws into.
+       *
+       * Exposed for the alignment leg, which is the only thing that can establish that a
+       * corner is drawn where the image's corner actually is: every check before it —
+       * the detector's unit tests, Phase 2's mean-luma cross-check, the contrast statistic —
+       * is invariant to a rotation, a flip or a transpose of the buffer.
+       */
+      getOverlayPositions: () => ({
+        width: this.lastOverlayWidth,
+        height: this.lastOverlayHeight,
+        points: this.lastOverlay ? Array.from(this.lastOverlay) : [],
+      }),
+      getPreviewGeometry: () => {
+        const v = document.getElementById('camera-preview');
+        const c = document.getElementById('feature-overlay');
+        const vr = v?.getBoundingClientRect() ?? null;
+        const cr = c?.getBoundingClientRect() ?? null;
+        return {
+          video: vr ? { x: vr.x, y: vr.y, width: vr.width, height: vr.height } : null,
+          videoIntrinsic:
+            v instanceof HTMLVideoElement ? { width: v.videoWidth, height: v.videoHeight } : null,
+          canvas: cr ? { x: cr.x, y: cr.y, width: cr.width, height: cr.height } : null,
+          canvasInternal:
+            c instanceof HTMLCanvasElement ? { width: c.width, height: c.height } : null,
+        };
+      },
       getPhase3Results: () => this.phase3Results,
       getPhase3Evidence: () => this.phase3Bundle,
       getPhase3EvidenceJson: () => (this.phase3Bundle ? serialiseEvidence(this.phase3Bundle) : null),

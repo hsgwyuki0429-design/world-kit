@@ -9,10 +9,11 @@ constraint is that no number is displayed that was not measured, and no phase is
 passed on anything but real-device evidence.
 
 **Current state: Phases 0, 1 and 2 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 3 (Feature Detection) is `IMPLEMENTING` — two
-device runs, both `TESTING`, found two faces of one defect that stopped detection from ever
-starting on a phone (the second introduced by the fix for the first). Both are fixed and both
-are reproduced by the automated leg; a third device run is what the phase now waits on. See
+with committed, machine-checked evidence. Phase 3 (Feature Detection) is `IMPLEMENTING`.
+Three device runs: two found plumbing defects that stopped detection from starting at all,
+and the third detected and then `FAILED` on FEAT-002 — a blank wall still produced 800
+features, because the corner floor was relative to each frame's own maximum. All three are
+fixed; a fourth device run is what the phase waits on. See
 [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start

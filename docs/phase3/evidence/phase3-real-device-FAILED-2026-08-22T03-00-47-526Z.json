@@ -1,0 +1,4435 @@
+{
+  "schemaVersion": 1,
+  "leg": "REAL_DEVICE",
+  "phase": 3,
+  "phaseName": "Feature Detection",
+  "createdAt": "2026-08-22T03:00:47.526Z",
+  "appVersion": "0.1.0",
+  "origin": "https://hsgwyuki0429-design.github.io",
+  "secureContext": true,
+  "device": {
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    "platformHint": "iPhone",
+    "osGuess": "iOS/iPadOS 18.7",
+    "browserGuess": "Safari / WebKit",
+    "isLikelyIOS": true,
+    "maxTouchPoints": 5,
+    "screenWidth": 393,
+    "screenHeight": 852,
+    "viewportWidth": 393,
+    "viewportHeight": 695,
+    "devicePixelRatio": 3,
+    "hardwareConcurrency": 4,
+    "languages": [
+      "ja"
+    ],
+    "timezone": "Asia/Tokyo"
+  },
+  "capabilityMatrix": {
+    "records": [
+      {
+        "id": "platform.secureContext",
+        "group": "platform",
+        "label": "Secure context (HTTPS)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "secure context over https://hsgwyuki0429-design.github.io",
+        "data": {
+          "isSecureContext": true,
+          "protocol": "https:",
+          "host": "hsgwyuki0429-design.github.io",
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430160
+      },
+      {
+        "id": "platform.iosSafariGuess",
+        "group": "platform",
+        "label": "iOS/Safari (UA guess)",
+        "state": "AVAILABLE",
+        "method": "INFERENCE",
+        "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
+        "data": {
+          "osGuess": "iOS/iPadOS 18.7",
+          "browserGuess": "Safari / WebKit",
+          "maxTouchPoints": 5
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430160
+      },
+      {
+        "id": "camera.getUserMedia",
+        "group": "camera",
+        "label": "getUserMedia",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getUserMedia is present in a secure context. Not invoked in Phase 0 — opening the camera is Phase 1 (CAM-001), and probing it here would trigger a permission prompt",
+        "data": {
+          "hasMediaDevices": true,
+          "hasGetUserMedia": true,
+          "secureContext": true
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430160
+      },
+      {
+        "id": "camera.enumerateDevices",
+        "group": "camera",
+        "label": "Video input devices",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "1 videoinput device(s) enumerated (labels hidden until camera permission is granted — expected)",
+        "data": {
+          "videoInputCount": 1,
+          "audioInputCount": 1,
+          "totalDevices": 2,
+          "labelsHidden": true,
+          "deviceIdsHidden": true
+        },
+        "durationMs": 4,
+        "timestamp": 1787367430164
+      },
+      {
+        "id": "camera.supportedConstraints",
+        "group": "camera",
+        "label": "Media constraints",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
+        "data": {
+          "supportedCount": 17,
+          "facingMode": true,
+          "width": true,
+          "height": true,
+          "frameRate": true,
+          "aspectRatio": true,
+          "deviceId": true,
+          "missing": []
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430164
+      },
+      {
+        "id": "camera.trackControl",
+        "group": "camera",
+        "label": "Track capability control",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getCapabilities / getSettings / applyConstraints all present — Phase 2 can negotiate resolution and frame rate at runtime",
+        "data": {
+          "getCapabilities": true,
+          "getSettings": true,
+          "applyConstraints": true
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430164
+      },
+      {
+        "id": "compute.webassembly",
+        "group": "compute",
+        "label": "WebAssembly (executed)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "compiled and executed a real 41-byte module: add(2,3) === 5",
+        "data": {
+          "moduleBytes": 41,
+          "addResult": 5,
+          "hasInstantiateStreaming": true,
+          "hasMemory": true
+        },
+        "durationMs": 1,
+        "timestamp": 1787367430165
+      },
+      {
+        "id": "compute.worker",
+        "group": "compute",
+        "label": "Web Worker round-trip",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "blob worker round-trip succeeded in 2 ms",
+        "data": {
+          "roundTripMs": 2,
+          "tokenMatched": true
+        },
+        "durationMs": 2,
+        "timestamp": 1787367430167
+      },
+      {
+        "id": "compute.offscreenCanvas",
+        "group": "compute",
+        "label": "OffscreenCanvas",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "drew and read back an exact pixel [10,20,30,255] from an OffscreenCanvas",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 2,
+        "timestamp": 1787367430169
+      },
+      {
+        "id": "compute.transferControlToOffscreen",
+        "group": "compute",
+        "label": "Canvas -> Offscreen transfer",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferControlToOffscreen returned a live OffscreenCanvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430169
+      },
+      {
+        "id": "compute.offscreenInWorker",
+        "group": "compute",
+        "label": "OffscreenCanvas inside worker",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferred an OffscreenCanvas into a worker, drew there and read back the exact pixel",
+        "data": {
+          "ok": true,
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 3,
+        "timestamp": 1787367430172
+      },
+      {
+        "id": "compute.sharedArrayBuffer",
+        "group": "compute",
+        "label": "SharedArrayBuffer",
+        "state": "UNAVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "SharedArrayBuffer is absent — requires COOP+COEP headers, which static hosting such as GitHub Pages cannot set. WASM threads must not be assumed.",
+        "data": {
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430172
+      },
+      {
+        "id": "graphics.webgl2",
+        "group": "graphics",
+        "label": "WebGL2",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebGL2 context created on Apple GPU",
+        "data": {
+          "renderer": "Apple GPU",
+          "vendor": "Apple Inc.",
+          "rendererMasked": false,
+          "maxTextureSize": 16384,
+          "maxViewportDims": [
+            16384,
+            16384
+          ],
+          "colorBufferFloat": true,
+          "textureFloatLinear": true,
+          "extensionCount": 36
+        },
+        "durationMs": 1,
+        "timestamp": 1787367430173
+      },
+      {
+        "id": "graphics.webgpu",
+        "group": "graphics",
+        "label": "WebGPU",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "requestAdapter() and requestDevice() both succeeded — a real GPU device was created",
+        "data": {
+          "vendor": "apple",
+          "architecture": "apple",
+          "device": "apple",
+          "description": "apple",
+          "features": [
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "timestamp-query",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "texture-compression-etc2",
+            "texture-compression-astc",
+            "texture-compression-astc-sliced-3d",
+            "indirect-first-instance",
+            "shader-f16",
+            "rg11b10ufloat-renderable",
+            "bgra8unorm-storage",
+            "float32-filterable",
+            "float32-blendable",
+            "float16-renderable",
+            "float32-renderable",
+            "core-features-and-limits",
+            "texture-formats-tier1"
+          ],
+          "maxTextureDimension2D": 8192,
+          "maxComputeWorkgroupSizeX": 256,
+          "maxComputeInvocationsPerWorkgroup": 256,
+          "maxStorageBufferBindingSize": 134217728,
+          "maxBufferSize": 268435456
+        },
+        "durationMs": 1,
+        "timestamp": 1787367430174
+      },
+      {
+        "id": "graphics.createImageBitmap",
+        "group": "graphics",
+        "label": "createImageBitmap",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "created a real 4x4 ImageBitmap from a canvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430174
+      },
+      {
+        "id": "graphics.canvas2dReadback",
+        "group": "graphics",
+        "label": "Canvas 2D readback",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "main-thread canvas readback is byte-exact [10,20,30,255]",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 1,
+        "timestamp": 1787367430175
+      },
+      {
+        "id": "media.imageCapture",
+        "group": "media",
+        "label": "ImageCapture",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "ImageCapture is present",
+        "data": {},
+        "durationMs": 0,
+        "timestamp": 1787367430175
+      },
+      {
+        "id": "media.webcodecs",
+        "group": "media",
+        "label": "WebCodecs VideoFrame",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "VideoFrame is present — Phase 2 can pull frames without a canvas round-trip",
+        "data": {
+          "VideoFrame": true,
+          "VideoDecoder": true,
+          "VideoEncoder": true
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430175
+      },
+      {
+        "id": "media.videoFrameCallback",
+        "group": "media",
+        "label": "requestVideoFrameCallback",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "requestVideoFrameCallback is present — frame scheduling can be driven by real decoded frames rather than by rAF guessing",
+        "data": {
+          "playsInline": true
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430175
+      },
+      {
+        "id": "storage.estimate",
+        "group": "storage",
+        "label": "Storage quota",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "storage quota reported by the platform: 38.4 GB (used 1.1 MB)",
+        "data": {
+          "quotaBytes": 41231686042,
+          "usageBytes": 1187253
+        },
+        "durationMs": 2,
+        "timestamp": 1787367430177
+      },
+      {
+        "id": "storage.localStorage",
+        "group": "storage",
+        "label": "localStorage",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "wrote, read and removed a real localStorage key",
+        "data": {},
+        "durationMs": 0,
+        "timestamp": 1787367430177
+      },
+      {
+        "id": "storage.indexedDB",
+        "group": "storage",
+        "label": "IndexedDB",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
+        "data": {},
+        "durationMs": 8,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "storage.performanceMemory",
+        "group": "storage",
+        "label": "JS heap metrics",
+        "state": "UNAVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "performance.memory is absent (expected on WebKit) — the debug HUD must show MEMORY: UNAVAILABLE rather than a fabricated figure",
+        "data": {
+          "deviceMemory": null
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "spatial.webxr",
+        "group": "spatial",
+        "label": "WebXR",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "navigator.xr is absent — WebXR is the only standards-track route to device depth or AR pose from a browser, so neither is reachable here",
+        "data": {
+          "hasNavigatorXr": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "spatial.nativeBridge",
+        "group": "spatial",
+        "label": "Native app bridge",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no window.webkit.messageHandlers bridge — the page is not hosted by a native app, so no native iOS framework can be reached from JavaScript",
+        "data": {
+          "handlerNames": []
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "spatial.cameraDepth",
+        "group": "spatial",
+        "label": "Camera depth",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no depth-related media constraint and no WebXR depth-sensing route (webxr=false) — DEPTH: UNAVAILABLE. Any depth used later must be labelled MONOCULAR ESTIMATE and never presented as native depth (§44)",
+        "data": {
+          "depthConstraintKeys": [],
+          "webxrAvailable": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "spatial.arkit",
+        "group": "spatial",
+        "label": "Native ARKit",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "ARKit has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. ARKit: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "spatial.roomplan",
+        "group": "spatial",
+        "label": "RoomPlan",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "RoomPlan has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. RoomPlan: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "spatial.metricScale",
+        "group": "spatial",
+        "label": "Metric scale",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "A monocular camera provides no absolute scale (§18, §90). No depth sensor, WebXR session or native bridge is reachable to supply one, so the world will be built in LOCAL UNITS and SCALE stays UNKNOWN until something actually measures it.",
+        "data": {
+          "scaleStatus": "UNKNOWN",
+          "units": "LOCAL_UNITS"
+        },
+        "durationMs": 0,
+        "timestamp": 1787367430185
+      },
+      {
+        "id": "motion.deviceMotion",
+        "group": "motion",
+        "label": "DeviceMotion",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "received 119 events carrying finite sensor values in 2000 ms (60.05 Hz measured)",
+        "data": {
+          "permission": "granted",
+          "permissionGated": true,
+          "listenMs": 2000,
+          "eventCount": 119,
+          "eventsWithFiniteData": 119,
+          "measuredHz": 60.05,
+          "fields": {
+            "acceleration": true,
+            "accelerationIncludingGravity": true,
+            "rotationRate": true,
+            "interval": true
+          },
+          "firstSample": {
+            "acceleration": {
+              "x": -0.16947085160193964,
+              "y": 0.07251344754695892,
+              "z": -0.3457546346217394
+            },
+            "accelerationIncludingGravity": {
+              "x": -0.47046064448701214,
+              "y": -8.74616888667643,
+              "z": -4.624849127142131
+            },
+            "rotationRate": {
+              "alpha": 13.024540662263382,
+              "beta": -8.984648546514567,
+              "gamma": -5.599645213670328
+            },
+            "interval": 0.01666666753590107
+          }
+        },
+        "durationMs": 2003,
+        "timestamp": 1787367435101
+      },
+      {
+        "id": "motion.deviceOrientation",
+        "group": "motion",
+        "label": "DeviceOrientation",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "received 119 orientation events with finite values in 2000 ms (60.05 Hz measured); absolute=false, webkitCompassHeading=true",
+        "data": {
+          "permission": "granted",
+          "permissionGated": true,
+          "listenMs": 2000,
+          "eventCount": 119,
+          "eventsWithFiniteData": 119,
+          "measuredHz": 60.05,
+          "fields": {
+            "alpha": true,
+            "beta": true,
+            "gamma": true
+          },
+          "absolute": false,
+          "webkitCompassHeading": true,
+          "compassAccuracy": 25.760921478271484,
+          "firstSample": {
+            "alpha": 2.389966536735563,
+            "beta": 64.06035403171259,
+            "gamma": -4.02353527734642,
+            "absolute": null,
+            "webkitCompassHeading": 281.1729736328125
+          }
+        },
+        "durationMs": 2002,
+        "timestamp": 1787367435102
+      }
+    ],
+    "startedAt": 1787367430160,
+    "completedAt": 1787367435102,
+    "totalDurationMs": 4030
+  },
+  "testResults": [
+    {
+      "spec": {
+        "id": "FEAT-001",
+        "title": "Texture-rich wall",
+        "required": true,
+        "input": "the camera on a surface with structure; frames the worker classified TEXTURE_RICH",
+        "expected": "features are found in useful numbers, and they sit on real image structure",
+        "passCriteria": ">= 15 texture-rich frames; median count >= 200 and no frame above 1200; over >= 10 sampled frames the median probability that a detected position out-textures a seeded-random one in the same frame is >= 0.75, against a chance value of 0.5",
+        "failureCondition": "counts inside the band but a contrast statistic at chance — a detector producing coordinates rather than finding corners"
+      },
+      "verdict": "PASS",
+      "observed": "39 textured frames, median 800 features (787–800), gradient 10.654; contrast 76.3% above chance over 315 samples at level 1 (360x640)",
+      "reason": "features were found in useful numbers, and they sit where the image has structure — a rank statistic against seeded-random positions in the same frame, which a set of fabricated coordinates could not clear",
+      "metrics": {
+        "richFrames": 39,
+        "richMedianCount": 800,
+        "richMinCount": 787,
+        "richMaxCount": 800,
+        "richMedianGradient": 10.654,
+        "contrastSamples": 315,
+        "medianAboveChance": 0.7632,
+        "maxCountSeen": 800,
+        "overMaxFrames": 0,
+        "detectLevel": 1,
+        "detectSize": "360x640"
+      },
+      "timestamp": 1787367647523
+    },
+    {
+      "spec": {
+        "id": "FEAT-002",
+        "title": "Texture-poor wall",
+        "required": true,
+        "input": "the camera on a blank surface; frames the worker classified TEXTURE_POOR",
+        "expected": "the feature count falls, the engine says so, and nothing is invented",
+        "passCriteria": ">= 15 texture-poor frames; median count there at most 50% of the textured median and no frame reaching 800; LOW FEATURE COUNT reported where the count fell below 200; the reported state never disagrees with the reported count",
+        "failureCondition": "the count holding near target on a blank wall — a detector whose output does not depend on the image"
+      },
+      "verdict": "FAIL",
+      "observed": "blank: 1127 frames, median 429 features at gradient 3.141; textured: median 800 at 10.654; states {\"FEATURES_OK\":2290,\"LOW_FEATURE_COUNT\":111,\"TRACKING_DEGRADED\":5}",
+      "reason": "median count on a blank surface is 429, against 800 on a textured one — it did not fall below the 400 this test requires, so the output is not tracking the image; a blank frame still reached 800 features",
+      "metrics": {
+        "poorFrames": 1127,
+        "poorMedianCount": 429,
+        "poorMaxCount": 800,
+        "poorMedianGradient": 3.141,
+        "richMedianCount": 800,
+        "stateFrames": {
+          "FEATURES_OK": 2290,
+          "LOW_FEATURE_COUNT": 111,
+          "TRACKING_DEGRADED": 5
+        },
+        "stateMismatches": 0,
+        "gradientHistogram": [
+          {
+            "meanGradient": 0,
+            "frames": 13
+          },
+          {
+            "meanGradient": 1,
+            "frames": 12
+          },
+          {
+            "meanGradient": 2,
+            "frames": 164
+          },
+          {
+            "meanGradient": 3,
+            "frames": 590
+          },
+          {
+            "meanGradient": 4,
+            "frames": 638
+          },
+          {
+            "meanGradient": 5,
+            "frames": 445
+          },
+          {
+            "meanGradient": 6,
+            "frames": 277
+          },
+          {
+            "meanGradient": 7,
+            "frames": 204
+          },
+          {
+            "meanGradient": 8,
+            "frames": 28
+          },
+          {
+            "meanGradient": 9,
+            "frames": 8
+          },
+          {
+            "meanGradient": 10,
+            "frames": 5
+          },
+          {
+            "meanGradient": 11,
+            "frames": 6
+          },
+          {
+            "meanGradient": 12,
+            "frames": 8
+          },
+          {
+            "meanGradient": 13,
+            "frames": 7
+          },
+          {
+            "meanGradient": 14,
+            "frames": 1
+          }
+        ]
+      },
+      "timestamp": 1787367647523
+    },
+    {
+      "spec": {
+        "id": "FEAT-003",
+        "title": "Feature grid distribution",
+        "required": true,
+        "input": "the 8x6 quota selector, and an ungridded control run on the same frames",
+        "expected": "the grid demonstrably prevents the clumping §11 asks it to prevent",
+        "passCriteria": "no cell ever above its quota; over >= 10 paired samples in which the quota actually bound, the gridded selection's largest single-cell share is lower than the ungridded control's in the median case, and it occupies at least as many cells",
+        "failureCondition": "any cell over quota; a grid that does not measurably reduce clustering against its own control"
+      },
+      "verdict": "PASS",
+      "observed": "308 binding of 315 paired samples: largest cell share 3.2% gridded against 5.1% ungridded, +0 cells occupied; 0 quota breach(es)",
+      "reason": "the 8x6 quota held on every frame and measurably spread the selection against an ungridded control on the same images — a scene that would have been evenly distributed anyway produces no difference and no pass",
+      "metrics": {
+        "bindingGridSamples": 308,
+        "totalGridSamples": 315,
+        "medianGriddedMaxCellShare": 0.0315,
+        "medianUngriddedMaxCellShare": 0.0512,
+        "medianCellGain": 0,
+        "quotaBreaches": 0,
+        "quota": 17,
+        "occupiedCells": 48,
+        "cells": 48
+      },
+      "timestamp": 1787367647523
+    },
+    {
+      "spec": {
+        "id": "FEAT-004",
+        "title": "Feature regeneration",
+        "required": true,
+        "input": "the population as the scene changes; §11's thresholds at 500, 200 and 80",
+        "expected": "the population is topped up when it falls, at the levels §11 names, with the state to match",
+        "passCriteria": "at least one refill triggered below 500 with counts recorded either side; every refill either raised the count or recorded the frame's candidates as exhausted; every threshold crossing that occurred carries the state it produced; the count never exceeded 1200 after a refill",
+        "failureCondition": "a threshold crossed with no response; a refill that raised nothing where candidates existed; a count above the maximum"
+      },
+      "verdict": "PASS",
+      "observed": "200 refill(s), 3 of them emergency; 0 found the frame exhausted; 111 frames LOW, 5 DEGRADED",
+      "reason": "the ladder ran at §11's levels and every refill either recovered features or recorded that the frame had none left to give — which is a scene with nothing in it, not a mechanism that failed",
+      "metrics": {
+        "refillCount": 200,
+        "refills": [
+          {
+            "at": 1787367645012,
+            "urgency": "REFILL",
+            "countBefore": 415,
+            "countAfter": 692,
+            "candidatesBefore": 722,
+            "candidatesAfter": 1350,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645045,
+            "urgency": "REFILL",
+            "countBefore": 356,
+            "countAfter": 690,
+            "candidatesBefore": 539,
+            "candidatesAfter": 1155,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645077,
+            "urgency": "REFILL",
+            "countBefore": 397,
+            "countAfter": 676,
+            "candidatesBefore": 622,
+            "candidatesAfter": 1264,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 5
+          },
+          {
+            "at": 1787367645114,
+            "urgency": "REFILL",
+            "countBefore": 379,
+            "countAfter": 662,
+            "candidatesBefore": 582,
+            "candidatesAfter": 1233,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 5
+          },
+          {
+            "at": 1787367645144,
+            "urgency": "REFILL",
+            "countBefore": 453,
+            "countAfter": 715,
+            "candidatesBefore": 707,
+            "candidatesAfter": 1400,
+            "exhausted": false,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645177,
+            "urgency": "REFILL",
+            "countBefore": 334,
+            "countAfter": 629,
+            "candidatesBefore": 482,
+            "candidatesAfter": 1057,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645210,
+            "urgency": "REFILL",
+            "countBefore": 473,
+            "countAfter": 684,
+            "candidatesBefore": 729,
+            "candidatesAfter": 1290,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645244,
+            "urgency": "REFILL",
+            "countBefore": 450,
+            "countAfter": 689,
+            "candidatesBefore": 712,
+            "candidatesAfter": 1277,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645277,
+            "urgency": "REFILL",
+            "countBefore": 465,
+            "countAfter": 700,
+            "candidatesBefore": 786,
+            "candidatesAfter": 1373,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645310,
+            "urgency": "REFILL",
+            "countBefore": 481,
+            "countAfter": 705,
+            "candidatesBefore": 821,
+            "candidatesAfter": 1413,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645344,
+            "urgency": "REFILL",
+            "countBefore": 435,
+            "countAfter": 706,
+            "candidatesBefore": 698,
+            "candidatesAfter": 1380,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645377,
+            "urgency": "REFILL",
+            "countBefore": 467,
+            "countAfter": 698,
+            "candidatesBefore": 828,
+            "candidatesAfter": 1337,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645409,
+            "urgency": "REFILL",
+            "countBefore": 454,
+            "countAfter": 664,
+            "candidatesBefore": 798,
+            "candidatesAfter": 1314,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645447,
+            "urgency": "REFILL",
+            "countBefore": 489,
+            "countAfter": 701,
+            "candidatesBefore": 897,
+            "candidatesAfter": 1389,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367645977,
+            "urgency": "REFILL",
+            "countBefore": 429,
+            "countAfter": 677,
+            "candidatesBefore": 741,
+            "candidatesAfter": 1238,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367646794,
+            "urgency": "REFILL",
+            "countBefore": 492,
+            "countAfter": 735,
+            "candidatesBefore": 961,
+            "candidatesAfter": 1421,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367647367,
+            "urgency": "REFILL",
+            "countBefore": 477,
+            "countAfter": 719,
+            "candidatesBefore": 957,
+            "candidatesAfter": 1476,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 7
+          },
+          {
+            "at": 1787367647394,
+            "urgency": "REFILL",
+            "countBefore": 480,
+            "countAfter": 737,
+            "candidatesBefore": 909,
+            "candidatesAfter": 1521,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          },
+          {
+            "at": 1787367647461,
+            "urgency": "REFILL",
+            "countBefore": 393,
+            "countAfter": 714,
+            "candidatesBefore": 657,
+            "candidatesAfter": 1422,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 7
+          },
+          {
+            "at": 1787367647492,
+            "urgency": "REFILL",
+            "countBefore": 452,
+            "countAfter": 701,
+            "candidatesBefore": 799,
+            "candidatesAfter": 1422,
+            "exhausted": false,
+            "texture": "AMBIGUOUS",
+            "stateBefore": "FEATURES_OK",
+            "stateAfter": "FEATURES_OK",
+            "detectMs": 6
+          }
+        ],
+        "ineffectiveRefills": 0,
+        "emergencyRefills": 3,
+        "degradedFrames": 5,
+        "lowFrames": 111,
+        "overMaxFrames": 0,
+        "maxCountSeen": 800
+      },
+      "timestamp": 1787367647523
+    },
+    {
+      "spec": {
+        "id": "FEAT-005",
+        "title": "Detection cost",
+        "required": false,
+        "input": "the measured cost of each detection, and the one-off level-0 calibration",
+        "expected": "detection fits §H’s budget, and the level chosen for it is answerable by measurement",
+        "passCriteria": "mean detection cost <= 8 ms over >= 10 detections",
+        "failureCondition": "over budget. Advisory because §34 ranks correctness above performance"
+      },
+      "verdict": "PASS",
+      "observed": "4.185 ms mean at level 1 (360x640) over 2406 detections; level 0 (720x1280) would have cost 27 ms for 309 features",
+      "reason": "detection fits its budget at the level chosen, and the calibration says what the alternative would have cost rather than leaving the choice on an estimate",
+      "metrics": {
+        "detections": 2406,
+        "meanDetectCostMs": 4.185,
+        "budgetMs": 8,
+        "detectLevel": 1,
+        "detectSize": "360x640",
+        "level0Calibration": {
+          "width": 720,
+          "height": 1280,
+          "detectMs": 27,
+          "features": 309
+        },
+        "level0WouldHaveFitBudget": false
+      },
+      "timestamp": 1787367647523
+    },
+    {
+      "spec": {
+        "id": "FEAT-006",
+        "title": "Metadata honesty",
+        "required": false,
+        "input": "the §11 feature records themselves",
+        "expected": "every field §11 lists is present, and the fields Phase 3 cannot know are null",
+        "passCriteria": "all eight §11 fields present; forwardBackwardError and reprojectionError null on every record; ids unique and positions inside the frame; cornerStrength and qualityScore finite",
+        "failureCondition": "any of the above unmet — in particular a zero where a measurement does not exist yet"
+      },
+      "verdict": "PASS",
+      "observed": "8 records inspected; forwardBackwardError and reprojectionError null throughout, ids unique, positions inside the frame",
+      "reason": "the record carries what §11 asks for and nothing it cannot know. The two error terms are null rather than zero, because for an error term zero is the best possible value and claiming it unmeasured would be a fabricated confidence",
+      "metrics": {
+        "sampledRecords": 8,
+        "records": [
+          {
+            "id": 0,
+            "x": 113,
+            "y": 54,
+            "x0": 226,
+            "y0": 108,
+            "cornerStrength": 457797.15625,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 1,
+            "cell": 2
+          },
+          {
+            "id": 87,
+            "x": 64,
+            "y": 75,
+            "x0": 128,
+            "y0": 150,
+            "cornerStrength": 36582.97265625,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.07991087791660749,
+            "cell": 1
+          },
+          {
+            "id": 175,
+            "x": 41,
+            "y": 593,
+            "x0": 82,
+            "y0": 1186,
+            "cornerStrength": 22078.216796875,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.04822707284204395,
+            "cell": 40
+          },
+          {
+            "id": 262,
+            "x": 245,
+            "y": 368,
+            "x0": 490,
+            "y0": 736,
+            "cornerStrength": 13628.9638671875,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.029770748209949193,
+            "cell": 29
+          },
+          {
+            "id": 350,
+            "x": 192,
+            "y": 484,
+            "x0": 384,
+            "y0": 968,
+            "cornerStrength": 9301.0029296875,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.020316864804842096,
+            "cell": 36
+          },
+          {
+            "id": 438,
+            "x": 208,
+            "y": 280,
+            "x0": 416,
+            "y0": 560,
+            "cornerStrength": 6222.61865234375,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.013592523607129361,
+            "cell": 20
+          },
+          {
+            "id": 525,
+            "x": 194,
+            "y": 309,
+            "x0": 388,
+            "y0": 618,
+            "cornerStrength": 4220.849609375,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.009219912252852463,
+            "cell": 20
+          },
+          {
+            "id": 613,
+            "x": 347,
+            "y": 205,
+            "x0": 694,
+            "y0": 410,
+            "cornerStrength": 2561.505126953125,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.005595284052121577,
+            "cell": 15
+          }
+        ]
+      },
+      "timestamp": 1787367647523
+    }
+  ],
+  "overallVerdict": "FAILED",
+  "overallReason": "FAILED: FEAT-002",
+  "stateTransitions": [
+    {
+      "timestamp": 1787367430157,
+      "subject": "phase[0] Environment / Capability",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "capability detection starting"
+    },
+    {
+      "timestamp": 1787367430188,
+      "subject": "phase[0] Environment / Capability",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367435109,
+      "subject": "phase[0] Environment / Capability",
+      "from": "TESTING",
+      "to": "PASSED",
+      "reason": "all 11 required tests PASS on a real device"
+    },
+    {
+      "timestamp": 1787367435109,
+      "subject": "phase[1] Camera Capture",
+      "from": "BLOCKED",
+      "to": "NOT_STARTED",
+      "reason": "phase 0 PASSED; this phase may now be started"
+    },
+    {
+      "timestamp": 1787367435722,
+      "subject": "phase[1] Camera Capture",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "SCAN screen opened"
+    },
+    {
+      "timestamp": 1787367435726,
+      "subject": "phase[1] Camera Capture",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-003, CAM-004, CAM-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367439744,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-001, CAM-003, CAM-004, CAM-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367440245,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-003, CAM-004, CAM-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367445274,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAM-003 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367469976,
+      "subject": "phase[1] Camera Capture",
+      "from": "TESTING",
+      "to": "PASSED",
+      "reason": "all 5 required tests PASS on a real device"
+    },
+    {
+      "timestamp": 1787367469976,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "BLOCKED",
+      "to": "NOT_STARTED",
+      "reason": "phase 1 PASSED; this phase may now be started"
+    },
+    {
+      "timestamp": 1787367472107,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "PIPELINE screen opened"
+    },
+    {
+      "timestamp": 1787367472109,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367478956,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-001, FRAME-003, FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367505164,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-003, FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367515748,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367533391,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "TESTING",
+      "to": "PASSED",
+      "reason": "all 4 required tests PASS on a real device"
+    },
+    {
+      "timestamp": 1787367533391,
+      "subject": "phase[3] Feature Detection",
+      "from": "BLOCKED",
+      "to": "NOT_STARTED",
+      "reason": "phase 2 PASSED; this phase may now be started"
+    },
+    {
+      "timestamp": 1787367546371,
+      "subject": "phase[3] Feature Detection",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "FEATURES screen opened"
+    },
+    {
+      "timestamp": 1787367546372,
+      "subject": "phase[3] Feature Detection",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367549766,
+      "subject": "phase[3] Feature Detection",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367553277,
+      "subject": "phase[3] Feature Detection",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: FEAT-001, FEAT-002 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787367605692,
+      "subject": "phase[3] Feature Detection",
+      "from": "TESTING",
+      "to": "FAILED",
+      "reason": "FAILED: FEAT-002"
+    }
+  ],
+  "errorLog": [],
+  "fullLog": [
+    {
+      "timestamp": 1787367430158,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "Phase 0 starting",
+      "data": {
+        "appVersion": "0.1.0",
+        "leg": "REAL_DEVICE",
+        "origin": "https://hsgwyuki0429-design.github.io"
+      }
+    },
+    {
+      "timestamp": 1787367430185,
+      "level": "INFO",
+      "phase": 0,
+      "source": "CapabilityDetector",
+      "message": "capability detection complete",
+      "data": {
+        "records": 31,
+        "totalProbeMs": 25
+      }
+    },
+    {
+      "timestamp": 1787367430189,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "phase 0: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787367435102,
+      "level": "INFO",
+      "phase": 0,
+      "source": "MotionProbe",
+      "message": "sensor probe finished",
+      "data": {
+        "motion": "AVAILABLE",
+        "orientation": "AVAILABLE",
+        "motionEvents": 119,
+        "orientationEvents": 119
+      }
+    },
+    {
+      "timestamp": 1787367435113,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "phase 0: TESTING -> PASSED",
+      "data": {
+        "reason": "all 11 required tests PASS on a real device"
+      }
+    },
+    {
+      "timestamp": 1787367435726,
+      "level": "INFO",
+      "phase": 1,
+      "source": "App",
+      "message": "phase 1: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: CAM-003, CAM-004, CAM-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787367439744,
+      "level": "INFO",
+      "phase": 1,
+      "source": "CameraSource",
+      "message": "camera opened",
+      "data": {
+        "rung": 1,
+        "settings": {
+          "width": 1280,
+          "height": 720,
+          "frameRate": 30,
+          "facingMode": "environment",
+          "deviceId": "143AA840D6AE7750A3C6E738C7B09A597D6AADCD",
+          "label": "背面デュアル広角カメラ",
+          "aspectRatio": 1.778
+        }
+      }
+    },
+    {
+      "timestamp": 1787367469976,
+      "level": "INFO",
+      "phase": 1,
+      "source": "App",
+      "message": "phase 1: TESTING -> PASSED",
+      "data": {
+        "reason": "all 5 required tests PASS on a real device"
+      }
+    },
+    {
+      "timestamp": 1787367472109,
+      "level": "INFO",
+      "phase": 2,
+      "source": "App",
+      "message": "phase 2: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787367474445,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "pipeline started",
+      "data": {
+        "startTier": "BASIC 960x540@30",
+        "routeOrder": [
+          "VIDEO_FRAME",
+          "IMAGE_BITMAP",
+          "MAIN_CANVAS"
+        ]
+      }
+    },
+    {
+      "timestamp": 1787367474711,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FrameWorker",
+      "message": "preprocessing worker ready",
+      "data": {
+        "hasDocument": false,
+        "isWorkerGlobalScope": true,
+        "canvas2dAvailable": true
+      }
+    },
+    {
+      "timestamp": 1787367474859,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "acquisition route VIDEO_FRAME selected",
+      "data": {
+        "successes": 5,
+        "meanAcquireMs": 0.4
+      }
+    },
+    {
+      "timestamp": 1787367475259,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 10 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 10,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367488610,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "source frame size changed 720x1280 -> 1280x720",
+      "data": {
+        "note": "the processing size is re-derived from this frame onwards; Phase 6 will derive different intrinsics either side of this point (§H.0)"
+      }
+    },
+    {
+      "timestamp": 1787367492071,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "source frame size changed 1280x720 -> 720x1280",
+      "data": {
+        "note": "the processing size is re-derived from this frame onwards; Phase 6 will derive different intrinsics either side of this point (§H.0)"
+      }
+    },
+    {
+      "timestamp": 1787367514437,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "load injection started: 189 extra pyramid passes",
+      "data": {
+        "derivedFrom": "target 200 ms (6x the 33 ms budget at HIGH 1280x720@30), measured baseline 10.48 ms and 1.006 ms per pyramid build over 771 unstressed frames",
+        "note": "a stimulus, not a result — the extra passes are real work on real data, and every latency the controller sees remains a measurement (§28)"
+      }
+    },
+    {
+      "timestamp": 1787367515306,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "median worker latency 81 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
+        "medianWorkerMs": 81,
+        "budgetMs": 33.33,
+        "underInjectedLoad": true
+      }
+    },
+    {
+      "timestamp": 1787367519362,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@30 -> BASIC 960x540@20",
+      "data": {
+        "reason": "median worker latency 50 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
+        "medianWorkerMs": 50,
+        "budgetMs": 33.33,
+        "underInjectedLoad": true
+      }
+    },
+    {
+      "timestamp": 1787367523362,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
+      "data": {
+        "reason": "median worker latency 54 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)",
+        "medianWorkerMs": 54,
+        "budgetMs": 50,
+        "underInjectedLoad": true
+      }
+    },
+    {
+      "timestamp": 1787367533105,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "load injection stopped",
+      "data": {}
+    },
+    {
+      "timestamp": 1787367533314,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: REDUCED 640x360@20 -> BASIC 960x540@20",
+      "data": {
+        "reason": "median worker latency 24 ms is under 25 ms (0.5 of the 50 ms budget at BASIC 960x540@20) for 3 consecutive windows",
+        "medianWorkerMs": 24,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367533391,
+      "level": "INFO",
+      "phase": 2,
+      "source": "App",
+      "message": "phase 2: TESTING -> PASSED",
+      "data": {
+        "reason": "all 4 required tests PASS on a real device"
+      }
+    },
+    {
+      "timestamp": 1787367539664,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@20 -> BASIC 960x540@30",
+      "data": {
+        "reason": "median worker latency 15 ms is under 16.67 ms (0.5 of the 33.33 ms budget at BASIC 960x540@30) for 3 consecutive windows",
+        "medianWorkerMs": 15,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367543747,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 9 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 9,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367546372,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "phase 3: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787367549265,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "adopted the running Phase 2 pipeline",
+      "data": {
+        "note": "the camera and worker stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1787367572798,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "delivered rate 22.35 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 22 ms against a 33.33 ms budget",
+        "medianWorkerMs": 22,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367580892,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 11 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 11,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367582517,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "source frame size changed 720x1280 -> 1280x720",
+      "data": {
+        "note": "the processing size is re-derived from this frame onwards; Phase 6 will derive different intrinsics either side of this point (§H.0)"
+      }
+    },
+    {
+      "timestamp": 1787367584892,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "delivered rate 20.62 fps is below 22.28 fps, the floor for the 29.71 fps reachable from a 29.71 fps camera at a 30 fps target, with the worker at 18 ms against a 33.33 ms budget",
+        "medianWorkerMs": 18,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367591497,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "source frame size changed 1280x720 -> 720x1280",
+      "data": {
+        "note": "the processing size is re-derived from this frame onwards; Phase 6 will derive different intrinsics either side of this point (§H.0)"
+      }
+    },
+    {
+      "timestamp": 1787367592973,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 12 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 12,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367596989,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "delivered rate 20.78 fps is below 22.41 fps, the floor for the 29.89 fps reachable from a 29.89 fps camera at a 30 fps target, with the worker at 17 ms against a 33.33 ms budget",
+        "medianWorkerMs": 17,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367605086,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 10 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 10,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367605692,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "phase 3: TESTING -> FAILED",
+      "data": {
+        "reason": "FAILED: FEAT-002"
+      }
+    },
+    {
+      "timestamp": 1787367617492,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "delivered rate 22.36 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 20 ms against a 33.33 ms budget",
+        "medianWorkerMs": 20,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367625588,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 13 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 13,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367629655,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "delivered rate 19.71 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 17 ms against a 33.33 ms budget",
+        "medianWorkerMs": 17,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787367644540,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 13 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 13,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    }
+  ],
+  "legDetermination": {
+    "signals": {
+      "uaSuggestsIOS": true,
+      "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
+      "maxTouchPoints": 5,
+      "protocol": "https:",
+      "hostname": "hsgwyuki0429-design.github.io",
+      "isLocalHost": false,
+      "navigatorWebdriver": false,
+      "hardwareConcurrency": 4,
+      "devicePixelRatio": 3,
+      "screen": "393x852"
+    },
+    "explanation": "All real-device signals hold. Note that the iOS check is a user-agent inference; a reviewer should confirm with the device screenshot required by §60 before treating this bundle as proof."
+  },
+  "phaseContext": {
+    "camera": {
+      "state": "LIVE",
+      "live": true,
+      "trackReadyState": "live",
+      "rungUsed": 1,
+      "attempts": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
+          "ok": true,
+          "durationMs": 2985
+        }
+      ],
+      "requestedLadder": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal"
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal"
+        },
+        {
+          "rung": 3,
+          "label": "rear camera (preferred), any resolution"
+        },
+        {
+          "rung": 4,
+          "label": "any camera, any resolution"
+        }
+      ],
+      "achievedSettings": {
+        "width": 720,
+        "height": 1280,
+        "frameRate": 30,
+        "facingMode": "environment",
+        "deviceId": "143AA840D6AE7750A3C6E738C7B09A597D6AADCD",
+        "label": "背面デュアル広角カメラ",
+        "aspectRatio": 0.563
+      },
+      "openDurationMs": 2986,
+      "failure": null
+    },
+    "pipeline": {
+      "running": true,
+      "startedAt": 44881,
+      "uptimeMs": 173085,
+      "route": "VIDEO_FRAME",
+      "routeLocked": true,
+      "routeProbes": [
+        {
+          "route": "VIDEO_FRAME",
+          "ok": true,
+          "attempts": 4298,
+          "successes": 4297,
+          "meanAcquireMs": 0.042,
+          "error": null,
+          "note": "selected"
+        },
+        {
+          "route": "IMAGE_BITMAP",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        },
+        {
+          "route": "MAIN_CANVAS",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        }
+      ],
+      "workerStarted": true,
+      "workerScope": {
+        "hasDocument": false,
+        "hasWindow": false,
+        "isWorkerGlobalScope": true,
+        "hasOffscreenCanvas": true,
+        "canvas2dAvailable": true,
+        "hardwareConcurrency": 4
+      },
+      "workerErrors": [],
+      "callbacks": 4900,
+      "admitted": 4298,
+      "completed": 4297,
+      "pacedOut": 265,
+      "backpressured": 337,
+      "lost": 0,
+      "acquireFailures": 0,
+      "deliveredFps": 6.89,
+      "sourceFps": 29.88,
+      "sessionDeliveredFps": 24.83,
+      "maxResultGapMs": 9632,
+      "uiCostMs": {
+        "count": 4298,
+        "mean": 0.05,
+        "p50": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 2
+      },
+      "acquireMs": {
+        "count": 4298,
+        "mean": 0.04,
+        "p50": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 2
+      },
+      "workerMs": {
+        "count": 4297,
+        "mean": 14.73,
+        "p50": 12,
+        "p95": 25,
+        "min": 4,
+        "max": 89
+      },
+      "roundTripMs": {
+        "count": 4297,
+        "mean": 15.2,
+        "p50": 12,
+        "p95": 26,
+        "min": 6,
+        "max": 275
+      },
+      "tierStep": 0,
+      "tierLabel": "HIGH 1280x720@30",
+      "targetFps": 30,
+      "procWidth": 720,
+      "procHeight": 1280,
+      "decisions": [
+        {
+          "at": 45696,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 10,
+          "budgetMs": 33.33,
+          "deliveredFps": 31.53,
+          "windowSize": 15,
+          "reason": "median worker latency 10 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 85744,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 81,
+          "budgetMs": 33.33,
+          "deliveredFps": 28.66,
+          "windowSize": 15,
+          "reason": "median worker latency 81 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+        },
+        {
+          "at": 89800,
+          "direction": "DOWN",
+          "fromStep": 1,
+          "toStep": 2,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "BASIC 960x540@20",
+          "fromTargetFps": 30,
+          "toTargetFps": 20,
+          "medianWorkerMs": 50,
+          "budgetMs": 33.33,
+          "deliveredFps": 15.59,
+          "windowSize": 15,
+          "reason": "median worker latency 50 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+        },
+        {
+          "at": 93801,
+          "direction": "DOWN",
+          "fromStep": 2,
+          "toStep": 3,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "REDUCED 640x360@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 54,
+          "budgetMs": 50,
+          "deliveredFps": 14.54,
+          "windowSize": 15,
+          "reason": "median worker latency 54 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+        },
+        {
+          "at": 103753,
+          "direction": "UP",
+          "fromStep": 3,
+          "toStep": 2,
+          "fromLabel": "REDUCED 640x360@20",
+          "toLabel": "BASIC 960x540@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 24,
+          "budgetMs": 50,
+          "deliveredFps": 19.81,
+          "windowSize": 15,
+          "reason": "median worker latency 24 ms is under 25 ms (0.5 of the 50 ms budget at BASIC 960x540@20) for 3 consecutive windows"
+        },
+        {
+          "at": 110103.00000000001,
+          "direction": "UP",
+          "fromStep": 2,
+          "toStep": 1,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 20,
+          "toTargetFps": 30,
+          "medianWorkerMs": 15,
+          "budgetMs": 33.33,
+          "deliveredFps": 20.03,
+          "windowSize": 15,
+          "reason": "median worker latency 15 ms is under 16.67 ms (0.5 of the 33.33 ms budget at BASIC 960x540@30) for 3 consecutive windows"
+        },
+        {
+          "at": 114187,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 9,
+          "budgetMs": 33.33,
+          "deliveredFps": 29.83,
+          "windowSize": 15,
+          "reason": "median worker latency 9 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 143238,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 22,
+          "budgetMs": 33.33,
+          "deliveredFps": 22.35,
+          "windowSize": 15,
+          "reason": "delivered rate 22.35 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 22 ms against a 33.33 ms budget"
+        },
+        {
+          "at": 151333,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 11,
+          "budgetMs": 33.33,
+          "deliveredFps": 29.38,
+          "windowSize": 15,
+          "reason": "median worker latency 11 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 155333,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 18,
+          "budgetMs": 33.33,
+          "deliveredFps": 20.62,
+          "windowSize": 15,
+          "reason": "delivered rate 20.62 fps is below 22.28 fps, the floor for the 29.71 fps reachable from a 29.71 fps camera at a 30 fps target, with the worker at 18 ms against a 33.33 ms budget"
+        },
+        {
+          "at": 163414.00000000003,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 12,
+          "budgetMs": 33.33,
+          "deliveredFps": 29.38,
+          "windowSize": 15,
+          "reason": "median worker latency 12 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 167430,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 17,
+          "budgetMs": 33.33,
+          "deliveredFps": 20.78,
+          "windowSize": 15,
+          "reason": "delivered rate 20.78 fps is below 22.41 fps, the floor for the 29.89 fps reachable from a 29.89 fps camera at a 30 fps target, with the worker at 17 ms against a 33.33 ms budget"
+        },
+        {
+          "at": 175527.00000000003,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 10,
+          "budgetMs": 33.33,
+          "deliveredFps": 28.76,
+          "windowSize": 15,
+          "reason": "median worker latency 10 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 187934,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 20,
+          "budgetMs": 33.33,
+          "deliveredFps": 22.36,
+          "windowSize": 15,
+          "reason": "delivered rate 22.36 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 20 ms against a 33.33 ms budget"
+        },
+        {
+          "at": 196031,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 13,
+          "budgetMs": 33.33,
+          "deliveredFps": 29.07,
+          "windowSize": 15,
+          "reason": "median worker latency 13 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 200097,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 17,
+          "budgetMs": 33.33,
+          "deliveredFps": 19.71,
+          "windowSize": 15,
+          "reason": "delivered rate 19.71 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 17 ms against a 33.33 ms budget"
+        },
+        {
+          "at": 214982,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 13,
+          "budgetMs": 33.33,
+          "deliveredFps": 30.05,
+          "windowSize": 15,
+          "reason": "median worker latency 13 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        }
+      ],
+      "spontaneousDegrade": true,
+      "maxDecisionsPer10s": 3,
+      "sourceSizesObserved": [
+        "720x1280",
+        "1280x720"
+      ],
+      "processedSizesObserved": [
+        "540x960",
+        "720x1280",
+        "1280x720",
+        "360x640",
+        "960x540"
+      ],
+      "sourceWidth": 720,
+      "sourceHeight": 1280,
+      "maxAspectError": 0,
+      "overBudgetFrames": 0,
+      "upscaledFrames": 0,
+      "framesAfterSourceChange": 1247,
+      "procMatchedAfterSourceChange": true,
+      "tierUsage": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "frames": 2621,
+          "sizes": [
+            "720x1280",
+            "1280x720"
+          ]
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "frames": 1303,
+          "sizes": [
+            "540x960",
+            "960x540"
+          ]
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "frames": 187,
+          "sizes": [
+            "540x960"
+          ]
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "frames": 186,
+          "sizes": [
+            "360x640"
+          ]
+        }
+      ],
+      "decisionOutcomes": [
+        {
+          "decisionIndex": 0,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 10,
+          "afterMedianWorkerMs": 10,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 1,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 81,
+          "afterMedianWorkerMs": 51,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 2,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 50,
+          "afterMedianWorkerMs": 53,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 3,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 54,
+          "afterMedianWorkerMs": 25,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 4,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 24,
+          "afterMedianWorkerMs": 12,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 5,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 15,
+          "afterMedianWorkerMs": 13,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 6,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 9,
+          "afterMedianWorkerMs": 10,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 7,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 22,
+          "afterMedianWorkerMs": 13,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 8,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 11,
+          "afterMedianWorkerMs": 17,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 9,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 18,
+          "afterMedianWorkerMs": 12,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 10,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 12,
+          "afterMedianWorkerMs": 19,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 11,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 17,
+          "afterMedianWorkerMs": 12,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 12,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 10,
+          "afterMedianWorkerMs": 14,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 13,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 20,
+          "afterMedianWorkerMs": 12,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 14,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 13,
+          "afterMedianWorkerMs": 19,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 15,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 17,
+          "afterMedianWorkerMs": 12,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 16,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 13,
+          "afterMedianWorkerMs": 18,
+          "samples": 15
+        }
+      ],
+      "pyramidLevels": [
+        {
+          "width": 720,
+          "height": 1280,
+          "bytes": 921600
+        },
+        {
+          "width": 360,
+          "height": 640,
+          "bytes": 230400
+        },
+        {
+          "width": 180,
+          "height": 320,
+          "bytes": 57600
+        }
+      ],
+      "pyramidConsistent": true,
+      "pyramidProblems": [],
+      "meanLuma": 133.28,
+      "topMadMax": 75.724,
+      "topMadMedian": 8.515,
+      "topMadSamples": 600,
+      "stripMadMax": 157.942,
+      "stripMadMedian": 12.676,
+      "stripMadSamples": 600,
+      "distinctChecksums": 4000,
+      "crossCheck": {
+        "count": 159,
+        "unmatched": 0,
+        "medianAbsDifference": 0.321,
+        "maxAbsDifference": 0.868,
+        "sceneStdDev": 13.726,
+        "sceneRange": 128.639,
+        "costMs": {
+          "count": 159,
+          "mean": 5.04,
+          "p50": 5,
+          "p95": 8,
+          "min": 3,
+          "max": 15
+        }
+      },
+      "stressPasses": 0,
+      "stressIntervals": [
+        {
+          "startedAt": 84875,
+          "endedAt": 103544,
+          "passes": 189,
+          "derivedFrom": "target 200 ms (6x the 33 ms budget at HIGH 1280x720@30), measured baseline 10.48 ms and 1.006 ms per pyramid build over 771 unstressed frames"
+        }
+      ],
+      "anyStressed": true,
+      "segments": [
+        {
+          "index": 0,
+          "stressed": false,
+          "startedAt": 44881,
+          "endedAt": 84875,
+          "observedMs": 39689,
+          "results": 1177,
+          "meanFps": 29.63,
+          "maxGapMs": 80,
+          "wasHidden": false,
+          "endReason": "load injection started"
+        },
+        {
+          "index": 1,
+          "stressed": true,
+          "startedAt": 84875,
+          "endedAt": 103544,
+          "observedMs": 18569,
+          "results": 300,
+          "meanFps": 16.1,
+          "maxGapMs": 137,
+          "wasHidden": false,
+          "endReason": "load injection stopped"
+        },
+        {
+          "index": 2,
+          "stressed": false,
+          "startedAt": 103544,
+          "endedAt": null,
+          "observedMs": 114380,
+          "results": 2820,
+          "meanFps": 24.65,
+          "maxGapMs": 9632,
+          "wasHidden": false,
+          "endReason": "open at 217966"
+        }
+      ],
+      "longestCleanSegment": {
+        "index": 2,
+        "stressed": false,
+        "startedAt": 103544,
+        "endedAt": null,
+        "observedMs": 114380,
+        "results": 2820,
+        "meanFps": 24.65,
+        "maxGapMs": 9632,
+        "wasHidden": false,
+        "endReason": "open at 217966"
+      },
+      "wasEverHidden": false,
+      "hiddenCount": 0,
+      "recentFrames": [
+        {
+          "frameId": 4258,
+          "at": 216314,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 138.85,
+          "checksum": 3734461501,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4259,
+          "at": 216347,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 138.51,
+          "checksum": 1341614192,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4260,
+          "at": 216380,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 139.57,
+          "checksum": 717430160,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4261,
+          "at": 216420,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 18,
+          "roundTripMs": 18,
+          "meanLuma": 138.91,
+          "checksum": 1276613902,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4262,
+          "at": 216446,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 11,
+          "roundTripMs": 11,
+          "meanLuma": 137.74,
+          "checksum": 781487432,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4263,
+          "at": 216479,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 11,
+          "roundTripMs": 11,
+          "meanLuma": 138.22,
+          "checksum": 1819047242,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4264,
+          "at": 216514,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 13,
+          "meanLuma": 138.18,
+          "checksum": 2869220188,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4265,
+          "at": 216548,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 14,
+          "meanLuma": 137.99,
+          "checksum": 119617356,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4266,
+          "at": 216580,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 11,
+          "roundTripMs": 12,
+          "meanLuma": 137.95,
+          "checksum": 1567339527,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4267,
+          "at": 216613,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 137.87,
+          "checksum": 3788061740,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4268,
+          "at": 216647,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 13,
+          "meanLuma": 137.95,
+          "checksum": 1935158496,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4269,
+          "at": 216680,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 13,
+          "meanLuma": 137.76,
+          "checksum": 4147809807,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4270,
+          "at": 216731,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 14,
+          "meanLuma": 137.51,
+          "checksum": 3076668313,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4271,
+          "at": 216747,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 13,
+          "meanLuma": 137.51,
+          "checksum": 1071810791,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4272,
+          "at": 216798,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 14,
+          "meanLuma": 137.65,
+          "checksum": 2966768624,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4273,
+          "at": 216813,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 137.41,
+          "checksum": 1865987129,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4274,
+          "at": 216865,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 14,
+          "meanLuma": 137.13,
+          "checksum": 1037304074,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4275,
+          "at": 216879,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 136.84,
+          "checksum": 380658720,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4276,
+          "at": 216930,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 13,
+          "meanLuma": 136.82,
+          "checksum": 3506733207,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4277,
+          "at": 216946,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 137.19,
+          "checksum": 3765706306,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4278,
+          "at": 216984,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 13,
+          "meanLuma": 138.12,
+          "checksum": 1318501218,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4279,
+          "at": 217030,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 13,
+          "meanLuma": 138.24,
+          "checksum": 1693273336,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4280,
+          "at": 217045,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 11,
+          "roundTripMs": 11,
+          "meanLuma": 137.63,
+          "checksum": 514185950,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4281,
+          "at": 217097,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 13,
+          "roundTripMs": 13,
+          "meanLuma": 137.32,
+          "checksum": 3544661571,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4282,
+          "at": 217112,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 12,
+          "roundTripMs": 12,
+          "meanLuma": 137.48,
+          "checksum": 1169981571,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4283,
+          "at": 217164,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 14,
+          "roundTripMs": 13,
+          "meanLuma": 137.34,
+          "checksum": 1089204183,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4284,
+          "at": 217178,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 11,
+          "roundTripMs": 11,
+          "meanLuma": 137.48,
+          "checksum": 1688482454,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4285,
+          "at": 217237,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 20,
+          "roundTripMs": 20,
+          "meanLuma": 137.47,
+          "checksum": 1533411230,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4286,
+          "at": 217298,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 14,
+          "roundTripMs": 15,
+          "meanLuma": 137.2,
+          "checksum": 2882303184,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4287,
+          "at": 217367,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 17,
+          "roundTripMs": 17,
+          "meanLuma": 137.25,
+          "checksum": 940815346,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4288,
+          "at": 217434,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 17,
+          "roundTripMs": 18,
+          "meanLuma": 137.34,
+          "checksum": 2159113490,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4289,
+          "at": 217490,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 15,
+          "roundTripMs": 15,
+          "meanLuma": 136.83,
+          "checksum": 1057163984,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4290,
+          "at": 217530,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 14,
+          "roundTripMs": 14,
+          "meanLuma": 136.45,
+          "checksum": 2056761357,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4291,
+          "at": 217600,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 16,
+          "roundTripMs": 17,
+          "meanLuma": 136.54,
+          "checksum": 3565471391,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4292,
+          "at": 217667,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 17,
+          "roundTripMs": 17,
+          "meanLuma": 135.7,
+          "checksum": 2162603646,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4293,
+          "at": 217736,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 20,
+          "roundTripMs": 20,
+          "meanLuma": 135.32,
+          "checksum": 2177185502,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4294,
+          "at": 217810,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 28,
+          "roundTripMs": 28,
+          "meanLuma": 134.94,
+          "checksum": 2894743381,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4295,
+          "at": 217838,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 21,
+          "roundTripMs": 22,
+          "meanLuma": 134.46,
+          "checksum": 967779089,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4296,
+          "at": 217904,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 22,
+          "roundTripMs": 22,
+          "meanLuma": 133.74,
+          "checksum": 3164734112,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 4297,
+          "at": 217935,
+          "sourceWidth": 720,
+          "sourceHeight": 1280,
+          "procWidth": 720,
+          "procHeight": 1280,
+          "tierStep": 0,
+          "workerMs": 19,
+          "roundTripMs": 19,
+          "meanLuma": 133.28,
+          "checksum": 925269833,
+          "stressPasses": 0
+        }
+      ],
+      "controller": {
+        "config": {
+          "windowSize": 15,
+          "downThreshold": 0.9,
+          "upThreshold": 0.5,
+          "deliveredFpsFloorRatio": 0.75,
+          "deliveredFpsBlameRatio": 0.5,
+          "upWindowsRequired": 3,
+          "cooldownMs": 4000,
+          "upAfterDownCooldownMs": 8000
+        },
+        "ladder": [
+          {
+            "step": 0,
+            "label": "HIGH 1280x720@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 1,
+            "label": "BASIC 960x540@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 2,
+            "label": "BASIC 960x540@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 3,
+            "label": "REDUCED 640x360@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 4,
+            "label": "REDUCED 640x360@15",
+            "budgetMs": 50
+          }
+        ],
+        "startStep": 1,
+        "floorStep": 4,
+        "currentStep": 0,
+        "currentTier": "HIGH 1280x720@30",
+        "deepestStep": 3,
+        "windowFill": 15,
+        "decisions": [
+          {
+            "at": 45696,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 10,
+            "budgetMs": 33.33,
+            "deliveredFps": 31.53,
+            "windowSize": 15,
+            "reason": "median worker latency 10 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 85744,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 81,
+            "budgetMs": 33.33,
+            "deliveredFps": 28.66,
+            "windowSize": 15,
+            "reason": "median worker latency 81 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+          },
+          {
+            "at": 89800,
+            "direction": "DOWN",
+            "fromStep": 1,
+            "toStep": 2,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "BASIC 960x540@20",
+            "fromTargetFps": 30,
+            "toTargetFps": 20,
+            "medianWorkerMs": 50,
+            "budgetMs": 33.33,
+            "deliveredFps": 15.59,
+            "windowSize": 15,
+            "reason": "median worker latency 50 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          },
+          {
+            "at": 93801,
+            "direction": "DOWN",
+            "fromStep": 2,
+            "toStep": 3,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "REDUCED 640x360@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 54,
+            "budgetMs": 50,
+            "deliveredFps": 14.54,
+            "windowSize": 15,
+            "reason": "median worker latency 54 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+          },
+          {
+            "at": 103753,
+            "direction": "UP",
+            "fromStep": 3,
+            "toStep": 2,
+            "fromLabel": "REDUCED 640x360@20",
+            "toLabel": "BASIC 960x540@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 24,
+            "budgetMs": 50,
+            "deliveredFps": 19.81,
+            "windowSize": 15,
+            "reason": "median worker latency 24 ms is under 25 ms (0.5 of the 50 ms budget at BASIC 960x540@20) for 3 consecutive windows"
+          },
+          {
+            "at": 110103.00000000001,
+            "direction": "UP",
+            "fromStep": 2,
+            "toStep": 1,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 20,
+            "toTargetFps": 30,
+            "medianWorkerMs": 15,
+            "budgetMs": 33.33,
+            "deliveredFps": 20.03,
+            "windowSize": 15,
+            "reason": "median worker latency 15 ms is under 16.67 ms (0.5 of the 33.33 ms budget at BASIC 960x540@30) for 3 consecutive windows"
+          },
+          {
+            "at": 114187,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 9,
+            "budgetMs": 33.33,
+            "deliveredFps": 29.83,
+            "windowSize": 15,
+            "reason": "median worker latency 9 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 143238,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 22,
+            "budgetMs": 33.33,
+            "deliveredFps": 22.35,
+            "windowSize": 15,
+            "reason": "delivered rate 22.35 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 22 ms against a 33.33 ms budget"
+          },
+          {
+            "at": 151333,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 11,
+            "budgetMs": 33.33,
+            "deliveredFps": 29.38,
+            "windowSize": 15,
+            "reason": "median worker latency 11 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 155333,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 18,
+            "budgetMs": 33.33,
+            "deliveredFps": 20.62,
+            "windowSize": 15,
+            "reason": "delivered rate 20.62 fps is below 22.28 fps, the floor for the 29.71 fps reachable from a 29.71 fps camera at a 30 fps target, with the worker at 18 ms against a 33.33 ms budget"
+          },
+          {
+            "at": 163414.00000000003,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 12,
+            "budgetMs": 33.33,
+            "deliveredFps": 29.38,
+            "windowSize": 15,
+            "reason": "median worker latency 12 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 167430,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 17,
+            "budgetMs": 33.33,
+            "deliveredFps": 20.78,
+            "windowSize": 15,
+            "reason": "delivered rate 20.78 fps is below 22.41 fps, the floor for the 29.89 fps reachable from a 29.89 fps camera at a 30 fps target, with the worker at 17 ms against a 33.33 ms budget"
+          },
+          {
+            "at": 175527.00000000003,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 10,
+            "budgetMs": 33.33,
+            "deliveredFps": 28.76,
+            "windowSize": 15,
+            "reason": "median worker latency 10 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 187934,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 20,
+            "budgetMs": 33.33,
+            "deliveredFps": 22.36,
+            "windowSize": 15,
+            "reason": "delivered rate 22.36 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 20 ms against a 33.33 ms budget"
+          },
+          {
+            "at": 196031,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 13,
+            "budgetMs": 33.33,
+            "deliveredFps": 29.07,
+            "windowSize": 15,
+            "reason": "median worker latency 13 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 200097,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 17,
+            "budgetMs": 33.33,
+            "deliveredFps": 19.71,
+            "windowSize": 15,
+            "reason": "delivered rate 19.71 fps is below 22.5 fps, the floor for the 30 fps reachable from a 30.05 fps camera at a 30 fps target, with the worker at 17 ms against a 33.33 ms budget"
+          },
+          {
+            "at": 214982,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 13,
+            "budgetMs": 33.33,
+            "deliveredFps": 30.05,
+            "windowSize": 15,
+            "reason": "median worker latency 13 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          }
+        ],
+        "note": "Every decision carries the median worker latency and the budget it was compared against. The controller reads no clock of its own — only the timestamps on the samples it is given (§59)."
+      },
+      "segmentLog": {
+        "segments": [
+          {
+            "index": 0,
+            "stressed": false,
+            "startedAt": 44881,
+            "endedAt": 84875,
+            "observedMs": 39689,
+            "results": 1177,
+            "meanFps": 29.63,
+            "maxGapMs": 80,
+            "wasHidden": false,
+            "endReason": "load injection started"
+          },
+          {
+            "index": 1,
+            "stressed": true,
+            "startedAt": 84875,
+            "endedAt": 103544,
+            "observedMs": 18569,
+            "results": 300,
+            "meanFps": 16.1,
+            "maxGapMs": 137,
+            "wasHidden": false,
+            "endReason": "load injection stopped"
+          },
+          {
+            "index": 2,
+            "stressed": false,
+            "startedAt": 103544,
+            "endedAt": null,
+            "observedMs": 114380,
+            "results": 2820,
+            "meanFps": 24.65,
+            "maxGapMs": 9632,
+            "wasHidden": false,
+            "endReason": "open at 217966"
+          }
+        ],
+        "droppedSegments": 0,
+        "longestCleanMs": 114380,
+        "note": "The timeline is cut wherever load injection was switched on or off. FRAME-001 reads the longest unstressed segment; stressed segments are measured and reported but never counted toward continuity."
+      },
+      "crossCheckDetail": {
+        "count": 159,
+        "unmatched": 0,
+        "medianAbsDifference": 0.321,
+        "maxAbsDifference": 0.868,
+        "sceneStdDev": 13.726,
+        "sceneRange": 128.639,
+        "costMs": {
+          "count": 159,
+          "mean": 5.04,
+          "p50": 5,
+          "p95": 8,
+          "min": 3,
+          "max": 15
+        },
+        "recentSamples": [
+          {
+            "frameId": 3673,
+            "at": 184269,
+            "mainMeanLuma": 148.673,
+            "workerMeanLuma": 148.434,
+            "absDifference": 0.23922309027778965,
+            "costMs": 4
+          },
+          {
+            "frameId": 3704,
+            "at": 185300,
+            "mainMeanLuma": 153.488,
+            "workerMeanLuma": 153.244,
+            "absDifference": 0.244140625,
+            "costMs": 3
+          },
+          {
+            "frameId": 3721,
+            "at": 186349.00000000003,
+            "mainMeanLuma": 157.064,
+            "workerMeanLuma": 156.441,
+            "absDifference": 0.623337673611104,
+            "costMs": 3.999999999970896
+          },
+          {
+            "frameId": 3738,
+            "at": 187413,
+            "mainMeanLuma": 147.151,
+            "workerMeanLuma": 146.658,
+            "absDifference": 0.4935101996527749,
+            "costMs": 4
+          },
+          {
+            "frameId": 3761,
+            "at": 188445,
+            "mainMeanLuma": 159.997,
+            "workerMeanLuma": 159.961,
+            "absDifference": 0.03638744212963729,
+            "costMs": 4
+          },
+          {
+            "frameId": 3791,
+            "at": 189477,
+            "mainMeanLuma": 166.288,
+            "workerMeanLuma": 165.96,
+            "absDifference": 0.3283097029321027,
+            "costMs": 5
+          },
+          {
+            "frameId": 3822,
+            "at": 190509,
+            "mainMeanLuma": 160.085,
+            "workerMeanLuma": 159.606,
+            "absDifference": 0.4791256751543074,
+            "costMs": 4
+          },
+          {
+            "frameId": 3853,
+            "at": 191541,
+            "mainMeanLuma": 163.957,
+            "workerMeanLuma": 163.34,
+            "absDifference": 0.6168885030864146,
+            "costMs": 4.000000000029104
+          },
+          {
+            "frameId": 3884,
+            "at": 192572,
+            "mainMeanLuma": 143.236,
+            "workerMeanLuma": 142.991,
+            "absDifference": 0.24483024691357969,
+            "costMs": 5
+          },
+          {
+            "frameId": 3915,
+            "at": 193604,
+            "mainMeanLuma": 139.041,
+            "workerMeanLuma": 138.671,
+            "absDifference": 0.3699720293209907,
+            "costMs": 5
+          },
+          {
+            "frameId": 3946,
+            "at": 194636,
+            "mainMeanLuma": 156.141,
+            "workerMeanLuma": 155.748,
+            "absDifference": 0.3931380208333337,
+            "costMs": 5
+          },
+          {
+            "frameId": 3975,
+            "at": 195685,
+            "mainMeanLuma": 161.081,
+            "workerMeanLuma": 160.706,
+            "absDifference": 0.37578414351852985,
+            "costMs": 5
+          },
+          {
+            "frameId": 3998,
+            "at": 196717,
+            "mainMeanLuma": 157.464,
+            "workerMeanLuma": 157.176,
+            "absDifference": 0.2880034722222149,
+            "costMs": 4
+          },
+          {
+            "frameId": 4015,
+            "at": 197748,
+            "mainMeanLuma": 143.213,
+            "workerMeanLuma": 142.749,
+            "absDifference": 0.4640885416666549,
+            "costMs": 5
+          },
+          {
+            "frameId": 4032,
+            "at": 198780,
+            "mainMeanLuma": 155.462,
+            "workerMeanLuma": 154.8,
+            "absDifference": 0.6619715711805441,
+            "costMs": 5
+          },
+          {
+            "frameId": 4055,
+            "at": 199811,
+            "mainMeanLuma": 155.209,
+            "workerMeanLuma": 154.717,
+            "absDifference": 0.49197374131944116,
+            "costMs": 4
+          },
+          {
+            "frameId": 4084,
+            "at": 200843.00000000003,
+            "mainMeanLuma": 154.201,
+            "workerMeanLuma": 153.688,
+            "absDifference": 0.5135595100308876,
+            "costMs": 3.999999999970896
+          },
+          {
+            "frameId": 4114,
+            "at": 201847,
+            "mainMeanLuma": 142.209,
+            "workerMeanLuma": 142.015,
+            "absDifference": 0.19376832561727042,
+            "costMs": 5
+          },
+          {
+            "frameId": 4144,
+            "at": 202874,
+            "mainMeanLuma": 139.494,
+            "workerMeanLuma": 139.227,
+            "absDifference": 0.2677416087963138,
+            "costMs": 3
+          },
+          {
+            "frameId": 4175,
+            "at": 203905,
+            "mainMeanLuma": 137.508,
+            "workerMeanLuma": 136.873,
+            "absDifference": 0.6343942901234527,
+            "costMs": 4
+          },
+          {
+            "frameId": 4206,
+            "at": 204936,
+            "mainMeanLuma": 142.745,
+            "workerMeanLuma": 142.107,
+            "absDifference": 0.638471739969134,
+            "costMs": 4
+          },
+          {
+            "frameId": 4217,
+            "at": 214905,
+            "mainMeanLuma": 134.714,
+            "workerMeanLuma": 134.112,
+            "absDifference": 0.6013980516975437,
+            "costMs": 7
+          },
+          {
+            "frameId": 4247,
+            "at": 215935,
+            "mainMeanLuma": 140.112,
+            "workerMeanLuma": 139.514,
+            "absDifference": 0.5982052951388823,
+            "costMs": 4
+          },
+          {
+            "frameId": 4278,
+            "at": 216967,
+            "mainMeanLuma": 138.014,
+            "workerMeanLuma": 138.118,
+            "absDifference": 0.10375651041664469,
+            "costMs": 3
+          }
+        ],
+        "note": "Each pair is one video frame measured twice: on the main thread with an independent 64x48 readback, and in the worker on the pixels the pipeline actually delivered. The readback costs what §H.1 measured, which is why it runs at 1 Hz and is excluded from the pipeline UI cost in FRAME-005."
+      },
+      "ladder": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "pixelBudget": 921600,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "pixelBudget": 518400,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "pixelBudget": 518400,
+          "budgetMs": 50
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        }
+      ],
+      "routeOrder": [
+        "VIDEO_FRAME",
+        "IMAGE_BITMAP",
+        "MAIN_CANVAS"
+      ],
+      "constants": {
+        "pacingResyncIntervals": 2,
+        "pacingToleranceMs": 2,
+        "routeLockSuccesses": 5,
+        "pendingTimeoutMs": 3000,
+        "stripIntervalMs": 100,
+        "crossCheckIntervalMs": 1000,
+        "stressTargetBudgetMultiple": 6,
+        "pyramidLevels": 3,
+        "stripSize": "64x48"
+      },
+      "note": "Frames declined by rate pacing (pacedOut) are the scheduler working as designed and are not drops. Frames declined because the worker was busy (backpressured) are deliberate too. Only `lost` counts frames that were handed over and never came back, and only that is held against FRAME-001."
+    },
+    "features": {
+      "detections": 2406,
+      "byTexture": {
+        "TEXTURE_RICH": {
+          "frames": 39,
+          "medianCount": 800,
+          "minCount": 787,
+          "maxCount": 800,
+          "medianGradient": 10.654
+        },
+        "TEXTURE_POOR": {
+          "frames": 1127,
+          "medianCount": 429,
+          "minCount": 49,
+          "maxCount": 800,
+          "medianGradient": 3.141
+        },
+        "AMBIGUOUS": {
+          "frames": 1240,
+          "medianCount": 556,
+          "minCount": 255,
+          "maxCount": 800,
+          "medianGradient": 5.229
+        }
+      },
+      "gradientHistogram": [
+        {
+          "meanGradient": 0,
+          "frames": 13
+        },
+        {
+          "meanGradient": 1,
+          "frames": 12
+        },
+        {
+          "meanGradient": 2,
+          "frames": 164
+        },
+        {
+          "meanGradient": 3,
+          "frames": 590
+        },
+        {
+          "meanGradient": 4,
+          "frames": 638
+        },
+        {
+          "meanGradient": 5,
+          "frames": 445
+        },
+        {
+          "meanGradient": 6,
+          "frames": 277
+        },
+        {
+          "meanGradient": 7,
+          "frames": 204
+        },
+        {
+          "meanGradient": 8,
+          "frames": 28
+        },
+        {
+          "meanGradient": 9,
+          "frames": 8
+        },
+        {
+          "meanGradient": 10,
+          "frames": 5
+        },
+        {
+          "meanGradient": 11,
+          "frames": 6
+        },
+        {
+          "meanGradient": 12,
+          "frames": 8
+        },
+        {
+          "meanGradient": 13,
+          "frames": 7
+        },
+        {
+          "meanGradient": 14,
+          "frames": 1
+        }
+      ],
+      "stateFrames": {
+        "FEATURES_OK": 2290,
+        "LOW_FEATURE_COUNT": 111,
+        "TRACKING_DEGRADED": 5
+      },
+      "contrast": {
+        "samples": 315,
+        "median": 0.7632,
+        "recent": [
+          0.7599,
+          0.7482,
+          0.7331,
+          0.7071,
+          0.7482,
+          0.7728,
+          0.7768,
+          0.7418,
+          0.7477,
+          0.7931,
+          0.7944,
+          0.7912,
+          0.7739,
+          0.7844,
+          0.7817,
+          0.7865,
+          0.7795,
+          0.7752,
+          0.781,
+          0.7493,
+          0.8023,
+          0.7535,
+          0.7796,
+          0.7915
+        ]
+      },
+      "grid": {
+        "samples": 308,
+        "totalSamples": 315,
+        "medianGridded": 0.0315,
+        "medianUngridded": 0.0512,
+        "medianCellGain": 0
+      },
+      "quotaBreaches": 0,
+      "stateMismatches": 0,
+      "lastRecordSamples": [
+        {
+          "id": 0,
+          "x": 113,
+          "y": 54,
+          "x0": 226,
+          "y0": 108,
+          "cornerStrength": 457797.15625,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 1,
+          "cell": 2
+        },
+        {
+          "id": 87,
+          "x": 64,
+          "y": 75,
+          "x0": 128,
+          "y0": 150,
+          "cornerStrength": 36582.97265625,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.07991087791660749,
+          "cell": 1
+        },
+        {
+          "id": 175,
+          "x": 41,
+          "y": 593,
+          "x0": 82,
+          "y0": 1186,
+          "cornerStrength": 22078.216796875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.04822707284204395,
+          "cell": 40
+        },
+        {
+          "id": 262,
+          "x": 245,
+          "y": 368,
+          "x0": 490,
+          "y0": 736,
+          "cornerStrength": 13628.9638671875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.029770748209949193,
+          "cell": 29
+        },
+        {
+          "id": 350,
+          "x": 192,
+          "y": 484,
+          "x0": 384,
+          "y0": 968,
+          "cornerStrength": 9301.0029296875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.020316864804842096,
+          "cell": 36
+        },
+        {
+          "id": 438,
+          "x": 208,
+          "y": 280,
+          "x0": 416,
+          "y0": 560,
+          "cornerStrength": 6222.61865234375,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.013592523607129361,
+          "cell": 20
+        },
+        {
+          "id": 525,
+          "x": 194,
+          "y": 309,
+          "x0": 388,
+          "y0": 618,
+          "cornerStrength": 4220.849609375,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.009219912252852463,
+          "cell": 20
+        },
+        {
+          "id": 613,
+          "x": 347,
+          "y": 205,
+          "x0": 694,
+          "y0": 410,
+          "cornerStrength": 2561.505126953125,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.005595284052121577,
+          "cell": 15
+        }
+      ],
+      "overMaxFrames": 0,
+      "maxCountSeen": 800,
+      "refills": [
+        {
+          "at": 1787367634706,
+          "urgency": "REFILL",
+          "countBefore": 334,
+          "countAfter": 549,
+          "candidatesBefore": 520,
+          "candidatesAfter": 758,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 4
+        },
+        {
+          "at": 1787367634738,
+          "urgency": "REFILL",
+          "countBefore": 285,
+          "countAfter": 547,
+          "candidatesBefore": 428,
+          "candidatesAfter": 775,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 4
+        },
+        {
+          "at": 1787367634773,
+          "urgency": "REFILL",
+          "countBefore": 382,
+          "countAfter": 560,
+          "candidatesBefore": 601,
+          "candidatesAfter": 786,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 4
+        },
+        {
+          "at": 1787367634806,
+          "urgency": "REFILL",
+          "countBefore": 375,
+          "countAfter": 565,
+          "candidatesBefore": 569,
+          "candidatesAfter": 787,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 4
+        },
+        {
+          "at": 1787367634854,
+          "urgency": "REFILL",
+          "countBefore": 369,
+          "countAfter": 556,
+          "candidatesBefore": 604,
+          "candidatesAfter": 826,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644486,
+          "urgency": "REFILL",
+          "countBefore": 328,
+          "countAfter": 550,
+          "candidatesBefore": 503,
+          "candidatesAfter": 718,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 4
+        },
+        {
+          "at": 1787367644508,
+          "urgency": "REFILL",
+          "countBefore": 296,
+          "countAfter": 522,
+          "candidatesBefore": 431,
+          "candidatesAfter": 668,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644539,
+          "urgency": "REFILL",
+          "countBefore": 305,
+          "countAfter": 538,
+          "candidatesBefore": 453,
+          "candidatesAfter": 714,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 3
+        },
+        {
+          "at": 1787367644622,
+          "urgency": "REFILL",
+          "countBefore": 344,
+          "countAfter": 588,
+          "candidatesBefore": 517,
+          "candidatesAfter": 1047,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 8
+        },
+        {
+          "at": 1787367644655,
+          "urgency": "REFILL",
+          "countBefore": 359,
+          "countAfter": 640,
+          "candidatesBefore": 550,
+          "candidatesAfter": 1161,
+          "exhausted": false,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 10
+        },
+        {
+          "at": 1787367644691,
+          "urgency": "REFILL",
+          "countBefore": 353,
+          "countAfter": 657,
+          "candidatesBefore": 546,
+          "candidatesAfter": 1146,
+          "exhausted": false,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 8
+        },
+        {
+          "at": 1787367644715,
+          "urgency": "REFILL",
+          "countBefore": 349,
+          "countAfter": 629,
+          "candidatesBefore": 529,
+          "candidatesAfter": 1098,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367644745,
+          "urgency": "REFILL",
+          "countBefore": 338,
+          "countAfter": 706,
+          "candidatesBefore": 482,
+          "candidatesAfter": 1275,
+          "exhausted": false,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644778,
+          "urgency": "REFILL",
+          "countBefore": 379,
+          "countAfter": 679,
+          "candidatesBefore": 543,
+          "candidatesAfter": 1162,
+          "exhausted": false,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367644811,
+          "urgency": "REFILL",
+          "countBefore": 399,
+          "countAfter": 672,
+          "candidatesBefore": 619,
+          "candidatesAfter": 1181,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644845,
+          "urgency": "REFILL",
+          "countBefore": 364,
+          "countAfter": 650,
+          "candidatesBefore": 539,
+          "candidatesAfter": 1132,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644877,
+          "urgency": "REFILL",
+          "countBefore": 368,
+          "countAfter": 643,
+          "candidatesBefore": 572,
+          "candidatesAfter": 1130,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644910,
+          "urgency": "REFILL",
+          "countBefore": 380,
+          "countAfter": 641,
+          "candidatesBefore": 629,
+          "candidatesAfter": 1162,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644943,
+          "urgency": "REFILL",
+          "countBefore": 396,
+          "countAfter": 658,
+          "candidatesBefore": 657,
+          "candidatesAfter": 1258,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367644978,
+          "urgency": "REFILL",
+          "countBefore": 409,
+          "countAfter": 688,
+          "candidatesBefore": 742,
+          "candidatesAfter": 1305,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645012,
+          "urgency": "REFILL",
+          "countBefore": 415,
+          "countAfter": 692,
+          "candidatesBefore": 722,
+          "candidatesAfter": 1350,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645045,
+          "urgency": "REFILL",
+          "countBefore": 356,
+          "countAfter": 690,
+          "candidatesBefore": 539,
+          "candidatesAfter": 1155,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645077,
+          "urgency": "REFILL",
+          "countBefore": 397,
+          "countAfter": 676,
+          "candidatesBefore": 622,
+          "candidatesAfter": 1264,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367645114,
+          "urgency": "REFILL",
+          "countBefore": 379,
+          "countAfter": 662,
+          "candidatesBefore": 582,
+          "candidatesAfter": 1233,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 5
+        },
+        {
+          "at": 1787367645144,
+          "urgency": "REFILL",
+          "countBefore": 453,
+          "countAfter": 715,
+          "candidatesBefore": 707,
+          "candidatesAfter": 1400,
+          "exhausted": false,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645177,
+          "urgency": "REFILL",
+          "countBefore": 334,
+          "countAfter": 629,
+          "candidatesBefore": 482,
+          "candidatesAfter": 1057,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645210,
+          "urgency": "REFILL",
+          "countBefore": 473,
+          "countAfter": 684,
+          "candidatesBefore": 729,
+          "candidatesAfter": 1290,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645244,
+          "urgency": "REFILL",
+          "countBefore": 450,
+          "countAfter": 689,
+          "candidatesBefore": 712,
+          "candidatesAfter": 1277,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645277,
+          "urgency": "REFILL",
+          "countBefore": 465,
+          "countAfter": 700,
+          "candidatesBefore": 786,
+          "candidatesAfter": 1373,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645310,
+          "urgency": "REFILL",
+          "countBefore": 481,
+          "countAfter": 705,
+          "candidatesBefore": 821,
+          "candidatesAfter": 1413,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645344,
+          "urgency": "REFILL",
+          "countBefore": 435,
+          "countAfter": 706,
+          "candidatesBefore": 698,
+          "candidatesAfter": 1380,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645377,
+          "urgency": "REFILL",
+          "countBefore": 467,
+          "countAfter": 698,
+          "candidatesBefore": 828,
+          "candidatesAfter": 1337,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645409,
+          "urgency": "REFILL",
+          "countBefore": 454,
+          "countAfter": 664,
+          "candidatesBefore": 798,
+          "candidatesAfter": 1314,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645447,
+          "urgency": "REFILL",
+          "countBefore": 489,
+          "countAfter": 701,
+          "candidatesBefore": 897,
+          "candidatesAfter": 1389,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367645977,
+          "urgency": "REFILL",
+          "countBefore": 429,
+          "countAfter": 677,
+          "candidatesBefore": 741,
+          "candidatesAfter": 1238,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367646794,
+          "urgency": "REFILL",
+          "countBefore": 492,
+          "countAfter": 735,
+          "candidatesBefore": 961,
+          "candidatesAfter": 1421,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367647367,
+          "urgency": "REFILL",
+          "countBefore": 477,
+          "countAfter": 719,
+          "candidatesBefore": 957,
+          "candidatesAfter": 1476,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 7
+        },
+        {
+          "at": 1787367647394,
+          "urgency": "REFILL",
+          "countBefore": 480,
+          "countAfter": 737,
+          "candidatesBefore": 909,
+          "candidatesAfter": 1521,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        },
+        {
+          "at": 1787367647461,
+          "urgency": "REFILL",
+          "countBefore": 393,
+          "countAfter": 714,
+          "candidatesBefore": 657,
+          "candidatesAfter": 1422,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 7
+        },
+        {
+          "at": 1787367647492,
+          "urgency": "REFILL",
+          "countBefore": 452,
+          "countAfter": 701,
+          "candidatesBefore": 799,
+          "candidatesAfter": 1422,
+          "exhausted": false,
+          "texture": "AMBIGUOUS",
+          "stateBefore": "FEATURES_OK",
+          "stateAfter": "FEATURES_OK",
+          "detectMs": 6
+        }
+      ],
+      "refillCount": 200,
+      "meanDetectCostMs": 4.185,
+      "level0Calibration": {
+        "width": 720,
+        "height": 1280,
+        "detectMs": 27,
+        "features": 309
+      },
+      "note": "Texture classes are measured from the image, not asserted by the harness: a frame counts as rich or poor by its own mean gradient magnitude, and the histogram above shows where the run actually sat. A refill marked `exhausted` found no further candidates, which is a scene with nothing left in it rather than a mechanism that failed."
+    },
+    "devEntry": false,
+    "previewPresented": true
+  }
+}

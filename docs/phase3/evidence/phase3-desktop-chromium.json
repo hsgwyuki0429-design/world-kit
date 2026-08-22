@@ -3,9 +3,9 @@
   "leg": "DESKTOP_DEV",
   "phase": 3,
   "phaseName": "Feature Detection",
-  "createdAt": "2026-08-22T02:48:06.154Z",
+  "createdAt": "2026-08-22T05:40:10.736Z",
   "appVersion": "0.1.0",
-  "origin": "http://localhost:37571",
+  "origin": "http://localhost:34409",
   "secureContext": true,
   "device": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
@@ -33,15 +33,15 @@
         "label": "Secure context (HTTPS)",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "secure context over http://localhost:37571",
+        "detail": "secure context over http://localhost:34409",
         "data": {
           "isSecureContext": true,
           "protocol": "http:",
-          "host": "localhost:37571",
+          "host": "localhost:34409",
           "crossOriginIsolated": false
         },
-        "durationMs": 0.2,
-        "timestamp": 1787366853305
+        "durationMs": 0.3,
+        "timestamp": 1787377177766
       },
       {
         "id": "platform.iosSafariGuess",
@@ -55,8 +55,8 @@
           "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
           "maxTouchPoints": 1
         },
-        "durationMs": 0.1,
-        "timestamp": 1787366853306
+        "durationMs": 0,
+        "timestamp": 1787377177766
       },
       {
         "id": "camera.getUserMedia",
@@ -70,8 +70,8 @@
           "hasGetUserMedia": true,
           "secureContext": true
         },
-        "durationMs": 0.2,
-        "timestamp": 1787366853306
+        "durationMs": 0.1,
+        "timestamp": 1787377177767
       },
       {
         "id": "camera.enumerateDevices",
@@ -87,8 +87,8 @@
           "labelsHidden": false,
           "deviceIdsHidden": false
         },
-        "durationMs": 35.5,
-        "timestamp": 1787366853341
+        "durationMs": 48.6,
+        "timestamp": 1787377177815
       },
       {
         "id": "camera.supportedConstraints",
@@ -107,8 +107,8 @@
           "deviceId": true,
           "missing": []
         },
-        "durationMs": 0.2,
-        "timestamp": 1787366853341
+        "durationMs": 0.1,
+        "timestamp": 1787377177815
       },
       {
         "id": "camera.trackControl",
@@ -122,8 +122,8 @@
           "getSettings": true,
           "applyConstraints": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787366853341
+        "durationMs": 0.2,
+        "timestamp": 1787377177815
       },
       {
         "id": "compute.webassembly",
@@ -138,8 +138,8 @@
           "hasInstantiateStreaming": true,
           "hasMemory": true
         },
-        "durationMs": 0.6,
-        "timestamp": 1787366853342
+        "durationMs": 0.7,
+        "timestamp": 1787377177816
       },
       {
         "id": "compute.worker",
@@ -147,13 +147,13 @@
         "label": "Web Worker round-trip",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "blob worker round-trip succeeded in 5.3 ms",
+        "detail": "blob worker round-trip succeeded in 10.5 ms",
         "data": {
-          "roundTripMs": 5.3,
+          "roundTripMs": 10.5,
           "tokenMatched": true
         },
-        "durationMs": 6.4,
-        "timestamp": 1787366853349
+        "durationMs": 12.1,
+        "timestamp": 1787377177828
       },
       {
         "id": "compute.offscreenCanvas",
@@ -171,8 +171,8 @@
           ],
           "exact": true
         },
-        "durationMs": 0.5,
-        "timestamp": 1787366853349
+        "durationMs": 0.8,
+        "timestamp": 1787377177829
       },
       {
         "id": "compute.transferControlToOffscreen",
@@ -186,7 +186,7 @@
           "height": 4
         },
         "durationMs": 0.2,
-        "timestamp": 1787366853349
+        "timestamp": 1787377177829
       },
       {
         "id": "compute.offscreenInWorker",
@@ -205,8 +205,8 @@
           ],
           "exact": true
         },
-        "durationMs": 6.7,
-        "timestamp": 1787366853356
+        "durationMs": 8.9,
+        "timestamp": 1787377177838
       },
       {
         "id": "compute.sharedArrayBuffer",
@@ -218,8 +218,8 @@
         "data": {
           "crossOriginIsolated": false
         },
-        "durationMs": 0,
-        "timestamp": 1787366853356
+        "durationMs": 0.1,
+        "timestamp": 1787377177838
       },
       {
         "id": "graphics.webgl2",
@@ -241,8 +241,8 @@
           "textureFloatLinear": true,
           "extensionCount": 29
         },
-        "durationMs": 9.7,
-        "timestamp": 1787366853366
+        "durationMs": 12.9,
+        "timestamp": 1787377177851
       },
       {
         "id": "graphics.webgpu",
@@ -255,8 +255,8 @@
           "hasNavigatorGpu": true,
           "adapter": null
         },
-        "durationMs": 1.6,
-        "timestamp": 1787366853367
+        "durationMs": 2.5,
+        "timestamp": 1787377177854
       },
       {
         "id": "graphics.createImageBitmap",
@@ -269,8 +269,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 1.6,
-        "timestamp": 1787366853369
+        "durationMs": 1.9,
+        "timestamp": 1787377177856
       },
       {
         "id": "graphics.canvas2dReadback",
@@ -289,7 +289,7 @@
           "exact": true
         },
         "durationMs": 0.2,
-        "timestamp": 1787366853369
+        "timestamp": 1787377177856
       },
       {
         "id": "media.imageCapture",
@@ -299,8 +299,8 @@
         "method": "PRESENCE_CHECK",
         "detail": "ImageCapture is present",
         "data": {},
-        "durationMs": 0,
-        "timestamp": 1787366853369
+        "durationMs": 0.2,
+        "timestamp": 1787377177856
       },
       {
         "id": "media.webcodecs",
@@ -314,8 +314,8 @@
           "VideoDecoder": true,
           "VideoEncoder": true
         },
-        "durationMs": 0,
-        "timestamp": 1787366853369
+        "durationMs": 0.1,
+        "timestamp": 1787377177856
       },
       {
         "id": "media.videoFrameCallback",
@@ -327,8 +327,8 @@
         "data": {
           "playsInline": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787366853369
+        "durationMs": 0.2,
+        "timestamp": 1787377177856
       },
       {
         "id": "storage.estimate",
@@ -336,13 +336,13 @@
         "label": "Storage quota",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "storage quota reported by the platform: 831.8 MB (used 0.0 B)",
+        "detail": "storage quota reported by the platform: 1.0 GB (used 0.0 B)",
         "data": {
-          "quotaBytes": 872167761,
+          "quotaBytes": 1092408578,
           "usageBytes": 0
         },
-        "durationMs": 1.6,
-        "timestamp": 1787366853371
+        "durationMs": 2.2,
+        "timestamp": 1787377177858
       },
       {
         "id": "storage.localStorage",
@@ -352,8 +352,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "wrote, read and removed a real localStorage key",
         "data": {},
-        "durationMs": 0.7,
-        "timestamp": 1787366853372
+        "durationMs": 1.1,
+        "timestamp": 1787377177860
       },
       {
         "id": "storage.indexedDB",
@@ -363,8 +363,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
         "data": {},
-        "durationMs": 1.6,
-        "timestamp": 1787366853373
+        "durationMs": 2.4,
+        "timestamp": 1787377177862
       },
       {
         "id": "storage.performanceMemory",
@@ -377,7 +377,7 @@
           "deviceMemory": 8
         },
         "durationMs": 0.1,
-        "timestamp": 1787366853373
+        "timestamp": 1787377177862
       },
       {
         "id": "spatial.webxr",
@@ -391,8 +391,8 @@
           "immersiveAR": false,
           "immersiveVR": false
         },
-        "durationMs": 5,
-        "timestamp": 1787366853378
+        "durationMs": 8.6,
+        "timestamp": 1787377177871
       },
       {
         "id": "spatial.nativeBridge",
@@ -405,7 +405,7 @@
           "handlerNames": []
         },
         "durationMs": 0.1,
-        "timestamp": 1787366853378
+        "timestamp": 1787377177871
       },
       {
         "id": "spatial.cameraDepth",
@@ -418,8 +418,8 @@
           "depthConstraintKeys": [],
           "webxrAvailable": false
         },
-        "durationMs": 0.1,
-        "timestamp": 1787366853379
+        "durationMs": 0.3,
+        "timestamp": 1787377177871
       },
       {
         "id": "spatial.arkit",
@@ -432,7 +432,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787366853379
+        "timestamp": 1787377177871
       },
       {
         "id": "spatial.roomplan",
@@ -445,7 +445,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787366853379
+        "timestamp": 1787377177871
       },
       {
         "id": "spatial.metricScale",
@@ -459,7 +459,7 @@
           "units": "LOCAL_UNITS"
         },
         "durationMs": 0.1,
-        "timestamp": 1787366853379
+        "timestamp": 1787377177871
       },
       {
         "id": "motion.deviceMotion",
@@ -472,7 +472,7 @@
           "requiresPermission": false
         },
         "durationMs": 0,
-        "timestamp": 1787366853379
+        "timestamp": 1787377177871
       },
       {
         "id": "motion.deviceOrientation",
@@ -485,12 +485,12 @@
           "requiresPermission": false
         },
         "durationMs": 0,
-        "timestamp": 1787366853379
+        "timestamp": 1787377177871
       }
     ],
-    "startedAt": 1787366853290,
-    "completedAt": 1787366853379,
-    "totalDurationMs": 73.2
+    "startedAt": 1787377177744,
+    "completedAt": 1787377177871,
+    "totalDurationMs": 105
   },
   "testResults": [
     {
@@ -512,14 +512,14 @@
         "richMinCount": 0,
         "richMaxCount": 0,
         "richMedianGradient": 0,
-        "contrastSamples": 69,
-        "medianAboveChance": 0.9754,
-        "maxCountSeen": 97,
+        "contrastSamples": 64,
+        "medianAboveChance": 0.9591,
+        "maxCountSeen": 96,
         "overMaxFrames": 0,
         "detectLevel": 1,
-        "detectSize": "480x270"
+        "detectSize": "320x180"
       },
-      "timestamp": 1787366886153
+      "timestamp": 1787377210734
     },
     {
       "spec": {
@@ -532,31 +532,31 @@
         "failureCondition": "the count holding near target on a blank wall — a detector whose output does not depend on the image"
       },
       "verdict": "PENDING",
-      "observed": "569 blank frames but only 0 textured ones",
+      "observed": "502 blank frames but only 0 textured ones",
       "reason": "the comparison needs both: a count that fell means nothing without a count it fell from. Point the camera at something with structure too",
       "metrics": {
-        "poorFrames": 569,
-        "poorMedianCount": 53,
-        "poorMaxCount": 97,
-        "poorMedianGradient": 0.64,
+        "poorFrames": 502,
+        "poorMedianCount": 33,
+        "poorMaxCount": 96,
+        "poorMedianGradient": 0.711,
         "richMedianCount": 0,
         "stateFrames": {
-          "LOW_FEATURE_COUNT": 9,
-          "TRACKING_DEGRADED": 560
+          "LOW_FEATURE_COUNT": 6,
+          "TRACKING_DEGRADED": 496
         },
         "stateMismatches": 0,
         "gradientHistogram": [
           {
             "meanGradient": 0,
-            "frames": 31
+            "frames": 19
           },
           {
             "meanGradient": 1,
-            "frames": 538
+            "frames": 483
           }
         ]
       },
-      "timestamp": 1787366886153
+      "timestamp": 1787377210734
     },
     {
       "spec": {
@@ -569,20 +569,20 @@
         "failureCondition": "any cell over quota; a grid that does not measurably reduce clustering against its own control"
       },
       "verdict": "PENDING",
-      "observed": "0/10 comparisons where the quota bound (69 taken)",
+      "observed": "0/10 comparisons where the quota bound (64 taken)",
       "reason": "the comparisons taken so far were on frames too sparse for the quota to bind: no cell came near 17 features, so the gridded and ungridded selections were the same and say nothing about the grid. Point the camera at a scene with enough corners to crowd a cell",
       "metrics": {
         "bindingGridSamples": 0,
-        "totalGridSamples": 69,
+        "totalGridSamples": 64,
         "medianGriddedMaxCellShare": -1,
         "medianUngriddedMaxCellShare": -1,
         "medianCellGain": 0,
         "quotaBreaches": 0,
         "quota": 17,
-        "occupiedCells": 11,
+        "occupiedCells": 10,
         "cells": 48
       },
-      "timestamp": 1787366886153
+      "timestamp": 1787377210734
     },
     {
       "spec": {
@@ -595,57 +595,174 @@
         "failureCondition": "a threshold crossed with no response; a refill that raised nothing where candidates existed; a count above the maximum"
       },
       "verdict": "PASS",
-      "observed": "200 refill(s), 200 of them emergency; 130 found the frame exhausted; 9 frames LOW, 560 DEGRADED",
+      "observed": "200 refill(s), 200 of them emergency; 200 found the frame exhausted; 6 frames LOW, 496 DEGRADED",
       "reason": "the ladder ran at §11's levels and every refill either recovered features or recorded that the frame had none left to give — which is a scene with nothing in it, not a mechanism that failed",
       "metrics": {
         "refillCount": 200,
         "refills": [
           {
-            "at": 1787366885162,
+            "at": 1787377209762,
             "urgency": "EMERGENCY",
-            "countBefore": 45,
-            "countAfter": 56,
-            "candidatesBefore": 75,
-            "candidatesAfter": 75,
+            "countBefore": 21,
+            "countAfter": 29,
+            "candidatesBefore": 42,
+            "candidatesAfter": 42,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.9
+            "detectMs": 4.5
           },
           {
-            "at": 1787366885205,
+            "at": 1787377209809,
             "urgency": "EMERGENCY",
-            "countBefore": 50,
-            "countAfter": 64,
-            "candidatesBefore": 83,
-            "candidatesAfter": 83,
+            "countBefore": 22,
+            "countAfter": 32,
+            "candidatesBefore": 45,
+            "candidatesAfter": 45,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.7
+            "detectMs": 4.5
           },
           {
-            "at": 1787366885255,
+            "at": 1787377209840,
             "urgency": "EMERGENCY",
-            "countBefore": 52,
-            "countAfter": 64,
-            "candidatesBefore": 91,
-            "candidatesAfter": 91,
+            "countBefore": 13,
+            "countAfter": 15,
+            "candidatesBefore": 16,
+            "candidatesAfter": 16,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.9
+            "detectMs": 4.4
           },
           {
-            "at": 1787366885306,
+            "at": 1787377209908,
             "urgency": "EMERGENCY",
-            "countBefore": 53,
-            "countAfter": 65,
-            "candidatesBefore": 93,
-            "candidatesAfter": 93,
+            "countBefore": 15,
+            "countAfter": 17,
+            "candidatesBefore": 21,
+            "candidatesAfter": 21,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.6
+          },
+          {
+            "at": 1787377209957,
+            "urgency": "EMERGENCY",
+            "countBefore": 15,
+            "countAfter": 20,
+            "candidatesBefore": 25,
+            "candidatesAfter": 25,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.7
+          },
+          {
+            "at": 1787377210009,
+            "urgency": "EMERGENCY",
+            "countBefore": 15,
+            "countAfter": 18,
+            "candidatesBefore": 23,
+            "candidatesAfter": 23,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.5
+          },
+          {
+            "at": 1787377210063,
+            "urgency": "EMERGENCY",
+            "countBefore": 16,
+            "countAfter": 19,
+            "candidatesBefore": 27,
+            "candidatesAfter": 27,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.6
+          },
+          {
+            "at": 1787377210090,
+            "urgency": "EMERGENCY",
+            "countBefore": 17,
+            "countAfter": 24,
+            "candidatesBefore": 31,
+            "candidatesAfter": 31,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.8
+          },
+          {
+            "at": 1787377210159,
+            "urgency": "EMERGENCY",
+            "countBefore": 15,
+            "countAfter": 21,
+            "candidatesBefore": 29,
+            "candidatesAfter": 29,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.7
+          },
+          {
+            "at": 1787377210193,
+            "urgency": "EMERGENCY",
+            "countBefore": 17,
+            "countAfter": 23,
+            "candidatesBefore": 32,
+            "candidatesAfter": 32,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.7
+          },
+          {
+            "at": 1787377210261,
+            "urgency": "EMERGENCY",
+            "countBefore": 19,
+            "countAfter": 27,
+            "candidatesBefore": 42,
+            "candidatesAfter": 42,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.7
+          },
+          {
+            "at": 1787377210308,
+            "urgency": "EMERGENCY",
+            "countBefore": 18,
+            "countAfter": 26,
+            "candidatesBefore": 38,
+            "candidatesAfter": 38,
+            "exhausted": true,
+            "texture": "TEXTURE_POOR",
+            "stateBefore": "TRACKING_DEGRADED",
+            "stateAfter": "TRACKING_DEGRADED",
+            "detectMs": 4.6
+          },
+          {
+            "at": 1787377210365,
+            "urgency": "EMERGENCY",
+            "countBefore": 20,
+            "countAfter": 28,
+            "candidatesBefore": 41,
+            "candidatesAfter": 41,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
@@ -653,222 +770,105 @@
             "detectMs": 9
           },
           {
-            "at": 1787366885355,
+            "at": 1787377210392,
             "urgency": "EMERGENCY",
-            "countBefore": 25,
+            "countBefore": 22,
             "countAfter": 31,
-            "candidatesBefore": 40,
-            "candidatesAfter": 40,
+            "candidatesBefore": 47,
+            "candidatesAfter": 47,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.8
+            "detectMs": 4.6
           },
           {
-            "at": 1787366885407,
+            "at": 1787377210457,
             "urgency": "EMERGENCY",
-            "countBefore": 27,
-            "countAfter": 35,
-            "candidatesBefore": 43,
-            "candidatesAfter": 43,
+            "countBefore": 12,
+            "countAfter": 14,
+            "candidatesBefore": 17,
+            "candidatesAfter": 17,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.2
+            "detectMs": 4.6
           },
           {
-            "at": 1787366885460,
+            "at": 1787377210489,
             "urgency": "EMERGENCY",
-            "countBefore": 31,
-            "countAfter": 40,
-            "candidatesBefore": 49,
-            "candidatesAfter": 50,
-            "exhausted": false,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.9
-          },
-          {
-            "at": 1787366885506,
-            "urgency": "EMERGENCY",
-            "countBefore": 33,
-            "countAfter": 43,
-            "candidatesBefore": 51,
-            "candidatesAfter": 52,
-            "exhausted": false,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.7
-          },
-          {
-            "at": 1787366885555,
-            "urgency": "EMERGENCY",
-            "countBefore": 36,
-            "countAfter": 47,
-            "candidatesBefore": 57,
-            "candidatesAfter": 58,
-            "exhausted": false,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.8
-          },
-          {
-            "at": 1787366885607,
-            "urgency": "EMERGENCY",
-            "countBefore": 36,
-            "countAfter": 46,
-            "candidatesBefore": 61,
-            "candidatesAfter": 62,
-            "exhausted": false,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.5
-          },
-          {
-            "at": 1787366885659,
-            "urgency": "EMERGENCY",
-            "countBefore": 41,
-            "countAfter": 51,
-            "candidatesBefore": 67,
-            "candidatesAfter": 67,
+            "countBefore": 14,
+            "countAfter": 17,
+            "candidatesBefore": 21,
+            "candidatesAfter": 21,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.6
+            "detectMs": 4.6
           },
           {
-            "at": 1787366885708,
+            "at": 1787377210556,
             "urgency": "EMERGENCY",
-            "countBefore": 43,
-            "countAfter": 56,
-            "candidatesBefore": 74,
-            "candidatesAfter": 74,
+            "countBefore": 17,
+            "countAfter": 21,
+            "candidatesBefore": 26,
+            "candidatesAfter": 26,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.5
+            "detectMs": 4.6
           },
           {
-            "at": 1787366885756,
+            "at": 1787377210609,
             "urgency": "EMERGENCY",
-            "countBefore": 44,
-            "countAfter": 56,
-            "candidatesBefore": 80,
-            "candidatesAfter": 80,
+            "countBefore": 16,
+            "countAfter": 20,
+            "candidatesBefore": 25,
+            "candidatesAfter": 25,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.2
+            "detectMs": 4.6
           },
           {
-            "at": 1787366885805,
+            "at": 1787377210639,
             "urgency": "EMERGENCY",
-            "countBefore": 50,
-            "countAfter": 61,
-            "candidatesBefore": 81,
-            "candidatesAfter": 81,
+            "countBefore": 15,
+            "countAfter": 20,
+            "candidatesBefore": 26,
+            "candidatesAfter": 26,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.8
+            "detectMs": 4.6
           },
           {
-            "at": 1787366885857,
+            "at": 1787377210709,
             "urgency": "EMERGENCY",
-            "countBefore": 53,
-            "countAfter": 62,
-            "candidatesBefore": 88,
-            "candidatesAfter": 88,
+            "countBefore": 19,
+            "countAfter": 23,
+            "candidatesBefore": 32,
+            "candidatesAfter": 32,
             "exhausted": true,
             "texture": "TEXTURE_POOR",
             "stateBefore": "TRACKING_DEGRADED",
             "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.1
-          },
-          {
-            "at": 1787366885907,
-            "urgency": "EMERGENCY",
-            "countBefore": 52,
-            "countAfter": 65,
-            "candidatesBefore": 89,
-            "candidatesAfter": 89,
-            "exhausted": true,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.3
-          },
-          {
-            "at": 1787366885957,
-            "urgency": "EMERGENCY",
-            "countBefore": 26,
-            "countAfter": 35,
-            "candidatesBefore": 43,
-            "candidatesAfter": 43,
-            "exhausted": true,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.2
-          },
-          {
-            "at": 1787366886006,
-            "urgency": "EMERGENCY",
-            "countBefore": 27,
-            "countAfter": 42,
-            "candidatesBefore": 50,
-            "candidatesAfter": 50,
-            "exhausted": true,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.2
-          },
-          {
-            "at": 1787366886057,
-            "urgency": "EMERGENCY",
-            "countBefore": 31,
-            "countAfter": 41,
-            "candidatesBefore": 52,
-            "candidatesAfter": 52,
-            "exhausted": true,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 8.8
-          },
-          {
-            "at": 1787366886099,
-            "urgency": "EMERGENCY",
-            "countBefore": 32,
-            "countAfter": 41,
-            "candidatesBefore": 52,
-            "candidatesAfter": 52,
-            "exhausted": true,
-            "texture": "TEXTURE_POOR",
-            "stateBefore": "TRACKING_DEGRADED",
-            "stateAfter": "TRACKING_DEGRADED",
-            "detectMs": 9.1
+            "detectMs": 4.5
           }
         ],
         "ineffectiveRefills": 0,
         "emergencyRefills": 200,
-        "degradedFrames": 560,
-        "lowFrames": 9,
+        "degradedFrames": 496,
+        "lowFrames": 6,
         "overMaxFrames": 0,
-        "maxCountSeen": 97
+        "maxCountSeen": 96
       },
-      "timestamp": 1787366886153
+      "timestamp": 1787377210734
     },
     {
       "spec": {
@@ -881,23 +881,23 @@
         "failureCondition": "over budget. Advisory because §34 ranks correctness above performance"
       },
       "verdict": "FAIL",
-      "observed": "9.616 ms mean at level 1 (480x270) over 569 detections; level 0 (1280x720) would have cost 97.9 ms for 137 features",
-      "reason": "mean 9.616 ms exceeds the 8 ms §H budgets for Shi-Tomasi",
+      "observed": "8.535 ms mean at level 1 (320x180) over 502 detections; level 0 (1280x720) would have cost 131.8 ms for 122 features",
+      "reason": "mean 8.535 ms exceeds the 8 ms §H budgets for Shi-Tomasi",
       "metrics": {
-        "detections": 569,
-        "meanDetectCostMs": 9.616,
+        "detections": 502,
+        "meanDetectCostMs": 8.535,
         "budgetMs": 8,
         "detectLevel": 1,
-        "detectSize": "480x270",
+        "detectSize": "320x180",
         "level0Calibration": {
           "width": 1280,
           "height": 720,
-          "detectMs": 97.9,
-          "features": 137
+          "detectMs": 131.8,
+          "features": 122
         },
         "level0WouldHaveFitBudget": false
       },
-      "timestamp": 1787366886153
+      "timestamp": 1787377210734
     },
     {
       "spec": {
@@ -917,154 +917,154 @@
         "records": [
           {
             "id": 0,
-            "x": 96,
-            "y": 16,
-            "x0": 192,
-            "y0": 32,
-            "cornerStrength": 442829.5,
+            "x": 203,
+            "y": 91,
+            "x0": 406,
+            "y0": 182,
+            "cornerStrength": 274504.3125,
             "age": 0,
             "trackLength": 1,
             "forwardBackwardError": null,
             "reprojectionError": null,
-            "qualityScore": 1,
-            "cell": 1
+            "qualityScore": 0.999999991498201,
+            "cell": 29
+          },
+          {
+            "id": 2,
+            "x": 121,
+            "y": 109,
+            "x0": 242,
+            "y0": 218,
+            "cornerStrength": 256180.21875,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.9332466008963238,
+            "cell": 27
           },
           {
             "id": 5,
-            "x": 138,
-            "y": 19,
-            "x0": 276,
-            "y0": 38,
-            "cornerStrength": 370425.3125,
+            "x": 91,
+            "y": 12,
+            "x0": 182,
+            "y0": 24,
+            "cornerStrength": 241329.28125,
             "age": 0,
             "trackLength": 1,
             "forwardBackwardError": null,
             "reprojectionError": null,
-            "qualityScore": 0.8364964749580346,
+            "qualityScore": 0.8791456753462369,
             "cell": 2
           },
           {
-            "id": 10,
-            "x": 37,
-            "y": 14,
-            "x0": 74,
-            "y0": 28,
-            "cornerStrength": 332434.4375,
+            "id": 8,
+            "x": 18,
+            "y": 161,
+            "x0": 36,
+            "y0": 322,
+            "cornerStrength": 207923.90625,
             "age": 0,
             "trackLength": 1,
             "forwardBackwardError": null,
             "reprojectionError": null,
-            "qualityScore": 0.7507052723979468,
-            "cell": 0
+            "qualityScore": 0.7574522330401375,
+            "cell": 40
           },
           {
-            "id": 15,
-            "x": 114,
-            "y": 21,
-            "x0": 228,
-            "y0": 42,
-            "cornerStrength": 303093.28125,
+            "id": 11,
+            "x": 301,
+            "y": 161,
+            "x0": 602,
+            "y0": 322,
+            "cornerStrength": 143325,
             "age": 0,
             "trackLength": 1,
             "forwardBackwardError": null,
             "reprojectionError": null,
-            "qualityScore": 0.684446912220906,
-            "cell": 1
+            "qualityScore": 0.5221229403508174,
+            "cell": 47
+          },
+          {
+            "id": 14,
+            "x": 201,
+            "y": 107,
+            "x0": 402,
+            "y0": 214,
+            "cornerStrength": 20335.423828125,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.07408052525672912,
+            "cell": 29
+          },
+          {
+            "id": 17,
+            "x": 129,
+            "y": 103,
+            "x0": 258,
+            "y0": 206,
+            "cornerStrength": 18023.31640625,
+            "age": 0,
+            "trackLength": 1,
+            "forwardBackwardError": null,
+            "reprojectionError": null,
+            "qualityScore": 0.0656576797969955,
+            "cell": 27
           },
           {
             "id": 20,
-            "x": 234,
-            "y": 200,
-            "x0": 468,
-            "y0": 400,
-            "cornerStrength": 211254.609375,
+            "x": 148,
+            "y": 133,
+            "x0": 296,
+            "y0": 266,
+            "cornerStrength": 17110.4765625,
             "age": 0,
             "trackLength": 1,
             "forwardBackwardError": null,
             "reprojectionError": null,
-            "qualityScore": 0.4770563190408973,
+            "qualityScore": 0.06233226815709923,
             "cell": 35
-          },
-          {
-            "id": 25,
-            "x": 89,
-            "y": 20,
-            "x0": 178,
-            "y0": 40,
-            "cornerStrength": 159660.15625,
-            "age": 0,
-            "trackLength": 1,
-            "forwardBackwardError": null,
-            "reprojectionError": null,
-            "qualityScore": 0.3605454416519498,
-            "cell": 1
-          },
-          {
-            "id": 30,
-            "x": 263,
-            "y": 198,
-            "x0": 526,
-            "y0": 396,
-            "cornerStrength": 20129.64453125,
-            "age": 0,
-            "trackLength": 1,
-            "forwardBackwardError": null,
-            "reprojectionError": null,
-            "qualityScore": 0.045456873826755305,
-            "cell": 36
-          },
-          {
-            "id": 35,
-            "x": 271,
-            "y": 194,
-            "x0": 542,
-            "y0": 388,
-            "cornerStrength": 15363.607421875,
-            "age": 0,
-            "trackLength": 1,
-            "forwardBackwardError": null,
-            "reprojectionError": null,
-            "qualityScore": 0.03469418265264347,
-            "cell": 36
           }
         ]
       },
-      "timestamp": 1787366886153
+      "timestamp": 1787377210734
     }
   ],
   "overallVerdict": "TESTING",
   "overallReason": "PENDING: FEAT-001, FEAT-002, FEAT-003 — not yet evaluable",
   "stateTransitions": [
     {
-      "timestamp": 1787366853268,
+      "timestamp": 1787377177725,
       "subject": "phase[0] Environment / Capability",
       "from": "NOT_STARTED",
       "to": "IMPLEMENTING",
       "reason": "capability detection starting"
     },
     {
-      "timestamp": 1787366853383,
+      "timestamp": 1787377177876,
       "subject": "phase[0] Environment / Capability",
       "from": "IMPLEMENTING",
       "to": "TESTING",
       "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
     },
     {
-      "timestamp": 1787366853401,
+      "timestamp": 1787377177902,
       "subject": "phase[2] Frame Pipeline",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
     },
     {
-      "timestamp": 1787366856071,
+      "timestamp": 1787377180631,
       "subject": "phase[3] Feature Detection",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
     },
     {
-      "timestamp": 1787366856653,
+      "timestamp": 1787377181235,
       "subject": "phase[3] Feature Detection",
       "from": "TESTING",
       "to": "TESTING",
@@ -1074,7 +1074,7 @@
   "errorLog": [],
   "fullLog": [
     {
-      "timestamp": 1787366853288,
+      "timestamp": 1787377177742,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -1082,22 +1082,22 @@
       "data": {
         "appVersion": "0.1.0",
         "leg": "DESKTOP_DEV",
-        "origin": "http://localhost:37571"
+        "origin": "http://localhost:34409"
       }
     },
     {
-      "timestamp": 1787366853379,
+      "timestamp": 1787377177871,
       "level": "INFO",
       "phase": 0,
       "source": "CapabilityDetector",
       "message": "capability detection complete",
       "data": {
         "records": 31,
-        "totalProbeMs": 73.2
+        "totalProbeMs": 105
       }
     },
     {
-      "timestamp": 1787366853387,
+      "timestamp": 1787377177881,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -1107,7 +1107,7 @@
       }
     },
     {
-      "timestamp": 1787366853399,
+      "timestamp": 1787377177900,
       "level": "WARN",
       "phase": 2,
       "source": "App",
@@ -1117,7 +1117,7 @@
       }
     },
     {
-      "timestamp": 1787366853401,
+      "timestamp": 1787377177902,
       "level": "INFO",
       "phase": 2,
       "source": "App",
@@ -1127,7 +1127,7 @@
       }
     },
     {
-      "timestamp": 1787366853477,
+      "timestamp": 1787377177980,
       "level": "INFO",
       "phase": 2,
       "source": "FramePipeline",
@@ -1142,7 +1142,7 @@
       }
     },
     {
-      "timestamp": 1787366853502,
+      "timestamp": 1787377178011,
       "level": "INFO",
       "phase": 2,
       "source": "FrameWorker",
@@ -1154,42 +1154,42 @@
       }
     },
     {
-      "timestamp": 1787366853740,
+      "timestamp": 1787377178289,
       "level": "INFO",
       "phase": 2,
       "source": "FramePipeline",
       "message": "acquisition route VIDEO_FRAME selected",
       "data": {
         "successes": 5,
-        "meanAcquireMs": 0.02
+        "meanAcquireMs": 0.08
       }
     },
     {
-      "timestamp": 1787366854338,
+      "timestamp": 1787377178889,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
       "data": {
-        "reason": "median worker latency 10.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
-        "medianWorkerMs": 10.3,
+        "reason": "median worker latency 12.7 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 12.7,
         "budgetMs": 33.33,
         "underInjectedLoad": false
       }
     },
     {
-      "timestamp": 1787366855048,
+      "timestamp": 1787377179610,
       "level": "INFO",
       "phase": 2,
       "source": "FramePipeline",
-      "message": "load injection started: 170 extra pyramid passes",
+      "message": "load injection started: 132 extra pyramid passes",
       "data": {
-        "derivedFrom": "target 200 ms (6x the 33 ms budget at HIGH 1280x720@30), measured baseline 12.65 ms and 1.106 ms per pyramid build over 31 unstressed frames",
+        "derivedFrom": "target 200 ms (6x the 33 ms budget at HIGH 1280x720@30), measured baseline 16.14 ms and 1.403 ms per pyramid build over 31 unstressed frames",
         "note": "a stimulus, not a result — the extra passes are real work on real data, and every latency the controller sees remains a measurement (§28)"
       }
     },
     {
-      "timestamp": 1787366856070,
+      "timestamp": 1787377180630,
       "level": "WARN",
       "phase": 3,
       "source": "App",
@@ -1199,7 +1199,7 @@
       }
     },
     {
-      "timestamp": 1787366856071,
+      "timestamp": 1787377180631,
       "level": "INFO",
       "phase": 3,
       "source": "App",
@@ -1209,7 +1209,7 @@
       }
     },
     {
-      "timestamp": 1787366856152,
+      "timestamp": 1787377180734,
       "level": "INFO",
       "phase": 2,
       "source": "FramePipeline",
@@ -1217,7 +1217,7 @@
       "data": {}
     },
     {
-      "timestamp": 1787366856152,
+      "timestamp": 1787377180734,
       "level": "INFO",
       "phase": 3,
       "source": "App",
@@ -1227,7 +1227,7 @@
       }
     },
     {
-      "timestamp": 1787366856152,
+      "timestamp": 1787377180734,
       "level": "INFO",
       "phase": 3,
       "source": "App",
@@ -1237,28 +1237,67 @@
       }
     },
     {
-      "timestamp": 1787366858378,
+      "timestamp": 1787377182890,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
       "data": {
-        "reason": "median worker latency 49.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
-        "medianWorkerMs": 49.1,
+        "reason": "median worker latency 55.5 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
+        "medianWorkerMs": 55.5,
         "budgetMs": 33.33,
         "underInjectedLoad": false
       }
     },
     {
-      "timestamp": 1787366862408,
+      "timestamp": 1787377186899,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier DOWN: BASIC 960x540@30 -> BASIC 960x540@20",
       "data": {
-        "reason": "median worker latency 36.2 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
-        "medianWorkerMs": 36.2,
+        "reason": "median worker latency 61.2 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
+        "medianWorkerMs": 61.2,
         "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787377190951,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
+      "data": {
+        "reason": "delivered rate 14.71 fps is below 15 fps, the floor for the 20 fps reachable from a 20 fps camera at a 20 fps target, with the worker at 34.7 ms against a 50 ms budget",
+        "medianWorkerMs": 34.7,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787377199090,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: REDUCED 640x360@20 -> BASIC 960x540@20",
+      "data": {
+        "reason": "median worker latency 17.8 ms is under 25 ms (0.5 of the 50 ms budget at BASIC 960x540@20) for 3 consecutive windows",
+        "medianWorkerMs": 17.8,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787377206622,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
+      "data": {
+        "reason": "delivered rate 14.96 fps is below 15 fps, the floor for the 20 fps reachable from a 20.07 fps camera at a 20 fps target, with the worker at 32.9 ms against a 50 ms budget",
+        "medianWorkerMs": 32.9,
+        "budgetMs": 50,
         "underInjectedLoad": false
       }
     }
@@ -1296,13 +1335,13 @@
           "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
           "ok": false,
           "errorName": "OverconstrainedError",
-          "durationMs": 4
+          "durationMs": 5
         },
         {
           "rung": 2,
           "label": "rear camera (preferred), 1280x720 ideal",
           "ok": true,
-          "durationMs": 5
+          "durationMs": 4
         }
       ],
       "requestedLadder": [
@@ -1328,26 +1367,26 @@
         "height": 720,
         "frameRate": 20,
         "facingMode": "unreported",
-        "deviceId": "6fb61d4e63e6edeeb970951c9d583636bc19e91e4175771a0ba5d2344dd1178f",
+        "deviceId": "d17b12a37d66018436c0c5b418c6635c2901fae8f99d96f4bcedf4c38039c342",
         "label": "fake_device_0",
         "aspectRatio": 1.778
       },
-      "openDurationMs": 8,
+      "openDurationMs": 9,
       "failure": null
     },
     "pipeline": {
       "running": true,
-      "startedAt": 239.10000000009313,
-      "uptimeMs": 32676,
+      "startedAt": 308.5999999999767,
+      "uptimeMs": 32754,
       "route": "VIDEO_FRAME",
       "routeLocked": true,
       "routeProbes": [
         {
           "route": "VIDEO_FRAME",
           "ok": true,
-          "attempts": 607,
-          "successes": 606,
-          "meanAcquireMs": 0.037,
+          "attempts": 538,
+          "successes": 538,
+          "meanAcquireMs": 0.069,
           "error": null,
           "note": "selected"
         },
@@ -1381,56 +1420,56 @@
       },
       "workerErrors": [],
       "callbacks": 653,
-      "admitted": 607,
-      "completed": 606,
-      "pacedOut": 3,
-      "backpressured": 43,
+      "admitted": 538,
+      "completed": 538,
+      "pacedOut": 13,
+      "backpressured": 102,
       "lost": 0,
       "acquireFailures": 0,
-      "deliveredFps": 20.04,
-      "sourceFps": 20,
-      "sessionDeliveredFps": 18.55,
-      "maxResultGapMs": 238.6,
+      "deliveredFps": 19.2,
+      "sourceFps": 19.93,
+      "sessionDeliveredFps": 16.43,
+      "maxResultGapMs": 243.8,
       "uiCostMs": {
-        "count": 607,
-        "mean": 0.06,
+        "count": 538,
+        "mean": 0.14,
         "p50": 0.1,
-        "p95": 0.2,
+        "p95": 0.3,
         "min": 0,
-        "max": 0.3
+        "max": 0.4
       },
       "acquireMs": {
-        "count": 607,
-        "mean": 0.04,
-        "p50": 0,
-        "p95": 0.1,
+        "count": 538,
+        "mean": 0.07,
+        "p50": 0.1,
+        "p95": 0.2,
         "min": 0,
         "max": 0.2
       },
       "workerMs": {
-        "count": 606,
-        "mean": 32.23,
-        "p50": 28.7,
-        "p95": 49.1,
-        "min": 9.3,
-        "max": 201.5
+        "count": 538,
+        "mean": 31.83,
+        "p50": 30.7,
+        "p95": 62.9,
+        "min": 10.4,
+        "max": 237.9
       },
       "roundTripMs": {
-        "count": 606,
-        "mean": 32.85,
-        "p50": 29.1,
-        "p95": 49.4,
-        "min": 9.5,
-        "max": 206.4
+        "count": 538,
+        "mean": 32.36,
+        "p50": 31.2,
+        "p95": 66.2,
+        "min": 10.7,
+        "max": 238.2
       },
-      "tierStep": 2,
-      "tierLabel": "BASIC 960x540@20",
+      "tierStep": 3,
+      "tierLabel": "REDUCED 640x360@20",
       "targetFps": 20,
-      "procWidth": 960,
-      "procHeight": 540,
+      "procWidth": 640,
+      "procHeight": 360,
       "decisions": [
         {
-          "at": 1100.4000000001397,
+          "at": 1216.8999999999069,
           "direction": "UP",
           "fromStep": 1,
           "toStep": 0,
@@ -1438,14 +1477,14 @@
           "toLabel": "HIGH 1280x720@30",
           "fromTargetFps": 30,
           "toTargetFps": 30,
-          "medianWorkerMs": 10.3,
+          "medianWorkerMs": 12.7,
           "budgetMs": 33.33,
-          "deliveredFps": 20.57,
+          "deliveredFps": 19.68,
           "windowSize": 15,
-          "reason": "median worker latency 10.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          "reason": "median worker latency 12.7 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
         },
         {
-          "at": 5140.199999999953,
+          "at": 5217.899999999907,
           "direction": "DOWN",
           "fromStep": 0,
           "toStep": 1,
@@ -1453,14 +1492,14 @@
           "toLabel": "BASIC 960x540@30",
           "fromTargetFps": 30,
           "toTargetFps": 30,
-          "medianWorkerMs": 49.1,
+          "medianWorkerMs": 55.5,
           "budgetMs": 33.33,
-          "deliveredFps": 13.2,
+          "deliveredFps": 11.68,
           "windowSize": 15,
-          "reason": "median worker latency 49.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+          "reason": "median worker latency 55.5 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
         },
         {
-          "at": 9169.800000000047,
+          "at": 9227.5,
           "direction": "DOWN",
           "fromStep": 1,
           "toStep": 2,
@@ -1468,11 +1507,56 @@
           "toLabel": "BASIC 960x540@20",
           "fromTargetFps": 30,
           "toTargetFps": 20,
-          "medianWorkerMs": 36.2,
+          "medianWorkerMs": 61.2,
           "budgetMs": 33.33,
-          "deliveredFps": 17.32,
+          "deliveredFps": 12.6,
           "windowSize": 15,
-          "reason": "median worker latency 36.2 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          "reason": "median worker latency 61.2 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+        },
+        {
+          "at": 13278.899999999907,
+          "direction": "DOWN",
+          "fromStep": 2,
+          "toStep": 3,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "REDUCED 640x360@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 34.7,
+          "budgetMs": 50,
+          "deliveredFps": 14.71,
+          "windowSize": 15,
+          "reason": "delivered rate 14.71 fps is below 15 fps, the floor for the 20 fps reachable from a 20 fps camera at a 20 fps target, with the worker at 34.7 ms against a 50 ms budget"
+        },
+        {
+          "at": 21418,
+          "direction": "UP",
+          "fromStep": 3,
+          "toStep": 2,
+          "fromLabel": "REDUCED 640x360@20",
+          "toLabel": "BASIC 960x540@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 17.8,
+          "budgetMs": 50,
+          "deliveredFps": 19.56,
+          "windowSize": 15,
+          "reason": "median worker latency 17.8 ms is under 25 ms (0.5 of the 50 ms budget at BASIC 960x540@20) for 3 consecutive windows"
+        },
+        {
+          "at": 28950.099999999977,
+          "direction": "DOWN",
+          "fromStep": 2,
+          "toStep": 3,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "REDUCED 640x360@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 32.9,
+          "budgetMs": 50,
+          "deliveredFps": 14.96,
+          "windowSize": 15,
+          "reason": "delivered rate 14.96 fps is below 15 fps, the floor for the 20 fps reachable from a 20.07 fps camera at a 20 fps target, with the worker at 32.9 ms against a 50 ms budget"
         }
       ],
       "spontaneousDegrade": true,
@@ -1482,7 +1566,8 @@
       ],
       "processedSizesObserved": [
         "960x540",
-        "1280x720"
+        "1280x720",
+        "640x360"
       ],
       "sourceWidth": 1280,
       "sourceHeight": 720,
@@ -1495,7 +1580,7 @@
         {
           "step": 0,
           "label": "HIGH 1280x720@30",
-          "frames": 48,
+          "frames": 39,
           "sizes": [
             "1280x720"
           ]
@@ -1503,7 +1588,7 @@
         {
           "step": 1,
           "label": "BASIC 960x540@30",
-          "frames": 92,
+          "frames": 78,
           "sizes": [
             "960x540"
           ]
@@ -1511,9 +1596,17 @@
         {
           "step": 2,
           "label": "BASIC 960x540@20",
-          "frames": 466,
+          "frames": 179,
           "sizes": [
             "960x540"
+          ]
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "frames": 242,
+          "sizes": [
+            "640x360"
           ]
         }
       ],
@@ -1521,75 +1614,96 @@
         {
           "decisionIndex": 0,
           "direction": "UP",
-          "beforeMedianWorkerMs": 10.3,
-          "afterMedianWorkerMs": 13.2,
+          "beforeMedianWorkerMs": 12.7,
+          "afterMedianWorkerMs": 17.2,
           "samples": 15
         },
         {
           "decisionIndex": 1,
           "direction": "DOWN",
-          "beforeMedianWorkerMs": 49.1,
-          "afterMedianWorkerMs": 29.2,
+          "beforeMedianWorkerMs": 55.5,
+          "afterMedianWorkerMs": 35,
           "samples": 15
         },
         {
           "decisionIndex": 2,
           "direction": "DOWN",
-          "beforeMedianWorkerMs": 36.2,
-          "afterMedianWorkerMs": 29.1,
+          "beforeMedianWorkerMs": 61.2,
+          "afterMedianWorkerMs": 48,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 3,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 34.7,
+          "afterMedianWorkerMs": 25.3,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 4,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 17.8,
+          "afterMedianWorkerMs": 33,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 5,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 32.9,
+          "afterMedianWorkerMs": 19.1,
           "samples": 15
         }
       ],
       "pyramidLevels": [
         {
-          "width": 960,
-          "height": 540,
-          "bytes": 518400
+          "width": 640,
+          "height": 360,
+          "bytes": 230400
         },
         {
-          "width": 480,
-          "height": 270,
-          "bytes": 129600
+          "width": 320,
+          "height": 180,
+          "bytes": 57600
         },
         {
-          "width": 240,
-          "height": 135,
-          "bytes": 32400
+          "width": 160,
+          "height": 90,
+          "bytes": 14400
         }
       ],
       "pyramidConsistent": true,
       "pyramidProblems": [],
-      "meanLuma": 83.78,
-      "topMadMax": 9.842,
-      "topMadMedian": 0.948,
-      "topMadSamples": 600,
-      "stripMadMax": 9.063,
-      "stripMadMedian": 2.703,
-      "stripMadSamples": 263,
-      "distinctChecksums": 606,
+      "meanLuma": 85.56,
+      "topMadMax": 9.84,
+      "topMadMedian": 0.953,
+      "topMadSamples": 532,
+      "stripMadMax": 8.852,
+      "stripMadMedian": 2.728,
+      "stripMadSamples": 243,
+      "distinctChecksums": 538,
       "crossCheck": {
         "count": 31,
         "unmatched": 0,
-        "medianAbsDifference": 0.061,
-        "maxAbsDifference": 0.103,
-        "sceneStdDev": 2.945,
-        "sceneRange": 9.979,
+        "medianAbsDifference": 0.062,
+        "maxAbsDifference": 0.097,
+        "sceneStdDev": 2.995,
+        "sceneRange": 10.241,
         "costMs": {
           "count": 31,
-          "mean": 5.73,
-          "p50": 5.2,
-          "p95": 7.2,
+          "mean": 6.61,
+          "p50": 5.5,
+          "p95": 12.7,
           "min": 4.5,
-          "max": 19.2
+          "max": 32
         }
       },
       "stressPasses": 0,
       "stressIntervals": [
         {
-          "startedAt": 1810,
-          "endedAt": 2914,
-          "passes": 170,
-          "derivedFrom": "target 200 ms (6x the 33 ms budget at HIGH 1280x720@30), measured baseline 12.65 ms and 1.106 ms per pyramid build over 31 unstressed frames"
+          "startedAt": 1939,
+          "endedAt": 3062,
+          "passes": 132,
+          "derivedFrom": "target 200 ms (6x the 33 ms budget at HIGH 1280x720@30), measured baseline 16.14 ms and 1.403 ms per pyramid build over 31 unstressed frames"
         }
       ],
       "anyStressed": true,
@@ -1597,613 +1711,613 @@
         {
           "index": 0,
           "stressed": false,
-          "startedAt": 239.1,
-          "endedAt": 1809.9,
-          "observedMs": 1489.1,
+          "startedAt": 308.6,
+          "endedAt": 1938.5,
+          "observedMs": 1511.6,
           "results": 31,
-          "meanFps": 20.15,
-          "maxGapMs": 57,
+          "meanFps": 19.85,
+          "maxGapMs": 73.5,
           "wasHidden": false,
           "endReason": "load injection started"
         },
         {
           "index": 1,
           "stressed": true,
-          "startedAt": 1809.9,
-          "endedAt": 2914.2,
-          "observedMs": 850.8,
-          "results": 5,
-          "meanFps": 4.7,
-          "maxGapMs": 238.6,
+          "startedAt": 1938.5,
+          "endedAt": 3062.2,
+          "observedMs": 718.2,
+          "results": 4,
+          "meanFps": 4.18,
+          "maxGapMs": 243.8,
           "wasHidden": false,
           "endReason": "load injection stopped"
         },
         {
           "index": 2,
           "stressed": false,
-          "startedAt": 2914.2,
+          "startedAt": 3062.2,
           "endedAt": null,
-          "observedMs": 29779,
-          "results": 570,
-          "meanFps": 19.11,
-          "maxGapMs": 184.9,
+          "observedMs": 29947.8,
+          "results": 503,
+          "meanFps": 16.76,
+          "maxGapMs": 234.4,
           "wasHidden": false,
-          "endReason": "open at 32914.9"
+          "endReason": "open at 33063"
         }
       ],
       "longestCleanSegment": {
         "index": 2,
         "stressed": false,
-        "startedAt": 2914.2,
+        "startedAt": 3062.2,
         "endedAt": null,
-        "observedMs": 29779,
-        "results": 570,
-        "meanFps": 19.11,
-        "maxGapMs": 184.9,
+        "observedMs": 29947.8,
+        "results": 503,
+        "meanFps": 16.76,
+        "maxGapMs": 234.4,
         "wasHidden": false,
-        "endReason": "open at 32914.9"
+        "endReason": "open at 33063"
       },
       "wasEverHidden": false,
       "hiddenCount": 0,
       "recentFrames": [
         {
-          "frameId": 567,
-          "at": 30925,
+          "frameId": 499,
+          "at": 31075,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.7,
-          "roundTripMs": 35.6,
-          "meanLuma": 80.82,
-          "checksum": 3720388650,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 568,
-          "at": 30968,
-          "sourceWidth": 1280,
-          "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.6,
-          "roundTripMs": 28.8,
-          "meanLuma": 81.72,
-          "checksum": 886393427,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 569,
-          "at": 31018,
-          "sourceWidth": 1280,
-          "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.8,
-          "roundTripMs": 28.9,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.9,
+          "roundTripMs": 23.5,
           "meanLuma": 82.64,
-          "checksum": 1257907134,
+          "checksum": 1894316523,
           "stressPasses": 0
         },
         {
-          "frameId": 570,
-          "at": 31069,
+          "frameId": 500,
+          "at": 31139,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.8,
-          "roundTripMs": 30.1,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 20.6,
+          "roundTripMs": 21,
           "meanLuma": 83.53,
-          "checksum": 1564134169,
+          "checksum": 1558754654,
           "stressPasses": 0
         },
         {
-          "frameId": 571,
-          "at": 31112,
+          "frameId": 501,
+          "at": 31187,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.3,
-          "roundTripMs": 28.5,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.6,
+          "roundTripMs": 19.1,
           "meanLuma": 84.45,
-          "checksum": 303147205,
+          "checksum": 3575182268,
           "stressPasses": 0
         },
         {
-          "frameId": 572,
-          "at": 31171,
+          "frameId": 502,
+          "at": 31219,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 31.4,
-          "roundTripMs": 31.5,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.1,
+          "roundTripMs": 18.6,
           "meanLuma": 85.35,
-          "checksum": 2800172348,
+          "checksum": 830628431,
           "stressPasses": 0
         },
         {
-          "frameId": 573,
-          "at": 31224,
+          "frameId": 503,
+          "at": 31269,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.3,
-          "roundTripMs": 29.6,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.5,
+          "roundTripMs": 17.9,
           "meanLuma": 86.25,
-          "checksum": 2741641471,
+          "checksum": 4290979069,
           "stressPasses": 0
         },
         {
-          "frameId": 574,
-          "at": 31267,
+          "frameId": 504,
+          "at": 31346,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 27.9,
-          "roundTripMs": 28.1,
-          "meanLuma": 87.14,
-          "checksum": 578241600,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 20.8,
+          "roundTripMs": 21.1,
+          "meanLuma": 87.15,
+          "checksum": 3159297353,
           "stressPasses": 0
         },
         {
-          "frameId": 575,
-          "at": 31321,
+          "frameId": 505,
+          "at": 31387,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 30.3,
-          "roundTripMs": 31.7,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.8,
+          "roundTripMs": 19.4,
           "meanLuma": 88.05,
-          "checksum": 2131305141,
+          "checksum": 3431293624,
           "stressPasses": 0
         },
         {
-          "frameId": 576,
-          "at": 31369,
+          "frameId": 506,
+          "at": 31436,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.6,
-          "roundTripMs": 29.8,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18,
+          "roundTripMs": 18.5,
           "meanLuma": 88.95,
-          "checksum": 3977532862,
+          "checksum": 360658148,
           "stressPasses": 0
         },
         {
-          "frameId": 577,
-          "at": 31424,
+          "frameId": 507,
+          "at": 31470,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.4,
-          "roundTripMs": 34.6,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19,
+          "roundTripMs": 19.6,
           "meanLuma": 89.86,
-          "checksum": 1762623884,
+          "checksum": 224561674,
           "stressPasses": 0
         },
         {
-          "frameId": 578,
-          "at": 31473,
+          "frameId": 508,
+          "at": 31540,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 33.7,
-          "roundTripMs": 34,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 22,
+          "roundTripMs": 22.3,
           "meanLuma": 90.76,
-          "checksum": 3922836779,
+          "checksum": 921184320,
           "stressPasses": 0
         },
         {
-          "frameId": 579,
-          "at": 31518,
+          "frameId": 509,
+          "at": 31591,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29,
-          "roundTripMs": 29.2,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.8,
+          "roundTripMs": 19.2,
           "meanLuma": 81.16,
-          "checksum": 1798529856,
+          "checksum": 2923952416,
           "stressPasses": 0
         },
         {
-          "frameId": 580,
-          "at": 31567,
+          "frameId": 510,
+          "at": 31636,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28,
-          "roundTripMs": 28.2,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.7,
+          "roundTripMs": 18.3,
           "meanLuma": 82.05,
-          "checksum": 2133495332,
+          "checksum": 3570093051,
           "stressPasses": 0
         },
         {
-          "frameId": 581,
-          "at": 31619,
+          "frameId": 511,
+          "at": 31670,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.6,
-          "roundTripMs": 29.8,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.4,
+          "roundTripMs": 18.9,
           "meanLuma": 82.97,
-          "checksum": 258625408,
+          "checksum": 2915821358,
           "stressPasses": 0
         },
         {
-          "frameId": 582,
-          "at": 31661,
+          "frameId": 512,
+          "at": 31738,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.3,
-          "roundTripMs": 28.6,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 20.5,
+          "roundTripMs": 20.8,
           "meanLuma": 83.87,
-          "checksum": 896754009,
+          "checksum": 1722820572,
           "stressPasses": 0
         },
         {
-          "frameId": 583,
-          "at": 31717,
+          "frameId": 513,
+          "at": 31786,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 27.5,
-          "roundTripMs": 27.6,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.2,
+          "roundTripMs": 18.5,
           "meanLuma": 84.78,
-          "checksum": 1076302092,
+          "checksum": 3121757113,
           "stressPasses": 0
         },
         {
-          "frameId": 584,
-          "at": 31769,
+          "frameId": 514,
+          "at": 31819,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.1,
-          "roundTripMs": 29.3,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.8,
+          "roundTripMs": 18.3,
           "meanLuma": 85.67,
-          "checksum": 2449979633,
+          "checksum": 2702367981,
           "stressPasses": 0
         },
         {
-          "frameId": 585,
-          "at": 31817,
+          "frameId": 515,
+          "at": 31888,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 27.9,
-          "roundTripMs": 28.2,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.7,
+          "roundTripMs": 20.1,
           "meanLuma": 86.59,
-          "checksum": 888852693,
+          "checksum": 3502161900,
           "stressPasses": 0
         },
         {
-          "frameId": 586,
-          "at": 31868,
+          "frameId": 516,
+          "at": 31939,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.2,
-          "roundTripMs": 28.5,
-          "meanLuma": 87.47,
-          "checksum": 3896042176,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 21.3,
+          "roundTripMs": 21.5,
+          "meanLuma": 87.48,
+          "checksum": 2553086285,
           "stressPasses": 0
         },
         {
-          "frameId": 587,
-          "at": 31924,
+          "frameId": 517,
+          "at": 31987,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.7,
-          "roundTripMs": 34.6,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.6,
+          "roundTripMs": 19.2,
           "meanLuma": 88.32,
-          "checksum": 1848085135,
+          "checksum": 3307255391,
           "stressPasses": 0
         },
         {
-          "frameId": 588,
-          "at": 31967,
+          "frameId": 518,
+          "at": 32035,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 27.9,
-          "roundTripMs": 28.2,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17,
+          "roundTripMs": 17.4,
           "meanLuma": 89.12,
-          "checksum": 367870184,
+          "checksum": 2608686287,
           "stressPasses": 0
         },
         {
-          "frameId": 589,
-          "at": 32018,
+          "frameId": 519,
+          "at": 32090,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.1,
-          "roundTripMs": 28.4,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.3,
+          "roundTripMs": 18.7,
           "meanLuma": 89.9,
-          "checksum": 425478537,
+          "checksum": 1421215459,
           "stressPasses": 0
         },
         {
-          "frameId": 590,
-          "at": 32068,
+          "frameId": 520,
+          "at": 32137,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.8,
-          "roundTripMs": 29,
-          "meanLuma": 90.64,
-          "checksum": 3072993757,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.5,
+          "roundTripMs": 19.8,
+          "meanLuma": 90.65,
+          "checksum": 498061333,
           "stressPasses": 0
         },
         {
-          "frameId": 591,
-          "at": 32117,
-          "sourceWidth": 1280,
-          "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 27.8,
-          "roundTripMs": 28,
-          "meanLuma": 80.94,
-          "checksum": 2962874990,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 592,
+          "frameId": 521,
           "at": 32169,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.5,
-          "roundTripMs": 29.7,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.5,
+          "roundTripMs": 17.9,
+          "meanLuma": 80.94,
+          "checksum": 665962223,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 522,
+          "at": 32237,
+          "sourceWidth": 1280,
+          "sourceHeight": 720,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.5,
+          "roundTripMs": 18.9,
           "meanLuma": 81.77,
-          "checksum": 3072733618,
+          "checksum": 2421586879,
           "stressPasses": 0
         },
         {
-          "frameId": 593,
-          "at": 32223,
+          "frameId": 523,
+          "at": 32285,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 27.9,
-          "roundTripMs": 28,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.1,
+          "roundTripMs": 17.5,
           "meanLuma": 82.65,
-          "checksum": 1297911126,
+          "checksum": 545573961,
           "stressPasses": 0
         },
         {
-          "frameId": 594,
-          "at": 32268,
+          "frameId": 524,
+          "at": 32337,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.8,
-          "roundTripMs": 29.1,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.1,
+          "roundTripMs": 19.5,
           "meanLuma": 83.55,
-          "checksum": 2499533796,
+          "checksum": 1653296132,
           "stressPasses": 0
         },
         {
-          "frameId": 595,
-          "at": 32317,
+          "frameId": 525,
+          "at": 32391,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.1,
-          "roundTripMs": 28.3,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.9,
+          "roundTripMs": 18.2,
           "meanLuma": 84.45,
-          "checksum": 3734498883,
+          "checksum": 2416983878,
           "stressPasses": 0
         },
         {
-          "frameId": 596,
-          "at": 32369,
+          "frameId": 526,
+          "at": 32419,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.6,
-          "roundTripMs": 29.8,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.9,
+          "roundTripMs": 18.3,
           "meanLuma": 85.35,
-          "checksum": 2577304,
+          "checksum": 897145681,
           "stressPasses": 0
         },
         {
-          "frameId": 597,
-          "at": 32421,
+          "frameId": 527,
+          "at": 32487,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.9,
-          "roundTripMs": 31.7,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.1,
+          "roundTripMs": 19.6,
           "meanLuma": 86.26,
-          "checksum": 3660947990,
+          "checksum": 3252922119,
           "stressPasses": 0
         },
         {
-          "frameId": 598,
-          "at": 32470,
+          "frameId": 528,
+          "at": 32521,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 30.4,
-          "roundTripMs": 30.7,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 20.1,
+          "roundTripMs": 20.5,
           "meanLuma": 87.15,
-          "checksum": 1119524363,
+          "checksum": 2619262795,
           "stressPasses": 0
         },
         {
-          "frameId": 599,
-          "at": 32518,
+          "frameId": 529,
+          "at": 32590,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.7,
-          "roundTripMs": 28.9,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17.8,
+          "roundTripMs": 18.1,
           "meanLuma": 88.05,
-          "checksum": 2277428177,
+          "checksum": 1330439096,
           "stressPasses": 0
         },
         {
-          "frameId": 600,
-          "at": 32567,
+          "frameId": 530,
+          "at": 32636,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.1,
-          "roundTripMs": 28.3,
-          "meanLuma": 88.93,
-          "checksum": 838568105,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.7,
+          "roundTripMs": 18.9,
+          "meanLuma": 88.94,
+          "checksum": 1774734970,
           "stressPasses": 0
         },
         {
-          "frameId": 601,
-          "at": 32619,
+          "frameId": 531,
+          "at": 32694,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.5,
-          "roundTripMs": 29.8,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 25.7,
+          "roundTripMs": 26.3,
           "meanLuma": 89.84,
-          "checksum": 4049202240,
+          "checksum": 254154554,
           "stressPasses": 0
         },
         {
-          "frameId": 602,
-          "at": 32669,
+          "frameId": 532,
+          "at": 32721,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.8,
-          "roundTripMs": 30,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.6,
+          "roundTripMs": 20,
           "meanLuma": 90.73,
-          "checksum": 1278526472,
+          "checksum": 1938955127,
           "stressPasses": 0
         },
         {
-          "frameId": 603,
-          "at": 32719,
+          "frameId": 533,
+          "at": 32786,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 30,
-          "roundTripMs": 30.2,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 18.3,
+          "roundTripMs": 18.5,
           "meanLuma": 81.11,
-          "checksum": 3678676847,
+          "checksum": 953276147,
           "stressPasses": 0
         },
         {
-          "frameId": 604,
-          "at": 32769,
+          "frameId": 534,
+          "at": 32817,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.4,
-          "roundTripMs": 29.5,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 16.7,
+          "roundTripMs": 17,
           "meanLuma": 81.99,
-          "checksum": 2711714078,
+          "checksum": 2205413222,
           "stressPasses": 0
         },
         {
-          "frameId": 605,
-          "at": 32819,
+          "frameId": 535,
+          "at": 32885,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 29.4,
-          "roundTripMs": 29.6,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 17,
+          "roundTripMs": 17.3,
           "meanLuma": 82.89,
-          "checksum": 219844835,
+          "checksum": 1657981855,
           "stressPasses": 0
         },
         {
-          "frameId": 606,
-          "at": 32861,
+          "frameId": 536,
+          "at": 32937,
           "sourceWidth": 1280,
           "sourceHeight": 720,
-          "procWidth": 960,
-          "procHeight": 540,
-          "tierStep": 2,
-          "workerMs": 28.5,
-          "roundTripMs": 28.7,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.2,
+          "roundTripMs": 19.6,
           "meanLuma": 83.78,
-          "checksum": 3837102952,
+          "checksum": 201919056,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 537,
+          "at": 32968,
+          "sourceWidth": 1280,
+          "sourceHeight": 720,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 16.8,
+          "roundTripMs": 17.1,
+          "meanLuma": 84.67,
+          "checksum": 463210817,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 538,
+          "at": 33037,
+          "sourceWidth": 1280,
+          "sourceHeight": 720,
+          "procWidth": 640,
+          "procHeight": 360,
+          "tierStep": 3,
+          "workerMs": 19.1,
+          "roundTripMs": 19.4,
+          "meanLuma": 85.56,
+          "checksum": 251213009,
           "stressPasses": 0
         }
       ],
@@ -2247,13 +2361,13 @@
         ],
         "startStep": 1,
         "floorStep": 4,
-        "currentStep": 2,
-        "currentTier": "BASIC 960x540@20",
-        "deepestStep": 2,
+        "currentStep": 3,
+        "currentTier": "REDUCED 640x360@20",
+        "deepestStep": 3,
         "windowFill": 15,
         "decisions": [
           {
-            "at": 1100.4000000001397,
+            "at": 1216.8999999999069,
             "direction": "UP",
             "fromStep": 1,
             "toStep": 0,
@@ -2261,14 +2375,14 @@
             "toLabel": "HIGH 1280x720@30",
             "fromTargetFps": 30,
             "toTargetFps": 30,
-            "medianWorkerMs": 10.3,
+            "medianWorkerMs": 12.7,
             "budgetMs": 33.33,
-            "deliveredFps": 20.57,
+            "deliveredFps": 19.68,
             "windowSize": 15,
-            "reason": "median worker latency 10.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+            "reason": "median worker latency 12.7 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
           },
           {
-            "at": 5140.199999999953,
+            "at": 5217.899999999907,
             "direction": "DOWN",
             "fromStep": 0,
             "toStep": 1,
@@ -2276,14 +2390,14 @@
             "toLabel": "BASIC 960x540@30",
             "fromTargetFps": 30,
             "toTargetFps": 30,
-            "medianWorkerMs": 49.1,
+            "medianWorkerMs": 55.5,
             "budgetMs": 33.33,
-            "deliveredFps": 13.2,
+            "deliveredFps": 11.68,
             "windowSize": 15,
-            "reason": "median worker latency 49.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+            "reason": "median worker latency 55.5 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
           },
           {
-            "at": 9169.800000000047,
+            "at": 9227.5,
             "direction": "DOWN",
             "fromStep": 1,
             "toStep": 2,
@@ -2291,11 +2405,56 @@
             "toLabel": "BASIC 960x540@20",
             "fromTargetFps": 30,
             "toTargetFps": 20,
-            "medianWorkerMs": 36.2,
+            "medianWorkerMs": 61.2,
             "budgetMs": 33.33,
-            "deliveredFps": 17.32,
+            "deliveredFps": 12.6,
             "windowSize": 15,
-            "reason": "median worker latency 36.2 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+            "reason": "median worker latency 61.2 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          },
+          {
+            "at": 13278.899999999907,
+            "direction": "DOWN",
+            "fromStep": 2,
+            "toStep": 3,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "REDUCED 640x360@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 34.7,
+            "budgetMs": 50,
+            "deliveredFps": 14.71,
+            "windowSize": 15,
+            "reason": "delivered rate 14.71 fps is below 15 fps, the floor for the 20 fps reachable from a 20 fps camera at a 20 fps target, with the worker at 34.7 ms against a 50 ms budget"
+          },
+          {
+            "at": 21418,
+            "direction": "UP",
+            "fromStep": 3,
+            "toStep": 2,
+            "fromLabel": "REDUCED 640x360@20",
+            "toLabel": "BASIC 960x540@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 17.8,
+            "budgetMs": 50,
+            "deliveredFps": 19.56,
+            "windowSize": 15,
+            "reason": "median worker latency 17.8 ms is under 25 ms (0.5 of the 50 ms budget at BASIC 960x540@20) for 3 consecutive windows"
+          },
+          {
+            "at": 28950.099999999977,
+            "direction": "DOWN",
+            "fromStep": 2,
+            "toStep": 3,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "REDUCED 640x360@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 32.9,
+            "budgetMs": 50,
+            "deliveredFps": 14.96,
+            "windowSize": 15,
+            "reason": "delivered rate 14.96 fps is below 15 fps, the floor for the 20 fps reachable from a 20.07 fps camera at a 20 fps target, with the worker at 32.9 ms against a 50 ms budget"
           }
         ],
         "note": "Every decision carries the median worker latency and the budget it was compared against. The controller reads no clock of its own — only the timestamps on the samples it is given (§59)."
@@ -2305,250 +2464,250 @@
           {
             "index": 0,
             "stressed": false,
-            "startedAt": 239.1,
-            "endedAt": 1809.9,
-            "observedMs": 1489.1,
+            "startedAt": 308.6,
+            "endedAt": 1938.5,
+            "observedMs": 1511.6,
             "results": 31,
-            "meanFps": 20.15,
-            "maxGapMs": 57,
+            "meanFps": 19.85,
+            "maxGapMs": 73.5,
             "wasHidden": false,
             "endReason": "load injection started"
           },
           {
             "index": 1,
             "stressed": true,
-            "startedAt": 1809.9,
-            "endedAt": 2914.2,
-            "observedMs": 850.8,
-            "results": 5,
-            "meanFps": 4.7,
-            "maxGapMs": 238.6,
+            "startedAt": 1938.5,
+            "endedAt": 3062.2,
+            "observedMs": 718.2,
+            "results": 4,
+            "meanFps": 4.18,
+            "maxGapMs": 243.8,
             "wasHidden": false,
             "endReason": "load injection stopped"
           },
           {
             "index": 2,
             "stressed": false,
-            "startedAt": 2914.2,
+            "startedAt": 3062.2,
             "endedAt": null,
-            "observedMs": 29779,
-            "results": 570,
-            "meanFps": 19.11,
-            "maxGapMs": 184.9,
+            "observedMs": 29947.8,
+            "results": 503,
+            "meanFps": 16.76,
+            "maxGapMs": 234.4,
             "wasHidden": false,
-            "endReason": "open at 32914.9"
+            "endReason": "open at 33063"
           }
         ],
         "droppedSegments": 0,
-        "longestCleanMs": 29779,
+        "longestCleanMs": 29947.8,
         "note": "The timeline is cut wherever load injection was switched on or off. FRAME-001 reads the longest unstressed segment; stressed segments are measured and reported but never counted toward continuity."
       },
       "crossCheckDetail": {
         "count": 31,
         "unmatched": 0,
-        "medianAbsDifference": 0.061,
-        "maxAbsDifference": 0.103,
-        "sceneStdDev": 2.945,
-        "sceneRange": 9.979,
+        "medianAbsDifference": 0.062,
+        "maxAbsDifference": 0.097,
+        "sceneStdDev": 2.995,
+        "sceneRange": 10.241,
         "costMs": {
           "count": 31,
-          "mean": 5.73,
-          "p50": 5.2,
-          "p95": 7.2,
+          "mean": 6.61,
+          "p50": 5.5,
+          "p95": 12.7,
           "min": 4.5,
-          "max": 19.2
+          "max": 32
         },
         "recentSamples": [
           {
-            "frameId": 128,
-            "at": 8540,
-            "mainMeanLuma": 89.817,
-            "workerMeanLuma": 89.87,
-            "absDifference": 0.05306616512345386,
-            "costMs": 5.400000000139698
+            "frameId": 113,
+            "at": 8700.5,
+            "mainMeanLuma": 81.073,
+            "workerMeanLuma": 81.138,
+            "absDifference": 0.06536072530863635,
+            "costMs": 32
           },
           {
-            "frameId": 149,
-            "at": 9590,
-            "mainMeanLuma": 87.646,
-            "workerMeanLuma": 87.716,
-            "absDifference": 0.07096981095679666,
-            "costMs": 5.400000000139698
+            "frameId": 123,
+            "at": 9701.79999999993,
+            "mainMeanLuma": 88.535,
+            "workerMeanLuma": 88.605,
+            "absDifference": 0.07058352623457154,
+            "costMs": 6
           },
           {
-            "frameId": 170,
-            "at": 10639.90000000014,
-            "mainMeanLuma": 84.246,
-            "workerMeanLuma": 84.297,
-            "absDifference": 0.05060185185185162,
+            "frameId": 141,
+            "at": 10751.199999999953,
+            "mainMeanLuma": 85.124,
+            "workerMeanLuma": 85.192,
+            "absDifference": 0.06834297839505155,
             "costMs": 5.199999999953434
           },
           {
-            "frameId": 190,
-            "at": 11640,
-            "mainMeanLuma": 81.229,
-            "workerMeanLuma": 81.333,
-            "absDifference": 0.10300781249999602,
-            "costMs": 5.400000000139698
-          },
-          {
-            "frameId": 211,
-            "at": 12689.90000000014,
-            "mainMeanLuma": 88.999,
-            "workerMeanLuma": 89.084,
-            "absDifference": 0.08570216049382395,
-            "costMs": 5.099999999860302
-          },
-          {
-            "frameId": 232,
-            "at": 13739.800000000047,
-            "mainMeanLuma": 86.128,
-            "workerMeanLuma": 86.174,
-            "absDifference": 0.046042631172838355,
-            "costMs": 5.199999999953434
-          },
-          {
-            "frameId": 252,
-            "at": 14739.800000000047,
-            "mainMeanLuma": 83.075,
-            "workerMeanLuma": 83.14,
-            "absDifference": 0.06562210648147015,
-            "costMs": 5.199999999953434
-          },
-          {
-            "frameId": 272,
-            "at": 15782.600000000093,
-            "mainMeanLuma": 90.207,
-            "workerMeanLuma": 90.251,
-            "absDifference": 0.04356336805555827,
-            "costMs": 5.300000000046566
-          },
-          {
-            "frameId": 291,
-            "at": 16789.600000000093,
-            "mainMeanLuma": 87.277,
-            "workerMeanLuma": 87.318,
-            "absDifference": 0.04143229166666629,
-            "costMs": 5.400000000139698
-          },
-          {
-            "frameId": 310,
-            "at": 17789.699999999953,
-            "mainMeanLuma": 83.537,
-            "workerMeanLuma": 83.612,
-            "absDifference": 0.0742201967592706,
-            "costMs": 5.2000000001862645
-          },
-          {
-            "frameId": 331,
-            "at": 18832.300000000047,
-            "mainMeanLuma": 91.208,
-            "workerMeanLuma": 91.249,
-            "absDifference": 0.04075231481482433,
-            "costMs": 5.199999999953434
-          },
-          {
-            "frameId": 351,
-            "at": 19839.5,
-            "mainMeanLuma": 88.14,
-            "workerMeanLuma": 88.191,
-            "absDifference": 0.051655574845682395,
-            "costMs": 5.199999999953434
-          },
-          {
-            "frameId": 372,
-            "at": 20889.5,
-            "mainMeanLuma": 84.755,
-            "workerMeanLuma": 84.809,
-            "absDifference": 0.05398437499999886,
-            "costMs": 5.300000000046566
-          },
-          {
-            "frameId": 392,
-            "at": 21989.40000000014,
-            "mainMeanLuma": 83.302,
-            "workerMeanLuma": 83.373,
-            "absDifference": 0.07112075617284574,
-            "costMs": 4.899999999906868
-          },
-          {
-            "frameId": 411,
-            "at": 22989.40000000014,
-            "mainMeanLuma": 90.396,
-            "workerMeanLuma": 90.456,
-            "absDifference": 0.06060570987655467,
-            "costMs": 4.899999999906868
-          },
-          {
-            "frameId": 431,
-            "at": 24003.40000000014,
-            "mainMeanLuma": 86.672,
-            "workerMeanLuma": 86.712,
-            "absDifference": 0.04058641975308319,
-            "costMs": 6.099999999860302
-          },
-          {
-            "frameId": 450,
-            "at": 25039.300000000047,
-            "mainMeanLuma": 84.062,
-            "workerMeanLuma": 84.101,
-            "absDifference": 0.03910831404320447,
-            "costMs": 4.7999999998137355
-          },
-          {
-            "frameId": 470,
-            "at": 26039.40000000014,
-            "mainMeanLuma": 90.73,
-            "workerMeanLuma": 90.779,
-            "absDifference": 0.048976658950621754,
-            "costMs": 4.899999999906868
-          },
-          {
-            "frameId": 491,
-            "at": 27089.300000000047,
-            "mainMeanLuma": 88.133,
-            "workerMeanLuma": 88.191,
-            "absDifference": 0.05814814814814895,
+            "frameId": 154,
+            "at": 11751.699999999953,
+            "mainMeanLuma": 82.141,
+            "workerMeanLuma": 82.238,
+            "absDifference": 0.09738281250000114,
             "costMs": 5.5
           },
           {
-            "frameId": 511,
-            "at": 28089.300000000047,
+            "frameId": 173,
+            "at": 12752.29999999993,
+            "mainMeanLuma": 88.999,
+            "workerMeanLuma": 89.084,
+            "absDifference": 0.08570216049382395,
+            "costMs": 5.5
+          },
+          {
+            "frameId": 193,
+            "at": 13800.599999999977,
+            "mainMeanLuma": 86.128,
+            "workerMeanLuma": 86.176,
+            "absDifference": 0.04746527777778908,
+            "costMs": 5.599999999976717
+          },
+          {
+            "frameId": 213,
+            "at": 14800.899999999907,
+            "mainMeanLuma": 83.075,
+            "workerMeanLuma": 83.141,
+            "absDifference": 0.06636718749999204,
+            "costMs": 5.700000000069849
+          },
+          {
+            "frameId": 233,
+            "at": 15801.099999999977,
+            "mainMeanLuma": 89.295,
+            "workerMeanLuma": 89.344,
+            "absDifference": 0.048940972222226264,
+            "costMs": 5.400000000023283
+          },
+          {
+            "frameId": 253,
+            "at": 16801.399999999907,
+            "mainMeanLuma": 86.36,
+            "workerMeanLuma": 86.403,
+            "absDifference": 0.04332465277776976,
+            "costMs": 6.099999999976717
+          },
+          {
+            "frameId": 272,
+            "at": 17850.899999999907,
+            "mainMeanLuma": 83.537,
+            "workerMeanLuma": 83.612,
+            "absDifference": 0.07466145833333826,
+            "costMs": 5.700000000069849
+          },
+          {
+            "frameId": 293,
+            "at": 18901.399999999907,
+            "mainMeanLuma": 91.208,
+            "workerMeanLuma": 91.251,
+            "absDifference": 0.043012152777777146,
+            "costMs": 6
+          },
+          {
+            "frameId": 314,
+            "at": 19950.5,
+            "mainMeanLuma": 88.998,
+            "workerMeanLuma": 89.03,
+            "absDifference": 0.031961805555553724,
+            "costMs": 5.699999999953434
+          },
+          {
+            "frameId": 334,
+            "at": 20952.099999999977,
+            "mainMeanLuma": 84.755,
+            "workerMeanLuma": 84.81,
+            "absDifference": 0.05504340277776976,
+            "costMs": 5.699999999953434
+          },
+          {
+            "frameId": 352,
+            "at": 22000.5,
+            "mainMeanLuma": 82.521,
+            "workerMeanLuma": 82.598,
+            "absDifference": 0.077358699845675,
+            "costMs": 5.5
+          },
+          {
+            "frameId": 369,
+            "at": 23000.79999999993,
+            "mainMeanLuma": 89.479,
+            "workerMeanLuma": 89.549,
+            "absDifference": 0.07098090277777658,
+            "costMs": 4.900000000023283
+          },
+          {
+            "frameId": 385,
+            "at": 24019.099999999977,
+            "mainMeanLuma": 85.738,
+            "workerMeanLuma": 85.796,
+            "absDifference": 0.058121141975306045,
+            "costMs": 8.699999999953434
+          },
+          {
+            "frameId": 400,
+            "at": 25050.399999999907,
+            "mainMeanLuma": 83.298,
+            "workerMeanLuma": 83.354,
+            "absDifference": 0.05601851851852757,
+            "costMs": 5.699999999953434
+          },
+          {
+            "frameId": 414,
+            "at": 26070.399999999907,
+            "mainMeanLuma": 89.83,
+            "workerMeanLuma": 89.887,
+            "absDifference": 0.056712480709876445,
+            "costMs": 5.5
+          },
+          {
+            "frameId": 431,
+            "at": 27117.399999999907,
+            "mainMeanLuma": 87.35,
+            "workerMeanLuma": 87.388,
+            "absDifference": 0.038427372685191585,
+            "costMs": 5
+          },
+          {
+            "frameId": 446,
+            "at": 28151.29999999993,
             "mainMeanLuma": 84.903,
             "workerMeanLuma": 84.986,
             "absDifference": 0.08237606095678984,
-            "costMs": 5.199999999953434
+            "costMs": 5
           },
           {
-            "frameId": 532,
-            "at": 29139.100000000093,
+            "frameId": 463,
+            "at": 29202.199999999953,
             "mainMeanLuma": 82.092,
             "workerMeanLuma": 82.154,
-            "absDifference": 0.06160108024690203,
-            "costMs": 5.300000000046566
+            "absDifference": 0.06202256944443718,
+            "costMs": 5.200000000069849
           },
           {
-            "frameId": 552,
-            "at": 30139.100000000093,
-            "mainMeanLuma": 88.948,
-            "workerMeanLuma": 89.009,
-            "absDifference": 0.06110580632716278,
-            "costMs": 5.199999999953434
+            "frameId": 483,
+            "at": 30267.5,
+            "mainMeanLuma": 89.85,
+            "workerMeanLuma": 89.896,
+            "absDifference": 0.04620659722222342,
+            "costMs": 5.599999999976717
           },
           {
-            "frameId": 573,
-            "at": 31189,
-            "mainMeanLuma": 86.185,
-            "workerMeanLuma": 86.25,
-            "absDifference": 0.0653317901234658,
-            "costMs": 5.399999999906868
+            "frameId": 504,
+            "at": 31317.699999999953,
+            "mainMeanLuma": 87.099,
+            "workerMeanLuma": 87.146,
+            "absDifference": 0.04748263888889426,
+            "costMs": 6.300000000046566
           },
           {
-            "frameId": 593,
-            "at": 32189.100000000093,
-            "mainMeanLuma": 82.593,
-            "workerMeanLuma": 82.654,
-            "absDifference": 0.061109664351846504,
+            "frameId": 525,
+            "at": 32367.399999999907,
+            "mainMeanLuma": 84.381,
+            "workerMeanLuma": 84.45,
+            "absDifference": 0.06967447916666458,
             "costMs": 5.300000000046566
           }
         ],
@@ -2605,7 +2764,7 @@
       "note": "Frames declined by rate pacing (pacedOut) are the scheduler working as designed and are not drops. Frames declined because the worker was busy (backpressured) are deliberate too. Only `lost` counts frames that were handed over and never came back, and only that is held against FRAME-001."
     },
     "features": {
-      "detections": 569,
+      "detections": 502,
       "byTexture": {
         "TEXTURE_RICH": {
           "frames": 0,
@@ -2615,11 +2774,11 @@
           "medianGradient": 0
         },
         "TEXTURE_POOR": {
-          "frames": 569,
-          "medianCount": 53,
-          "minCount": 28,
-          "maxCount": 97,
-          "medianGradient": 0.64
+          "frames": 502,
+          "medianCount": 33,
+          "minCount": 12,
+          "maxCount": 96,
+          "medianGradient": 0.711
         },
         "AMBIGUOUS": {
           "frames": 0,
@@ -2632,50 +2791,50 @@
       "gradientHistogram": [
         {
           "meanGradient": 0,
-          "frames": 31
+          "frames": 19
         },
         {
           "meanGradient": 1,
-          "frames": 538
+          "frames": 483
         }
       ],
       "stateFrames": {
-        "LOW_FEATURE_COUNT": 9,
-        "TRACKING_DEGRADED": 560
+        "LOW_FEATURE_COUNT": 6,
+        "TRACKING_DEGRADED": 496
       },
       "contrast": {
-        "samples": 69,
-        "median": 0.9754,
+        "samples": 64,
+        "median": 0.9591,
         "recent": [
-          0.9784,
-          0.9801,
-          0.9802,
-          0.9717,
-          0.9822,
-          0.975,
-          0.9615,
-          0.9757,
-          0.9756,
+          0.9766,
+          0.9674,
+          0.9683,
+          0.9678,
+          0.9723,
+          0.9698,
+          0.9719,
           0.9701,
-          0.9518,
-          0.958,
-          0.9747,
-          0.9746,
-          0.9614,
-          0.9796,
-          0.98,
-          0.9804,
-          0.9818,
-          0.9721,
-          0.9763,
-          0.9756,
-          0.9711,
-          0.9714
+          0.9455,
+          0.9595,
+          0.974,
+          0.9744,
+          0.977,
+          0.9297,
+          0.9339,
+          0.9357,
+          0.9339,
+          0.9477,
+          0.9489,
+          0.9464,
+          0.9542,
+          0.9286,
+          0.9289,
+          0.9169
         ]
       },
       "grid": {
         "samples": 0,
-        "totalSamples": 69,
+        "totalSamples": 64,
         "medianGridded": -1,
         "medianUngridded": -1,
         "medianCellGain": 0
@@ -2685,426 +2844,543 @@
       "lastRecordSamples": [
         {
           "id": 0,
-          "x": 96,
-          "y": 16,
-          "x0": 192,
-          "y0": 32,
-          "cornerStrength": 442829.5,
+          "x": 203,
+          "y": 91,
+          "x0": 406,
+          "y0": 182,
+          "cornerStrength": 274504.3125,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 1,
-          "cell": 1
+          "qualityScore": 0.999999991498201,
+          "cell": 29
+        },
+        {
+          "id": 2,
+          "x": 121,
+          "y": 109,
+          "x0": 242,
+          "y0": 218,
+          "cornerStrength": 256180.21875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.9332466008963238,
+          "cell": 27
         },
         {
           "id": 5,
-          "x": 138,
-          "y": 19,
-          "x0": 276,
-          "y0": 38,
-          "cornerStrength": 370425.3125,
+          "x": 91,
+          "y": 12,
+          "x0": 182,
+          "y0": 24,
+          "cornerStrength": 241329.28125,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 0.8364964749580346,
+          "qualityScore": 0.8791456753462369,
           "cell": 2
         },
         {
-          "id": 10,
-          "x": 37,
-          "y": 14,
-          "x0": 74,
-          "y0": 28,
-          "cornerStrength": 332434.4375,
+          "id": 8,
+          "x": 18,
+          "y": 161,
+          "x0": 36,
+          "y0": 322,
+          "cornerStrength": 207923.90625,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 0.7507052723979468,
-          "cell": 0
+          "qualityScore": 0.7574522330401375,
+          "cell": 40
         },
         {
-          "id": 15,
-          "x": 114,
-          "y": 21,
-          "x0": 228,
-          "y0": 42,
-          "cornerStrength": 303093.28125,
+          "id": 11,
+          "x": 301,
+          "y": 161,
+          "x0": 602,
+          "y0": 322,
+          "cornerStrength": 143325,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 0.684446912220906,
-          "cell": 1
+          "qualityScore": 0.5221229403508174,
+          "cell": 47
+        },
+        {
+          "id": 14,
+          "x": 201,
+          "y": 107,
+          "x0": 402,
+          "y0": 214,
+          "cornerStrength": 20335.423828125,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.07408052525672912,
+          "cell": 29
+        },
+        {
+          "id": 17,
+          "x": 129,
+          "y": 103,
+          "x0": 258,
+          "y0": 206,
+          "cornerStrength": 18023.31640625,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.0656576797969955,
+          "cell": 27
         },
         {
           "id": 20,
-          "x": 234,
-          "y": 200,
-          "x0": 468,
-          "y0": 400,
-          "cornerStrength": 211254.609375,
+          "x": 148,
+          "y": 133,
+          "x0": 296,
+          "y0": 266,
+          "cornerStrength": 17110.4765625,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 0.4770563190408973,
+          "qualityScore": 0.06233226815709923,
           "cell": 35
-        },
-        {
-          "id": 25,
-          "x": 89,
-          "y": 20,
-          "x0": 178,
-          "y0": 40,
-          "cornerStrength": 159660.15625,
-          "age": 0,
-          "trackLength": 1,
-          "forwardBackwardError": null,
-          "reprojectionError": null,
-          "qualityScore": 0.3605454416519498,
-          "cell": 1
-        },
-        {
-          "id": 30,
-          "x": 263,
-          "y": 198,
-          "x0": 526,
-          "y0": 396,
-          "cornerStrength": 20129.64453125,
-          "age": 0,
-          "trackLength": 1,
-          "forwardBackwardError": null,
-          "reprojectionError": null,
-          "qualityScore": 0.045456873826755305,
-          "cell": 36
-        },
-        {
-          "id": 35,
-          "x": 271,
-          "y": 194,
-          "x0": 542,
-          "y0": 388,
-          "cornerStrength": 15363.607421875,
-          "age": 0,
-          "trackLength": 1,
-          "forwardBackwardError": null,
-          "reprojectionError": null,
-          "qualityScore": 0.03469418265264347,
-          "cell": 36
         }
       ],
       "overMaxFrames": 0,
-      "maxCountSeen": 97,
+      "maxCountSeen": 96,
       "refills": [
         {
-          "at": 1787366884163,
+          "at": 1787377208746,
           "urgency": "EMERGENCY",
-          "countBefore": 28,
-          "countAfter": 35,
-          "candidatesBefore": 40,
-          "candidatesAfter": 41,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.2
-        },
-        {
-          "at": 1787366884206,
-          "urgency": "EMERGENCY",
-          "countBefore": 26,
-          "countAfter": 39,
-          "candidatesBefore": 45,
-          "candidatesAfter": 46,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9
-        },
-        {
-          "at": 1787366884256,
-          "urgency": "EMERGENCY",
-          "countBefore": 30,
-          "countAfter": 37,
-          "candidatesBefore": 48,
-          "candidatesAfter": 48,
+          "countBefore": 16,
+          "countAfter": 19,
+          "candidatesBefore": 23,
+          "candidatesAfter": 23,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.3
+          "detectMs": 5
         },
         {
-          "at": 1787366884307,
+          "at": 1787377208810,
           "urgency": "EMERGENCY",
-          "countBefore": 33,
-          "countAfter": 42,
-          "candidatesBefore": 53,
-          "candidatesAfter": 53,
+          "countBefore": 15,
+          "countAfter": 18,
+          "candidatesBefore": 22,
+          "candidatesAfter": 22,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
+          "detectMs": 5
         },
         {
-          "at": 1787366884349,
+          "at": 1787377208858,
           "urgency": "EMERGENCY",
-          "countBefore": 33,
-          "countAfter": 45,
-          "candidatesBefore": 54,
-          "candidatesAfter": 58,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
-        },
-        {
-          "at": 1787366884409,
-          "urgency": "EMERGENCY",
-          "countBefore": 36,
-          "countAfter": 47,
-          "candidatesBefore": 59,
-          "candidatesAfter": 59,
+          "countBefore": 17,
+          "countAfter": 21,
+          "candidatesBefore": 26,
+          "candidatesAfter": 26,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.7
+          "detectMs": 4.5
         },
         {
-          "at": 1787366884462,
+          "at": 1787377208891,
           "urgency": "EMERGENCY",
-          "countBefore": 43,
-          "countAfter": 54,
-          "candidatesBefore": 70,
-          "candidatesAfter": 70,
+          "countBefore": 20,
+          "countAfter": 24,
+          "candidatesBefore": 30,
+          "candidatesAfter": 30,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.9
+          "detectMs": 4.7
         },
         {
-          "at": 1787366884505,
+          "at": 1787377208940,
           "urgency": "EMERGENCY",
-          "countBefore": 43,
-          "countAfter": 57,
-          "candidatesBefore": 75,
-          "candidatesAfter": 78,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
-        },
-        {
-          "at": 1787366884559,
-          "urgency": "EMERGENCY",
-          "countBefore": 45,
-          "countAfter": 58,
-          "candidatesBefore": 79,
-          "candidatesAfter": 79,
+          "countBefore": 17,
+          "countAfter": 23,
+          "candidatesBefore": 30,
+          "candidatesAfter": 30,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9
+          "detectMs": 4.6
         },
         {
-          "at": 1787366884607,
+          "at": 1787377209017,
           "urgency": "EMERGENCY",
-          "countBefore": 52,
-          "countAfter": 63,
-          "candidatesBefore": 84,
-          "candidatesAfter": 84,
+          "countBefore": 19,
+          "countAfter": 26,
+          "candidatesBefore": 36,
+          "candidatesAfter": 36,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9
+          "detectMs": 4.5
         },
         {
-          "at": 1787366884662,
+          "at": 1787377209059,
           "urgency": "EMERGENCY",
-          "countBefore": 53,
-          "countAfter": 67,
-          "candidatesBefore": 90,
-          "candidatesAfter": 92,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9
-        },
-        {
-          "at": 1787366884711,
-          "urgency": "EMERGENCY",
-          "countBefore": 54,
-          "countAfter": 69,
-          "candidatesBefore": 91,
-          "candidatesAfter": 91,
+          "countBefore": 22,
+          "countAfter": 28,
+          "candidatesBefore": 38,
+          "candidatesAfter": 38,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9
+          "detectMs": 4.5
         },
         {
-          "at": 1787366884756,
+          "at": 1787377209108,
           "urgency": "EMERGENCY",
-          "countBefore": 27,
-          "countAfter": 33,
+          "countBefore": 19,
+          "countAfter": 28,
           "candidatesBefore": 39,
           "candidatesAfter": 39,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
+          "detectMs": 4.6
         },
         {
-          "at": 1787366884805,
+          "at": 1787377209142,
           "urgency": "EMERGENCY",
-          "countBefore": 29,
-          "countAfter": 38,
-          "candidatesBefore": 44,
-          "candidatesAfter": 44,
+          "countBefore": 21,
+          "countAfter": 29,
+          "candidatesBefore": 42,
+          "candidatesAfter": 42,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
+          "detectMs": 4.5
         },
         {
-          "at": 1787366884857,
+          "at": 1787377209212,
           "urgency": "EMERGENCY",
-          "countBefore": 29,
-          "countAfter": 40,
-          "candidatesBefore": 49,
-          "candidatesAfter": 49,
+          "countBefore": 23,
+          "countAfter": 29,
+          "candidatesBefore": 43,
+          "candidatesAfter": 43,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.2
+          "detectMs": 6.1
         },
         {
-          "at": 1787366884899,
+          "at": 1787377209262,
           "urgency": "EMERGENCY",
-          "countBefore": 32,
-          "countAfter": 40,
-          "candidatesBefore": 48,
-          "candidatesAfter": 48,
+          "countBefore": 14,
+          "countAfter": 17,
+          "candidatesBefore": 20,
+          "candidatesAfter": 20,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
+          "detectMs": 4.6
         },
         {
-          "at": 1787366884955,
+          "at": 1787377209307,
           "urgency": "EMERGENCY",
-          "countBefore": 35,
-          "countAfter": 47,
-          "candidatesBefore": 59,
-          "candidatesAfter": 59,
+          "countBefore": 14,
+          "countAfter": 17,
+          "candidatesBefore": 21,
+          "candidatesAfter": 21,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.5
+          "detectMs": 4.4
         },
         {
-          "at": 1787366885006,
+          "at": 1787377209341,
           "urgency": "EMERGENCY",
-          "countBefore": 34,
-          "countAfter": 46,
-          "candidatesBefore": 59,
-          "candidatesAfter": 59,
+          "countBefore": 17,
+          "countAfter": 22,
+          "candidatesBefore": 28,
+          "candidatesAfter": 28,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
+          "detectMs": 4.5
         },
         {
-          "at": 1787366885055,
+          "at": 1787377209410,
           "urgency": "EMERGENCY",
-          "countBefore": 41,
-          "countAfter": 50,
-          "candidatesBefore": 68,
-          "candidatesAfter": 68,
+          "countBefore": 15,
+          "countAfter": 18,
+          "candidatesBefore": 22,
+          "candidatesAfter": 22,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
+          "detectMs": 4.4
         },
         {
-          "at": 1787366885105,
+          "at": 1787377209458,
           "urgency": "EMERGENCY",
-          "countBefore": 42,
-          "countAfter": 54,
-          "candidatesBefore": 74,
-          "candidatesAfter": 74,
+          "countBefore": 17,
+          "countAfter": 21,
+          "candidatesBefore": 26,
+          "candidatesAfter": 26,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885162,
+          "at": 1787377209490,
           "urgency": "EMERGENCY",
-          "countBefore": 45,
-          "countAfter": 56,
-          "candidatesBefore": 75,
-          "candidatesAfter": 75,
+          "countBefore": 20,
+          "countAfter": 28,
+          "candidatesBefore": 36,
+          "candidatesAfter": 36,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.9
+          "detectMs": 4.7
         },
         {
-          "at": 1787366885205,
+          "at": 1787377209559,
           "urgency": "EMERGENCY",
-          "countBefore": 50,
-          "countAfter": 64,
-          "candidatesBefore": 83,
-          "candidatesAfter": 83,
+          "countBefore": 16,
+          "countAfter": 23,
+          "candidatesBefore": 29,
+          "candidatesAfter": 29,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
+          "detectMs": 5.7
         },
         {
-          "at": 1787366885255,
+          "at": 1787377209611,
           "urgency": "EMERGENCY",
-          "countBefore": 52,
-          "countAfter": 64,
-          "candidatesBefore": 91,
-          "candidatesAfter": 91,
+          "countBefore": 20,
+          "countAfter": 27,
+          "candidatesBefore": 35,
+          "candidatesAfter": 35,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.9
+          "detectMs": 4.7
         },
         {
-          "at": 1787366885306,
+          "at": 1787377209658,
           "urgency": "EMERGENCY",
-          "countBefore": 53,
-          "countAfter": 65,
-          "candidatesBefore": 93,
-          "candidatesAfter": 93,
+          "countBefore": 21,
+          "countAfter": 29,
+          "candidatesBefore": 40,
+          "candidatesAfter": 40,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.7
+        },
+        {
+          "at": 1787377209707,
+          "urgency": "EMERGENCY",
+          "countBefore": 19,
+          "countAfter": 27,
+          "candidatesBefore": 38,
+          "candidatesAfter": 38,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.5
+        },
+        {
+          "at": 1787377209762,
+          "urgency": "EMERGENCY",
+          "countBefore": 21,
+          "countAfter": 29,
+          "candidatesBefore": 42,
+          "candidatesAfter": 42,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.5
+        },
+        {
+          "at": 1787377209809,
+          "urgency": "EMERGENCY",
+          "countBefore": 22,
+          "countAfter": 32,
+          "candidatesBefore": 45,
+          "candidatesAfter": 45,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.5
+        },
+        {
+          "at": 1787377209840,
+          "urgency": "EMERGENCY",
+          "countBefore": 13,
+          "countAfter": 15,
+          "candidatesBefore": 16,
+          "candidatesAfter": 16,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.4
+        },
+        {
+          "at": 1787377209908,
+          "urgency": "EMERGENCY",
+          "countBefore": 15,
+          "countAfter": 17,
+          "candidatesBefore": 21,
+          "candidatesAfter": 21,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.6
+        },
+        {
+          "at": 1787377209957,
+          "urgency": "EMERGENCY",
+          "countBefore": 15,
+          "countAfter": 20,
+          "candidatesBefore": 25,
+          "candidatesAfter": 25,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.7
+        },
+        {
+          "at": 1787377210009,
+          "urgency": "EMERGENCY",
+          "countBefore": 15,
+          "countAfter": 18,
+          "candidatesBefore": 23,
+          "candidatesAfter": 23,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.5
+        },
+        {
+          "at": 1787377210063,
+          "urgency": "EMERGENCY",
+          "countBefore": 16,
+          "countAfter": 19,
+          "candidatesBefore": 27,
+          "candidatesAfter": 27,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.6
+        },
+        {
+          "at": 1787377210090,
+          "urgency": "EMERGENCY",
+          "countBefore": 17,
+          "countAfter": 24,
+          "candidatesBefore": 31,
+          "candidatesAfter": 31,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.8
+        },
+        {
+          "at": 1787377210159,
+          "urgency": "EMERGENCY",
+          "countBefore": 15,
+          "countAfter": 21,
+          "candidatesBefore": 29,
+          "candidatesAfter": 29,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.7
+        },
+        {
+          "at": 1787377210193,
+          "urgency": "EMERGENCY",
+          "countBefore": 17,
+          "countAfter": 23,
+          "candidatesBefore": 32,
+          "candidatesAfter": 32,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.7
+        },
+        {
+          "at": 1787377210261,
+          "urgency": "EMERGENCY",
+          "countBefore": 19,
+          "countAfter": 27,
+          "candidatesBefore": 42,
+          "candidatesAfter": 42,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.7
+        },
+        {
+          "at": 1787377210308,
+          "urgency": "EMERGENCY",
+          "countBefore": 18,
+          "countAfter": 26,
+          "candidatesBefore": 38,
+          "candidatesAfter": 38,
+          "exhausted": true,
+          "texture": "TEXTURE_POOR",
+          "stateBefore": "TRACKING_DEGRADED",
+          "stateAfter": "TRACKING_DEGRADED",
+          "detectMs": 4.6
+        },
+        {
+          "at": 1787377210365,
+          "urgency": "EMERGENCY",
+          "countBefore": 20,
+          "countAfter": 28,
+          "candidatesBefore": 41,
+          "candidatesAfter": 41,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
@@ -3112,221 +3388,104 @@
           "detectMs": 9
         },
         {
-          "at": 1787366885355,
+          "at": 1787377210392,
           "urgency": "EMERGENCY",
-          "countBefore": 25,
+          "countBefore": 22,
           "countAfter": 31,
-          "candidatesBefore": 40,
-          "candidatesAfter": 40,
+          "candidatesBefore": 47,
+          "candidatesAfter": 47,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885407,
+          "at": 1787377210457,
           "urgency": "EMERGENCY",
-          "countBefore": 27,
-          "countAfter": 35,
-          "candidatesBefore": 43,
-          "candidatesAfter": 43,
+          "countBefore": 12,
+          "countAfter": 14,
+          "candidatesBefore": 17,
+          "candidatesAfter": 17,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.2
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885460,
+          "at": 1787377210489,
           "urgency": "EMERGENCY",
-          "countBefore": 31,
-          "countAfter": 40,
-          "candidatesBefore": 49,
-          "candidatesAfter": 50,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.9
-        },
-        {
-          "at": 1787366885506,
-          "urgency": "EMERGENCY",
-          "countBefore": 33,
-          "countAfter": 43,
-          "candidatesBefore": 51,
-          "candidatesAfter": 52,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.7
-        },
-        {
-          "at": 1787366885555,
-          "urgency": "EMERGENCY",
-          "countBefore": 36,
-          "countAfter": 47,
-          "candidatesBefore": 57,
-          "candidatesAfter": 58,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
-        },
-        {
-          "at": 1787366885607,
-          "urgency": "EMERGENCY",
-          "countBefore": 36,
-          "countAfter": 46,
-          "candidatesBefore": 61,
-          "candidatesAfter": 62,
-          "exhausted": false,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.5
-        },
-        {
-          "at": 1787366885659,
-          "urgency": "EMERGENCY",
-          "countBefore": 41,
-          "countAfter": 51,
-          "candidatesBefore": 67,
-          "candidatesAfter": 67,
+          "countBefore": 14,
+          "countAfter": 17,
+          "candidatesBefore": 21,
+          "candidatesAfter": 21,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.6
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885708,
+          "at": 1787377210556,
           "urgency": "EMERGENCY",
-          "countBefore": 43,
-          "countAfter": 56,
-          "candidatesBefore": 74,
-          "candidatesAfter": 74,
+          "countBefore": 17,
+          "countAfter": 21,
+          "candidatesBefore": 26,
+          "candidatesAfter": 26,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.5
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885756,
+          "at": 1787377210609,
           "urgency": "EMERGENCY",
-          "countBefore": 44,
-          "countAfter": 56,
-          "candidatesBefore": 80,
-          "candidatesAfter": 80,
+          "countBefore": 16,
+          "countAfter": 20,
+          "candidatesBefore": 25,
+          "candidatesAfter": 25,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.2
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885805,
+          "at": 1787377210639,
           "urgency": "EMERGENCY",
-          "countBefore": 50,
-          "countAfter": 61,
-          "candidatesBefore": 81,
-          "candidatesAfter": 81,
+          "countBefore": 15,
+          "countAfter": 20,
+          "candidatesBefore": 26,
+          "candidatesAfter": 26,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
+          "detectMs": 4.6
         },
         {
-          "at": 1787366885857,
+          "at": 1787377210709,
           "urgency": "EMERGENCY",
-          "countBefore": 53,
-          "countAfter": 62,
-          "candidatesBefore": 88,
-          "candidatesAfter": 88,
+          "countBefore": 19,
+          "countAfter": 23,
+          "candidatesBefore": 32,
+          "candidatesAfter": 32,
           "exhausted": true,
           "texture": "TEXTURE_POOR",
           "stateBefore": "TRACKING_DEGRADED",
           "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.1
-        },
-        {
-          "at": 1787366885907,
-          "urgency": "EMERGENCY",
-          "countBefore": 52,
-          "countAfter": 65,
-          "candidatesBefore": 89,
-          "candidatesAfter": 89,
-          "exhausted": true,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.3
-        },
-        {
-          "at": 1787366885957,
-          "urgency": "EMERGENCY",
-          "countBefore": 26,
-          "countAfter": 35,
-          "candidatesBefore": 43,
-          "candidatesAfter": 43,
-          "exhausted": true,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.2
-        },
-        {
-          "at": 1787366886006,
-          "urgency": "EMERGENCY",
-          "countBefore": 27,
-          "countAfter": 42,
-          "candidatesBefore": 50,
-          "candidatesAfter": 50,
-          "exhausted": true,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.2
-        },
-        {
-          "at": 1787366886057,
-          "urgency": "EMERGENCY",
-          "countBefore": 31,
-          "countAfter": 41,
-          "candidatesBefore": 52,
-          "candidatesAfter": 52,
-          "exhausted": true,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 8.8
-        },
-        {
-          "at": 1787366886099,
-          "urgency": "EMERGENCY",
-          "countBefore": 32,
-          "countAfter": 41,
-          "candidatesBefore": 52,
-          "candidatesAfter": 52,
-          "exhausted": true,
-          "texture": "TEXTURE_POOR",
-          "stateBefore": "TRACKING_DEGRADED",
-          "stateAfter": "TRACKING_DEGRADED",
-          "detectMs": 9.1
+          "detectMs": 4.5
         }
       ],
       "refillCount": 200,
-      "meanDetectCostMs": 9.616,
+      "meanDetectCostMs": 8.535,
       "level0Calibration": {
         "width": 1280,
         "height": 720,
-        "detectMs": 97.9,
-        "features": 137
+        "detectMs": 131.8,
+        "features": 122
       },
       "note": "Texture classes are measured from the image, not asserted by the harness: a frame counts as rich or poor by its own mean gradient magnitude, and the histogram above shows where the run actually sat. A refill marked `exhausted` found no further candidates, which is a scene with nothing left in it rather than a mechanism that failed."
     },

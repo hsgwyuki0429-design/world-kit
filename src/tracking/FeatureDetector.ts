@@ -33,6 +33,7 @@ import { Rng } from '../core/Rng';
 import {
   GRID_CELLS,
   SceneTexture,
+  TEXTURE_POOR_CEILING,
   cellIndexFor,
   classifyTexture,
 } from './featureTypes';
@@ -65,6 +66,25 @@ export interface DetectorConfig {
    * difference between a detector that finds corners and one that finds their neighbourhood.
    */
   readonly blurPasses: number;
+  /**
+   * The least local gradient, in intensity levels per pixel, that makes a corner a corner.
+   *
+   * **Why an absolute floor is needed at all.** `qualityLevel` is a fraction of *this
+   * frame's own strongest* response, so on a blank wall it scales down with the noise and
+   * admits it: the floor becomes 1% of a small number, every noise local-maximum clears it,
+   * and the detector fills to its target. Measured on the device: a blank surface at mean
+   * gradient 3.14 still produced up to 800 features, the count did not fall, and most of the
+   * points drawn on screen sat on nothing a person could see. §11 requires the population to
+   * follow the image; a purely relative floor guarantees it cannot.
+   *
+   * **Why this value.** `gx` is a central difference halved, so it is exactly intensity
+   * levels per pixel — the same units as `TEXTURE_POOR_CEILING`, which this phase already
+   * uses to call a whole frame blank. A corner is required to be locally at least as strong
+   * as the boundary the phase already draws between "blank" and "ambiguous". That reuses a
+   * constant fixed before any of this was measured rather than introducing one chosen to
+   * make a test pass.
+   */
+  readonly minGradient: number;
   /** Positions sampled for the contrast check. */
   readonly contrastSamples: number;
   /** Seed for that sampling (§59 — reproducible, and `Math.random` is banned in src/). */
@@ -74,6 +94,7 @@ export interface DetectorConfig {
 export const DEFAULT_DETECTOR_CONFIG: DetectorConfig = {
   target: 800,
   qualityLevel: 0.01,
+  minGradient: TEXTURE_POOR_CEILING,
   minSeparation: 8,
   windowRadius: 2,
   blurPasses: 2,
@@ -373,10 +394,27 @@ export class FeatureDetector {
     return max;
   }
 
+  /**
+   * `minGradient` expressed in the units `score` is actually in.
+   *
+   * The box filter is a running *sum*, not a mean, applied separably `blurPasses` times with
+   * radius r — so a flat field of value v leaves `(2r+1)^(2·blurPasses)·v` behind. For a
+   * corner with gradient g in both directions the summed tensor's smaller eigenvalue is
+   * about that gain times g². Deriving the gain from the config rather than writing the
+   * product down keeps this correct if the window or the pass count ever changes.
+   */
+  private absoluteScoreFloor(): number {
+    const gain = (2 * this.config.windowRadius + 1) ** (2 * this.config.blurPasses);
+    return gain * this.config.minGradient * this.config.minGradient;
+  }
+
   private collectCandidates(width: number, height: number, maxScore: number): Candidate[] {
     const out: Candidate[] = [];
     if (maxScore <= 0) return out;
-    const threshold = maxScore * this.config.qualityLevel;
+    // Both floors apply. The relative one keeps a frame's own weak responses out when it
+    // contains something far stronger; the absolute one keeps *every* response out when the
+    // frame contains nothing, which is the case the relative floor cannot see.
+    const threshold = Math.max(maxScore * this.config.qualityLevel, this.absoluteScoreFloor());
     const margin = this.effectiveMargin();
     const { score } = this;
     for (let y = margin; y < height - margin; y++) {
