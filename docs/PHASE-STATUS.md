@@ -11,7 +11,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 0 | Environment / Capability | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 11/11 required + 2/2 advisory. Evidence committed. |
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 3 | Feature Detection | **IMPLEMENTING** | §11 built and covered by unit tests plus a DESKTOP_DEV leg. Awaiting the real-device run — FEAT-001, FEAT-002 and FEAT-003 cannot be decided without one. |
+| 3 | Feature Detection | **IMPLEMENTING** | §11 built. One device run so far, `TESTING`: it found a defect that made START DETECTION a no-op on the device. Fixed and reproduced by the automated leg; awaiting a second device run. |
 | 4 | Optical Flow Tracking | BLOCKED | |
 | 5 | Geometric Verification | BLOCKED | |
 | 6 | Relative Pose | BLOCKED | |
@@ -280,6 +280,30 @@ a plateaued corner response, a contrast statistic that measured the scene rather
 detector, and a grid comparison that failed a selector which was working correctly. The
 first was a code fix; the other two are amendments recorded in `docs/phase3/TEST-PLAN.md`,
 both narrowing the test rather than relaxing it.
+
+### The first device run found a defect, and it is committed
+
+`docs/phase3/evidence/phase3-real-device-TESTING-2026-08-22T01-57-31-596Z.json`, iPhone /
+iOS 18.7 / Safari 26.6 over HTTPS, `devEntry: false`. The pipeline ran and preprocessed
+**2190 frames without losing one. Detection ran on zero of them**, while the screen said
+`DETECTING` and the error log stayed empty.
+
+Phase 3 is reached from a PIPELINE screen whose pipeline is still running — it has to be, to
+have passed. `onStartPhase3` guarded on `pipeline.isRunning()`, which on that path means
+"Phase 2 is still going" rather than "detection already started", so the handler returned
+before the tracking options were ever sent to the worker. The screen's own running flag was
+the same expression, so the control reported a state the engine was not in (Rule 002), which
+is what made a dead stage look like a rendering bug.
+
+Fixed: detection has its own state, a running pipeline is adopted rather than treated as an
+obstacle, Phase 2's injected load is cleared on adoption, and one `isDetecting()` is read by
+the screen, the tests and the evidence so they cannot drift apart again. The automated leg
+now walks the device's path — enter Phase 2, start the pipeline, turn stress on, hand it
+over, then start detection — and against the old code that sequence times out waiting for
+the first detection. Full account in `docs/phase3/evidence/README.md`.
+
+The bundle is kept for the reason Phase 1 keeps its `FAILED` one: the record of a defect is
+evidence, and removing it would leave the fix looking like a change with no cause.
 
 ### Code changed after the Phase 2 pass
 

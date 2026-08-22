@@ -18,8 +18,12 @@ camera at each of them.
 ## The run
 
 1. Get Phase 1 and Phase 2 to `PASSED` as their own guides describe.
-2. From the pipeline screen, tap **GO TO FEATURE DETECTION**.
+2. From the pipeline screen, tap **GO TO FEATURE DETECTION**. Leave the pipeline running —
+   Phase 3 adopts it rather than reopening the camera, and turns off any injected load.
 3. Tap **START DETECTION**. Corners appear on the preview within a second.
+   - **If *Detections* stays at 0 while the button reads DETECTING, stop and report it.**
+     That is the defect the run of 2026-08-22 found, and the screen is claiming a state the
+     engine is not in. It is fixed, and this is the check that it stayed fixed.
    - **Check they land on things.** Circles should sit on edges, corners, text, the join
      between objects — not scattered evenly across a blank area. That is what FEAT-001
      measures numerically, and it is what the screenshot records.
