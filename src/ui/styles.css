@@ -248,6 +248,33 @@ pre.json {
   aspect-ratio: 16 / 9;
 }
 /*
+ * Camera and feature overlay in one aspect-locked box.
+ *
+ * The two must align exactly: a corner drawn a few pixels from where it was found would
+ * look like a working detector with a calibration fault, and a screenshot must not be able
+ * to hide that. The box takes the source aspect ratio inline, so `object-fit: fill` is
+ * exact rather than a crop.
+ */
+.overlay-stack {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b0b0d;
+  border: 1px solid var(--line);
+}
+.overlay-stack video,
+.overlay-stack canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.overlay-stack video { object-fit: fill; }
+.overlay-stack canvas { pointer-events: none; }
+
+/*
  * The worker's own output, painted from the proof strip it sends back.
  * `pixelated` because the strip is 64x48 and a smoothed upscale would invent detail the
  * worker never produced — the point of showing it is that it is exactly those bytes.

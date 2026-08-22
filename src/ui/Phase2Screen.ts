@@ -28,6 +28,11 @@ export interface Phase2ViewModel {
   readonly strip: { data: Uint8Array; width: number; height: number } | null;
   readonly results: readonly TestResult[];
   readonly stressRefusal: string | null;
+  /** Phase 3's state, so the control that leads to it can say why it is closed. */
+  readonly phase3: PhaseInfo;
+  readonly canEnterPhase3: boolean;
+  readonly phase3Implemented: boolean;
+  readonly phase3BlockedReason: string;
 }
 
 export interface Phase2Handlers {
@@ -35,6 +40,7 @@ export interface Phase2Handlers {
   onStopPipeline: () => void;
   onToggleStress: () => void;
   onBack: () => void;
+  onEnterPhase3: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
 }
@@ -122,16 +128,41 @@ export function renderPhase2Screen(
   root.append(renderTests(vm));
   root.append(renderEvidence(vm, handlers));
 
-  root.append(
-    card('Navigation', [
+  root.append(renderNavigation(vm, handlers));
+}
+
+/** Phase Lock on screen, as on the Phase 1 screen: a closed door says which lock holds it. */
+function renderNavigation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElement {
+  const open = vm.canEnterPhase3 && vm.phase3Implemented;
+  const label = !vm.phase3Implemented
+    ? 'FEATURE DETECTION — NOT IMPLEMENTED'
+    : !vm.canEnterPhase3
+      ? 'FEATURE DETECTION — LOCKED'
+      : 'GO TO FEATURE DETECTION';
+  const note = !vm.phase3Implemented
+    ? 'Phase 3 has not been written in this build.'
+    : !vm.canEnterPhase3
+      ? vm.phase3BlockedReason
+      : `Phase 3 is ${vm.phase3.state}.`;
+
+  return card('Navigation', [
+    el('div', { class: 'button-row' }, [
       el('button', {
         class: 'secondary',
         id: 'back-to-phase1',
         textContent: 'BACK TO CAMERA',
         onclick: handlers.onBack,
       } as never),
+      el('button', {
+        class: 'primary',
+        id: 'go-to-phase3',
+        disabled: !open,
+        textContent: label,
+        onclick: handlers.onEnterPhase3,
+      } as never),
     ]),
-  );
+    el('p', { class: 'footnote' }, [note]),
+  ]);
 }
 
 function renderImages(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElement {

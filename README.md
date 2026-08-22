@@ -8,9 +8,10 @@ Built strictly to `Safari Spatial Mapping Prototype v3.0`, phase by phase. The g
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0 and 1 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
-with committed, machine-checked evidence. Phase 2 (Frame Pipeline) is built and green on
-the automated leg, awaiting its device run. See
+**Current state: Phases 0, 1 and 2 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS,
+with committed, machine-checked evidence. Phase 3 (Feature Detection) is built and covered
+by unit tests plus an automated leg, but is `IMPLEMENTING`, not passed — three of its four
+required tests need a real camera pointed at a textured surface and a blank one. See
 [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
@@ -18,11 +19,41 @@ the automated leg, awaiting its device run. See
 ```bash
 npm install
 npm test          # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
-npm run test:e2e  # automated DESKTOP_DEV legs for all three phases, with evidence and screenshots
+npm run test:e2e  # automated DESKTOP_DEV legs for all four phases, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
 
 To pass Phase 0, run the device test: [`docs/phase0/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase0/HOW-TO-RUN-DEVICE-TEST.md).
+
+## What Phase 3 does
+
+Finds the corners in each frame that are worth tracking — Shi-Tomasi on the smaller
+eigenvalue of the structure tensor — spreads them across an 8×6 grid so they cannot clump
+into one textured corner of the image, and refills the population as it falls, with the
+urgency §11 specifies.
+
+**The check that matters is whether the points are on the image at all.** A count, a state
+name and a cost can all be produced without a camera. So for every frame it detects on, the
+worker also samples an equal number of positions **at random from the same frame**, using
+the seeded `Rng`, and scores them the same way. The gate is the rank statistic — how often a
+detected position out-textures a random one, ties counted as half. Chance is exactly 0.5
+whatever the scene is, so the distance from 0.5 measures the detector rather than the
+wallpaper. On the automated leg it reads **97.3 %** against a rolling gradient barely above
+sensor noise.
+
+**Whether the scene is textured is measured, not asserted by the tester.** A frame counts as
+rich or poor by its own mean gradient magnitude, and the run reports the histogram of where
+it actually sat — so FEAT-002's claim that the population collapses on a blank wall is a
+comparison between two classes the image put frames into, not two moments a human labelled.
+
+**The grid is judged against its own control.** On the same frame, an ungridded top-N
+selection is run beside the gridded one, and the comparison counts only when the quota
+actually bound. On a sparse frame the two selections are identical and the test reports
+`PENDING` — measuring the grid, not the scene.
+
+Nothing here follows a feature between frames: `age` is 0, `trackLength` is 1, and the two
+error terms §11 lists are `null` because Phase 4 and Phase 6 are what measure them. The
+screen says so rather than implying a tracked point.
 
 ## What Phase 2 does
 
@@ -159,16 +190,21 @@ docs/
   phase2/TEST-PLAN.md            FRAME-001..006, written before the code
   phase2/HOW-TO-RUN-DEVICE-TEST.md
   phase2/evidence/
+  phase3/TEST-PLAN.md            FEAT-001..006, written before the code
+  phase3/HOW-TO-RUN-DEVICE-TEST.md
+  phase3/evidence/
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
   capture/       CapabilityDetector, MotionCapabilityProbe, CameraSource,
                  FrameIntegrityMonitor, ScenarioLedger, probe plumbing
   debug/         Logger, EvidenceRecorder
   pipeline/      tiers, pyramid maths, AdaptiveController, PipelineMetrics,
-                 frameWorker, WorkerFramePipeline
-  testkit/       Phase0Tests, Phase1Tests, Phase2Tests
-  ui/            Phase0Screen, Phase1Screen, Phase2Screen, PreviewVideo, styles
-  tracking/ mapping/ world/ renderer/ game/   empty — later phases
+                 WorkerFramePipeline
+  tracking/      trackingWorker (preprocessing + detection), FeatureDetector,
+                 FeaturePopulation, feature types and messages
+  testkit/       Phase0Tests, Phase1Tests, Phase2Tests, Phase3Tests
+  ui/            Phase0Screen..Phase3Screen, PreviewVideo, styles
+  mapping/ world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e
 ```
 
@@ -198,6 +234,13 @@ The first two are from the device, and were what the design had to answer:
   track — so frame size is per-frame data, and a rotation mid-scan changes the camera
   intrinsics. (§H.0)
 
+**Both were answered by Phase 2's device run.** `VideoFrame` construction cost **0.048 ms**
+on the UI thread across 2363 frames and the fallback routes were never needed; the readback
+it replaced cost 5.81 ms in the same run — real, but not the 13.797 ms Phase 1 measured, so
+§H.1 now records that the figure varies rather than quoting one sample as a constant. The
+rotation showed up as 720×1280 ↔ 1280×720 with the processing size re-derived within a
+frame, 0 frames over budget and 0 upscaled.
+
 Three more came out of Phase 2's own automated leg, each from a test failing rather than
 from review, and each recorded in §H.2:
 
@@ -209,7 +252,58 @@ from review, and each recorded in §H.2:
   pixels against a 1.5× budget relaxation — means any load worth less than about six times
   the budget becomes affordable partway down, and the pipeline cycles.
 
+And one the device settled, recorded in §H.2 and in the Phase 2 evidence README: a ladder
+step that lowers only the target rate does not reduce per-frame latency. Measured at
+58 ms → 59 ms for a rate step against 57 ms → 26 ms for the resolution step beside it, which
+is why FRAME-004 judges the effect of adaptation on the last step that changed the
+resolution.
+
+## What the device afforded
+
+From Phase 2's passing run — the first numbers in this project that describe the engine
+rather than the platform:
+
+| | Measured |
+| --- | --- |
+| Full preprocessing at 720×1280 (readback, grayscale, 3-level pyramid) | 10–11 ms per frame |
+| Sustained delivery at that size | 29.65 fps over 48.5 s, **0 frames lost** |
+| UI thread per admitted frame | below WebKit's 1 ms clock resolution |
+| Worker's grayscale vs an independent read of the same frame | median Δluma **0.284** / 255 |
+| Tier the controller settled on | `HIGH 1280×720@30`, the top of the ladder |
+
+That leaves roughly 22 ms per frame at 30 Hz for Phases 3–6, against the 32 ms §H budgets
+them — the first sign that the per-frame budget is tight rather than generous.
+
+## What Phase 3's own leg found
+
+Three defects, each from a test failing rather than from review, and each recorded in
+[`docs/phase3/evidence/README.md`](docs/phase3/evidence/README.md):
+
+- **A single box-filter pass makes the corner response a plateau**, so suppression keeps the
+  first point scanned and every feature lands up-left of the corner it found. A checkerboard
+  corner at (10, 10) came back at (7, 7), with zero local variance at the chosen positions.
+  Two passes give the response a peak. Invisible in Phase 3's counts, fatal to Phase 5.
+- **The contrast ratio measured the scene, not the detector.** A working detector scored
+  1.87 on a checkerboard against a threshold of 4.0, because on a dense pattern the random
+  control is textured too. Replaced by the rank statistic, whose chance value does not move.
+- **A grid comparison on a sparse frame says nothing**, and failed a selector that was
+  working. It is now counted only when the quota bound.
+
+The last two are amendments to the test plan, written with their reasons; both narrow the
+test rather than relax it.
+
+The leg also measures the alternative to its own design choice on every run: detection at
+pyramid level 1 costs **9.4 ms** on that machine, where level 0 would cost **49.3 ms** for
+1.3× the features.
+
+That 9.4 ms is over §H's 8 ms budget, and the leg prints the `FAIL` and then declines to gate
+on it — because §H's budget is the iPhone's, and consecutive runs of identical code measured
+7.98 ms and 9.36 ms on a shared CPU. A number that flips a verdict without the code changing
+decides nothing about the code. A named 24 ms tripwire gates instead, sitting between that
+spread and the 45–49 ms that detecting at the wrong level would cost; the device run decides
+the budget.
+
 ## Next
 
-Phase 2's device run: [`docs/phase2/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase2/HOW-TO-RUN-DEVICE-TEST.md).
-Then Phase 3 — Feature Detection (§11).
+The Phase 3 device run — [`docs/phase3/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase3/HOW-TO-RUN-DEVICE-TEST.md).
+Then Phase 4 — Optical Flow Tracking (§12).

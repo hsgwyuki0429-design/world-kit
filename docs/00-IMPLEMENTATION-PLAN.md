@@ -366,10 +366,33 @@ than discovered in Phase 2.
 keeps the first that completes real round trips: `VideoFrame` transferred into the worker,
 `createImageBitmap` with a resize, and last the main-thread readback above — kept as a
 declared fallback, and kept *measured*, so the comparison that ruled it out is in the
-evidence rather than only in this section. On the automated leg the first route was selected
-and cost **0.069 ms** on the UI thread against a 20.36 ms mean in the worker. The device
-number for the chosen route is still to be measured; §H.1's 13.8 ms stands as the figure for
-the route that was rejected.
+evidence rather than only in this section.
+
+**Measured on the device, Phase 2's passing run:**
+
+| Route | Cost on the UI thread |
+| --- | --- |
+| `VideoFrame` construction (selected, 2363/2363 round trips) | **0.048 ms** mean |
+| main-thread `drawImage` + `getImageData` at 64×48 (rejected) | 5.81 ms mean, 11 ms p95 |
+
+`IMAGE_BITMAP` and `MAIN_CANVAS` were never reached, so their cost on this platform remains
+unmeasured and the bundle reports that rather than a zero.
+
+**Amendment: the readback is not a constant 13.8 ms.** The 13.797 ms above came from one
+Phase 1 session. In Phase 2's passing run the same operation — the provenance cross-check,
+which deliberately uses this exact route — measured **5.81 ms** mean, 11 ms p95, 15 ms max
+over 94 samples. Both are real measurements of the same platform; the cost varies with what
+else is in flight, and quoting either as *the* figure would be a guess about a distribution
+from one sample. The argument is unchanged, because it never depended on the precise value:
+at 5.81 ms the readback is still 17 % of a 33 ms budget spent before a pixel has been looked
+at, against 0.048 ms for the route actually chosen — a ratio of roughly 120×.
+
+**A measurement caveat that applies to every duration in Phase 2's evidence.** WebKit
+quantises `performance.now()` to 1 ms. Every timing in the device bundle is an integer, so
+"0.07 ms mean UI cost" means *zero on almost every frame, 1–2 ms occasionally* — the
+per-frame UI work is below what the platform's clock can resolve. Means over thousands of
+varying samples still recover sub-millisecond accuracy; individual readings do not, and no
+sub-millisecond claim should rest on one.
 
 Per-frame budget at BASIC (960×540), tracking worker, target ≤ 33 ms:
 
@@ -414,6 +437,78 @@ relaxing the worker budget about 1.5× (33.3 ms → 50 ms). So any fixed extra c
 than about 6× the budget where it appeared becomes affordable partway down, and a controller
 without flap damping cycles indefinitely. Measured as five ladder moves in one ten-second
 window. Phase 18's stress work should expect this shape.
+
+**A rate-only ladder step does not reduce per-frame latency, and the device proved it.**
+Steps 1→2 and 3→4 lower the target rate and leave the resolution alone. Phase 2's passing run
+measured a rate-only step at 58 ms → 59 ms and the resolution step immediately after it at
+57 ms → 26 ms. Anything later that asks "did degrading help?" has to ask it of the quantity
+the step actually controls: a rate step buys wall-clock time between frames, not time within
+one. §27's bundle-adjustment frequency is the next knob with this shape.
+
+### H.3 What the device turned out to afford
+
+Phase 2's passing run, for calibrating the budgets above against something measured rather
+than targeted. iPhone / iOS 18.7 / Safari 26.6, `hardwareConcurrency` 4.
+
+| | Measured |
+| --- | --- |
+| Full preprocessing at 720×1280 — readback, grayscale, 3-level pyramid | **10–11 ms** per frame, unstressed |
+| Sustained delivery at that size | **29.65 fps** over 48.5 s, 0 frames lost |
+| UI thread, per admitted frame | below the platform's 1 ms clock resolution |
+| Tier the controller settled on | `HIGH 1280×720@30` — the top of the ladder |
+
+The budget table above allows ≤ 6 ms for acquire + grayscale + pyramid at 960×540. The
+device did the same work at **1.8× that pixel count in 10–11 ms**, so per pixel it is close
+to the estimate and comfortably inside the 33 ms frame budget as a whole. What that leaves
+for Phases 3–6 is roughly 22 ms per frame at 30 Hz, against the 32 ms those stages are
+budgeted — which is the first sign that the per-frame budget is tight rather than generous,
+and worth remembering before Phase 4 adds pyramidal LK on 700 points.
+
+### H.4 What Phase 3 measured about the detection budget
+
+The budget table above allows **≤ 8 ms amortised** for Shi-Tomasi. Phase 3 chose to detect
+on pyramid level 1 rather than level 0 for that reason, and measures the rejected option on
+every automated run rather than leaving the argument unchecked. Headless Chromium, synthetic
+camera, 451 detections:
+
+| Level | Size | Cost per detection | Features |
+| --- | --- | --- | --- |
+| 1 (selected) | 480×270 | **9.36 ms** | median 44 |
+| 0 (calibration) | 960×540 | **49.3 ms** | 56 |
+
+Four times the pixels cost 5.3× the time for 1.3× the features. Three things follow for later
+phases.
+
+**Detection level is a per-phase decision, not a global one.** Phase 4's optical flow is
+pyramidal and runs on levels 0–2; Phase 3's detection runs on level 1 and reports positions
+scaled back to level 0 (`x0`, `y0` in every record). Nothing downstream should assume one
+"the" working resolution — the record carries both.
+
+**§H.3's remaining 22 ms is now roughly 13 ms.** Phase 2 left about 22 ms per frame at 30 Hz
+for Phases 3–6 after its measured 10–11 ms of preprocessing. Detection at level 1 took 9.4 ms
+of that on a desktop; the device figure will differ and the device run will report it. What
+does not depend on the device is the shape: pyramidal LK on ~700 points (§H's 14 ms line) has
+to fit in what is left, and the first budget line to come under real pressure is Phase 4's,
+not Phase 3's.
+
+**A budget written for the device cannot be adjudicated off the device.** Consecutive runs of
+identical Phase 3 code measured 7.98 ms and 9.36 ms on the same headless machine — either
+side of the 8 ms line — because the CPU is shared and the synthetic camera's texture varies
+through its cycle. The automated leg therefore prints FEAT-005's verdict and declines to gate
+on it, gating instead on a separately named 24 ms configuration tripwire that sits between
+that spread and the 45–49 ms a wrong-level regression would cost. Every later phase with a
+device budget in this section — Phase 4's 14 ms, Phase 5's 6 ms, §27's BA cadence — inherits
+the distinction: an off-device leg can catch a regression in what the code *does*, and cannot
+answer what the device *affords*.
+
+**A corner response built from one box-filter pass is a plateau, and plateaus have no
+maximum.** Non-maximum suppression keeps whichever point the scan reached first, so every
+feature lands at the top-left edge of its corner's neighbourhood — measured as a three-pixel
+offset on a synthetic checkerboard, with zero local variance at the chosen positions. Two
+box passes (a triangular kernel) restore a single peak. Recorded here because every later
+stage that separably smooths a response map — the plane-fitting of §17, any score map
+Phase 5 suppresses over — has the same failure mode, and its symptom is a systematic
+positional bias that no count-based test can see.
 
 **Phase 0's own budget:** full capability detection ≤ 1500 ms wall clock, excluding the
 gesture-gated motion probes (each of which uses a 2000 ms listen window by design, because
