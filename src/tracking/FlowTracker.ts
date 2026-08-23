@@ -29,6 +29,7 @@
  * be replayed frame by frame in a unit test and produce the same records.
  */
 
+import type { Correspondence } from '../geometry/twoView';
 import type { Feature } from './featureTypes';
 import { FEATURE_MAX, GRID_CELLS, cellIndexFor } from './featureTypes';
 import {
@@ -44,6 +45,23 @@ import {
   frameCountsAsFailure,
 } from './trackingState';
 import type { StateDerivation, TrackingMeasurement } from './trackingState';
+
+/**
+ * What §11's refill actually did with what detection produced.
+ *
+ * Three numbers rather than one, because they answer different questions and the device run
+ * of 2026-08-22 could not distinguish them. A population well below §11's minimum can mean
+ * the detector found little, or that almost everything it found is *already being tracked* —
+ * which is a healthy tracker, not a failing one — or that the frame's corners sit where the
+ * solver's window cannot reach. `admitted` plus the two declines is what detection offered.
+ */
+export interface MergeOutcome {
+  readonly admitted: number;
+  /** Within the separation radius of a point already in the population. */
+  readonly declinedTooClose: number;
+  /** Inside the border band the solver's 21×21 window cannot cover. */
+  readonly declinedOutOfReach: number;
+}
 
 /** Cells with fewer than this many tracked points say nothing about the local flow. */
 export const MIN_CELL_POINTS_FOR_SPREAD = 3;
@@ -65,6 +83,15 @@ export interface TrackedFeature extends Feature {
    * which keeps the two from drifting apart and saying different things about one point.
    */
   readonly levelScale: number;
+  /**
+   * Where this point was when the verification anchor was taken, in level-0 pixels.
+   *
+   * `null` for a point that appeared *after* the current anchor: it has no position in the
+   * first of the two views, so it cannot contribute a correspondence to a two-view geometry.
+   * Phase 5 uses exactly the points where this is set — see `FlowTracker.takeAnchor`.
+   */
+  readonly anchorX0: number | null;
+  readonly anchorY0: number | null;
 }
 
 export interface FlowStepResult {
@@ -167,6 +194,8 @@ export class FlowTracker {
 
   private nextId = 1;
   private frameIndex = 0;
+  /** The frame the current verification anchor was taken at. `-1` before the first one. */
+  private anchorFrame = -1;
   private everTracked = false;
   private consecutiveFailedFrames = 0;
   private geometryChanges = 0;
@@ -222,7 +251,68 @@ export class FlowTracker {
     this.everTracked = false;
     this.consecutiveFailedFrames = 0;
     this.geometryChanges = 0;
+    this.anchorFrame = -1;
     this.lastStep = EMPTY_STEP;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* The verification anchor (Phase 5)                                       */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Snapshot every current point's position as the first of two views.
+   *
+   * **Why an anchor exists at all.** Two-view geometry needs two views that are actually
+   * apart, and it needs every correspondence to relate *the same* two views. Consecutive
+   * frames satisfy neither: the device measured a median displacement of 4.7 px between them,
+   * against a positional uncertainty §13 puts at 1.5 px, which is not a geometry — and a
+   * track's own birth position cannot serve as the reference because points born at different
+   * moments do not share a view.
+   *
+   * So one frame is designated the reference and every subsequent frame's correspondences are
+   * formed against it. Points that appear later carry `anchorX0: null` until the next anchor,
+   * and are simply not offered to Phase 5.
+   *
+   * **This is a deliberate stand-in for Phase 8's keyframe system**, and it is written down as
+   * one. v3 §20 gives keyframes four conditions — rotation ≥ 10°, translation ≥ 0.10 local
+   * unit, median feature displacement ≥ 30 px, tracking quality changed — and three of them
+   * need a pose that Phase 6 has not produced. Displacement is the one Phase 5 can measure, so
+   * it is the one the re-anchor rule uses.
+   */
+  takeAnchor(): void {
+    this.anchorFrame = this.frameIndex;
+    this.population = this.population.map((f) => ({ ...f, anchorX0: f.x0, anchorY0: f.y0 }));
+  }
+
+  getAnchorFrame(): number {
+    return this.anchorFrame;
+  }
+
+  /** Frames since the anchor was taken. `-1` when there is none. */
+  anchorAge(): number {
+    return this.anchorFrame < 0 ? -1 : this.frameIndex - this.anchorFrame;
+  }
+
+  /**
+   * The correspondence set for Phase 5: anchor position → current position.
+   *
+   * Only points that existed at the anchor. A point born since has no first view and would
+   * contribute a correspondence between two moments that are not the two views being related.
+   */
+  getCorrespondences(): Correspondence[] {
+    const out: Correspondence[] = [];
+    for (const f of this.population) {
+      if (f.anchorX0 === null || f.anchorY0 === null) continue;
+      out.push({ ax: f.anchorX0, ay: f.anchorY0, bx: f.x0, by: f.y0 });
+    }
+    return out;
+  }
+
+  /** How many points survive from the anchor — what `getCorrespondences` would return. */
+  anchoredCount(): number {
+    let n = 0;
+    for (const f of this.population) if (f.anchorX0 !== null) n++;
+    return n;
   }
 
   /**
@@ -257,6 +347,9 @@ export class FlowTracker {
       const previouslyTracked = this.everTracked;
       this.population = [];
       this.consecutiveFailedFrames = 0;
+      // Level-0 positions from the old geometry are not comparable with the new ones, so the
+      // anchor goes with the population (§H.0).
+      this.anchorFrame = -1;
       // The first frame of a run configures the geometry; it does not change it. Counting it
       // would put a 1 in every bundle and make the number useless for spotting a run that
       // actually stepped tiers.
@@ -439,8 +532,10 @@ export class FlowTracker {
     width: number,
     height: number,
     levelScale: number,
-  ): number {
-    if (detected.length === 0) return 0;
+  ): MergeOutcome {
+    if (detected.length === 0) return { admitted: 0, declinedTooClose: 0, declinedOutOfReach: 0 };
+    let declinedTooClose = 0;
+    let declinedOutOfReach = 0;
     const m = this.trackableMargin;
     const sep = Math.max(1, separation0);
     const sepSq = sep * sep;
@@ -482,6 +577,7 @@ export class FlowTracker {
         f.x0 >= width - m - 1 ||
         f.y0 >= height - m - 1
       ) {
+        declinedOutOfReach++;
         continue;
       }
       const bx = Math.min(gw - 1, Math.max(0, Math.floor(f.x0 / sep)));
@@ -501,7 +597,10 @@ export class FlowTracker {
           }
         }
       }
-      if (tooClose) continue;
+      if (tooClose) {
+        declinedTooClose++;
+        continue;
+      }
       place(f.x0, f.y0);
       this.population.push({
         ...f,
@@ -519,10 +618,14 @@ export class FlowTracker {
         bornFrame: this.frameIndex,
         displacement: 0,
         levelScale: levelScale > 0 ? levelScale : 1,
+        // Born after the current anchor: no position in the first view, so no correspondence
+        // until the next anchor is taken.
+        anchorX0: null,
+        anchorY0: null,
       });
       added++;
     }
-    return added;
+    return { admitted: added, declinedTooClose, declinedOutOfReach };
   }
 
   /** §33's state for the population as it now stands, from the one shared function. */

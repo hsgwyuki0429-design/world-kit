@@ -47,6 +47,13 @@ describe('audit-architecture', () => {
     expect(r.out).toContain('tracking');
   });
 
+  it('rejects a geometry solver importing from tracking (GEO-003, §H.7)', () => {
+    const r = runAudit('scripts/audit-architecture.mjs', 'tests/fixtures/arch-src');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('PeeksAtTheTracker');
+    expect(r.out).toContain('geometry');
+  });
+
   it('passes over the real src/ tree', () => {
     const r = runAudit('scripts/audit-architecture.mjs', 'src');
     expect(r.code).toBe(0);

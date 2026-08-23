@@ -314,10 +314,17 @@ try {
       `${s.cumulativeTracked} tracked + ${s.cumulativeRedetected} redetected over the run ` +
       `(last frame ${s.tracked} + ${s.redetected} = ${s.total})`,
   );
+  const cls = (c) => `${c.framesSeen} (${c.frames} judged)`;
   console.log(
-    `[p4] motion classes: static ${s.staticFrames.frames}, slow ${s.slowFrames.frames}, ` +
-      `fast ${s.fastFrames.frames}, occluded ${s.occludedFrames.frames}, ` +
+    `[p4] motion classes: static ${cls(s.staticFrames)}, slow ${cls(s.slowFrames)}, ` +
+      `fast ${cls(s.fastFrames)}, occluded ${cls(s.occludedFrames)}, ` +
       `indeterminate ${s.indeterminateFrames}`,
+  );
+  console.log(
+    `[p4] refill: median ${s.medianDetectionOffered} offered — ` +
+      `${s.medianDeclinedTooClose} already tracked, ` +
+      `${s.medianDeclinedOutOfReach} out of the solver's reach, ` +
+      `${s.medianDetectionOffered - s.medianDeclinedTooClose - s.medianDeclinedOutOfReach} admitted`,
   );
   console.log(
     `[p4] cross-check: ${s.shiftCheckCount} pairs, tracker ${s.medianTrackedDisplacementPx} px ` +
@@ -389,7 +396,7 @@ for (const [id, key, label] of [
   if (s[key].frames < 15) {
     excluded.set(
       id,
-      `the feed produced only ${s[key].frames} ${label} frames — the fake camera plays the ` +
+      `the feed produced only ${s[key].frames} judgeable ${label} frames — the fake camera plays the ` +
         'generated file at its own rate, so a segment can be sampled away',
     );
   }

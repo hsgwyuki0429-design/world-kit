@@ -24,6 +24,7 @@ import { TrackingState } from '../../src/tracking/trackingState';
 function cls(over: Partial<MotionClassStats> = {}): MotionClassStats {
   return {
     frames: 40,
+    framesSeen: 40,
     medianSurvival: 0.94,
     medianDisplacementPx: 5,
     medianFbErrorPx: 0.4,
@@ -80,6 +81,9 @@ function healthyStats(): FlowStats {
     stateMismatches: 0,
     consecutiveFailedFrames: 0,
     geometryChanges: 2,
+    medianDetectionOffered: 180,
+    medianDeclinedTooClose: 118,
+    medianDeclinedOutOfReach: 2,
 
     medianFbErrorPx: 0.44,
     fbAcceptable: 92_000,

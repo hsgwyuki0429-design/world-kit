@@ -31,7 +31,7 @@ import { detectWithRefill, REFILL_QUALITY_FACTOR, REFILL_SEPARATION_FACTOR } fro
 import type { DetectWithRefill } from './FeaturePopulation';
 import { GRID_CELLS, RefillUrgency, SceneTexture, featureStateFor, refillUrgencyFor } from './featureTypes';
 import { FlowTracker } from './FlowTracker';
-import type { TrackedFeature } from './FlowTracker';
+import type { MergeOutcome, TrackedFeature } from './FlowTracker';
 import type { FlowSolve, ImagePlane } from './LucasKanade';
 import { SceneShiftProbe, classifyFrameMotion } from './SceneShift';
 import { deriveTrackingState } from './trackingState';
@@ -135,6 +135,8 @@ export class FlowStage {
     //    tracker that lost every point, which is exactly what one number would let it do.
     const urgency = refillUrgencyFor(this.tracker.getPopulation().length);
     let redetected = 0;
+    let detectionOffered = 0;
+    let merged: MergeOutcome = { admitted: 0, declinedTooClose: 0, declinedOutOfReach: 0 };
     let detection: DetectWithRefill | null = null;
     if (urgency !== RefillUrgency.NONE) {
       detection = detectWithRefill(
@@ -151,13 +153,15 @@ export class FlowStage {
         },
         Date.now(),
       );
-      redetected = this.tracker.merge(
+      detectionOffered = detection.result.features.length;
+      merged = this.tracker.merge(
         detection.result.features,
         DEFAULT_DETECTOR_CONFIG.minSeparation * levelScale,
         base.width,
         base.height,
         levelScale,
       );
+      redetected = merged.admitted;
     }
 
     // 4. §33, from the one function. `inlierRatio` and `reprojectionError` are null because
@@ -249,6 +253,13 @@ export class FlowStage {
       meanLuma: round(input.meanLuma),
       topLevelMad: round(input.topLevelMad),
       detectedThisFrame: detection !== null,
+      detectionOffered,
+      // Split by reason, because they mean opposite things about the tracker's health. See
+      // `MergeOutcome`: the device run of 2026-08-22 sat at 41 tracked points and the bundle
+      // could not say whether detection had found little or whether almost everything it
+      // found was already being tracked.
+      declinedTooClose: merged.declinedTooClose,
+      declinedOutOfReach: merged.declinedOutOfReach,
       refillUrgency: urgency,
     };
 
@@ -293,7 +304,19 @@ export class FlowStage {
       overlay: overlay.buffer,
       flow,
       flowAge: ages.buffer,
+      verification: null,
     };
+  }
+
+  /**
+   * The live population, for Phase 5's anchor and correspondence set.
+   *
+   * Phase 5 inherits Phase 4's machinery rather than rebuilding it (§H.5), and what it does
+   * with it — takes an anchor, forms correspondences against it, re-anchors when the anchor
+   * stops supporting a two-view geometry — is `VerificationStage`'s to decide.
+   */
+  getTracker(): FlowTracker {
+    return this.tracker;
   }
 }
 

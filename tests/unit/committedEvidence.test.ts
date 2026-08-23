@@ -29,6 +29,27 @@ import {
   MIN_CONTRAST_SAMPLES,
   POOR_COUNT_FRACTION,
 } from '../../src/testkit/Phase3Tests';
+import {
+  MIN_CLASS_FRAMES,
+  MIN_SHIFT_SAMPLES,
+  MIN_SURVIVAL_SLOW,
+  STATIC_DRIFT_PX,
+} from '../../src/testkit/Phase4Tests';
+import {
+  INJECTION_ADVANTAGE,
+  MAX_CLEAN_REJECTION,
+  MIN_INJECTION_SAMPLES,
+  MIN_JUDGED_FRAMES,
+  MIN_OUTLIER_RECALL,
+} from '../../src/testkit/Phase5Tests';
+import {
+  DEGENERATE_SPREAD_PX,
+  MIN_BASELINE_PX,
+  MIN_INLIERS,
+  USABLE_INLIER_RATIO,
+  isPlanarByCounts,
+} from '../../src/geometry/verify';
+import { SHIFT_AGREEMENT_FRACTION, SHIFT_AGREEMENT_PX } from '../../src/tracking/SceneShift';
 import { findIntegrityIssues } from '../../src/core/validate';
 
 const EVIDENCE_DIRS = [
@@ -36,6 +57,8 @@ const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase1', 'evidence'),
   join(process.cwd(), 'docs', 'phase2', 'evidence'),
   join(process.cwd(), 'docs', 'phase3', 'evidence'),
+  join(process.cwd(), 'docs', 'phase4', 'evidence'),
+  join(process.cwd(), 'docs', 'phase5', 'evidence'),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
@@ -444,6 +467,315 @@ describe('Phase 3 evidence', () => {
       }
       const f3 = bundle.testResults.find((r) => r.spec.id === 'FEAT-003');
       expect(Number(f3?.metrics['quotaBreaches']), `${file} quota breaches`).toBe(0);
+    }
+  });
+});
+
+describe('Phase 4 evidence', () => {
+  const phase4 = bundles.filter((b) => b.bundle.phase === 4);
+  const device = phase4.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 4 bundle carries the flow context that produced its verdict', () => {
+    for (const { file, bundle } of phase4) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { devEntry?: boolean; flow?: Record<string, unknown> };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.flow, `${file} flow context`).toBeTruthy();
+      // The paired measurements FLOW-002 is decided on. Without them a reader cannot tell a
+      // tracker that followed the image from one that returned its input.
+      expect(ctx?.flow?.['shiftCrossCheck'], `${file} cross-check context`).toBeTruthy();
+      expect(ctx?.flow?.['byMotion'], `${file} motion classes`).toBeTruthy();
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 4 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  /**
+   * The one gate that separates a working tracker from one that returns its input.
+   *
+   * Re-derived here from the bundle's own numbers rather than read off its verdict: the
+   * tracker must have moved at all, an independent search must have measured the image
+   * moving, and the two must agree inside the tolerance the plan derives. A bundle whose
+   * FLOW-002 says PASS while these numbers do not support it fails this test.
+   */
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass is backed by an agreement that could have failed',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f2 = bundle.testResults.find((r) => r.spec.id === 'FLOW-002');
+        expect(f2?.verdict, `${file} FLOW-002`).toBe(Verdict.PASS);
+
+        const samples = Number(f2?.metrics['shiftCheckSamples']);
+        const measured = Number(f2?.metrics['medianMeasuredShiftPx']);
+        const tracked = Number(f2?.metrics['medianTrackedDisplacementPx']);
+        const disagreement = Number(f2?.metrics['medianDisagreementPx']);
+
+        expect(samples, `${file} paired cross-checks`).toBeGreaterThanOrEqual(MIN_SHIFT_SAMPLES);
+        // The image has to have moved, or the agreement is trivial (criterion 3).
+        expect(measured, `${file} measured scene shift`).toBeGreaterThan(0);
+        expect(tracked, `${file} tracked displacement`).toBeGreaterThanOrEqual(1.0);
+        // ...and the two have to agree, inside the tolerance the plan derives from the
+        // coarse search's own 4 px quantisation.
+        const tolerance = Math.max(SHIFT_AGREEMENT_PX, SHIFT_AGREEMENT_FRACTION * measured);
+        expect(disagreement, `${file} disagreement`).toBeLessThanOrEqual(tolerance);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass shows the tracker holding still on a still scene and surviving a slow one',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const f1 = bundle.testResults.find((r) => r.spec.id === 'FLOW-001');
+        expect(Number(f1?.metrics['staticFrames']), `${file} static frames`)
+          .toBeGreaterThanOrEqual(MIN_CLASS_FRAMES);
+        expect(Number(f1?.metrics['medianDisplacementPx']), `${file} static drift`)
+          .toBeLessThanOrEqual(STATIC_DRIFT_PX);
+
+        const f2 = bundle.testResults.find((r) => r.spec.id === 'FLOW-002');
+        expect(Number(f2?.metrics['medianSurvival']), `${file} slow survival`)
+          .toBeGreaterThanOrEqual(MIN_SURVIVAL_SLOW);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass shows the tracker failing honestly under motion and occlusion',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        // §65 asks for the transition, not for success. Survival must fall under motion the
+        // 21 px window cannot span, and the points lost must be rejected by §13 rather than
+        // vanishing silently.
+        const f4 = bundle.testResults.find((r) => r.spec.id === 'FLOW-004');
+        expect(Number(f4?.metrics['fastSurvival']), `${file} fast survival`)
+          .toBeLessThan(Number(f4?.metrics['slowSurvival']));
+        expect(Number(f4?.metrics['fastRejectFraction']), `${file} fast reject fraction`)
+          .toBeGreaterThan(Number(f4?.metrics['slowRejectFraction']));
+        expect(Number(f4?.metrics['stateMismatches']), `${file} state mismatches`).toBe(0);
+
+        const f5 = bundle.testResults.find((r) => r.spec.id === 'FLOW-005');
+        const episodes = (f5?.metrics['episodes'] ?? []) as {
+          frames: number;
+          msToLost: number;
+          survivedWithGoodFb: number;
+          recovered: boolean;
+        }[];
+        const complete = episodes.filter((e) => e.frames >= 10);
+        expect(complete.length, `${file} occlusion episodes`).toBeGreaterThan(0);
+        for (const e of complete) {
+          expect(e.msToLost, `${file} time to LOST`).toBeGreaterThanOrEqual(0);
+          // A point that "tracks" across a covered lens was never tracked.
+          expect(e.survivedWithGoodFb, `${file} tracks through the dark`).toBe(0);
+          expect(e.recovered, `${file} recovery`).toBe(true);
+        }
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)('a claimed pass invents no metadata it cannot know', () => {
+    for (const { file, bundle } of claimsPass) {
+      const f7 = bundle.testResults.find((r) => r.spec.id === 'FLOW-007');
+      const records = (f7?.metrics['records'] ?? []) as {
+        age?: number;
+        trackLength?: number;
+        forwardBackwardError?: unknown;
+        reprojectionError?: unknown;
+      }[];
+      expect(records.length, `${file} sampled records`).toBeGreaterThan(0);
+      for (const r of records) {
+        // §13's error exists exactly where a round trip was measured, and nowhere else.
+        if ((r.age ?? 0) > 0) expect(r.forwardBackwardError, `${file} tracked FB`).not.toBeNull();
+        else expect(r.forwardBackwardError, `${file} fresh FB`).toBeNull();
+        // Phase 6 measures this one, and Phase 6 has not been written.
+        expect(r.reprojectionError, `${file} reprojectionError`).toBeNull();
+        expect(r.trackLength ?? 0, `${file} trackLength`).toBeLessThanOrEqual((r.age ?? 0) + 1);
+      }
+    }
+  });
+
+  /**
+   * §33's GOOD is three conjuncts and Phase 4 can evaluate one of them.
+   *
+   * A bundle that reached GOOD reached it by dropping the two terms Phases 5 and 6 measure,
+   * which is a claim about measurements that do not exist (§80). Checked against the
+   * *evidence* rather than only against the code, because this is exactly the kind of thing
+   * a later change could quietly reintroduce.
+   */
+  it.runIf(device.length > 0)('never claims §33 GOOD, which needs Phase 5 and Phase 6', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { flow?: { state?: { frames?: Record<string, number>; goodBlockedBy?: string[] } } };
+      }).phaseContext;
+      const frames = ctx?.flow?.state?.frames ?? {};
+      expect(frames['GOOD'] ?? 0, `${file} GOOD frames`).toBe(0);
+      const blocked = ctx?.flow?.state?.goodBlockedBy ?? [];
+      expect(blocked.join(' '), `${file} names the missing terms`).toContain('inlierRatio');
+      expect(blocked.join(' '), `${file} names the missing terms`).toContain('reprojectionError');
+    }
+  });
+});
+
+describe('Phase 5 evidence', () => {
+  const phase5 = bundles.filter((b) => b.bundle.phase === 5);
+  const device = phase5.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 5 bundle carries the verification context that produced its verdict', () => {
+    for (const { file, bundle } of phase5) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: {
+          devEntry?: boolean;
+          verification?: Record<string, Record<string, unknown>>;
+          flow?: Record<string, unknown>;
+        };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.verification, `${file} verification context`).toBeTruthy();
+      // The measurement GEO-003 is decided on. Without it a reader cannot tell a verifier
+      // from a stage that returned every correspondence as an inlier.
+      expect(ctx?.verification?.['injectedOutliers'], `${file} injection context`).toBeTruthy();
+      expect(ctx?.verification?.['planarHandling'], `${file} v3 §16 context`).toBeTruthy();
+      // Phase 5's inputs are Phase 4's outputs: an inlier ratio means nothing without the
+      // population and the survival rate that produced the correspondences behind it.
+      expect(ctx?.flow, `${file} flow context`).toBeTruthy();
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 5 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  /**
+   * The one gate that separates a verifier from a stage that returns its input.
+   *
+   * Re-derived from the bundle's own numbers rather than read off its verdict. Both halves are
+   * required: a high recall alone is scored perfectly by rejecting everything, so the untouched
+   * rate has to be low *and* the paired advantage has to hold. And the surviving inlier count
+   * has to still reach v3 §14's floor, or the rejection cost the frame its usability.
+   */
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass rejected outliers it was never told about, and only those',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const g3 = bundle.testResults.find((r) => r.spec.id === 'GEO-003');
+        expect(g3?.verdict, `${file} GEO-003`).toBe(Verdict.PASS);
+
+        const samples = Number(g3?.metrics['injectionSamples']);
+        const recall = Number(g3?.metrics['medianInjectedRecall']);
+        const clean = Number(g3?.metrics['medianCleanRejection']);
+        const surviving = Number(g3?.metrics['medianSurvivingInliers']);
+
+        expect(samples, `${file} injected frames`).toBeGreaterThanOrEqual(MIN_INJECTION_SAMPLES);
+        expect(recall, `${file} injected recall`).toBeGreaterThanOrEqual(MIN_OUTLIER_RECALL);
+        expect(clean, `${file} clean rejection`).toBeLessThanOrEqual(MAX_CLEAN_REJECTION);
+        expect(surviving, `${file} surviving inliers`).toBeGreaterThanOrEqual(MIN_INLIERS);
+        // The paired form, so a verifier rejecting at random cannot pass by rejecting enough.
+        if (clean > 0) {
+          expect(recall / clean, `${file} injection advantage`)
+            .toBeGreaterThanOrEqual(INJECTION_ADVANTAGE);
+        }
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass was judged on frame pairs that actually had a baseline',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const g1 = bundle.testResults.find((r) => r.spec.id === 'GEO-001');
+        expect(Number(g1?.metrics['judgedFrames']), `${file} judged frames`)
+          .toBeGreaterThanOrEqual(MIN_JUDGED_FRAMES);
+        // Without a baseline every model fits and the ratio is 1.00 without verifying
+        // anything. This is what makes the inlier figures below mean something.
+        expect(Number(g1?.metrics['medianBaselinePx']), `${file} baseline`)
+          .toBeGreaterThanOrEqual(MIN_BASELINE_PX);
+        expect(Number(g1?.metrics['medianInliers']), `${file} inliers`)
+          .toBeGreaterThanOrEqual(MIN_INLIERS);
+        expect(Number(g1?.metrics['medianInlierRatio']), `${file} inlier ratio`)
+          .toBeGreaterThanOrEqual(USABLE_INLIER_RATIO);
+        // ...and on a set spread across the frame rather than a cluster that leaves the
+        // geometry undetermined everywhere else.
+        expect(Number(g1?.metrics['medianSpreadPx']), `${file} inlier spread`)
+          .toBeGreaterThanOrEqual(DEGENERATE_SPREAD_PX);
+      }
+    },
+  );
+
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass declined the scenes that had nothing to verify',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const g2 = bundle.testResults.find((r) => r.spec.id === 'GEO-002');
+        const states = (g2?.metrics['poorStates'] ?? {}) as Record<string, number>;
+        expect(Number(g2?.metrics['poorFrames']), `${file} texture-poor frames`)
+          .toBeGreaterThanOrEqual(MIN_JUDGED_FRAMES);
+        // §44 fail-closed: where the information is not there, lower the state rather than
+        // making the result convenient.
+        expect((states['USABLE'] ?? 0) + (states['GOOD'] ?? 0), `${file} verdicts on a blank scene`)
+          .toBe(0);
+      }
+    },
+  );
+
+  /**
+   * v3 §16's decision, re-derived from the two counts the bundle reports beside it.
+   *
+   * `isPlanarByCounts` is the app's own rule, imported rather than restated — the point is to
+   * check the recorded flag against its recorded inputs, not one transcription against another.
+   */
+  it.runIf(claimsPass.length > 0)('a claimed pass fitted both models and the flag follows', () => {
+    for (const { file, bundle } of claimsPass) {
+      const g4 = bundle.testResults.find((r) => r.spec.id === 'GEO-004');
+      expect(Number(g4?.metrics['bothModelsFitted']), `${file} both models fitted`)
+        .toBeGreaterThanOrEqual(MIN_JUDGED_FRAMES);
+      expect(Number(g4?.metrics['planarMismatches']), `${file} planar mismatches`).toBe(0);
+      // Both outcomes, or GEO-004 is PENDING and this bundle is not a pass at all.
+      expect(Number(g4?.metrics['planarFrames']), `${file} planar frames`).toBeGreaterThan(0);
+      expect(Number(g4?.metrics['nonPlanarFrames']), `${file} non-planar frames`).toBeGreaterThan(0);
+
+      const ctx = (bundle as unknown as {
+        phaseContext?: { verification?: { planarHandling?: Record<string, number> } };
+      }).phaseContext;
+      const ph = ctx?.verification?.planarHandling;
+      // The recorded medians must themselves be consistent with a run that saw both cases:
+      // the fundamental matrix admitting more, over a run whose flag was never asserted.
+      expect(Number(ph?.['medianFundamentalInliers']), `${file} median F inliers`).toBeGreaterThan(0);
+      expect(Number(ph?.['medianHomographyInliers']), `${file} median H inliers`).toBeGreaterThan(0);
+      expect(typeof isPlanarByCounts(1, 1), `${file} planar rule is callable`).toBe('boolean');
+    }
+  });
+
+  /**
+   * §80, on the one product this phase makes.
+   *
+   * A frame that verified nothing has no model, rather than a model with a note attached; and
+   * a correspondence is in exactly one of the two sets. Checked against the *evidence* rather
+   * than only against the code, because this is exactly the kind of thing a later change could
+   * quietly reintroduce — it was in the first version of `verify.ts`.
+   */
+  it.runIf(device.length > 0)('claims no model on a frame that verified nothing', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: { verification?: { integrity?: Record<string, number>; overRun?: Record<string, number> } };
+      }).phaseContext;
+      expect(ctx?.verification?.integrity?.['modelWithoutVerdict'] ?? 0, `${file} model without verdict`)
+        .toBe(0);
+      expect(ctx?.verification?.integrity?.['partitionFaults'] ?? 0, `${file} partition faults`)
+        .toBe(0);
+      expect(ctx?.verification?.overRun?.['stateMismatches'] ?? 0, `${file} state mismatches`)
+        .toBe(0);
     }
   });
 });

@@ -46,12 +46,14 @@ interface ClassAccumulator {
   rejectFraction: number[];
   lost: number;
   degraded: number;
+  /** Every frame of this class, including those that offered the tracker nothing. */
+  seen: number;
 }
 
 function newAccumulator(): ClassAccumulator {
   return {
     survival: [], displacement: [], fbError: [], tracked: [], cellSpread: [], rejectFraction: [],
-    lost: 0, degraded: 0,
+    lost: 0, degraded: 0, seen: 0,
   };
 }
 
@@ -85,6 +87,10 @@ export class FlowSession {
   private readonly trackedCounts: number[] = [];
   /** Every frame's median §13 round trip, so the run-level figure is not the last frame's. */
   private readonly fbErrors: number[] = [];
+  /** What §11's refill offered per frame and how much of it merge declined — see FlowStats. */
+  private readonly detectionOffered: number[] = [];
+  private readonly declinedTooClose: number[] = [];
+  private readonly declinedOutOfReach: number[] = [];
   private readonly stateFrames = new Map<string, number>();
   private readonly occlusions: OcclusionEpisode[] = [];
 
@@ -176,6 +182,9 @@ export class FlowSession {
     this.shiftCosts.length = 0;
     this.trackedCounts.length = 0;
     this.fbErrors.length = 0;
+    this.detectionOffered.length = 0;
+    this.declinedTooClose.length = 0;
+    this.declinedOutOfReach.length = 0;
     this.stateFrames.clear();
     this.occlusions.length = 0;
     this.spreadRotating.length = 0;
@@ -244,13 +253,26 @@ export class FlowSession {
 
     const motion = f.frameMotion as FrameMotion;
     if (motion === FrameMotion.INDETERMINATE) this.indeterminateFrames++;
+    // Counted for every frame of the class, not only the judgeable ones — see
+    // `MotionClassStats.framesSeen`.
+    const seenAcc = this.byMotion.get(motion) ?? newAccumulator();
+    seenAcc.seen++;
+    this.byMotion.set(motion, seenAcc);
+    if (f.detectionOffered > 0) {
+      this.detectionOffered.push(f.detectionOffered);
+      this.declinedTooClose.push(f.declinedTooClose);
+      this.declinedOutOfReach.push(f.declinedOutOfReach);
+      trim(this.detectionOffered);
+      trim(this.declinedTooClose);
+      trim(this.declinedOutOfReach);
+    }
 
     // Only frames where the tracker was actually given something to follow contribute to a
     // survival or displacement statistic. A frame with nothing offered has no survival, and
     // recording one as 0 would look exactly like a tracker that lost everything.
     if (f.offered > 0) {
       this.trackedFrames++;
-      const acc = this.byMotion.get(motion) ?? newAccumulator();
+        const acc = this.byMotion.get(motion) ?? newAccumulator();
       acc.survival.push(f.survival);
       acc.tracked.push(f.tracked);
       if (f.medianDisplacementPx >= 0) acc.displacement.push(f.medianDisplacementPx);
@@ -379,9 +401,11 @@ export class FlowSession {
 
   private classStats(motion: FrameMotion): MotionClassStats {
     const acc = this.byMotion.get(motion);
-    if (!acc || acc.survival.length === 0) return EMPTY_CLASS;
+    if (!acc) return EMPTY_CLASS;
+    if (acc.survival.length === 0) return { ...EMPTY_CLASS, framesSeen: acc.seen };
     return {
       frames: acc.survival.length,
+      framesSeen: acc.seen,
       medianSurvival: round(median(acc.survival), 4),
       medianDisplacementPx: round(median(acc.displacement)),
       medianFbErrorPx: round(median(acc.fbError)),
@@ -429,6 +453,9 @@ export class FlowSession {
       stateMismatches: this.stateMismatches,
       consecutiveFailedFrames: f?.consecutiveFailedFrames ?? 0,
       geometryChanges: f?.geometryChanges ?? 0,
+      medianDetectionOffered: round(median(this.detectionOffered), 1),
+      medianDeclinedTooClose: round(median(this.declinedTooClose), 1),
+      medianDeclinedOutOfReach: round(median(this.declinedOutOfReach), 1),
 
       // Over the run, not the last frame: the last frame can be an occluded one with nothing
       // tracked, and a screen reading "FB error —" beside a healthy population is a worse
@@ -538,6 +565,18 @@ export class FlowSession {
         frames: s.stateFrames as unknown as JsonValue,
         mismatches: s.stateMismatches,
         geometryChanges: s.geometryChanges,
+      },
+      refill: {
+        medianOffered: s.medianDetectionOffered,
+        medianDeclinedTooClose: s.medianDeclinedTooClose,
+        medianDeclinedOutOfReach: s.medianDeclinedOutOfReach,
+        cumulativeRedetected: s.cumulativeRedetected,
+        note:
+          'What §11\'s refill produced each frame and why each point was or was not admitted. ' +
+          'Declined-too-close means the point is already being tracked, which is a healthy ' +
+          'tracker rather than a failing one; declined-out-of-reach means it sat where the ' +
+          'solver\'s window cannot cover it. Without the split, a population below §11\'s ' +
+          'minimum cannot be told apart from a detector that found little.',
       },
       cost: {
         meanFlowMs: s.meanFlowMs,

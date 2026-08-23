@@ -1,5 +1,10 @@
 # Phase status
 
+**Spec version: `Safari Spatial Game v4.0` from Phase 5 on.** Phases 0–4 were built and passed
+against `v3.0`; v4 leaves §11, §12 and §13 — their governing sections — identical, so nothing
+already passed changed. What v4 *stopped stating* is recorded in
+[`SPEC-VERSIONS.md`](SPEC-VERSIONS.md), including the four numbers v3 §14 fixed for Phase 5.
+
 Rule 005 (Phase Lock): a phase may not be started until the previous one has PASSED.
 Rule 004: only evidence from **iPhone + Safari + HTTPS** can pass a phase.
 
@@ -12,22 +17,24 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 1 | Camera Capture | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 1/1 advisory, across two runs covering both permission scenarios. |
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 4 | Optical Flow Tracking | **IMPLEMENTING** | Written and green on the automated leg; no device run yet, so Rule 004 holds it. |
-| 5 | Geometric Verification | BLOCKED | |
+| 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
+| 5 | Geometric Verification | IMPLEMENTING | Built and green on the automated leg — 4/4 required + 2/2 advisory at `TESTING`. Awaiting a device run (Rule 004). |
 | 6 | Relative Pose | BLOCKED | |
 | 7 | IMU Support / Fusion | BLOCKED | |
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
-| 11 | Plane Detection | BLOCKED | |
+| 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
 | 12 | Spatial World | BLOCKED | |
-| 13 | World Viewer | BLOCKED | |
-| 14 | Save / Load | BLOCKED | |
-| 15 | Collision Geometry | BLOCKED | |
+| 13 | Spatial Game Viewer | BLOCKED | v4 — renamed from World Viewer |
+| 14 | Save / Resume | BLOCKED | v4 §42 — renamed from Save / Load |
+| 15 | Spatial Collision | BLOCKED | v4 — renamed from Collision Geometry |
 | 16 | Game Integration | BLOCKED | |
-| 17 | Golden Test | BLOCKED | |
-| 18 | Performance / Stress | BLOCKED | |
-| 19 | Final Audit | BLOCKED | |
+| 17 | Stage Generator | BLOCKED | **new in v4** (§48) |
+| 18 | Goal Ring System | BLOCKED | **new in v4** (§49) |
+| 19 | Ball Physics | BLOCKED | **new in v4** (§50) |
+| 20 | Gameplay Validation | BLOCKED | **new in v4** (§51) |
+| 21 | Final Audit | BLOCKED | |
 
 ## Phase 0 — PASSED
 
@@ -446,11 +453,93 @@ exists — currently `{0, 1, 2, 3}`. The START SCAN control reads it alongside P
 control for an unbuilt phase stays disabled with the reason in its label. Nothing in the UI
 implies a capability that has not been built.
 
-## Phase 4 — IMPLEMENTING
+## Phase 4 — PASSED
 
-**Not passed, and cannot be from what is committed.** The only Phase 4 bundle in the
-repository is `docs/phase4/evidence/phase4-desktop-chromium.json`, leg `DESKTOP_DEV`. Rule 004
-stands. `docs/phase4/HOW-TO-RUN-DEVICE-TEST.md` describes the run that would settle it.
+**Evidence:** `docs/phase4/evidence/phase4-real-device-PASSED-2026-08-22T14-47-06-539Z.json`
+plus the device screenshot from the same session.
+
+| | |
+| --- | --- |
+| Device | iPhone, iOS 18.7, Safari 26.6, `https://hsgwyuki0429-design.github.io` |
+| Leg | `REAL_DEVICE`, `devEntry: false` — the lock opened because Phases 0–3 passed in the same session |
+| Required tests | 5 / 5 PASS, 0 PENDING, 0 FAIL |
+| Advisory tests | 2 / 2 PASS |
+| Flow frames | 2717, of which 1941 had a predecessor to track from |
+| **FLOW-002** | **400 cross-checks: tracker 4.741 px against image 4 px, median disagreement 0.95 px inside a 2 px tolerance, 90.5 % of frames agreeing** |
+| FLOW-001 | 400 static frames, median displacement **0.025 px**, FB 0.001 px, survival 100 % |
+| FLOW-003 | 400 rotating frames at a median 5.57°/s: survival 96.3 %, grid spread **0.813 px turning against 0.464 px panning** |
+| FLOW-004 | 329 fast frames: survival 87.5 % against 97.2 % slow, §13 rejecting 7.1 % against 0 % |
+| FLOW-005 | 3 occlusions, `LOST` reached in 64–94 ms, all recovered, **0 tracks claimed a good round trip through the dark** |
+| §13 over the run | 164 202 acceptable, 362 reduced, 2 511 rejected; median 0.006 px |
+| §33 | 746 TRACKING, 1211 DEGRADED, 759 LOST, 1 READY — **0 state mismatches** |
+| Longest track | **467 frames** |
+| Geometry changes | 12 — the tier ladder stepping, and the device rotating (720×1280 ↔ 1280×720) |
+| LK solve | 2.668 ms at 41 points, against §H's 14 ms |
+
+The number that carries the phase is **4.741 against 4.000**: what the tracker says the points
+did, beside what an integer SAD translation search — sharing no code with the solver, never
+reading the feature list, keeping its own copy of the previous frame — says the image did.
+
+**It was not passed by assertion.** The transition log records the phase moving
+`FAILED → PASSED → FAILED → PASSED` as the operator worked through the conditions: FLOW-001 and
+FLOW-005 failed first, then FLOW-002 failed once more after that, and the pass came only when
+every required test held at the same time.
+
+### The Phase 3 defect reproduced, and the probe caught it
+
+This is the answer to the question Phase 3 left open, and it is the most important thing in
+the bundle.
+
+```
+routeRejectedFor: "rot90"
+routeProbes[0]: VIDEO_FRAME — 5265/5265 successes, "abandoned"
+routeProbes[1]: IMAGE_BITMAP — 4772/4773 successes, "selected"
+```
+
+The `VIDEO_FRAME` route — the one that carries the sensor's orientation rather than what the
+element displays — produced a buffer **turned 90° against the video**, for 5265 frames. The
+alignment probe measured it, three readings in a row, and the app abandoned the route rather
+than correcting the drawing. After the fallback the probe reads `best: identity` at
+**10.1× chance**, with `rot90` at 12.5 against identity's 369.9.
+
+So: the report was real, the mechanism §H.7 called for works, and the defect is contained
+rather than fixed — the platform still produces a misoriented buffer on that route, and what
+the app does is decline to use it. The error log carries the rejection with its reason.
+
+**One consequence to hold on to**: the run spans the route change, so its early frames were
+measured in a rotated buffer. That does not invalidate FLOW-002 — the tracker and the
+independent search read the *same* buffer, so their agreement is unaffected by a shared
+rotation — but Phase 6 derives intrinsics from the frame geometry, and a phase that mixes two
+acquisition routes must know it did.
+
+### Three things this pass does not demonstrate
+
+Recorded because the tests as written are satisfied and the run is still narrower than it
+looks:
+
+**The population never reached §11's minimum.** It sat at a median of 74 tracked points on
+static frames and 41 on slow ones, against §11's minimum of 200 and DEGRADED threshold of 80 —
+so the state read `DEGRADED` on 1211 of 2717 frames. FLOW-001's fifth criterion ("never LOST
+while static *and the count is above 80*") was therefore vacuous, and FLOW-004's fourth
+("reaches DEGRADED when the count falls") was already true before the fast motion started.
+Both criteria are met; neither was exercised.
+
+**The bundle could not say why**, which is the defect this found. Phase 4 routes its results
+to `FlowSession` rather than `FeaturePopulation`, so it carried no detection statistics at
+all: a reader cannot tell a detector that found 90 corners in a dim room from a merge step
+declining 700. That is fixed — the flow record now reports what §11's refill offered and why
+each point was declined, split into *already being tracked* (the healthy case) and *outside
+the solver's reach*. On the automated leg it reads **353 offered — 319 already tracked, 14 out
+of reach, 20 admitted**, which is a tracker holding what it has rather than one losing it. The
+next device run answers the same question directly.
+
+**FLOW-006 passed at 41 points, not at §H's ~700.** 2.668 ms is comfortably inside the 14 ms
+budget, but the budget was written for a population an order of magnitude larger and the run
+never had one. Worth pairing with the other half of that measurement: **the independent
+scene-shift search cost 7.648 ms, nearly three times the solver it checks.** On the automated
+leg the ratio is the other way round. §H.8 records both.
+
+### What exists
 
 What exists: pyramidal Lucas-Kanade at §12's parameters, §13's forward/backward bands, an
 independent scene-motion measurement that shares no code with the solver, frame-to-frame
@@ -543,3 +632,124 @@ changed here is that the probe learned to say when it cannot tell:
 built so no rotation or reflection maps its landmarks onto themselves. It scores identity at
 17.7× chance.
 
+---
+
+## Phase 5 — IMPLEMENTING
+
+Built against **v3 §14 and §16**, which v4 does not restate — see
+[`SPEC-VERSIONS.md`](SPEC-VERSIONS.md). The automated leg reaches `TESTING` with all four
+required tests and both advisory tests passing; `PASSED` needs iPhone Safari over HTTPS
+(Rule 004), and [`phase5/HOW-TO-RUN-DEVICE-TEST.md`](phase5/HOW-TO-RUN-DEVICE-TEST.md) is the
+run.
+
+The test plan was written and committed before any Phase 5 code existed (§29):
+[`phase5/TEST-PLAN.md`](phase5/TEST-PLAN.md).
+
+### What exists
+
+`src/geometry/` — a new layer, and the strictest rule in the architecture audit: it may not
+import from `tracking`, `capture`, `pipeline`, `debug` or `testkit`. `linalg.ts` (cyclic Jacobi
+symmetric eigen-decomposition, so a null vector can be found without a general SVD), `twoView.ts`
+(Hartley-normalised eight-point fundamental matrix with rank-2 enforcement, four-point DLT
+homography, Sampson distance, symmetric transfer error), `ransac.ts` (adaptive termination at
+`N = log(1−p)/log(1−wˢ)`, seeded, refitting on its inliers), `verify.ts` (both models on every
+frame, v3 §16's comparison, v3 §14's state in one pure function).
+
+`src/tracking/VerificationStage.ts` is the whole Phase 5 frame with no worker around it, so the
+unit tests drive the exact code the worker runs. `VerificationSession` accumulates it,
+`Phase5Tests` evaluates GEO-001..006, and the GEOMETRIC VERIFICATION screen shows it. 45 new unit
+tests; 579 in total.
+
+### The baseline problem, and the anchor this phase introduces
+
+Phase 4's device run measured a median frame-to-frame displacement of **4.7 px**. Two views that
+close determine nothing: every model fits, the inlier ratio comes out at 1.00, and it verifies
+nothing at all. So Phase 5 does not verify consecutive frames. It holds a **verification anchor**
+tens of frames back and relates the current frame to that, re-taking it when the two views drift
+past 120 px and stop sharing enough scene.
+
+**This is a stand-in for Phase 8's keyframe system and is documented as one**, in the plan and in
+the code. Three of v3 §20's four keyframe conditions need a pose that Phase 6 has not produced;
+the fourth — displacement — is the one Phase 5 can measure, so it is the one the anchor uses.
+
+### The number that carries the phase, and what a fake would do to it
+
+v3 §14 names four figures: 30 inliers, ratio 0.35, 100 inliers, ratio 0.50. **A stage that marks
+every correspondence an inlier satisfies all four perfectly**, because the inlier count is then
+the correspondence count and the ratio is exactly 1.00 — it scores better than a working verifier
+on every one of them.
+
+So on a sample of frames the harness takes the real correspondence set, displaces 30% of the
+targets by 25 px in seeded directions, and hands the result to the verifier with no marking of
+which it touched. Recall against that ground truth is the only figure in the phase a
+pass-through cannot produce: it scores exactly 0.00. The untouched rejection rate is reported
+beside it, because recall alone is scored perfectly by rejecting everything, and the pair is the
+measurement.
+
+`tests/unit/verification.test.ts` runs both stages through the same session and the same suite
+and shows the difference. The automated leg reads **100% of injected outliers rejected against 0%
+of untouched**, over 61 sampled frames.
+
+### v3 §16 decided the phase, and the first reading of it was wrong
+
+The leg's first run failed GEO-003 at **0.816** against 0.90, and the cause reproduces in Node
+with no camera involved. On a plane with 30% of its targets displaced 25 px, the homography
+admitted **exactly the untouched correspondences and not one outlier** — 70 of 100 — while the
+fundamental matrix admitted 74 to 77: the same 70, plus outliers it captured with the epipole a
+planar scene leaves free. On a plane `F` is not determined at all, every `[e]ₓH` fits, and RANSAC
+had two free parameters that the correct data did not constrain.
+
+Read as `hCount >= fCount`, that is a non-planar scene. So the degenerate model was selected, its
+absorbed outliers survived as inliers, and GEO-004 was simultaneously reporting `non-planar` for
+frames that are planar by construction. **The verifier had found every outlier and the selection
+rule threw the answer away.**
+
+`PLANAR_H_ADVANTAGE = 1.0` is withdrawn. `PLANAR_H_SHARE = 0.45` compares `H / (H + F)` —
+ORB-SLAM's constant for this identical choice between the two models. No pass criterion moved:
+the amendment is recorded in place in the test plan, with the measurement that forced it, and the
+regression is in `tests/unit/verification.test.ts`. A clean plane scores 0.500, a plane with
+outliers 0.476–0.486, a two-depth scene 0.400–0.415.
+
+### What the automated leg can decide
+
+Phase 3's leg had to exclude the tests carrying its meaning, because Chromium's fake camera is a
+rolling gradient. Phase 4's leg generated its own feed because its conditions are about motion.
+Phase 5's are about **geometry**, and a video file can contain geometry exactly — with one
+requirement a single panning texture cannot meet.
+
+A pan of one flat texture *is* a planar scene, so §16 would answer PLANAR on every frame and
+GEO-004's other half would never occur. The feed therefore has two depth layers: a background
+that pans slowly and a foreground that pans 3.5× faster **in the same direction**, which is what
+a camera translating parallel to two fronto-parallel planes produces. Both layers' displacements
+stay parallel to one direction, so a fundamental matrix explains them both; no single homography
+matches two disparities. A third segment is a smooth low-gradient field, for GEO-002.
+
+GEO-005 is excluded and gated on a wider configuration tripwire instead, for the reason §H.4
+gives: a device budget cannot be adjudicated on headless Chromium with SwiftShader. Rule 004
+stands regardless — nothing here passes a phase.
+
+### The fixture was measuring its own artefacts, and only a rebuild showed it
+
+Rebuilding the parallax segment so its depth edges stopped sweeping across the frame collapsed
+the population from 77 correspondences to 18. The texture underneath had a mean gradient of
+**4.67 and produced zero corners** at detection's level — below `TEXTURE_RICH_FLOOR`, so the
+classifier had been calling every frame `AMBIGUOUS` and GEO-001's texture-rich class had been
+empty the whole time without anything saying so.
+
+What had been carrying the first run was six stripe boundaries sweeping across the frame at
+9.5 px per frame: strong, trackable corners belonging to no surface. A two-view geometry measured
+on them is a measurement of the fixture. The feed now uses Phase 4's texture, whose leg tracked
+210 points on this same 640×480 source — mean gradient 14.0, 467 corners at level 1.
+
+### Three things this phase does not do
+
+- **No pose.** `Pose candidate` is the last step of v3 §14's chain and belongs to §15, which is
+  Phase 6. Nothing here decomposes a matrix into rotation and translation.
+- **No reprojection error.** An inlier's residual against a fundamental matrix is a Sampson
+  distance, not a reprojection error, and calling it one would be claiming a pose that does not
+  exist. §11's `reprojectionError` stays `null` through this phase, and GEO-006 checks it.
+- **No intrinsics.** Which is what lets Phase 5 run before Phase 6 derives them.
+
+§33's tracking `GOOD` therefore still cannot be reached on the TRACKING screen: it needs an
+inlier ratio *and* a reprojection error, and only the first now exists. This screen's `GOOD` is
+v3 §14's verification verdict and it is a different claim.

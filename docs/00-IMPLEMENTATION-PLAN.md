@@ -663,6 +663,43 @@ read **84.6 % on a perfectly static image the tracker had followed exactly**. Th
 declines them now, and reads the margin from the solver's own configuration rather than writing
 the number down — the same rule §H.6 gives for deriving a constant from the config.
 
+**Measured on the device (2026-08-22), and two numbers that change what later phases should
+expect.**
+
+| | Measured on iPhone / iOS 18.7 / Safari 26.6 |
+| --- | --- |
+| Pyramidal LK, 21×21, 3 levels, 30 iterations | **2.668 ms at 41 points** |
+| The independent scene-shift search that checks it | **7.648 ms** |
+| Worker total, per frame | 16.41 ms mean, 33 ms p95 |
+| Tracked population | median **74** static, **41** slow |
+| Longest track | 467 frames |
+
+The first surprise is the ratio: **the check costs three times the thing it checks.** An
+exhaustive integer SAD over 289 shifts on the top pyramid level is cheap in operations but
+touches the whole level 289 times, where LK touches a 21×21 window per point and the
+population was small. On the desktop leg, with 165 points, the ratio inverts (17.8 ms against
+2.4 ms). So neither figure is "the" cost — the two scale with different things, and any later
+stage that adds an independent cross-check should expect it to cost like a full-frame pass
+rather than like the estimator it validates.
+
+The second is the population, and it is a warning for Phase 5. §H's budget line assumed ~700
+points; the device delivered **41**. Nothing was wrong with the tracker — survival was 97 % and
+the longest track ran 467 frames — the detector simply found that many corners in a dim room
+(mean luma 52.5), which is Phase 3's absolute corner floor working as §H.6 intended. But v3
+§14 asks Phase 5 for **at least 30 inliers** and calls **>100** a GOOD candidate. A median of
+41 correspondences makes the first marginal and the second unreachable in that room. Phase 5
+must measure the correspondence count it actually receives and report when the scene cannot
+supply what the threshold needs — rather than lowering the threshold, and rather than passing
+on a handful of points and calling the pose verified.
+
+**And an evidence gap is a defect, even when every test passes.** That device run could not
+answer "why is the population 41", because Phase 4 routed its results away from
+`FeaturePopulation` and carried no detection statistics. Every later phase that hands one
+stage's output to another needs the *handover* in its evidence, not just the outcome: what was
+offered, what was taken, and why the rest was not. The flow record now splits the declines into
+"already being tracked" — the healthy case — and "outside the solver's reach", and the two
+mean opposite things about the tracker's health.
+
 **And a check that cannot discriminate must say so rather than name a winner.** The overlay
 alignment probe scores the detected positions against an independent read of the video under
 each rotation, flip and transpose. On a scene that is dense and repetitive — a brick wall, a

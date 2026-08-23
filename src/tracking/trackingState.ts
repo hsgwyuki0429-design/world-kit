@@ -1,6 +1,13 @@
 /**
  * §33's tracking state, as one pure function of measured quantities.
  *
+ * **Every "§33" in this file means spec v3.0 §33.** Spec v4.0 lists "Tracking State" as a
+ * field of the Spatial World runtime state (v4 §25) and does not enumerate the states or
+ * their conditions. v3 did, Phase 4 passed on the device against them, and dropping a
+ * conjunct because the newer document is quieter would be relaxing a criterion after a
+ * result — which is what §29 exists to prevent. `docs/SPEC-VERSIONS.md` records every number
+ * in this position.
+ *
  * §33 names six states: `READY`, `TRACKING`, `GOOD`, `DEGRADED`, `LOST`, `RELOCALIZING`.
  * Phase 4 owns the first five; relocalisation is §21 and belongs to Phase 8 and beyond, so
  * it is absent here rather than present and unreachable.
