@@ -35,6 +35,8 @@ import {
 } from '../tracking/FusionStage';
 import { ROTATION_AGREEMENT_DEG, ROTATION_AGREEMENT_FRACTION } from '../tracking/PoseSession';
 import type { FusionStats } from '../tracking/fusionStats';
+import type { Evaluation, PhaseTest } from './runTests';
+import { deg, pct, runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -65,25 +67,7 @@ export interface Phase7Context {
   readonly stats: FusionStats;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase7Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase7Context) => Evaluation;
-}
-
-function pct(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 1000) / 10}%`;
-}
-
-function deg(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100}°`;
-}
+type Phase7Test = PhaseTest<Phase7Context>;
 
 function dps(n: number): string {
   return n < 0 ? '—' : `${Math.round(n * 1000) / 1000} °/s`;
@@ -838,17 +822,7 @@ export const PHASE7_TESTS: readonly Phase7Test[] = [
 export const PHASE7_SPECS: readonly TestSpec[] = PHASE7_TESTS.map((t) => t.spec);
 
 export function runPhase7Tests(ctx: Phase7Context): TestResult[] {
-  return PHASE7_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE7_TESTS, ctx);
 }
 
 /** Re-exported so the screen shows the same numbers the tests judge (Rule 002). */

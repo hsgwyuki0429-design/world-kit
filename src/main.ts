@@ -122,6 +122,15 @@ class Phase0App {
   private sensorProbeDone = false;
   private integrityIssues: readonly { path: string; problem: string }[] = [];
 
+  /**
+   * One re-evaluation timer per phase screen, keyed by phase index.
+   *
+   * Seven `phaseNTimer` fields with seven identical start/stop pairs became this. The pairs were
+   * where a phase could have leaked a timer by clearing the wrong field, and a map keyed by the
+   * index makes that impossible rather than merely unlikely.
+   */
+  private readonly tickers = new Map<number, number>();
+
   private screen: Screen = 'phase0';
   private readonly camera = new CameraSource();
   private readonly monitor = new FrameIntegrityMonitor();
@@ -129,7 +138,6 @@ class Phase0App {
   private phase1Results: TestResult[] = [];
   private phase1Bundle: EvidenceBundle | null = null;
   private cameraOpening = false;
-  private phase1Timer: number | null = null;
   /**
    * The composition root supplies the worker.
    *
@@ -148,7 +156,6 @@ class Phase0App {
   private readonly features = new FeaturePopulation();
   private phase3Results: TestResult[] = [];
   private phase3Bundle: EvidenceBundle | null = null;
-  private phase3Timer: number | null = null;
   private phase3DevEntry = false;
   private detectionEverRan = false;
   /**
@@ -175,7 +182,6 @@ class Phase0App {
   private flowEverRan = false;
   private phase4Results: TestResult[] = [];
   private phase4Bundle: EvidenceBundle | null = null;
-  private phase4Timer: number | null = null;
   private phase4DevEntry = false;
   private readonly flow = new FlowSession();
   /**
@@ -192,7 +198,6 @@ class Phase0App {
   private verifyEverRan = false;
   private phase5Results: TestResult[] = [];
   private phase5Bundle: EvidenceBundle | null = null;
-  private phase5Timer: number | null = null;
   private phase5DevEntry = false;
   /** Counts frames offered to the worker while verifying, so GEO-003 is sampled, not constant. */
   private verifyFrames = 0;
@@ -209,7 +214,6 @@ class Phase0App {
   private poseEverRan = false;
   private phase6Results: TestResult[] = [];
   private phase6Bundle: EvidenceBundle | null = null;
-  private phase6Timer: number | null = null;
   private phase6DevEntry = false;
   private poseFrames = 0;
   private readonly pose = new PoseSession();
@@ -225,7 +229,6 @@ class Phase0App {
   private fusionEverRan = false;
   private phase7Results: TestResult[] = [];
   private phase7Bundle: EvidenceBundle | null = null;
-  private phase7Timer: number | null = null;
   private phase7DevEntry = false;
   /**
    * The stage and its accumulator.
@@ -247,7 +250,6 @@ class Phase0App {
   private lastOverlayHeight = 0;
   private phase2Results: TestResult[] = [];
   private phase2Bundle: EvidenceBundle | null = null;
-  private phase2Timer: number | null = null;
   private phase2DevEntry = false;
   private pipelineEverStarted = false;
   /** Why the last request to inject load was refused, shown verbatim on the screen. */
@@ -881,28 +883,99 @@ class Phase0App {
   }
 
   private startPhase1Ticking(): void {
-    this.stopPhase1Ticking();
     // Re-render on a timer so the measured values stay live. The preview element is
     // re-appended synchronously inside the same render call, which the HTML spec's
     // "await a stable state" rule makes a no-op for playback — and CAM-003 measures the
     // longest frame gap, so if that reasoning were wrong the test would say so.
-    this.phase1Timer = window.setInterval(() => {
+    this.startTicking(PHASE1, PHASE1_TICK_MS, () => {
       this.evaluatePhase1();
       this.render();
-    }, PHASE1_TICK_MS);
+    });
   }
 
   private stopPhase1Ticking(): void {
-    if (this.phase1Timer !== null) {
-      clearInterval(this.phase1Timer);
-      this.phase1Timer = null;
+    this.stopTicking(PHASE1);
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Per-phase lifecycle, written once                                       */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Re-evaluate a phase screen on a timer, replacing whatever was running for it.
+   *
+   * Not per frame: a screen's numbers change 30 times a second and re-rendering the DOM at that
+   * rate would put the UI's own cost inside the measurement it is displaying. Twice a second is
+   * enough for a human and cheap enough not to distort the run — the reasoning Phase 2 wrote
+   * down and every screen since has followed.
+   */
+  private startTicking(index: number, intervalMs: number, tick: () => void): void {
+    this.stopTicking(index);
+    this.tickers.set(index, window.setInterval(tick, intervalMs));
+  }
+
+  private stopTicking(index: number): void {
+    const id = this.tickers.get(index);
+    if (id !== undefined) {
+      clearInterval(id);
+      this.tickers.delete(index);
     }
+  }
+
+  /**
+   * Keep a freshly built bundle, and say so loudly if it does not describe itself.
+   *
+   * `findIntegrityIssues` walks the bundle for values that cannot be true of a real run — a
+   * verdict that its own results do not support, a rate outside 0..1, a NaN where a measurement
+   * should be. The bundle is still offered for download when it finds something, because a
+   * broken bundle is evidence of the break and withholding it would leave the defect
+   * undiagnosable (§80).
+   */
+  private keepBundle(index: number, built: { bundle: EvidenceBundle; integrityIssues: readonly unknown[] }): EvidenceBundle {
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        index, 'EvidenceRecorder',
+        `Phase ${index} evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
+    return built.bundle;
+  }
+
+  /**
+   * Grade a phase's results, record the verdict, and rebuild its evidence bundle.
+   *
+   * Seven copies of this said the same thing. **Nothing here decides anything**: the verdict
+   * comes from `PhaseRegistry.evaluate` over the results the suite produced, and the leg comes
+   * from `LegDetermination`. That is what lets `tests/unit/committedEvidence.test.ts` re-derive
+   * a committed bundle's verdict from its own results and catch a hand-edited one.
+   *
+   * The leg defaults to `DESKTOP_DEV` where none has been determined, which is the conservative
+   * direction: Rule 004 says a desktop leg cannot pass a phase, so an undetermined leg cannot
+   * either.
+   */
+  private applyPhase(
+    index: number,
+    results: readonly TestResult[],
+    buildEvidence: (verdict: PhaseState, reason: string) => void,
+  ): void {
+    const previous = this.registry.get(index).state;
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(results, leg);
+    this.registry.applyEvaluation(index, evaluation);
+    const next = this.registry.get(index).state;
+    if (previous !== next) {
+      logger.info(index, 'App', `phase ${index}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    buildEvidence(evaluation.state, evaluation.reason);
   }
 
   private evaluatePhase1(): void {
     const video = getPreviewVideo();
-    const previous = this.registry.get(PHASE1).state;
-
     this.phase1Results = runPhase1Tests({
       cameraState: this.camera.getState(),
       openResult: this.camera.getLastResult(),
@@ -917,16 +990,9 @@ class Phase0App {
       cameraEndedUnexpectedly: this.cameraEndedUnexpectedly,
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase1Results, leg);
-    this.registry.applyEvaluation(PHASE1, evaluation);
-    const next = this.registry.get(PHASE1).state;
-    if (previous !== next) {
-      logger.info(PHASE1, 'App', `phase ${PHASE1}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase1Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE1, this.phase1Results, (verdict, reason) =>
+      this.buildPhase1Evidence(verdict, reason),
+    );
   }
 
   private buildPhase1Evidence(verdict: PhaseState, reason: string): void {
@@ -950,16 +1016,7 @@ class Phase0App {
         previewPresented: isPreviewPresented(),
       },
     });
-    this.phase1Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE1, 'EvidenceRecorder',
-        `Phase 1 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase1Bundle = this.keepBundle(PHASE1, built);
   }
 
   /**
@@ -1112,22 +1169,17 @@ class Phase0App {
   }
 
   private startPhase2Ticking(): void {
-    this.stopPhase2Ticking();
-    this.phase2Timer = window.setInterval(() => {
+    this.startTicking(PHASE2, PHASE2_TICK_MS, () => {
       this.evaluatePhase2();
       this.render();
-    }, PHASE2_TICK_MS);
+    });
   }
 
   private stopPhase2Ticking(): void {
-    if (this.phase2Timer !== null) {
-      clearInterval(this.phase2Timer);
-      this.phase2Timer = null;
-    }
+    this.stopTicking(PHASE2);
   }
 
   private evaluatePhase2(): void {
-    const previous = this.registry.get(PHASE2).state;
     this.phase2Results = runPhase2Tests({
       cameraState: this.camera.getState(),
       cameraEverOpened: this.cameraEverOpened,
@@ -1135,16 +1187,9 @@ class Phase0App {
       stats: this.pipeline.getStats(),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase2Results, leg);
-    this.registry.applyEvaluation(PHASE2, evaluation);
-    const next = this.registry.get(PHASE2).state;
-    if (previous !== next) {
-      logger.info(PHASE2, 'App', `phase ${PHASE2}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase2Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE2, this.phase2Results, (verdict, reason) =>
+      this.buildPhase2Evidence(verdict, reason),
+    );
   }
 
   private buildPhase2Evidence(verdict: PhaseState, reason: string): void {
@@ -1167,16 +1212,7 @@ class Phase0App {
         previewPresented: isPreviewPresented(),
       },
     });
-    this.phase2Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE2, 'EvidenceRecorder',
-        `Phase 2 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase2Bundle = this.keepBundle(PHASE2, built);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -1547,8 +1583,7 @@ class Phase0App {
   }
 
   private startPhase4Ticking(): void {
-    this.stopPhase4Ticking();
-    this.phase4Timer = window.setInterval(() => {
+    this.startTicking(PHASE4, PHASE4_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.flowOptions());
       // Carried over from Phase 3 deliberately (§H.5): Phase 4 measures displacements in the
       // acquired buffer's frame, so a buffer rotated against the screen makes every number on
@@ -1556,18 +1591,14 @@ class Phase0App {
       this.probeAlignment();
       this.evaluatePhase4();
       this.render();
-    }, PHASE4_TICK_MS);
+    });
   }
 
   private stopPhase4Ticking(): void {
-    if (this.phase4Timer !== null) {
-      clearInterval(this.phase4Timer);
-      this.phase4Timer = null;
-    }
+    this.stopTicking(PHASE4);
   }
 
   private evaluatePhase4(): void {
-    const previous = this.registry.get(PHASE4).state;
     this.phase4Results = runPhase4Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -1575,16 +1606,9 @@ class Phase0App {
       stats: this.flow.stats(this.isTracking()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase4Results, leg);
-    this.registry.applyEvaluation(PHASE4, evaluation);
-    const next = this.registry.get(PHASE4).state;
-    if (previous !== next) {
-      logger.info(PHASE4, 'App', `phase ${PHASE4}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase4Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE4, this.phase4Results, (verdict, reason) =>
+      this.buildPhase4Evidence(verdict, reason),
+    );
   }
 
   private buildPhase4Evidence(verdict: PhaseState, reason: string): void {
@@ -1622,16 +1646,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase4Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE4, 'EvidenceRecorder',
-        `Phase 4 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase4Bundle = this.keepBundle(PHASE4, built);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -1993,8 +2008,7 @@ class Phase0App {
   }
 
   private startPhase7Ticking(): void {
-    this.stopPhase7Ticking();
-    this.phase7Timer = window.setInterval(() => {
+    this.startTicking(PHASE7, PHASE7_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.poseOptions());
       this.probeAlignment();
       // A frame with no tracking result still advances the propagation clock, so the report is
@@ -2007,18 +2021,14 @@ class Phase0App {
       }
       this.evaluatePhase7();
       this.render();
-    }, PHASE7_TICK_MS);
+    });
   }
 
   private stopPhase7Ticking(): void {
-    if (this.phase7Timer !== null) {
-      clearInterval(this.phase7Timer);
-      this.phase7Timer = null;
-    }
+    this.stopTicking(PHASE7);
   }
 
   private evaluatePhase7(): void {
-    const previous = this.registry.get(PHASE7).state;
     this.phase7Results = runPhase7Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -2026,16 +2036,9 @@ class Phase0App {
       stats: this.fusion.stats(this.isFusing()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase7Results, leg);
-    this.registry.applyEvaluation(PHASE7, evaluation);
-    const next = this.registry.get(PHASE7).state;
-    if (previous !== next) {
-      logger.info(PHASE7, 'App', `phase ${PHASE7}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase7Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE7, this.phase7Results, (verdict, reason) =>
+      this.buildPhase7Evidence(verdict, reason),
+    );
   }
 
   private buildPhase7Evidence(verdict: PhaseState, reason: string): void {
@@ -2066,37 +2069,23 @@ class Phase0App {
         previewPresented: isPreviewPresented(),
       },
     });
-    this.phase7Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE7, 'EvidenceRecorder',
-        `Phase 7 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase7Bundle = this.keepBundle(PHASE7, built);
   }
 
   private startPhase6Ticking(): void {
-    this.stopPhase6Ticking();
-    this.phase6Timer = window.setInterval(() => {
+    this.startTicking(PHASE6, PHASE6_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.poseOptions());
       this.probeAlignment();
       this.evaluatePhase6();
       this.render();
-    }, PHASE6_TICK_MS);
+    });
   }
 
   private stopPhase6Ticking(): void {
-    if (this.phase6Timer !== null) {
-      clearInterval(this.phase6Timer);
-      this.phase6Timer = null;
-    }
+    this.stopTicking(PHASE6);
   }
 
   private evaluatePhase6(): void {
-    const previous = this.registry.get(PHASE6).state;
     this.phase6Results = runPhase6Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -2106,16 +2095,9 @@ class Phase0App {
       verifyMs: this.verification.stats(this.isPosing()).meanVerifyMs,
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase6Results, leg);
-    this.registry.applyEvaluation(PHASE6, evaluation);
-    const next = this.registry.get(PHASE6).state;
-    if (previous !== next) {
-      logger.info(PHASE6, 'App', `phase ${PHASE6}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase6Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE6, this.phase6Results, (verdict, reason) =>
+      this.buildPhase6Evidence(verdict, reason),
+    );
   }
 
   private buildPhase6Evidence(verdict: PhaseState, reason: string): void {
@@ -2159,16 +2141,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase6Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE6, 'EvidenceRecorder',
-        `Phase 6 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase6Bundle = this.keepBundle(PHASE6, built);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -2342,8 +2315,7 @@ class Phase0App {
   }
 
   private startPhase5Ticking(): void {
-    this.stopPhase5Ticking();
-    this.phase5Timer = window.setInterval(() => {
+    this.startTicking(PHASE5, PHASE5_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.verifyOptions());
       // Carried over from Phases 3 and 4, and it matters more here rather than less (§H.5): a
       // correspondence is two positions in the acquired buffer's frame, so a buffer rotated
@@ -2352,18 +2324,14 @@ class Phase0App {
       this.probeAlignment();
       this.evaluatePhase5();
       this.render();
-    }, PHASE5_TICK_MS);
+    });
   }
 
   private stopPhase5Ticking(): void {
-    if (this.phase5Timer !== null) {
-      clearInterval(this.phase5Timer);
-      this.phase5Timer = null;
-    }
+    this.stopTicking(PHASE5);
   }
 
   private evaluatePhase5(): void {
-    const previous = this.registry.get(PHASE5).state;
     this.phase5Results = runPhase5Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -2371,16 +2339,9 @@ class Phase0App {
       stats: this.verification.stats(this.isVerifying()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase5Results, leg);
-    this.registry.applyEvaluation(PHASE5, evaluation);
-    const next = this.registry.get(PHASE5).state;
-    if (previous !== next) {
-      logger.info(PHASE5, 'App', `phase ${PHASE5}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase5Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE5, this.phase5Results, (verdict, reason) =>
+      this.buildPhase5Evidence(verdict, reason),
+    );
   }
 
   private buildPhase5Evidence(verdict: PhaseState, reason: string): void {
@@ -2422,16 +2383,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase5Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE5, 'EvidenceRecorder',
-        `Phase 5 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase5Bundle = this.keepBundle(PHASE5, built);
   }
 
   /**
@@ -2557,24 +2509,19 @@ class Phase0App {
   }
 
   private startPhase3Ticking(): void {
-    this.stopPhase3Ticking();
-    this.phase3Timer = window.setInterval(() => {
+    this.startTicking(PHASE3, PHASE3_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.trackingOptions());
       this.probeAlignment();
       this.evaluatePhase3();
       this.render();
-    }, PHASE3_TICK_MS);
+    });
   }
 
   private stopPhase3Ticking(): void {
-    if (this.phase3Timer !== null) {
-      clearInterval(this.phase3Timer);
-      this.phase3Timer = null;
-    }
+    this.stopTicking(PHASE3);
   }
 
   private evaluatePhase3(): void {
-    const previous = this.registry.get(PHASE3).state;
     this.phase3Results = runPhase3Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -2582,16 +2529,9 @@ class Phase0App {
       stats: this.features.stats(this.isDetecting()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase3Results, leg);
-    this.registry.applyEvaluation(PHASE3, evaluation);
-    const next = this.registry.get(PHASE3).state;
-    if (previous !== next) {
-      logger.info(PHASE3, 'App', `phase ${PHASE3}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase3Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE3, this.phase3Results, (verdict, reason) =>
+      this.buildPhase3Evidence(verdict, reason),
+    );
   }
 
   private buildPhase3Evidence(verdict: PhaseState, reason: string): void {
@@ -2628,16 +2568,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase3Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE3, 'EvidenceRecorder',
-        `Phase 3 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase3Bundle = this.keepBundle(PHASE3, built);
   }
 
   /**

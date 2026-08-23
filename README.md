@@ -226,7 +226,8 @@ docs/
   phase7/HOW-TO-RUN-DEVICE-TEST.md
   phase7/evidence/
 src/
-  core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
+  core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock),
+                 stats (median/round/§56's trim, shared by every session)
   capture/       CapabilityDetector, MotionCapabilityProbe, RotationRateMonitor,
                  CameraSource, FrameIntegrityMonitor, ScenarioLedger, probe plumbing
   debug/         Logger, EvidenceRecorder, OverlayAlignmentProbe
@@ -244,10 +245,12 @@ src/
                  VerificationStage, VerificationSession, PoseStage, PoseSession,
                  poseConfidence, gyroRotation, FusionStage, FusionSession,
                  fusionConfidence, types and messages
-  testkit/       Phase0Tests..Phase7Tests
-  ui/            Phase0Screen..Phase7Screen, PreviewVideo, styles
+  testkit/       Phase0Tests..Phase7Tests, runTests (the shape all eight share)
+  ui/            Phase0Screen..Phase7Screen, dom (el/card/stat/formatters),
+                 phaseSections (the tests/evidence/navigation cards), PreviewVideo, styles
   mapping/ world/ renderer/ game/   empty — later phases
-scripts/         audit-fake-data, audit-architecture, run-e2e*
+scripts/         audit-fake-data, audit-architecture, run-e2e*,
+                 lib/ (the leg harness: serve, launch, the phase ladder, the Y4M feed)
 ```
 
 ## What the device actually reported

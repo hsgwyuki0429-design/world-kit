@@ -43,15 +43,14 @@
  * prove nothing about continuing on vision.
  */
 import { execFileSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { climbTo, expectLocked, launch, openApp, pressStart, serve } from './lib/harness.mjs';
+import { farLuma, isNear, nearLuma, writeY4M } from './lib/feed.mjs';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 const DIST = join(ROOT, 'dist');
 const OUT_DIR = join(ROOT, 'docs', 'phase7', 'evidence');
-const CHROMIUM = '/opt/pw-browsers/chromium';
 const VIDEO = join(ROOT, 'node_modules', '.cache', 'fusion-motion.y4m');
 
 /** Long enough for several anchors to live and die under a fusion that has nothing to fuse. */
@@ -67,92 +66,30 @@ const SEGMENTS = [
   { name: 'parallax-pan', frames: 240, near: 0.5, speed: 1.0 },
 ];
 
-/** Phase 4's leg texture, reused: mean gradient 14.0 and 467 corners at level 1 on this feed. */
-const FAR_K = (2 * Math.PI) / 128;
-function farLuma(x, y) {
-  const v =
-    128 +
-    46 * Math.sin(FAR_K * x) * Math.cos(y * 0.031 + 0.3) +
-    32 * Math.sin(3 * FAR_K * x + y * 0.047) +
-    26 * Math.cos(5 * FAR_K * x - y * 0.019 + 1.1) +
-    20 * Math.sin(11 * FAR_K * x + 0.7) * Math.sin(y * 0.11) +
-    14 * Math.cos(21 * FAR_K * x + y * 0.19);
-  return Math.max(0, Math.min(255, Math.round(v)));
-}
-
-/** A different period and different phases, so a foreground corner is not a background corner. */
-const NEAR_K = (2 * Math.PI) / 96;
-function nearLuma(x, y) {
-  const v =
-    132 +
-    46 * Math.cos(NEAR_K * x + 1.9) * Math.sin(y * 0.043 - 0.6) +
-    32 * Math.cos(3 * NEAR_K * x - y * 0.053 + 2.4) +
-    26 * Math.sin(5 * NEAR_K * x + y * 0.023 - 0.8) +
-    20 * Math.cos(11 * NEAR_K * x - 1.3) * Math.cos(y * 0.097) +
-    14 * Math.sin(21 * NEAR_K * x - y * 0.17);
-  return Math.max(0, Math.min(255, Math.round(v)));
-}
-
-/** One boundary, fixed in image coordinates — see the note in Phase 6's leg about sweeping edges. */
-function isNear(x, coverage) {
-  if (coverage <= 0) return false;
-  return x < W * coverage;
-}
-
 function buildY4M() {
-  const header = Buffer.from(`YUV4MPEG2 W${W} H${H} F30:1 Ip A1:1 C420mpeg2\n`, 'ascii');
-  const frameTag = Buffer.from('FRAME\n', 'ascii');
-  const u = Buffer.alloc((W / 2) * (H / 2), 128);
-  const v = Buffer.alloc((W / 2) * (H / 2), 128);
-
-  const parts = [header];
   let farX = 0;
   let farY = 0;
-  let count = 0;
-  for (const seg of SEGMENTS) {
-    for (let f = 0; f < seg.frames; f++) {
-      const y = Buffer.alloc(W * H);
+  const seg = SEGMENTS[0];
+  const { frames, megabytes } = writeY4M(VIDEO, {
+    width: W,
+    height: H,
+    frames: SEGMENTS.reduce((a, s) => a + s.frames, 0),
+    frame: (y) => {
       const nearX = farX * NEAR_FACTOR;
       const nearY = farY * NEAR_FACTOR;
       for (let yy = 0; yy < H; yy++) {
         const row = yy * W;
         for (let xx = 0; xx < W; xx++) {
-          y[row + xx] = isNear(xx, seg.near)
+          y[row + xx] = isNear(xx, W, seg.near)
             ? nearLuma(xx + nearX, yy + nearY)
             : farLuma(xx + farX, yy + farY);
         }
       }
-      parts.push(frameTag, y, u, v);
       farX += DIRECTION.x * seg.speed;
       farY += DIRECTION.y * seg.speed;
-      count++;
-    }
-  }
-  mkdirSync(join(ROOT, 'node_modules', '.cache'), { recursive: true });
-  writeFileSync(VIDEO, Buffer.concat(parts));
-  const mb = Math.round((count * W * H * 1.5) / 1e5) / 10;
-  console.log(`[p7] wrote ${W}x${H}, ${count} frames (${mb} MB): parallax pan`);
-}
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-};
-
-function serve(dir) {
-  return new Promise((res) => {
-    const server = createServer((req, r) => {
-      const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
-      let f = join(dir, p === '/' ? 'index.html' : p);
-      if (!existsSync(f)) f = join(dir, 'index.html');
-      r.writeHead(200, { 'content-type': MIME[extname(f)] ?? 'application/octet-stream' });
-      createReadStream(f).pipe(r);
-    });
-    server.listen(0, '127.0.0.1', () => res(server));
+    },
   });
+  console.log(`[p7] wrote ${W}x${H}, ${frames} frames (${megabytes} MB): parallax pan`);
 }
 
 buildY4M();
@@ -168,100 +105,27 @@ let exitCode = 0;
 /** Tests this leg cannot decide, each with the reason that applies to it specifically. */
 const excluded = new Map();
 
-const browser = await chromium.launch({
-  executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
-  args: [
-    '--enable-unsafe-swiftshader',
-    '--use-fake-device-for-media-stream',
-    '--use-fake-ui-for-media-stream',
-    `--use-file-for-fake-video-capture=${VIDEO}`,
-  ],
-});
+const browser = await launch({ video: VIDEO });
 
 let snap;
 let poseBefore;
-const errors = [];
+let errors = [];
 
 try {
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text());
-  });
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  if (!(await page.evaluate(() => window.__SPATIAL_READY__))) throw new Error('app failed to start');
+  const app = await openApp(browser, url);
+  const { context, page } = app;
+  errors = app.errors;
   await context.grantPermissions(['camera'], { origin: new URL(url).origin });
 
   // Take the device's path, all the way. On a phone Phase 7 is reached from a RELATIVE POSE
   // screen with six live stages behind it, because that is how Phase 6 passes. Entering cold
   // exercises a sequence no device ever takes, and §H.5 records at length what that cost two
-  // Phase 3 device runs.
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase2(true)))) {
-    throw new Error('could not enter Phase 2 even with the desktop override');
-  }
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.startPipeline());
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getPipelineStats().completed > 30, undefined, {
-    timeout: 25_000,
-  });
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase3(true)))) {
-    throw new Error('could not enter Phase 3 even with the desktop override');
-  }
-  await page.waitForSelector('#start-detection', { timeout: 10_000 });
-  await page.click('#start-detection');
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getTrackingStats().detections > 5, undefined, {
-    timeout: 25_000,
-  });
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase4(true)))) {
-    throw new Error('could not enter Phase 4 even with the desktop override');
-  }
-  await page.waitForSelector('#start-tracking', { timeout: 10_000 });
-  await page.click('#start-tracking');
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getFlowStats().flowFrames > 5, undefined, {
-    timeout: 25_000,
-  });
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase5(true)))) {
-    throw new Error('could not enter Phase 5 even with the desktop override');
-  }
-  await page.waitForSelector('#start-verification', { timeout: 10_000 });
-  await page.click('#start-verification');
-  await page.waitForFunction(
-    () => window.__SPATIAL_DEBUG__.getVerificationStats().verifiedFrames > 3,
-    undefined,
-    { timeout: 25_000 },
-  );
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase6(true)))) {
-    throw new Error('could not enter Phase 6 even with the desktop override');
-  }
-  await page.waitForSelector('#start-pose', { timeout: 10_000 });
-  await page.click('#start-pose');
-  await page.waitForFunction(
-    () => window.__SPATIAL_DEBUG__.getPoseStats().poseFrames > 0,
-    undefined,
-    { timeout: 25_000 },
-  );
+  // Phase 3 device runs. `climbTo` presses the same controls a person presses on each rung.
+  await climbTo(page, 7, (n) => console.log(`[p7] phase ${n} running`));
 
   // Phase Lock, on the control a person would use. Phase 6 cannot pass on this leg (Rule 004),
   // so the door to Phase 7 must be shut and must say why.
-  const gate = await page.evaluate(() => {
-    const b = document.getElementById('go-to-phase7');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  });
-  if (gate.disabled !== true || !String(gate.text).includes('LOCKED')) {
-    throw new Error(
-      'GO TO IMU SUPPORT / FUSION should be locked on this leg — Phase 6 is TESTING, not ' +
-        `PASSED — but it reads ${JSON.stringify(gate.text)} (disabled ${gate.disabled}). Rule 005.`,
-    );
-  }
+  const gate = await expectLocked(page, 7, 'GO TO IMU SUPPORT / FUSION');
   console.log(`[p7] Phase Lock holds: ${gate.text}`);
 
   // IMU-002's fifth criterion needs a *before*: Phase 6's own figures with Phase 7 not running
@@ -279,20 +143,10 @@ try {
   // Press the control a person presses. There is deliberately no `startFusion()` in the debug
   // API: reaching past the DOM is how Phase 3's leg twice certified a screen whose button had
   // become unpressable while the engine behind it answered perfectly well (§H.5).
-  await page.waitForSelector('#start-fusion', { timeout: 10_000 });
-  const before = await page.evaluate(() => {
-    const b = document.getElementById('start-fusion');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
+  const confirmFusing = await pressStart(page, '#start-fusion', {
+    idle: 'START FUSION',
+    busy: 'FUSING',
   });
-  if (before.disabled !== false || before.text !== 'START FUSION') {
-    throw new Error(
-      `START FUSION is not pressable on arrival: label ${JSON.stringify(before.text)}, ` +
-        `disabled ${before.disabled}. Phase 7 arrives over six live stages — camera, pipeline, ` +
-        'detector, tracker, verifier and pose — so a control derived from any of them is ' +
-        'already pressed, and a person could not start the run at all (Rule 002, §H.5)',
-    );
-  }
-  await page.click('#start-fusion');
 
   await page.waitForFunction(
     () => window.__SPATIAL_DEBUG__.getFusionStats().fusionFrames > 0,
@@ -300,16 +154,7 @@ try {
     { timeout: 25_000 },
   );
 
-  const after = await page.evaluate(() => {
-    const b = document.getElementById('start-fusion');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  });
-  if (after.text !== 'FUSING' || after.disabled !== true) {
-    throw new Error(
-      `fusion is running but the control says ${JSON.stringify(after.text)} ` +
-        `(disabled ${after.disabled}) — the control and the engine disagree (Rule 002)`,
-    );
-  }
+  await confirmFusing();
 
   console.log(`[p7] holding for ${FUSE_MS / 1000} s…`);
   await page.waitForTimeout(FUSE_MS);

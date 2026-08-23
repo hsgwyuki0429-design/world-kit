@@ -26,15 +26,13 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { climbTo, launch, openApp, serve } from './lib/harness.mjs';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 const DIST = join(ROOT, 'dist');
 const OUT_DIR = join(ROOT, 'docs', 'phase3', 'evidence');
-const CHROMIUM = '/opt/pw-browsers/chromium';
 const VIDEO = join(ROOT, 'node_modules', '.cache', 'alignment-pattern.y4m');
 
 /**
@@ -89,27 +87,6 @@ function buildY4M() {
   );
 }
 
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-};
-
-function serve(dir) {
-  return new Promise((res) => {
-    const server = createServer((req, r) => {
-      const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
-      let f = join(dir, p === '/' ? 'index.html' : p);
-      if (!existsSync(f)) f = join(dir, 'index.html');
-      r.writeHead(200, { 'content-type': MIME[extname(f)] ?? 'application/octet-stream' });
-      createReadStream(f).pipe(r);
-    });
-    server.listen(0, '127.0.0.1', () => res(server));
-  });
-}
-
 buildY4M();
 console.log('[align] building…');
 execFileSync('npx', ['vite', 'build'], { cwd: ROOT, stdio: 'inherit' });
@@ -118,42 +95,16 @@ const server = await serve(DIST);
 const url = `http://localhost:${server.address().port}/`;
 mkdirSync(OUT_DIR, { recursive: true });
 
-const browser = await chromium.launch({
-  executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
-  args: [
-    '--enable-unsafe-swiftshader',
-    '--use-fake-device-for-media-stream',
-    '--use-fake-ui-for-media-stream',
-    `--use-file-for-fake-video-capture=${VIDEO}`,
-  ],
-});
+const browser = await launch({ video: VIDEO });
 
 let exitCode = 0;
 let report;
 
 try {
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  if (!(await page.evaluate(() => window.__SPATIAL_READY__))) throw new Error('app failed to start');
+  const { context, page } = await openApp(browser, url);
   await context.grantPermissions(['camera'], { origin: new URL(url).origin });
 
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase2(true));
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.startPipeline());
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getPipelineStats().completed > 30, undefined, {
-    timeout: 25_000,
-  });
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase3(true));
-  await page.waitForSelector('#start-detection');
-  await page.click('#start-detection');
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getTrackingStats().detections > 5, undefined, {
-    timeout: 25_000,
-  });
+  await climbTo(page, 4);
   await page.waitForTimeout(3_000);
 
   report = await page.evaluate(() => ({

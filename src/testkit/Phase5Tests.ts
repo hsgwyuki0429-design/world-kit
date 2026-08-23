@@ -35,6 +35,8 @@ import {
 } from '../tracking/VerificationStage';
 import { TEXTURE_POOR_CEILING, TEXTURE_RICH_FLOOR } from '../tracking/featureTypes';
 import type { VerificationStats } from '../tracking/verificationStats';
+import type { Evaluation, PhaseTest } from './runTests';
+import { pct, runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -63,21 +65,7 @@ export interface Phase5Context {
   readonly stats: VerificationStats;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase5Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase5Context) => Evaluation;
-}
-
-function pct(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 1000) / 10}%`;
-}
+type Phase5Test = PhaseTest<Phase5Context>;
 
 function notRunning(ctx: Phase5Context, metrics: Record<string, JsonValue>): Evaluation | null {
   if (ctx.verificationEverRan && ctx.stats.verifiedFrames > 0) return null;
@@ -561,17 +549,7 @@ export const PHASE5_TESTS: readonly Phase5Test[] = [
 export const PHASE5_SPECS: readonly TestSpec[] = PHASE5_TESTS.map((t) => t.spec);
 
 export function runPhase5Tests(ctx: Phase5Context): TestResult[] {
-  return PHASE5_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE5_TESTS, ctx);
 }
 
 /** Re-exported so the screen shows the same numbers the tests judge (Rule 002). */

@@ -19,6 +19,7 @@ import { FrameMotion, MIN_SHIFT_CONFIDENCE, shiftAgreementTolerance } from './Sc
 import type { FeatureRecordSample, TrackingFlow, TrackingResult } from './trackingMessages';
 import { EMPTY_CLASS } from './flowStats';
 import type { FlowStats, MotionClassStats, OcclusionEpisode, ShiftCrossCheck } from './flowStats';
+import { MAX_SAMPLES, median, round, trim } from '../core/stats';
 
 /**
  * Trailing window over which gyroscope rotation is integrated for FLOW-003.
@@ -35,7 +36,6 @@ export const ROTATION_WINDOW_MS = 1000;
 export const ROTATING_DEG = 5;
 
 /** How many per-frame records to keep for the evidence. Bounded by §56. */
-const MAX_SAMPLES = 400;
 
 interface ClassAccumulator {
   survival: number[];
@@ -55,22 +55,6 @@ function newAccumulator(): ClassAccumulator {
     survival: [], displacement: [], fbError: [], tracked: [], cellSpread: [], rejectFraction: [],
     lost: 0, degraded: 0, seen: 0,
   };
-}
-
-function median(values: readonly number[]): number {
-  if (values.length === 0) return -1;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? (s[mid] ?? 0) : (((s[mid - 1] ?? 0) + (s[mid] ?? 0)) / 2);
-}
-
-function round(n: number, dp = 3): number {
-  const f = 10 ** dp;
-  return Number.isFinite(n) ? Math.round(n * f) / f : n;
-}
-
-function trim(list: number[], max = MAX_SAMPLES): void {
-  while (list.length > max) list.shift();
 }
 
 /** A gyroscope sample as the main thread receives it: degrees per second, at a moment. */

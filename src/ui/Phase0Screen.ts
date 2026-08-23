@@ -20,6 +20,7 @@ import type {
 } from '../core/types';
 import { isPhaseImplemented } from '../core/PhaseRegistry';
 import type { LegDetermination } from '../debug/EvidenceRecorder';
+import { card, el } from './dom';
 
 export interface Phase0ViewModel {
   readonly appVersion: string;
@@ -59,24 +60,6 @@ const GROUP_LABELS: Record<CapabilityGroup, string> = {
 const GROUP_ORDER: CapabilityGroup[] = [
   'platform', 'camera', 'motion', 'compute', 'graphics', 'media', 'storage', 'spatial',
 ];
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
 
 /** What the START SCAN control must say, derived from engine state only. */
 export function startScanState(

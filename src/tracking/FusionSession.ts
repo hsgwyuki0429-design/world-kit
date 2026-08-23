@@ -36,8 +36,7 @@ import type {
   SensorChannel,
 } from './fusionStats';
 import type { FusionReport, ImuSample } from './trackingMessages';
-
-const MAX_SAMPLES = 400;
+import { median, round, trim } from '../core/stats';
 
 /**
  * §17's channels, named once.
@@ -55,22 +54,6 @@ export const SENSOR_CHANNELS = [
   'deviceorientation',
   'magnetometer',
 ] as const;
-
-function median(values: readonly number[]): number {
-  if (values.length === 0) return -1;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? (s[mid] ?? 0) : (((s[mid - 1] ?? 0) + (s[mid] ?? 0)) / 2);
-}
-
-function round(n: number, dp = 3): number {
-  const f = 10 ** dp;
-  return Number.isFinite(n) ? Math.round(n * f) / f : n;
-}
-
-function trim(list: unknown[], max = MAX_SAMPLES): void {
-  while (list.length > max) list.shift();
-}
 
 /** A dropout being assembled. Becomes a `DropoutSample` when vision returns or the run ends. */
 interface OpenDropout {

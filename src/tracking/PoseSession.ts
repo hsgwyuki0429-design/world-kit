@@ -23,8 +23,7 @@ import type { GyroSample } from './gyroRotation';
 import { poseStateFollowsFrom } from './poseStats';
 import type { PoseInjectionSample, PoseStats, RotationAgreementSample } from './poseStats';
 import type { PoseReport, TrackingResult } from './trackingMessages';
-
-const MAX_SAMPLES = 400;
+import { median, round, trim } from '../core/stats';
 
 /**
  * The gyroscope tolerance: `max(3°, 30 % of what was measured)`.
@@ -50,22 +49,6 @@ export const MIN_GYRO_SAMPLES = 4;
  * turned can decide POSE-002.
  */
 export const MIN_COMPARABLE_ROTATION_DEG = 2.0;
-
-function median(values: readonly number[]): number {
-  if (values.length === 0) return -1;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? (s[mid] ?? 0) : (((s[mid - 1] ?? 0) + (s[mid] ?? 0)) / 2);
-}
-
-function round(n: number, dp = 3): number {
-  const f = 10 ** dp;
-  return Number.isFinite(n) ? Math.round(n * f) / f : n;
-}
-
-function trim(list: unknown[], max = MAX_SAMPLES): void {
-  while (list.length > max) list.shift();
-}
 
 export class PoseSession {
   private readonly rotations: number[] = [];

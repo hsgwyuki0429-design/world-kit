@@ -11,13 +11,14 @@
  * shows a dash rather than a plausible number (Rule 002).
  */
 
-import { Verdict } from '../core/types';
 import type { PhaseInfo, TestResult } from '../core/types';
 import { CameraState } from '../capture/CameraSource';
 import { getPreviewVideo } from './PreviewVideo';
 import { STRIP_W, STRIP_H } from '../pipeline/pyramid';
 import { REQUIRED_PIPELINE_MS, UI_BUDGET_MS } from '../testkit/Phase2Tests';
 import type { PipelineStats } from '../pipeline/stats';
+import { card, el, stat } from './dom';
+import { evidenceSection, navigationSection, testsSection } from './phaseSections';
 
 export interface Phase2ViewModel {
   readonly phase2: PhaseInfo;
@@ -43,31 +44,6 @@ export interface Phase2Handlers {
   onEnterPhase3: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
-}
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
-
-function stat(label: string, value: string | null, cls = ''): HTMLElement {
-  return el('div', { class: 'stat' }, [
-    el('div', { class: 'k' }, [label]),
-    el('div', { class: `v ${cls}` }, [value ?? '—']),
-  ]);
 }
 
 /**
@@ -125,45 +101,31 @@ export function renderPhase2Screen(
   root.append(renderLatency(vm));
   root.append(renderAdaptation(vm, handlers));
   root.append(renderRoutes(vm));
-  root.append(renderTests(vm));
-  root.append(renderEvidence(vm, handlers));
+  root.append(testsSection(2, vm.phase2, vm.results));
+  root.append(
+    evidenceSection(2, vm.phase2, vm.results, {
+      onDownload: handlers.onDownloadEvidence,
+      onCopy: handlers.onCopyEvidence,
+    }),
+  );
 
-  root.append(renderNavigation(vm, handlers));
+  root.append(
+    navigationSection(
+      { index: 1, label: 'BACK TO CAMERA', onClick: handlers.onBack },
+      {
+        index: 3,
+        name: 'FEATURE DETECTION',
+        phase: vm.phase3,
+        canEnter: vm.canEnterPhase3,
+        implemented: vm.phase3Implemented,
+        blockedReason: vm.phase3BlockedReason,
+        onClick: handlers.onEnterPhase3,
+      },
+    ),
+  );
 }
 
 /** Phase Lock on screen, as on the Phase 1 screen: a closed door says which lock holds it. */
-function renderNavigation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElement {
-  const open = vm.canEnterPhase3 && vm.phase3Implemented;
-  const label = !vm.phase3Implemented
-    ? 'FEATURE DETECTION — NOT IMPLEMENTED'
-    : !vm.canEnterPhase3
-      ? 'FEATURE DETECTION — LOCKED'
-      : 'GO TO FEATURE DETECTION';
-  const note = !vm.phase3Implemented
-    ? 'Phase 3 has not been written in this build.'
-    : !vm.canEnterPhase3
-      ? vm.phase3BlockedReason
-      : `Phase 3 is ${vm.phase3.state}.`;
-
-  return card('Navigation', [
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'back-to-phase1',
-        textContent: 'BACK TO CAMERA',
-        onclick: handlers.onBack,
-      } as never),
-      el('button', {
-        class: 'primary',
-        id: 'go-to-phase3',
-        disabled: !open,
-        textContent: label,
-        onclick: handlers.onEnterPhase3,
-      } as never),
-    ]),
-    el('p', { class: 'footnote' }, [note]),
-  ]);
-}
 
 function renderImages(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElement {
   const children: (Node | string)[] = [];
@@ -433,71 +395,3 @@ function renderRoutes(vm: Phase2ViewModel): HTMLElement {
   ]);
 }
 
-function renderTests(vm: Phase2ViewModel): HTMLElement {
-  if (vm.results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
-  }
-  const counts = {
-    pass: vm.results.filter((r) => r.verdict === Verdict.PASS).length,
-    fail: vm.results.filter((r) => r.verdict === Verdict.FAIL).length,
-    pending: vm.results.filter((r) => r.verdict === Verdict.PENDING).length,
-  };
-  const rows = vm.results.map((r) =>
-    el('details', { class: 'row' }, [
-      el('summary', {}, [
-        el('span', { class: 'id' }, [r.spec.id]),
-        el('span', { class: 'title' }, [r.spec.title]),
-        el('span', { class: 'req' }, [r.spec.required ? 'REQ' : 'ADV']),
-        el('span', { class: `verdict v-${r.verdict}` }, [r.verdict]),
-      ]),
-      el('dl', { class: 'detail-grid' }, [
-        el('dt', {}, ['Expected']), el('dd', {}, [r.spec.expected]),
-        el('dt', {}, ['Criteria']), el('dd', {}, [r.spec.passCriteria]),
-        el('dt', {}, ['Observed']), el('dd', { class: 'mono' }, [r.observed]),
-        el('dt', {}, ['Reason']), el('dd', {}, [r.reason]),
-      ]),
-    ]),
-  );
-  return card(`Tests — Phase 2 · ${vm.phase2.state}`, [
-    el('div', { class: 'verdict-head' }, [
-      el('div', { class: `verdict-state ${vm.phase2.state}`, id: 'phase2-verdict' }, [
-        vm.phase2.state,
-      ]),
-      el('div', { class: 'verdict-counts' }, [
-        `${counts.pass} PASS · ${counts.fail} FAIL · ${counts.pending} PENDING`,
-      ]),
-    ]),
-    el('p', { class: 'verdict-reason' }, [vm.phase2.reason]),
-    ...rows,
-  ]);
-}
-
-function renderEvidence(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElement {
-  const pending = vm.results.filter((r) => r.spec.required && r.verdict === Verdict.PENDING);
-  const children: (Node | string)[] = [];
-  if (pending.length > 0) {
-    children.push(
-      el('p', { class: 'evidence-warning', id: 'phase2-pending-warning' }, [
-        `This export would record ${vm.phase2.state}, not a pass: ` +
-          `${pending.map((r) => r.spec.id).join(', ')} still PENDING.`,
-      ]),
-    );
-  }
-  children.push(
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'download-evidence-p2',
-        textContent: `DOWNLOAD EVIDENCE JSON — ${vm.phase2.state}`,
-        onclick: handlers.onDownloadEvidence,
-      } as never),
-      el('button', {
-        class: 'secondary',
-        id: 'copy-evidence-p2',
-        textContent: 'COPY EVIDENCE JSON',
-        onclick: handlers.onCopyEvidence,
-      } as never),
-    ]),
-  );
-  return card('Evidence', children);
-}

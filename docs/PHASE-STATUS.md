@@ -1177,3 +1177,76 @@ as zeros for the matching reason: a phone on a table reports a real `[0, 0, 0]` 
   gave: the state is computed in `FlowStage` from what Phase 4 measures, and plumbing a later
   phase's quantity into a passed phase's state machine is a change to Phase 4. `goodBlockedBy`
   continues to name what is missing.
+
+---
+
+## Consolidation, 2026-08-23 — after Phase 7
+
+Seven phases had accumulated seven copies of a good deal of code. This pass removed **3,900
+lines and added 2,100**, most of the addition being the documentation on the modules that
+replaced the copies. Nothing about what any phase measures changed, and that is checked rather
+than asserted — see *How the numbers were held still* below.
+
+### What was shared, and what deliberately was not
+
+| Moved to | What it replaced |
+| --- | --- |
+| `src/ui/dom.ts` | `el` × 8, `card` × 8, `stat` × 7, and the formatters × 3–4, all byte-identical |
+| `src/ui/phaseSections.ts` | `renderTests`, `renderEvidence`, `renderNavigation` × 7 |
+| `src/core/stats.ts` | `median`, `round` and §56's `trim` × 4 sessions |
+| `src/testkit/runTests.ts` | the `Evaluation` shape × 8, `PhaseNTest` × 8, and the runner loop × 8 |
+| `scripts/lib/harness.mjs` | `serve` + MIME × 8, the launch arguments × 5, the phase ladder × 4 |
+| `scripts/lib/feed.mjs` | the two-layer texture × 3, and the Y4M writer × 4 |
+| `src/main.ts` | seven `phaseNTimer` fields, seven start/stop pairs, seven `evaluatePhaseN` tails |
+
+Four things that look shareable were left alone, each for a reason:
+
+- **Phase 0's tests and evidence cards.** They list `CAP-0001..CAP-00NN` with `Input` and `Fail
+  if` rows, carry no phase verdict head, and include the raw-JSON panel. A different card that
+  happens to share a name; folding it in would have meant a parameter ignored six times in seven.
+- **`Phase2Tests`, `Phase3Tests` and `Phase4Tests` keep their own percentage formatter.** It is
+  *unguarded*: it prints `-50%` where the shared one prints an em dash. The two look like the
+  same function and are not, and unifying them would have silently changed what three passed
+  phases print.
+- **Phase 0's browser context.** No touch, no mobile flag, no console capture — it probes
+  capabilities and screenshots the result, and a touch-enabled context changes what
+  `CapabilityDetector` reports about the platform it is on.
+- **Phase 1's second browser launch.** It must *not* carry `--use-fake-ui-for-media-stream`.
+  CAM-002 is about what the app does when a user says no, and a flag that answers the prompt
+  with yes would make the run measure nothing. The shared `launch()` takes `autoGrant` as a
+  parameter for that one leg's sake, and the flag lists it produces are identical, argument for
+  argument, to the eight hand-written ones it replaced.
+
+### `climbTo` is the one that was worth doing for its own sake
+
+Five legs each walked the same ladder — enter Phase 2, start the pipeline, enter Phase 3, press
+`#start-detection`, and so on — because §H.5 records what skipping it cost: on a device, Phase 6
+is reached from a screen whose camera, pipeline, detector, tracker and verifier are *already
+running*. A leg that enters a phase cold exercises a sequence no device ever takes, and twice
+that difference was a control the engine answered for while nobody could press it.
+
+That sequence is now written down in one place, and it still presses the controls a person
+presses. `expectLocked` and `pressStart` came out of the same five legs and keep the same two
+checks: the door to the next phase must be shut and say why (Rule 005), and the start button must
+be pressable on arrival and must change its label once the run is going (Rule 002).
+
+### How the numbers were held still
+
+Three checks, none of which is "the tests still pass":
+
+1. **The screens' markup was rendered before and after and compared.** All seven phase screens
+   were driven to the moment of arrival and their last three cards dumped from the live DOM.
+   **21 of 21 cards came back byte-identical** — same ids, same classes, same text, same em
+   dashes. `scripts/dump-screen-markup.mjs` is the instrument, kept because the next refactor of
+   this kind will want it.
+2. **The synthetic feeds were regenerated and hashed.** The four legs that film a scene write a
+   Y4M file whose pixels the committed measurements were taken on. All four hash **identically**
+   to the pre-refactor files — `2fff849d…` for Phase 4, `b461c50b…` for Phase 5, `1fe5d79f…` for
+   Phase 6, `74769e88…` for Phase 7.
+3. **Every leg was re-run and its bundle compared field by field** against the committed one:
+   verdicts exactly, measurements against run-to-run variance.
+
+An earlier attempt to prove point 1 by comparing the *source* of the extracted functions was
+abandoned: the comparison was matching multi-line chunks rather than tokens, and it reported
+differences that were line wraps. A check that cannot tell a real difference from a reformat is
+not a check — the same shape as the fixtures Phases 6 and 7 each had to throw away.

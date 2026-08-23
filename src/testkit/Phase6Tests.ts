@@ -35,6 +35,8 @@ import {
   ROTATION_AGREEMENT_FRACTION,
 } from '../tracking/PoseSession';
 import type { PoseStats } from '../tracking/poseStats';
+import type { Evaluation, PhaseTest } from './runTests';
+import { deg, pct, runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -76,25 +78,7 @@ export interface Phase6Context {
   readonly verifyMs: number;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase6Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase6Context) => Evaluation;
-}
-
-function pct(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 1000) / 10}%`;
-}
-
-function deg(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100}°`;
-}
+type Phase6Test = PhaseTest<Phase6Context>;
 
 function notRunning(ctx: Phase6Context, metrics: Record<string, JsonValue>): Evaluation | null {
   if (ctx.poseEverRan && ctx.stats.poseFrames > 0) return null;
@@ -739,17 +723,7 @@ export const PHASE6_TESTS: readonly Phase6Test[] = [
 export const PHASE6_SPECS: readonly TestSpec[] = PHASE6_TESTS.map((t) => t.spec);
 
 export function runPhase6Tests(ctx: Phase6Context): TestResult[] {
-  return PHASE6_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE6_TESTS, ctx);
 }
 
 /** Re-exported so the screen shows the same numbers the tests judge (Rule 002). */

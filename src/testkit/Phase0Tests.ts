@@ -21,6 +21,8 @@ import type {
 import { findIntegrityIssues } from '../core/validate';
 import { isPhaseImplemented } from '../core/PhaseRegistry';
 import type { PhaseRegistry } from '../core/PhaseRegistry';
+import type { Evaluation, PhaseTest } from './runTests';
+import { runTests } from './runTests';
 
 /** What the UI is currently offering the user, so a test can compare it to engine state. */
 export interface UiStateSnapshot {
@@ -46,17 +48,7 @@ export interface Phase0Context {
   readonly evidenceDraft?: unknown;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase0Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase0Context) => Evaluation;
-}
+type Phase0Test = PhaseTest<Phase0Context>;
 
 /* -------------------------------------------------------------------------- */
 
@@ -617,15 +609,5 @@ export const PHASE0_TESTS: readonly Phase0Test[] = [
 export const PHASE0_SPECS: readonly TestSpec[] = PHASE0_TESTS.map((t) => t.spec);
 
 export function runPhase0Tests(ctx: Phase0Context): TestResult[] {
-  return PHASE0_TESTS.map((test) => {
-    const evaluation = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: evaluation.verdict,
-      observed: evaluation.observed,
-      reason: evaluation.reason,
-      metrics: evaluation.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE0_TESTS, ctx);
 }

@@ -18,6 +18,8 @@ import {
 } from '../capture/FrameIntegrityMonitor';
 import type { FrameStats } from '../capture/FrameIntegrityMonitor';
 import type { LedgerEntry } from '../capture/ScenarioLedger';
+import type { PhaseTest } from './runTests';
+import { runTests } from './runTests';
 
 /** §10 floor: tracking must be able to run at 15 fps, so delivery must reach it. */
 export const MIN_DELIVERED_FPS = 15;
@@ -41,17 +43,7 @@ export interface Phase1Context {
   readonly cameraEndedUnexpectedly: boolean;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase1Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase1Context) => Evaluation;
-}
+type Phase1Test = PhaseTest<Phase1Context>;
 
 function ledgerNote(entry: LedgerEntry): string {
   return entry.observedDirectly
@@ -455,15 +447,5 @@ export const PHASE1_TESTS: readonly Phase1Test[] = [
 export const PHASE1_SPECS: readonly TestSpec[] = PHASE1_TESTS.map((t) => t.spec);
 
 export function runPhase1Tests(ctx: Phase1Context): TestResult[] {
-  return PHASE1_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE1_TESTS, ctx);
 }

@@ -14,37 +14,13 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { launch, serve } from './lib/harness.mjs';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 const DIST = join(ROOT, 'dist');
 const OUT_DIR = join(ROOT, 'docs', 'phase0', 'evidence');
-const CHROMIUM = '/opt/pw-browsers/chromium';
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-};
-
-function serve(dir) {
-  return new Promise((resolveServer) => {
-    const server = createServer((req, res) => {
-      const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
-      let file = join(dir, urlPath === '/' ? 'index.html' : urlPath);
-      if (!existsSync(file)) file = join(dir, 'index.html');
-      res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
-      createReadStream(file).pipe(res);
-    });
-    server.listen(0, '127.0.0.1', () => resolveServer(server));
-  });
-}
 
 console.log('[e2e] building…');
 execFileSync('npx', ['vite', 'build'], { cwd: ROOT, stdio: 'inherit' });
@@ -54,10 +30,12 @@ const port = server.address().port;
 const url = `http://localhost:${port}/`;
 console.log(`[e2e] serving ${DIST} at ${url}`);
 
-const browser = await chromium.launch({
-  executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
-  args: ['--enable-unsafe-swiftshader'],
-});
+// Phase 0 never opens a camera: it probes capabilities and stops. No synthetic
+// device, and no flag answering a prompt that is never raised.
+const browser = await launch({ device: false, autoGrant: false });
+// Phase 0 keeps its own context: no touch, no mobile flag, no console capture. It
+// probes capabilities and screenshots the result, and a touch-enabled context would
+// change what `CapabilityDetector` reports about the platform it is on.
 const context = await browser.newContext({
   viewport: { width: 430, height: 932 }, // iPhone-sized viewport for a readable screenshot
   deviceScaleFactor: 2,

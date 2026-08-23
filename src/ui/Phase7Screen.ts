@@ -28,7 +28,6 @@
  * measurement presented without what it was measured against is an assertion.
  */
 
-import { Verdict } from '../core/types';
 import type { PhaseInfo, TestResult } from '../core/types';
 import { CameraState } from '../capture/CameraSource';
 import { getPreviewVideo } from './PreviewVideo';
@@ -49,6 +48,8 @@ import {
   VISUAL_UPDATE_INTERVAL_MS,
 } from '../tracking/FusionStage';
 import type { FusionStats } from '../tracking/fusionStats';
+import { BAD, OK, card, deg, el, stat, vec } from './dom';
+import { evidenceSection, navigationSection, testsSection } from './phaseSections';
 
 export interface Phase7ViewModel {
   readonly phase7: PhaseInfo;
@@ -78,45 +79,8 @@ export interface Phase7Handlers {
   onCopyEvidence: () => void;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
-
-function stat(label: string, value: string | null, cls = ''): HTMLElement {
-  return el('div', { class: 'stat' }, [
-    el('div', { class: 'k' }, [label]),
-    el('div', { class: `v ${cls}` }, [value ?? '—']),
-  ]);
-}
-
-const OK = 's-AVAILABLE';
-const BAD = 's-PERMISSION_DENIED';
-
-function deg(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100}°`;
-}
-
 function dps(n: number): string {
   return n < 0 ? '—' : `${Math.round(n * 1000) / 1000} °/s`;
-}
-
-function vec(v: readonly number[] | null): string | null {
-  if (!v || v.length === 0) return null;
-  return `[${v.map((x) => (Math.round(x * 1000) / 1000).toFixed(3)).join(', ')}]`;
 }
 
 export function renderPhase7Screen(
@@ -147,9 +111,27 @@ export function renderPhase7Screen(
   root.append(renderPosition(vm));
   root.append(renderConfidence(vm));
   root.append(renderCost(vm));
-  root.append(renderTests(vm));
-  root.append(renderEvidence(vm, handlers));
-  root.append(renderNavigation(vm, handlers));
+  root.append(testsSection(7, vm.phase7, vm.results));
+  root.append(
+    evidenceSection(7, vm.phase7, vm.results, {
+      onDownload: handlers.onDownloadEvidence,
+      onCopy: handlers.onCopyEvidence,
+    }),
+  );
+  root.append(
+    navigationSection(
+      { index: 6, label: 'BACK TO RELATIVE POSE', onClick: handlers.onBack },
+      {
+        index: 8,
+        name: 'KEYFRAME SYSTEM',
+        phase: vm.phase8,
+        canEnter: vm.canEnterPhase8,
+        implemented: vm.phase8Implemented,
+        blockedReason: vm.phase8BlockedReason,
+        onClick: handlers.onEnterPhase8,
+      },
+    ),
+  );
 }
 
 function renderPreview(vm: Phase7ViewModel, handlers: Phase7Handlers): HTMLElement {
@@ -485,101 +467,3 @@ function renderCost(vm: Phase7ViewModel): HTMLElement {
   ]);
 }
 
-function renderTests(vm: Phase7ViewModel): HTMLElement {
-  if (vm.results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
-  }
-  const counts = {
-    pass: vm.results.filter((r) => r.verdict === Verdict.PASS).length,
-    fail: vm.results.filter((r) => r.verdict === Verdict.FAIL).length,
-    pending: vm.results.filter((r) => r.verdict === Verdict.PENDING).length,
-  };
-  return card(`Tests — Phase 7 · ${vm.phase7.state}`, [
-    el('div', { class: 'verdict-head' }, [
-      el('div', { class: `verdict-state ${vm.phase7.state}`, id: 'phase7-verdict' }, [vm.phase7.state]),
-      el('div', { class: 'verdict-counts' }, [
-        `${counts.pass} PASS · ${counts.fail} FAIL · ${counts.pending} PENDING`,
-      ]),
-    ]),
-    el('p', { class: 'verdict-reason' }, [vm.phase7.reason]),
-    ...vm.results.map((r) =>
-      el('details', { class: 'row' }, [
-        el('summary', {}, [
-          el('span', { class: 'id' }, [r.spec.id]),
-          el('span', { class: 'title' }, [r.spec.title]),
-          el('span', { class: 'req' }, [r.spec.required ? 'REQ' : 'ADV']),
-          el('span', { class: `verdict v-${r.verdict}` }, [r.verdict]),
-        ]),
-        el('dl', { class: 'detail-grid' }, [
-          el('dt', {}, ['Expected']), el('dd', {}, [r.spec.expected]),
-          el('dt', {}, ['Criteria']), el('dd', {}, [r.spec.passCriteria]),
-          el('dt', {}, ['Observed']), el('dd', { class: 'mono' }, [r.observed]),
-          el('dt', {}, ['Reason']), el('dd', {}, [r.reason]),
-        ]),
-      ]),
-    ),
-  ]);
-}
-
-function renderEvidence(vm: Phase7ViewModel, handlers: Phase7Handlers): HTMLElement {
-  const pending = vm.results.filter((r) => r.spec.required && r.verdict === Verdict.PENDING);
-  const children: (Node | string)[] = [];
-  if (pending.length > 0) {
-    children.push(
-      el('p', { class: 'evidence-warning', id: 'phase7-pending-warning' }, [
-        `This export would record ${vm.phase7.state}, not a pass: ` +
-          `${pending.map((r) => r.spec.id).join(', ')} still PENDING.`,
-      ]),
-    );
-  }
-  children.push(
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'download-evidence-p7',
-        textContent: `DOWNLOAD EVIDENCE JSON — ${vm.phase7.state}`,
-        onclick: handlers.onDownloadEvidence,
-      } as never),
-      el('button', {
-        class: 'secondary',
-        id: 'copy-evidence-p7',
-        textContent: 'COPY EVIDENCE JSON',
-        onclick: handlers.onCopyEvidence,
-      } as never),
-    ]),
-  );
-  return card('Evidence', children);
-}
-
-function renderNavigation(vm: Phase7ViewModel, handlers: Phase7Handlers): HTMLElement {
-  const open = vm.canEnterPhase8 && vm.phase8Implemented;
-  const label = !vm.phase8Implemented
-    ? 'KEYFRAME SYSTEM — NOT IMPLEMENTED'
-    : !vm.canEnterPhase8
-      ? 'KEYFRAME SYSTEM — LOCKED'
-      : 'GO TO KEYFRAME SYSTEM';
-  const note = !vm.phase8Implemented
-    ? 'Phase 8 has not been written in this build.'
-    : !vm.canEnterPhase8
-      ? vm.phase8BlockedReason
-      : `Phase 8 is ${vm.phase8.state}.`;
-
-  return card('Navigation', [
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'back-to-phase6',
-        textContent: 'BACK TO RELATIVE POSE',
-        onclick: handlers.onBack,
-      } as never),
-      el('button', {
-        class: 'primary',
-        id: 'go-to-phase8',
-        disabled: !open,
-        textContent: label,
-        onclick: handlers.onEnterPhase8,
-      } as never),
-    ]),
-    el('p', { class: 'footnote' }, [note]),
-  ]);
-}

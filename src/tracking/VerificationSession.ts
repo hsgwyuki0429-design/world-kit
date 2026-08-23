@@ -34,8 +34,7 @@ import type {
   VerificationClassStats,
   VerificationStats,
 } from './verificationStats';
-
-const MAX_SAMPLES = 400;
+import { median, round, trim } from '../core/stats';
 
 interface ClassAccumulator {
   frames: number;
@@ -55,22 +54,6 @@ function newClass(): ClassAccumulator {
     frames: 0, judged: 0, correspondences: [], inliers: [], ratio: [], baseline: [], spread: [],
     unverified: 0, usable: 0, good: 0,
   };
-}
-
-function median(values: readonly number[]): number {
-  if (values.length === 0) return -1;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? (s[mid] ?? 0) : (((s[mid - 1] ?? 0) + (s[mid] ?? 0)) / 2);
-}
-
-function round(n: number, dp = 3): number {
-  const f = 10 ** dp;
-  return Number.isFinite(n) ? Math.round(n * f) / f : n;
-}
-
-function trim(list: number[], max = MAX_SAMPLES): void {
-  while (list.length > max) list.shift();
 }
 
 export class VerificationSession {

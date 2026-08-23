@@ -36,15 +36,14 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { climbTo, expectLocked, launch, openApp, pressStart, serve } from './lib/harness.mjs';
+import { writeY4M } from './lib/feed.mjs';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 const DIST = join(ROOT, 'dist');
 const OUT_DIR = join(ROOT, 'docs', 'phase4', 'evidence');
-const CHROMIUM = '/opt/pw-browsers/chromium';
 const VIDEO = join(ROOT, 'node_modules', '.cache', 'flow-motion.y4m');
 
 /** Long enough for every motion class in the loop to reach its minimum several times over. */
@@ -100,61 +99,33 @@ function luma(x, y) {
 }
 
 function buildY4M() {
-  const header = Buffer.from(`YUV4MPEG2 W${W} H${H} F30:1 Ip A1:1 C420mpeg2\n`, 'ascii');
-  const frameTag = Buffer.from('FRAME\n', 'ascii');
-  const u = Buffer.alloc((W / 2) * (H / 2), 128);
-  const v = Buffer.alloc((W / 2) * (H / 2), 128);
-  const dark = Buffer.alloc(W * H, 6);
-
-  // One column of the texture per x offset, precomputed: the pan is a shift, so every frame
-  // is the same field read from a different origin.
-  const parts = [header];
+  // The pan is a shift, so every frame is the same field read from a different origin.
   let offset = 0;
-  let count = 0;
-  for (const seg of SEGMENTS) {
-    for (let f = 0; f < seg.frames; f++) {
+  let si = 0;
+  let left = SEGMENTS[0].frames;
+  const { frames, megabytes } = writeY4M(VIDEO, {
+    width: W,
+    height: H,
+    frames: SEGMENTS.reduce((a, s) => a + s.frames, 0),
+    frame: (y) => {
+      const seg = SEGMENTS[si];
       if (seg.dark) {
-        parts.push(frameTag, dark, u, v);
+        // FLOW-004's occlusion: a frame with no gradient anywhere, not a blurred one.
+        y.fill(6);
       } else {
-        const y = Buffer.alloc(W * H);
         for (let yy = 0; yy < H; yy++) {
           const row = yy * W;
           for (let xx = 0; xx < W; xx++) y[row + xx] = luma(xx + offset, yy);
         }
-        parts.push(frameTag, y, u, v);
         offset += seg.panPerFrame;
       }
-      count++;
-    }
-  }
-  mkdirSync(join(ROOT, 'node_modules', '.cache'), { recursive: true });
-  writeFileSync(VIDEO, Buffer.concat(parts));
-  const mb = Math.round((count * W * H * 1.5) / 1e5) / 10;
+      if (--left === 0 && si + 1 < SEGMENTS.length) left = SEGMENTS[++si].frames;
+    },
+  });
   console.log(
-    `[p4] wrote ${W}x${H}, ${count} frames (${mb} MB): ` +
+    `[p4] wrote ${W}x${H}, ${frames} frames (${megabytes} MB): ` +
       SEGMENTS.map((s) => `${s.frames}× ${s.name}`).join(', '),
   );
-}
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-};
-
-function serve(dir) {
-  return new Promise((res) => {
-    const server = createServer((req, r) => {
-      const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
-      let f = join(dir, p === '/' ? 'index.html' : p);
-      if (!existsSync(f)) f = join(dir, 'index.html');
-      r.writeHead(200, { 'content-type': MIME[extname(f)] ?? 'application/octet-stream' });
-      createReadStream(f).pipe(r);
-    });
-    server.listen(0, '127.0.0.1', () => res(server));
-  });
 }
 
 buildY4M();
@@ -170,73 +141,24 @@ let exitCode = 0;
 /** Tests this leg cannot decide, each with the reason that applies to it specifically. */
 const excluded = new Map();
 
-const browser = await chromium.launch({
-  executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
-  args: [
-    '--enable-unsafe-swiftshader',
-    '--use-fake-device-for-media-stream',
-    '--use-fake-ui-for-media-stream',
-    `--use-file-for-fake-video-capture=${VIDEO}`,
-  ],
-});
+const browser = await launch({ video: VIDEO });
 
 let snap;
-const errors = [];
+let errors = [];
 
 try {
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text());
-  });
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  if (!(await page.evaluate(() => window.__SPATIAL_READY__))) throw new Error('app failed to start');
+  const app = await openApp(browser, url);
+  const { context, page } = app;
+  errors = app.errors;
   await context.grantPermissions(['camera'], { origin: new URL(url).origin });
 
-  // Take the device's path. On a phone Phase 4 is reached from a FEATURES screen whose
-  // detection is still running over a pipeline that is still running — both of them have to
-  // be, because that is how Phase 3 passes — so the TRACKING screen inherits two live stages.
-  // Entering cold exercises a sequence no device ever takes, and §H.5 records at length what
-  // that cost the last two Phase 3 device runs.
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase2(true)))) {
-    throw new Error('could not enter Phase 2 even with the desktop override');
-  }
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.startPipeline());
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getPipelineStats().completed > 30, undefined, {
-    timeout: 25_000,
-  });
-  // Stress stays on across both handovers, so the leg covers a pipeline arriving in a state
-  // neither Phase 3 nor Phase 4 may measure in.
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.setStress(true));
-  await page.waitForTimeout(1_000);
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase3(true)))) {
-    throw new Error('could not enter Phase 3 even with the desktop override');
-  }
-  await page.waitForSelector('#start-detection', { timeout: 10_000 });
-  await page.click('#start-detection');
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getTrackingStats().detections > 5, undefined, {
-    timeout: 25_000,
-  });
-
+  // Take the device's path, all the way: every phase below this one is left running,
+  // because that is the state a device arrives in. `climbTo` presses the same controls a
+  // person presses on each rung — reaching past them is what §H.5 records at length.
+  await climbTo(page, 4, (n) => console.log(`[p4] phase ${n} running`));
   // Phase Lock, on the control a person would use. Phase 3 cannot pass on this leg (Rule 004),
   // so the door to Phase 4 must be shut and must say why.
-  const gate = await page.evaluate(() => {
-    const b = document.getElementById('go-to-phase4');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  });
-  if (gate.disabled !== true || !String(gate.text).includes('LOCKED')) {
-    throw new Error(
-      `GO TO TRACKING should be locked on this leg — Phase 3 is TESTING, not PASSED — but it ` +
-        `reads ${JSON.stringify(gate.text)} (disabled ${gate.disabled}). Rule 005.`,
-    );
-  }
+  const gate = await expectLocked(page, 5, 'GO TO GEOMETRIC VERIFICATION');
   console.log(`[p4] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({
@@ -255,34 +177,16 @@ try {
   // Press the control a person presses. There is deliberately no `startTracking()` in the
   // debug API: reaching past the DOM is how Phase 3's leg missed a button that had become
   // *unpressable* while the engine behind it was perfectly reachable, twice.
-  await page.waitForSelector('#start-tracking', { timeout: 10_000 });
-  const before = await page.evaluate(() => {
-    const b = document.getElementById('start-tracking');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
+  const confirmRunning = await pressStart(page, '#start-tracking', {
+    idle: 'START TRACKING',
+    busy: 'TRACKING',
   });
-  if (before.disabled !== false || before.text !== 'START TRACKING') {
-    throw new Error(
-      `START TRACKING is not pressable on arrival: label ${JSON.stringify(before.text)}, ` +
-        `disabled ${before.disabled}. The screen is reporting a tracking state the engine is ` +
-        'not in, and a person could not start the run at all (Rule 002, §H.5)',
-    );
-  }
-  await page.click('#start-tracking');
 
   await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getFlowStats().flowFrames > 0, undefined, {
     timeout: 25_000,
   });
 
-  const after = await page.evaluate(() => {
-    const b = document.getElementById('start-tracking');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  });
-  if (after.text !== 'TRACKING' || after.disabled !== true) {
-    throw new Error(
-      `tracking is running but the control says ${JSON.stringify(after.text)} ` +
-        `(disabled ${after.disabled}) — the control and the engine disagree (Rule 002)`,
-    );
-  }
+  await confirmRunning();
 
   const afterStart = await page.evaluate(() => window.__SPATIAL_DEBUG__.getPipelineStats());
   if (afterStart.stressPasses !== 0) {
