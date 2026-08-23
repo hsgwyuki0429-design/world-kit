@@ -256,6 +256,7 @@ function frameFor(report: VerificationReport, texture: SceneTexture): TrackingRe
     flow: null,
     flowAge: null,
     verification: report,
+    pose: null,
   };
 }
 

@@ -235,11 +235,40 @@ v3 §67. The camera translates through a scene with depth in it.
   2. the chosen candidate placed ≥ `MIN_CHEIRALITY_FRACTION` of inliers in front of both
      cameras, and beat the runner-up by ≥ `CHEIRALITY_MARGIN`;
   3. median reprojection error ≤ `MAX_REPROJECTION_PX`;
-  4. the recovered translation direction **varies** — the angular spread of the directions over
-     the run exceeds 5°, so a constant cannot pass (v3 §67's own condition);
-  5. no frame reported `POSE` while carrying a `null` translation.
+  4. no frame reported `POSE` while carrying a `null` translation.
+
+  The direction's spread across the run is **reported but not judged** — see the amendment.
 - **Failure condition:** a pose reported on a set that failed cheirality; or a translation
   direction identical on every frame of a run in which the camera moved.
+
+> **Amendment: the direction-spread criterion is withdrawn.** Recorded in place, with the
+> measurement that forced it (§29). **No other criterion moved, and nothing this phase rejects is
+> now accepted** — see the last paragraph.
+>
+> It was first written as "the spread exceeds 5°", on the reasoning that a constant vector cannot
+> pass. Before running anything it was narrowed to 0.5°, because between two re-anchors a camera
+> panning steadily has a genuinely constant direction and 5° would fail a correct solver on an
+> ordinary motion. **0.5° fails one too.** `tests/unit/poseStage.test.ts` drives the real solver
+> over a straight-line camera translation and it recovers, on every frame:
+>
+> ```
+> 40 frames with a full pose: median 100% in front of both cameras, reprojection 0 px,
+> rotation 7.18°, direction spread 0°
+> ```
+>
+> A spread of exactly zero, because the camera moved in a straight line and the direction really
+> was the same every frame. There is no threshold that separates that from a fixed vector, because
+> **they are the same measurement** — the difference lies in whether the number would have changed
+> had the camera done something else, and no statistic over one run can see that.
+>
+> So the spread is reported and not judged. POSE-005 is what asks the question the spread was
+> reaching for, and it asks it properly: it *makes* the camera do something else, by a known
+> amount, without telling the solver. This is the same division Phase 5 settled on — GEO-001 is
+> satisfied perfectly by a stage that accepts every correspondence, and GEO-003 is what separates
+> them — and the plan already says so above: *every other number in this plan is produced, and
+> produced well, by a stage that returns the same pose on every frame*. POSE-001 asks whether a
+> translation was recovered and is geometrically sound; asking it to also detect a constant, with
+> a weaker instrument than the one built for it, is what produced this.
 
 ### POSE-002 — Rotation · REQUIRED · device-decided
 

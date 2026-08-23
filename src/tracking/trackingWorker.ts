@@ -33,6 +33,7 @@ import { detectWithRefill, REFILL_QUALITY_FACTOR, REFILL_SEPARATION_FACTOR } fro
 import { GRID_CELLS, featureStateFor } from './featureTypes';
 import { FlowStage } from './FlowStage';
 import { VerificationStage } from './VerificationStage';
+import { PoseStage } from './PoseStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -83,6 +84,8 @@ let level0Calibration: TrackingResult['level0Calibration'] = null;
 const flowStage = new FlowStage(detector, refillDetector);
 /** Phase 5. Given the flow stage's own tracker, so it verifies the population Phase 4 holds. */
 const verificationStage = new VerificationStage();
+/** Phase 6. Decomposes the model Phase 5 selected on this frame, never a fresh fit of its own. */
+const poseStage = new PoseStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -302,6 +305,7 @@ function runTracking(
     if (flowActive) {
       flowStage.reset();
       verificationStage.reset();
+      poseStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -316,6 +320,7 @@ function runTracking(
   if (flowActive) {
     flowStage.reset();
     verificationStage.reset();
+    poseStage.reset();
     flowActive = false;
   }
 
@@ -408,6 +413,7 @@ function runTracking(
     flow: null,
     flowAge: null,
     verification: null,
+    pose: null,
   };
 }
 
@@ -441,8 +447,20 @@ function runFlow(
   // Phase 5 runs on the population Phase 4 just produced, in the same worker and on the same
   // frame. Splitting them would let an inlier ratio be reported beside a population from a
   // different frame.
-  const verification = verificationStage.process(flowStage.getTracker(), options.wantInjection);
-  return { ...result, verification };
+  const outcome = verificationStage.process(flowStage.getTracker(), options.wantInjection);
+  if (!options.pose) return { ...result, verification: outcome.report };
+
+  // Phase 6 decomposes the model Phase 5 just selected, on the same frame, in the same worker.
+  // `K` comes from this frame's own geometry rather than from a constant read at open (§H.0):
+  // rotating the device swaps the frame dimensions on the same track.
+  const pose = poseStage.process({
+    verification: outcome,
+    width: p.levels[0]?.width ?? 0,
+    height: p.levels[0]?.height ?? 0,
+    trackedFeatures: result.flow?.tracked ?? 0,
+    wantInjection: options.wantPoseInjection,
+  });
+  return { ...result, verification: outcome.report, pose };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

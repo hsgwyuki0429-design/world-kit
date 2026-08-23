@@ -36,6 +36,22 @@ import type { Correspondence } from '../geometry/twoView';
 import type { FlowTracker } from './FlowTracker';
 import type { VerificationInjection, VerificationReport } from './trackingMessages';
 
+/**
+ * What Phase 5 produced, in both the shape that crosses to the main thread and the shape the
+ * next stage in the same worker needs.
+ *
+ * The report is the message; the raw result carries the **inlier indices and the fitted matrix**,
+ * which do not cross — they would be a per-frame array of hundreds of integers on every message
+ * — and which Phase 6 needs, because a pose is recovered from the verified subset and no other.
+ * Re-running the fit in Phase 6 to get them back would give a *different* RANSAC answer and the
+ * pose would then belong to a model the screen never showed.
+ */
+export interface VerificationOutcome {
+  readonly report: VerificationReport;
+  readonly result: VerificationResult;
+  readonly correspondences: readonly Correspondence[];
+}
+
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in docs/phase5/TEST-PLAN.md before this file existed      */
 /* -------------------------------------------------------------------------- */
@@ -85,7 +101,7 @@ export class VerificationStage {
    * `tracker` is the live Phase 4 population — Phase 5 inherits it rather than rebuilding one,
    * as §H.5 requires, and what it does with it is written here rather than assumed.
    */
-  process(tracker: FlowTracker, wantInjection: boolean): VerificationReport {
+  process(tracker: FlowTracker, wantInjection: boolean): VerificationOutcome {
     this.frames++;
 
     // 1. Re-anchor. Done before verifying, so the frame that re-anchors reports the honest
@@ -125,7 +141,7 @@ export class VerificationStage {
       injection = this.measureInjection(correspondences);
     }
 
-    return {
+    const report: VerificationReport = {
       frames: this.frames,
       correspondences: correspondences.length,
       anchorAge: tracker.anchorAge(),
@@ -151,6 +167,7 @@ export class VerificationStage {
       seed,
       injection,
     };
+    return { report, result, correspondences };
   }
 
   /**
