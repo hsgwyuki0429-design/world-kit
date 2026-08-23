@@ -78,9 +78,13 @@ export class PoseSession {
   private readonly directions: number[][] = [];
   private readonly planarTranslationConfidence: number[] = [];
   private readonly nonPlanarTranslationConfidence: number[] = [];
+  private readonly planarUnseparated: number[] = [];
+  private readonly nonPlanarUnseparated: number[] = [];
   private readonly injections: PoseInjectionSample[] = [];
   private readonly injectedDeg: number[] = [];
   private readonly controlDeg: number[] = [];
+  private readonly injectedDrift: number[] = [];
+  private readonly controlDrift: number[] = [];
   private readonly agreements: RotationAgreementSample[] = [];
   private readonly visualRotations: number[] = [];
   private readonly gyroRotations: number[] = [];
@@ -101,12 +105,13 @@ export class PoseSession {
   private planarPosedFrames = 0;
   private nonPlanarPosedFrames = 0;
   private planarFromEssential = 0;
+  private planarTranslationNotLowered = 0;
   private lowParallaxFrames = 0;
   private lowParallaxWithTranslation = 0;
   private unverifiedFrames = 0;
   private unverifiedWithRotation = 0;
-  private injectionInlierDrift = 0;
   private injectionPlanarFlips = 0;
+  private controlPlanarFlips = 0;
   private agreedFrames = 0;
   private scaleViolations = 0;
   private intrinsicsUnmarked = 0;
@@ -121,7 +126,9 @@ export class PoseSession {
       this.rotations, this.reprojections, this.cheiralityFractions, this.confidences,
       this.sensitivityRotation, this.sensitivityTranslation, this.poseCosts,
       this.planarTranslationConfidence, this.nonPlanarTranslationConfidence,
-      this.injectedDeg, this.controlDeg, this.visualRotations, this.gyroRotations,
+      this.planarUnseparated, this.nonPlanarUnseparated,
+      this.injectedDeg, this.controlDeg, this.injectedDrift, this.controlDrift,
+      this.visualRotations, this.gyroRotations,
       this.disagreements,
     ]) l.length = 0;
     this.directions.length = 0;
@@ -138,12 +145,13 @@ export class PoseSession {
     this.planarPosedFrames = 0;
     this.nonPlanarPosedFrames = 0;
     this.planarFromEssential = 0;
+    this.planarTranslationNotLowered = 0;
     this.lowParallaxFrames = 0;
     this.lowParallaxWithTranslation = 0;
     this.unverifiedFrames = 0;
     this.unverifiedWithRotation = 0;
-    this.injectionInlierDrift = 0;
     this.injectionPlanarFlips = 0;
+    this.controlPlanarFlips = 0;
     this.agreedFrames = 0;
     this.scaleViolations = 0;
     this.intrinsicsUnmarked = 0;
@@ -256,13 +264,19 @@ export class PoseSession {
       if (p.planar) {
         this.planarPosedFrames++;
         this.planarTranslationConfidence.push(p.translationConfidence);
+        this.planarUnseparated.push(p.unseparatedCandidates);
         trim(this.planarTranslationConfidence);
+        trim(this.planarUnseparated);
         // v3 §16: a planar scene must not have its pose taken from an Essential matrix.
         if (p.source === 'FUNDAMENTAL') this.planarFromEssential++;
+        // ...and the penalty can only ever lower. Rounding slack only.
+        if (p.translationConfidence > p.rotationConfidence + 1e-6) this.planarTranslationNotLowered++;
       } else {
         this.nonPlanarPosedFrames++;
         this.nonPlanarTranslationConfidence.push(p.translationConfidence);
+        this.nonPlanarUnseparated.push(p.unseparatedCandidates);
         trim(this.nonPlanarTranslationConfidence);
+        trim(this.nonPlanarUnseparated);
       }
     }
 
@@ -279,11 +293,18 @@ export class PoseSession {
         trim(this.controlDeg);
       }
       const before = p.injection.inliersBefore;
-      const after = p.injection.inliersAfter;
-      if (before > 0 && after >= 0 && Math.abs(after - before) > before * 0.1) {
-        this.injectionInlierDrift++;
+      if (before > 0) {
+        if (p.injection.inliersAfter >= 0) {
+          this.injectedDrift.push(Math.abs(p.injection.inliersAfter - before) / before);
+          trim(this.injectedDrift);
+        }
+        if (p.injection.controlInliers >= 0) {
+          this.controlDrift.push(Math.abs(p.injection.controlInliers - before) / before);
+          trim(this.controlDrift);
+        }
       }
       if (p.injection.planarBefore !== p.injection.planarAfter) this.injectionPlanarFlips++;
+      if (p.injection.planarBefore !== p.injection.controlPlanar) this.controlPlanarFlips++;
     }
   }
 
@@ -361,6 +382,7 @@ export class PoseSession {
       confidenceWithheld: p?.confidenceWithheld ?? [],
       intrinsics: p?.intrinsics ?? null,
       cheirality: p?.cheirality ?? [],
+      chosen: p?.chosen ?? -1,
       sensitivity: p?.sensitivity ?? null,
 
       stateFrames,
@@ -394,6 +416,9 @@ export class PoseSession {
       planarFromEssential: this.planarFromEssential,
       medianPlanarTranslationConfidence: round(median(this.planarTranslationConfidence), 4),
       medianNonPlanarTranslationConfidence: round(median(this.nonPlanarTranslationConfidence), 4),
+      medianPlanarUnseparated: round(median(this.planarUnseparated), 2),
+      medianNonPlanarUnseparated: round(median(this.nonPlanarUnseparated), 2),
+      planarTranslationNotLowered: this.planarTranslationNotLowered,
 
       lowParallaxFrames: this.lowParallaxFrames,
       lowParallaxWithTranslation: this.lowParallaxWithTranslation,
@@ -404,8 +429,10 @@ export class PoseSession {
       medianInjectedDeg: round(median(this.injectedDeg), 3),
       medianControlDeg: round(median(this.controlDeg), 3),
       requestedInjectionDeg: INJECTED_ROTATION_DEG,
-      injectionInlierDrift: this.injectionInlierDrift,
+      medianInjectedInlierDrift: round(median(this.injectedDrift), 4),
+      medianControlInlierDrift: round(median(this.controlDrift), 4),
       injectionPlanarFlips: this.injectionPlanarFlips,
+      controlPlanarFlips: this.controlPlanarFlips,
       injections: this.injections.slice(-12),
 
       meanPoseMs:
@@ -521,10 +548,17 @@ export class PoseSession {
         planarFromEssential: s.planarFromEssential,
         medianPlanarTranslationConfidence: s.medianPlanarTranslationConfidence,
         medianNonPlanarTranslationConfidence: s.medianNonPlanarTranslationConfidence,
+        medianPlanarUnseparated: s.medianPlanarUnseparated,
+        medianNonPlanarUnseparated: s.medianNonPlanarUnseparated,
+        planarTranslationNotLowered: s.planarTranslationNotLowered,
         note:
           'v3 §16. A planar scene is decomposed from the homography, never the Essential matrix, ' +
           'and its translation confidence is lowered by the number of candidates cheirality ' +
-          'could not separate — generically two on a plane, so 1/2. Counted, not assumed.',
+          'could not separate — generically two on a plane, so 1/2. Counted, not assumed. The ' +
+          'two confidence medians are reported and NOT compared across classes: each is a ' +
+          'minimum over several terms, and on a frame with a thin population the binding term ' +
+          'is not the planar one, so the cross-class comparison measures the population rather ' +
+          'than v3 §16. The candidate counts beside them are what the penalty is made of.',
       },
       failClosed: {
         lowParallaxFrames: s.lowParallaxFrames,
@@ -542,8 +576,10 @@ export class PoseSession {
         requestedDeg: s.requestedInjectionDeg,
         medianRecoveredDeg: s.medianInjectedDeg,
         medianControlDeg: s.medianControlDeg,
-        inlierDrift: s.injectionInlierDrift,
+        medianInlierDrift: s.medianInjectedInlierDrift,
+        medianControlInlierDrift: s.medianControlInlierDrift,
         planarFlips: s.injectionPlanarFlips,
+        controlPlanarFlips: s.controlPlanarFlips,
         recent: s.injections as unknown as JsonValue,
         note:
           'POSE-005, and the one number in this phase a stage returning a constant pose cannot ' +

@@ -64,6 +64,8 @@ export interface PoseStats {
   readonly confidenceWithheld: readonly string[];
   readonly intrinsics: IntrinsicsRecord | null;
   readonly cheirality: readonly CheiralityRecord[];
+  /** Which of them was taken. `-1` where none was. */
+  readonly chosen: number;
   readonly sensitivity: PoseSensitivity | null;
 
   /* Over the run */
@@ -101,6 +103,17 @@ export interface PoseStats {
   readonly planarFromEssential: number;
   readonly medianPlanarTranslationConfidence: number;
   readonly medianNonPlanarTranslationConfidence: number;
+  /**
+   * Candidates cheirality could not separate, per frame — what v3 §16's penalty is *made of*.
+   *
+   * Reported per class because the confidence figures above cannot answer §16's question: each
+   * is a minimum over several terms, and on a frame with a thin population the binding term is
+   * not the planar one. Comparing them across classes compares two different constraints.
+   */
+  readonly medianPlanarUnseparated: number;
+  readonly medianNonPlanarUnseparated: number;
+  /** Planar frames whose translation confidence was **not** at or below their rotation's. */
+  readonly planarTranslationNotLowered: number;
 
   /* POSE-004 — fail closed */
   readonly lowParallaxFrames: number;
@@ -115,10 +128,21 @@ export interface PoseStats {
   readonly medianInjectedDeg: number;
   readonly medianControlDeg: number;
   readonly requestedInjectionDeg: number;
-  /** Frames where injecting a rotation changed the inlier count by more than a tenth. */
-  readonly injectionInlierDrift: number;
-  /** ...or flipped v3 §16's planar flag. An image-space rotation preserves both. */
+  /**
+   * How much injecting a rotation moved the inlier count, as a fraction, and the same for the
+   * control.
+   *
+   * The exact epipolar geometry maps exactly under an image-space rotation; the **pixel
+   * threshold** does not, because a Sampson distance is not invariant under a projective map of
+   * one image. So a correspondence sitting on 1.5 px can cross. The control — the same data,
+   * refitted with a different seed — is the noise floor that separates that from a fit
+   * responding to something other than the geometry.
+   */
+  readonly medianInjectedInlierDrift: number;
+  readonly medianControlInlierDrift: number;
+  /** Injected frames that flipped v3 §16's planar flag, and the control's own flip count. */
   readonly injectionPlanarFlips: number;
+  readonly controlPlanarFlips: number;
   readonly injections: readonly PoseInjectionSample[];
 
   /* POSE-006 */

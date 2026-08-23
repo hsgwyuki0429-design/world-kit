@@ -29,16 +29,20 @@ import { runPhase2Tests, PHASE2_SPECS } from './testkit/Phase2Tests';
 import { runPhase3Tests, PHASE3_SPECS } from './testkit/Phase3Tests';
 import { runPhase4Tests, PHASE4_SPECS } from './testkit/Phase4Tests';
 import { runPhase5Tests, PHASE5_SPECS } from './testkit/Phase5Tests';
+import { runPhase6Tests, PHASE6_SPECS } from './testkit/Phase6Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
 import { VerificationSession } from './tracking/VerificationSession';
 import { INJECTION_SAMPLE_EVERY } from './tracking/VerificationStage';
+import { PoseSession } from './tracking/PoseSession';
+import { POSE_INJECTION_SAMPLE_EVERY } from './tracking/PoseStage';
 import { RotationRateMonitor } from './capture/RotationRateMonitor';
 import { asTrackingResult, DEFAULT_TRACKING_OPTIONS } from './tracking/trackingMessages';
 import type { TrackingOptions } from './tracking/trackingMessages';
 import { renderPhase3Screen } from './ui/Phase3Screen';
 import { renderPhase4Screen } from './ui/Phase4Screen';
 import { renderPhase5Screen } from './ui/Phase5Screen';
+import { renderPhase6Screen } from './ui/Phase6Screen';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -70,6 +74,7 @@ const PHASE3 = 3;
 const PHASE4 = 4;
 const PHASE5 = 5;
 const PHASE6 = 6;
+const PHASE7 = 7;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -89,8 +94,10 @@ const PHASE3_SAMPLE_EVERY = 8;
 const PHASE4_TICK_MS = 500;
 /** ...and for the GEOMETRIC VERIFICATION screen. */
 const PHASE5_TICK_MS = 500;
+/** ...and for the RELATIVE POSE screen. */
+const PHASE6_TICK_MS = 500;
 
-type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';
+type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -182,6 +189,22 @@ class Phase0App {
   /** Counts frames offered to the worker while verifying, so GEO-003 is sampled, not constant. */
   private verifyFrames = 0;
   private readonly verification = new VerificationSession();
+  /**
+   * Phase 6's own "am I running", for the fourth time and for the same reason (§H.5).
+   *
+   * The RELATIVE POSE screen is reached from a GEOMETRIC VERIFICATION screen whose camera,
+   * pipeline, detector, tracker and verifier are all live — they have to be, because that is how
+   * Phase 5 passes — so every predicate below this one is already true on arrival. Four screens
+   * in, this is no longer a hypothetical: it is the defect Phase 3 shipped twice.
+   */
+  private poseRequested = false;
+  private poseEverRan = false;
+  private phase6Results: TestResult[] = [];
+  private phase6Bundle: EvidenceBundle | null = null;
+  private phase6Timer: number | null = null;
+  private phase6DevEntry = false;
+  private poseFrames = 0;
+  private readonly pose = new PoseSession();
   private readonly rotation = new RotationRateMonitor();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
@@ -461,6 +484,44 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase6') {
+      const p = this.pipeline.getStats();
+      renderPhase6Screen(
+        this.root,
+        {
+          phase6: this.registry.get(PHASE6),
+          phase7: this.registry.get(PHASE7),
+          canEnterPhase7: this.registry.canEnter(PHASE7),
+          phase7Implemented: isPhaseImplemented(PHASE7),
+          phase7BlockedReason: this.registry.blockedReason(PHASE7),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          // The one predicate, read by the control, the tests and the evidence alike (§H.5).
+          running: this.isPosing(),
+          stats: this.pose.stats(this.isPosing()),
+          // §H budgets RANSAC and pose recovery as one line, so the screen shows both halves.
+          verifyMs: this.verification.stats(this.isPosing()).meanVerifyMs,
+          alignment: this.alignment,
+          overlay: this.lastOverlay,
+          overlayAge: this.lastOverlayAge,
+          overlayWidth: this.lastOverlayWidth,
+          overlayHeight: this.lastOverlayHeight,
+          sourceWidth: p.sourceWidth,
+          sourceHeight: p.sourceHeight,
+          results: this.phase6Results,
+        },
+        {
+          onStart: () => void this.onStartPhase6(),
+          onStop: () => this.onStopPhase6('user stopped pose recovery'),
+          onBack: () => this.leavePhase6(),
+          onEnterPhase7: () => this.enterPhase7(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase6Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase6Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase5') {
       const p = this.pipeline.getStats();
       renderPhase5Screen(
@@ -851,7 +912,9 @@ class Phase0App {
   private onCameraEnded(reason: string): void {
     this.cameraEndedUnexpectedly = true;
     logger.error(
-      this.screen === 'phase5'
+      this.screen === 'phase6'
+        ? PHASE6
+        : this.screen === 'phase5'
         ? PHASE5
         : this.screen === 'phase4'
         ? PHASE4
@@ -865,7 +928,8 @@ class Phase0App {
       'the preview is removed and the state reported as CAMERA_ENDED; no last frame is ' +
         'left on screen',
     );
-    if (this.screen === 'phase5') this.onStopPhase5(reason);
+    if (this.screen === 'phase6') this.onStopPhase6(reason);
+    else if (this.screen === 'phase5') this.onStopPhase5(reason);
     else if (this.screen === 'phase4') this.onStopPhase4(reason);
     else if (this.screen === 'phase3') this.onStopPhase3(reason);
     else if (this.screen === 'phase2') this.onStopPipeline(reason);
@@ -1079,6 +1143,7 @@ class Phase0App {
     // It is accumulated by its own session for the same reason Phase 4's is separate from
     // Phase 3's: folding it in would change what the committed Phase 4 evidence means.
     if (result.verification) this.verification.record(result, now);
+    if (result.pose) this.pose.record(result, now);
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -1502,6 +1567,266 @@ class Phase0App {
   }
 
   /* ---------------------------------------------------------------------- */
+  /* Phase 6 — Relative Pose                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Whether anything is actually recovering a pose.
+   *
+   * §H.5 for the fourth time. Five stages are already live when this screen opens — camera,
+   * pipeline, detector, tracker, verifier — so a predicate assembled from any of them says
+   * "recovering" before recovery has started, and the control built from it cannot be pressed.
+   * The screen, the tests and the evidence read this and nothing else.
+   */
+  private isPosing(): boolean {
+    return this.poseRequested && this.pipeline.isRunning();
+  }
+
+  /**
+   * What the tracking stage is asked to do while Phase 6 is running.
+   *
+   * `pose: true` on top of Phase 5's whole configuration, unchanged. Phase 6 decomposes the
+   * model Phase 5 selected on that frame, so changing the verifier's parameters here would mean
+   * the pose belongs to a geometry the screen never showed.
+   *
+   * The two injections are sampled on **different frames**. Each costs a second full fit, and
+   * running both on the same frame would put two extra RANSAC passes inside one frame's budget
+   * — which is the budget POSE-006 is measuring. Offsetting them by one keeps each measurement
+   * out of the other's cost.
+   */
+  private poseOptions(): TrackingOptions {
+    this.poseFrames++;
+    return {
+      ...this.verifyOptions(),
+      pose: true,
+      wantPoseInjection: this.poseFrames % POSE_INJECTION_SAMPLE_EVERY === 1,
+    };
+  }
+
+  /**
+   * MUST be reached from the click handler: the camera needs the user gesture, and the
+   * gyroscope's permission request has to be the first thing that happens — an `await` before
+   * it puts it outside the gesture and iOS throws.
+   */
+  private async onStartPhase6(): Promise<void> {
+    if (this.cameraOpening || this.poseRequested) return;
+
+    // First, synchronously, inside the gesture. POSE-002 is the instrument this phase is scored
+    // against; without it the test reports PENDING with the reason and the phase cannot pass, so
+    // a refusal here degrades the phase honestly rather than hiding it.
+    void this.rotation
+      .start((reading) => {
+        this.flow.noteRotation({ at: reading.at, degPerSecond: reading.degPerSecond });
+        // Phase 6 needs the rotation *vector*, not its magnitude: a phone turned 10° and back
+        // has a path of 20° and a net rotation of 0°, and a two-view pose can only report net.
+        this.pose.noteGyro({
+          at: reading.at,
+          x: reading.beta,
+          y: reading.gamma,
+          z: reading.alpha,
+        });
+      })
+      .then((source) => {
+        if (!this.rotation.isLive()) {
+          const detail = this.rotation.getDetail();
+          this.flow.noteGyroUnavailable(detail);
+          this.pose.noteGyroUnavailable(detail);
+        }
+        logger.info(PHASE6, 'RotationRateMonitor', `gyroscope: ${source}`, {
+          detail: this.rotation.getDetail(),
+          why: 'POSE-002 compares the recovered rotation against this and nothing else reads it',
+        });
+      });
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE6, 'CameraSource', `pose recovery could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and pose recovery does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase6();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE6, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and pose recovery still starts; if no frames arrive the ' +
+            'tests stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      if (this.pipeline.isStressed()) {
+        this.pipeline.setStress(false);
+        logger.info(PHASE6, 'App', 'injected load turned off for pose recovery', {
+          why: 'stress moves the tier, the tier sets the frame size, and §H.0 makes K a function ' +
+            'of the frame size — so a tier step mid-measurement changes the intrinsics',
+        });
+      }
+      logger.info(PHASE6, 'App', 'adopted the running Phase 5 verifier', {
+        note: 'the camera, worker, population and verification anchor stay as they are; only ' +
+          'the tracking options change. Phase 6 decomposes the model Phase 5 selected',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.poseOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.startPhase6Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase6();
+    this.render();
+  }
+
+  private onStopPhase6(reason: string): void {
+    this.stopPhase6Ticking();
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase6();
+    this.render();
+  }
+
+  private leavePhase6(): void {
+    this.onStopPhase6('left the RELATIVE POSE screen');
+    this.screen = 'phase5';
+    this.render();
+  }
+
+  /** Phase 7 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase7(): boolean {
+    logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
+      reason: isPhaseImplemented(PHASE7)
+        ? this.registry.blockedReason(PHASE7)
+        : 'Phase 7 has not been written in this build',
+    });
+    return false;
+  }
+
+  private startPhase6Ticking(): void {
+    this.stopPhase6Ticking();
+    this.phase6Timer = window.setInterval(() => {
+      this.pipeline.setTrackingOptions(this.poseOptions());
+      this.probeAlignment();
+      this.evaluatePhase6();
+      this.render();
+    }, PHASE6_TICK_MS);
+  }
+
+  private stopPhase6Ticking(): void {
+    if (this.phase6Timer !== null) {
+      clearInterval(this.phase6Timer);
+      this.phase6Timer = null;
+    }
+  }
+
+  private evaluatePhase6(): void {
+    const previous = this.registry.get(PHASE6).state;
+    this.phase6Results = runPhase6Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      poseEverRan: this.poseEverRan,
+      stats: this.pose.stats(this.isPosing()),
+      // §H budgets RANSAC and pose recovery as one line, so POSE-006 reads Phase 5's cost too.
+      verifyMs: this.verification.stats(this.isPosing()).meanVerifyMs,
+    });
+
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(this.phase6Results, leg);
+    this.registry.applyEvaluation(PHASE6, evaluation);
+    const next = this.registry.get(PHASE6).state;
+    if (previous !== next) {
+      logger.info(PHASE6, 'App', `phase ${PHASE6}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    this.buildPhase6Evidence(evaluation.state, evaluation.reason);
+  }
+
+  private buildPhase6Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE6,
+      phaseName: PHASE_NAMES[PHASE6] ?? 'Relative Pose',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase6Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phases 4 and 5 travel in the Phase 6 bundle because Phase 6's inputs are their
+        // outputs: a rotation means nothing without the correspondences and the verified model
+        // it was decomposed from.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        pose: this.pose.describe(),
+        rotation: toJsonSafe(this.rotation.describe()) as JsonValue,
+        devEntry: this.phase6DevEntry,
+        previewPresented: isPreviewPresented(),
+        overlayAlignment: this.alignment
+          ? {
+              ...this.alignment,
+              scores: { ...this.alignment.scores },
+              routeRejectedFor: this.routeRejectedForOrientation,
+              minIdentityOverRandom: MIN_IDENTITY_OVER_RANDOM,
+              note:
+                'Carried into Phase 6 from Phase 3. It binds hardest here: the pose is ' +
+                'recovered from correspondences expressed in the acquired buffer\'s frame and ' +
+                'K is derived from that buffer\'s dimensions, so a buffer rotated against the ' +
+                'video would make the recovered rotation a rotation of the wrong thing — while ' +
+                'every count-based criterion in the phase still passes (§H.7).',
+            }
+          : null,
+      },
+    });
+    this.phase6Bundle = built.bundle;
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        PHASE6, 'EvidenceRecorder',
+        `Phase 6 evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
+  }
+
+  /* ---------------------------------------------------------------------- */
   /* Phase 5 — Geometric Verification                                        */
   /* ---------------------------------------------------------------------- */
 
@@ -1635,14 +1960,40 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 6 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase6(): boolean {
-    logger.warn(PHASE6, 'App', 'refused entry to Phase 6', {
-      reason: isPhaseImplemented(PHASE6)
-        ? this.registry.blockedReason(PHASE6)
-        : 'Phase 6 has not been written in this build',
-    });
-    return false;
+  /** Enter the RELATIVE POSE screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase6(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE6)) {
+      logger.warn(PHASE6, 'App', 'refused entry to Phase 6', {
+        reason: 'Phase 6 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE6)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE6, 'App', 'refused entry to Phase 6', {
+          reason: this.registry.blockedReason(PHASE6),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase6DevEntry = true;
+      logger.warn(PHASE6, 'App', 'Phase 6 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    // Phase 5's tick refreshes the tracking options twice a second with `pose: false`; left
+    // running it would switch pose recovery off again between every pair of frames.
+    this.stopPhase5Ticking();
+    this.screen = 'phase6';
+    if (this.registry.get(PHASE6).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE6, PhaseState.IMPLEMENTING, 'RELATIVE POSE screen opened');
+    }
+    this.evaluatePhase6();
+    this.render();
+    return true;
   }
 
   private startPhase5Ticking(): void {
@@ -2062,6 +2413,16 @@ class Phase0App {
       getPhase5Evidence: () => this.phase5Bundle,
       getPhase5EvidenceJson: () => (this.phase5Bundle ? serialiseEvidence(this.phase5Bundle) : null),
       getPhase5State: () => this.registry.get(PHASE5),
+
+      phase6Specs: PHASE6_SPECS,
+      enterPhase6: (devOverride = false) => this.enterPhase6(devOverride),
+      leavePhase6: () => this.leavePhase6(),
+      /** Read-only, as for Phases 4 and 5: the leg presses `#start-pose` in the DOM. */
+      getPoseStats: () => this.pose.stats(this.isPosing()),
+      getPhase6Results: () => this.phase6Results,
+      getPhase6Evidence: () => this.phase6Bundle,
+      getPhase6EvidenceJson: () => (this.phase6Bundle ? serialiseEvidence(this.phase6Bundle) : null),
+      getPhase6State: () => this.registry.get(PHASE6),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

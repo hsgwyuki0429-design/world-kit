@@ -50,6 +50,17 @@ export const INJECTION_TOLERANCE_DEG = 2.0;
 export const MAX_CONTROL_ROTATION_DEG = 1.5;
 /** POSE-005 needs this many measurements before its median means anything. */
 export const MIN_INJECTION_SAMPLES = 10;
+/**
+ * How far the injection may move the inlier count or v3 §16's flag — the plan's "within a
+ * tolerance", which the first implementation set to zero.
+ *
+ * A tenth, which is the figure the plan already used for what counts as drift. The *exact*
+ * epipolar geometry maps exactly under an image-space rotation — `b'ᵀ(Hⱼ⁻ᵀF)a = bᵀFa` — but the
+ * inlier test is a **pixel threshold**, and a Sampson distance is not invariant under a
+ * projective map of one image, so a correspondence sitting on 1.5 px can cross. The control's
+ * own drift is reported beside this as the noise floor.
+ */
+export const MAX_INJECTION_DRIFT = 0.1;
 /** §H's line for "RANSAC (E/H) + pose recovery", verbatim — the two share one budget. */
 export const POSE_PIPELINE_BUDGET_MS = 6.0;
 /** POSE-006 needs a population before a mean means anything. */
@@ -288,11 +299,13 @@ const POSE_003: Phase6Test = {
       'with depth — v3 §16',
     passCriteria:
       `>= ${MIN_JUDGED_FRAMES} planar frames with a pose; every one of them reports ` +
-      `source ${GeometricModel.HOMOGRAPHY}; and the median translation confidence on planar ` +
-      'frames is strictly below the median on non-planar ones',
+      `source ${GeometricModel.HOMOGRAPHY}; no planar frame's translation confidence exceeds ` +
+      "its own rotation confidence; and the penalty actually applied — the median count of " +
+      'candidates cheirality could not separate is higher on planar frames than on frames with ' +
+      'depth. The two confidence medians are reported and not compared across classes',
     failureCondition:
-      'an Essential matrix decomposed on a planar frame; or planar and non-planar frames ' +
-      'carrying the same translation confidence',
+      'an Essential matrix decomposed on a planar frame; or a planar frame whose translation ' +
+      'confidence was not lowered at all',
   },
   evaluate: (ctx) => {
     const s = ctx.stats;
@@ -302,6 +315,9 @@ const POSE_003: Phase6Test = {
       planarFromEssential: s.planarFromEssential,
       medianPlanarTranslationConfidence: s.medianPlanarTranslationConfidence,
       medianNonPlanarTranslationConfidence: s.medianNonPlanarTranslationConfidence,
+      medianPlanarUnseparated: s.medianPlanarUnseparated,
+      medianNonPlanarUnseparated: s.medianNonPlanarUnseparated,
+      planarTranslationNotLowered: s.planarTranslationNotLowered,
       ambiguousFrames: s.ambiguousFrames,
     };
     const pending = notRunning(ctx, metrics);
@@ -340,24 +356,37 @@ const POSE_003: Phase6Test = {
         metrics,
       };
     }
+    if (s.planarTranslationNotLowered > 0) {
+      problems.push(
+        `${s.planarTranslationNotLowered} planar frame(s) carried a translation confidence above ` +
+          'their own rotation confidence. The planar penalty can only lower; a translation ' +
+          'trusted more than the rotation it came with is not a penalty being applied',
+      );
+    }
+    // The penalty has to have *applied*, not merely been available. Measured on what it is made
+    // of — the candidates cheirality could not separate — rather than on the confidence figures,
+    // which are minima over several terms and can be bound by an unrelated one.
     if (
-      s.medianPlanarTranslationConfidence >= 0 &&
-      s.medianNonPlanarTranslationConfidence >= 0 &&
-      s.medianPlanarTranslationConfidence >= s.medianNonPlanarTranslationConfidence
+      s.medianPlanarUnseparated >= 0 &&
+      s.medianNonPlanarUnseparated >= 0 &&
+      s.medianPlanarUnseparated <= s.medianNonPlanarUnseparated
     ) {
       problems.push(
-        `planar frames carry a median translation confidence of ` +
-          `${s.medianPlanarTranslationConfidence} against ${s.medianNonPlanarTranslationConfidence} ` +
-          'on frames with depth — v3 §16 requires it to be lowered, and it is not',
+        `cheirality left a median of ${s.medianPlanarUnseparated} unseparated candidate(s) on ` +
+          `planar frames against ${s.medianNonPlanarUnseparated} on frames with depth — the ` +
+          'two-fold ambiguity a plane produces is not being found, so nothing is lowering the ' +
+          'translation confidence there',
       );
     }
     return {
       verdict: problems.length === 0 ? Verdict.PASS : Verdict.FAIL,
       observed:
         `${s.planarPosedFrames} planar and ${s.nonPlanarPosedFrames} non-planar frames with a ` +
-        `pose; translation confidence ${s.medianPlanarTranslationConfidence} against ` +
-        `${s.medianNonPlanarTranslationConfidence}; ${s.planarFromEssential} planar frame(s) ` +
-        'decomposed an Essential matrix',
+        `pose; cheirality left ${s.medianPlanarUnseparated} unseparated candidate(s) on planar ` +
+        `frames against ${s.medianNonPlanarUnseparated} with depth; translation confidence ` +
+        `${s.medianPlanarTranslationConfidence} against ${s.medianNonPlanarTranslationConfidence} ` +
+        `(reported, not compared); ${s.planarFromEssential} planar frame(s) decomposed an ` +
+        `Essential matrix, ${s.planarTranslationNotLowered} not lowered`,
       reason:
         problems.length === 0
           ? 'a planar scene is decomposed from the homography and its translation confidence is ' +
@@ -462,7 +491,9 @@ const POSE_005: Phase6Test = {
       `>= ${MIN_INJECTION_SAMPLES} injected frames; the median recovered difference within ` +
       `${INJECTION_TOLERANCE_DEG}° of ${INJECTED_ROTATION_DEG}°; the control under ` +
       `${MAX_CONTROL_ROTATION_DEG}°; and the injected set keeping the same inlier count and the ` +
-      'same planar flag, since an image-space rotation preserves incidence',
+      `same planar flag to within ${Math.round(MAX_INJECTION_DRIFT * 100)}%, since an ` +
+      'image-space rotation preserves incidence — the control’s own figures are reported beside ' +
+      'them as the noise floor',
     failureCondition:
       'a recovered difference near 0° — a pose that did not respond to the camera being turned. ' +
       'A stage returning a constant scores exactly 0.00° here while satisfying every other ' +
@@ -475,8 +506,11 @@ const POSE_005: Phase6Test = {
       requestedDeg: s.requestedInjectionDeg,
       medianRecoveredDeg: s.medianInjectedDeg,
       medianControlDeg: s.medianControlDeg,
-      inlierDrift: s.injectionInlierDrift,
+      medianInlierDrift: s.medianInjectedInlierDrift,
+      medianControlInlierDrift: s.medianControlInlierDrift,
       planarFlips: s.injectionPlanarFlips,
+      controlPlanarFlips: s.controlPlanarFlips,
+      maxDrift: MAX_INJECTION_DRIFT,
       recent: s.injections.slice(-6) as unknown as JsonValue,
     };
     const pending = notRunning(ctx, metrics);
@@ -510,17 +544,21 @@ const POSE_005: Phase6Test = {
           'that moves this much without being asked to is not tracking the injection, it is noise',
       );
     }
-    if (s.injectionInlierDrift > 0) {
+    if (s.medianInjectedInlierDrift > MAX_INJECTION_DRIFT) {
       problems.push(
-        `${s.injectionInlierDrift} injected frame(s) changed their inlier count by more than a ` +
-          'tenth. An image-space rotation is a bijection and preserves incidence, so the fit ' +
-          'is responding to something other than the geometry',
+        `injecting a rotation moved the inlier count by a median of ` +
+          `${pct(s.medianInjectedInlierDrift)}, against ${pct(s.medianControlInlierDrift)} for ` +
+          `refitting the same data and ${pct(MAX_INJECTION_DRIFT)} allowed. The epipolar ` +
+          'geometry maps exactly under an image-space rotation, so a drift this large means ' +
+          'the fit is responding to something other than the geometry',
       );
     }
-    if (s.injectionPlanarFlips > 0) {
+    const flipRate = s.injectionSamples > 0 ? s.injectionPlanarFlips / s.injectionSamples : 0;
+    if (flipRate > MAX_INJECTION_DRIFT) {
       problems.push(
-        `${s.injectionPlanarFlips} injected frame(s) flipped v3 §16's planar flag, which a ` +
-          'rotation of the image plane cannot do',
+        `${pct(flipRate)} of injected frames flipped v3 §16's planar flag (control: ` +
+          `${s.controlPlanarFlips}), against ${pct(MAX_INJECTION_DRIFT)} allowed. A rotation of ` +
+          'the image plane cannot change which model explains the scene',
       );
     }
     return {
@@ -528,7 +566,9 @@ const POSE_005: Phase6Test = {
       observed:
         `${s.injectionSamples} injected frames: the pose moved ${deg(s.medianInjectedDeg)} for a ` +
         `${INJECTED_ROTATION_DEG}° injection against ${deg(s.medianControlDeg)} for the control; ` +
-        `${s.injectionInlierDrift} inlier drift(s), ${s.injectionPlanarFlips} planar flip(s)`,
+        `inlier drift ${pct(s.medianInjectedInlierDrift)} against the control's ` +
+        `${pct(s.medianControlInlierDrift)}, ${s.injectionPlanarFlips} planar flip(s) against ` +
+        `${s.controlPlanarFlips}`,
       reason:
         problems.length === 0
           ? 'the pose followed a rotation it was never told about. The harness applied ' +

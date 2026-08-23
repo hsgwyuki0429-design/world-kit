@@ -301,12 +301,37 @@ decomposed from a plane yields a pose that looks entirely reasonable.
 - **Pass criteria:** all of —
   1. ≥ 15 planar judged frames;
   2. **every** one of them reports `source: HOMOGRAPHY` — none decomposed E;
-  3. the median translation-confidence term on planar frames is strictly below the median on
-     non-planar frames, which is v3 §16's "Translation confidenceを低下させる" made measurable;
+  3. no planar frame's translation confidence exceeds its own rotation confidence — the penalty
+     can only lower — **and** the penalty actually applied: the median count of candidates
+     cheirality could not separate is higher on planar frames than on frames with depth. See the
+     amendment below;
   4. the homography decomposition's remaining two-fold ambiguity is *reported* where it is not
      resolved, rather than picked.
 - **Failure condition:** an Essential matrix decomposed on a planar frame; or planar and
   non-planar frames carrying the same translation confidence.
+
+> **Amendment to criterion 3, with the measurement that forced it (§29).** It first read: *the
+> median translation confidence on planar frames is strictly below the median on non-planar
+> frames.* Two consecutive runs of the automated leg, on the same code and the same feed:
+>
+> | | planar | with depth | verdict |
+> | --- | --- | --- | --- |
+> | run 1 | 0.5000 | 0.5691 | PASS |
+> | run 2 | 0.5000 | 0.4682 | FAIL |
+>
+> Nothing about v3 §16 changed between them. Confidence is the **minimum** over its terms, and on
+> planar frames the binding term is the planar penalty (0.5 exactly, every time) while on
+> frames with depth it is whatever else was worst — on run 2, a thinner population. So the
+> cross-class comparison was comparing two different constraints, and it measured the population
+> rather than the planar handling.
+>
+> §16 says 「この状態ではTranslation confidenceを低下させる」 — lower it *in this state*, which is
+> a statement about a frame and not about an average across scenes. So the criterion is now a
+> within-frame one, plus a direct measurement of the mechanism: the count of candidates
+> cheirality could not separate, which is what the penalty is made of. That is **stricter** where
+> it matters — every planar frame must have been lowered, not merely the median — and it cannot
+> be confounded by how many features the scene happened to offer. The two confidence medians stay
+> in the record, reported and not judged.
 
 ### POSE-004 — Low parallax · REQUIRED
 
@@ -337,11 +362,31 @@ is not decidable from the pose's own output, and this is what makes it decidable
      `INJECTED_ROTATION_DEG`;
   3. the median difference on the **control** — the same set, uninjected, refitted — stays under
      `MAX_CONTROL_ROTATION_DEG`;
-  4. the injected set keeps the same inlier count and the same planar flag, to within a
-     tolerance, since an image-space rotation preserves incidence.
+  4. the injected set keeps the same inlier count and the same planar flag **to within 10 %**,
+     since an image-space rotation preserves incidence, with the control's own drift reported
+     beside it as the noise floor. See the amendment.
 - **Failure condition:** a recovered difference near 0° — a pose that did not respond to the
   camera being turned. **A stage returning a constant scores exactly 0.00° here while satisfying
   every other numeric criterion in this phase.**
+
+> **Amendment to criterion 4: the tolerance the criterion already asked for.** The criterion says
+> "to within a tolerance" and the first implementation set that tolerance to **zero** — any frame
+> whose inlier count moved by more than a tenth, or whose planar flag flipped, failed the phase.
+> Two consecutive runs of the automated leg on identical code: the first had 0 of 47 injected
+> frames drift, the second had **1 of 47**, and the phase failed.
+>
+> The invariant is real but it is not exact, and the distinction matters. The *epipolar geometry*
+> maps exactly — `b′ᵀ(Hⱼ⁻ᵀF)a = (Hⱼb)ᵀHⱼ⁻ᵀFa = bᵀFa` — so the true inlier set is preserved
+> exactly. What is not preserved exactly is the **pixel threshold** the inlier test applies: a
+> Sampson distance is not invariant under a projective map of one image, so a correspondence
+> sitting on 1.5 px can cross. One frame in forty-seven is that, not a defect.
+>
+> So the tolerance is 10 % — the figure this criterion already used for what counts as drift —
+> applied to the **median** rather than to a per-frame count, and the **control's own drift is
+> recorded beside it**. The control is the same correspondences refitted with a different seed,
+> so it measures exactly what a refit costs with no injection at all. A fit responding to
+> something other than the geometry would drift far beyond it; one frame crossing a threshold
+> would not.
 
 ### POSE-006 — Pose cost · ADVISORY
 

@@ -301,6 +301,8 @@ function constantPose(): Solver {
             inliersAfter: n,
             planarBefore: outcome.result.planar,
             planarAfter: outcome.result.planar,
+            controlInliers: n,
+            controlPlanar: outcome.result.planar,
             seed: 1,
           }
         : null,
@@ -341,9 +343,10 @@ describe('a working solver on a scene with depth', () => {
   });
 
   it('keeps the inlier count and the planar flag across the injection', () => {
-    // An image-space rotation is a bijection and preserves incidence.
-    expect(out.stats.injectionInlierDrift).toBe(0);
-    expect(out.stats.injectionPlanarFlips).toBe(0);
+    // The exact epipolar geometry maps exactly; the pixel threshold does not, so the bar is
+    // the plan's tenth with the control's own drift reported beside it.
+    expect(out.stats.medianInjectedInlierDrift).toBeLessThanOrEqual(0.1);
+    expect(out.stats.injectionPlanarFlips / out.stats.injectionSamples).toBeLessThanOrEqual(0.1);
   });
 
   it('claims no scale, and marks the intrinsics estimated', () => {

@@ -19,8 +19,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 6 | Relative Pose | NOT_STARTED | Phase Lock is open. v3 §15 is next; v4 does not restate it. |
-| 7 | IMU Support / Fusion | BLOCKED | |
+| 6 | Relative Pose | IMPLEMENTING | Built and green on the automated leg at `TESTING` — POSE-002 needs a gyroscope the leg does not have. Awaiting a device run (Rule 004). |
+| 7 | IMU Support / Fusion | BLOCKED | v3 §17, §18 — the phase where the IMU stops being Phase 6's witness and becomes an input. |
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
@@ -815,3 +815,149 @@ the run, and a reader of the screenshot alone could mistake it for one.
 §33's tracking `GOOD` therefore still cannot be reached on the TRACKING screen: it needs an
 inlier ratio *and* a reprojection error, and only the first now exists. This screen's `GOOD` is
 v3 §14's verification verdict and it is a different claim.
+
+---
+
+## Phase 6 — IMPLEMENTING
+
+Built against **v3 §15, §16, §19 and §67**, which v4 compresses into a two-line §18 — both of
+whose lines are kept, one of them a prohibition. See [`SPEC-VERSIONS.md`](SPEC-VERSIONS.md).
+The test plan was written and committed before `src/geometry/pose.ts` existed (§29):
+[`phase6/TEST-PLAN.md`](phase6/TEST-PLAN.md).
+
+The automated leg reaches `TESTING` with five of six decidable tests passing.
+[`phase6/HOW-TO-RUN-DEVICE-TEST.md`](phase6/HOW-TO-RUN-DEVICE-TEST.md) is the device run.
+
+```
+479 pose frames: 251 POSE, 75 ROTATION_ONLY, 153 NO_POSE
+POSE-005: 49 injected frames — an 8° turn moved the pose 8.000° against 0.003° for the control
+v3 §16: 227 planar posed from the homography, 0 via an Essential matrix;
+        cheirality left 2 unseparated candidates on a plane against 1 with depth
+POSE-004: 75 frames with no parallax, 0 of which named a translation
+cost 4.33 ms pose + 0.88 ms RANSAC = 5.21 ms against §H's 6 ms for both together
+```
+
+### This is the first phase the automated leg is short of an *instrument*
+
+Rule 004 already meant a `DESKTOP_DEV` bundle could not pass. Here one of the two things the
+phase is scored against — the gyroscope — **does not exist** on headless Chromium, so POSE-002
+reports `PENDING` with that reason and the leg cannot reach a verdict on it at all. Rule 004
+expressed as a measurement rather than as a policy.
+
+### The two instruments, and why neither is optional
+
+**POSE-005 — an injected rotation.** Applying `K·Rⱼ·K⁻¹` to the second view is *exactly* the
+camera having turned by `Rⱼ`: if `b = π(K(RX + t))` then `π(K Rⱼ K⁻¹ b̃) = π(K(Rⱼ R X + Rⱼ t))`.
+The whole chain is re-run — model fit included — on a set handed over unmarked, and the recovered
+rotation must differ by `Rⱼ`. A stage returning the same pose on every frame scores **0.00°**
+while having a valid rotation matrix, a unit translation, a small reprojection error and a
+*perfect* temporal stability. v3 §67's pass condition for this phase is one line and it names
+exactly that failure: **Poseが計算結果により変化**.
+
+The control — the same set, unmodified, refitted — is the other half. Without it a solver
+returning noise scores a large difference on the injected set and passes.
+
+**POSE-002 — the gyroscope.** The only comparison in this phase against physics rather than
+against arithmetic. Angles only: `rotationRate` is in the device's frame and the camera's differs
+by a fixed rotation nobody here has measured, and an angle is invariant under a change of basis
+while an axis is not.
+
+**And v3 §19's `IMU consistency` term is deliberately withheld from pose confidence**, named in
+the record as an omission rather than dropped. It is the instrument POSE-002 scores this phase
+with, and a confidence that consumed the gyroscope could not then be checked against it (§H.7).
+Phase 7 is where the IMU becomes an input.
+
+### Two defects the unit tests found before any leg ran
+
+**`svd3x3` was returning a zero third column.** `s₃` is the square root of an eigenvalue of
+`MᵀM`, and squaring then rooting puts the numerical zero of a rank-deficient direction around
+1e-8 rather than at 0. A threshold on `s₃` let a null direction through, `M v₃ / s₃` divided a
+vector of magnitude 1e-17 by 1e-8, and the column came back as zero — leaving `U` with a
+determinant of 0 and the Essential decomposition with **no translation axis to enumerate**.
+
+One scene recovered its rotation exactly and the same scene turned by 4° came back 60° wrong,
+from identical code. `U diag(s) Vᵀ` reconstructed `M` perfectly throughout, because a column
+multiplied by a zero singular value cannot affect the product — **so the reconstruction test
+could not have caught it, and did not.** The property that catches it is that `U` must be a
+rotation whatever the rank, now asserted over 40 random Essential matrices.
+
+**Cheirality was being asked before the question it presupposes.** Triangulation needs a
+baseline, so on a camera that only turned every candidate scored zero points in front and the
+frame was reported `NO_POSE` — a pose refused for having no *translation*, which is the one case
+where a rotation is perfectly recoverable. "Is the data explained by rotation alone?" is
+answerable without knowing which sign of `t` puts the scene in front, so it is asked first, and
+from the correspondences rather than from the decomposition: what `K·R·K⁻¹` leaves unexplained
+*is* the parallax a translation accounts for.
+
+### POSE-001's direction-spread criterion was withdrawn, with the measurement
+
+Recorded in place in the test plan (§29). It was written as "the spread exceeds 5°", narrowed to
+0.5° before anything ran because a steady pan has a genuinely constant direction, and **0.5°
+fails a correct solver too**. Driven over a straight-line translation the real solver reports:
+
+```
+40 frames with a full pose: median 100% in front of both cameras, reprojection 0 px,
+rotation 7.18°, direction spread 0°
+```
+
+A spread of exactly zero, because the camera moved in a straight line. There is no threshold
+separating that from a fixed vector — **they are the same measurement**, and the difference lies
+in whether the number would have changed had the camera done something else. No statistic over
+one run can see that; POSE-005 can, because it *makes* the camera do something else.
+
+So the spread is reported and not judged, and `tests/unit/poseStage.test.ts` now asserts that the
+constant-pose stage **passes POSE-001** and fails POSE-005 alone. That is Phase 5's division
+exactly: GEO-001 is satisfied perfectly by a stage that accepts every correspondence, and GEO-003
+separates them.
+
+### Two criteria the leg's own variance corrected
+
+Neither is a threshold moved to make a number pass. Both named one thing and measured another,
+and the leg produced two runs that disagreed on identical code. Recorded in the plan with the
+measurements (§29); the leg now runs green three times consecutively.
+
+**POSE-003 was comparing two different constraints.** It required the median translation
+confidence on planar frames to fall below the median on frames with depth. Run 1: 0.5000 against
+0.5691, PASS. Run 2: 0.5000 against 0.4682, FAIL. Confidence is the **minimum** over its terms,
+so on a planar frame the binding term is the §16 penalty (0.5 exactly, every time) while on a
+frame with depth it is whatever else was worst — on run 2, a thinner population. The comparison
+was measuring the population. §16 says 「この状態ではTranslation confidenceを低下させる」, which is
+about a frame and not about an average across scenes, so the criterion is now within-frame — no
+planar frame's translation confidence may exceed its own rotation confidence — plus a direct
+measurement of the mechanism: the candidates cheirality could not separate, 2 on a plane against
+1 with depth.
+
+**POSE-005's criterion 4 said "to within a tolerance" and the implementation had none.** Run 1:
+0 of 47 injected frames drifted. Run 2: 1 of 47, and the phase failed. The invariant is real but
+not exact — the epipolar geometry maps exactly under an image-space rotation, `b′ᵀ(Hⱼ⁻ᵀF)a =
+bᵀFa`, but the **pixel threshold** does not, because a Sampson distance is not invariant under a
+projective map of one image. A correspondence sitting on 1.5 px can cross. The tolerance is now
+10 % on the median, with the **control's own drift recorded beside it** as the noise floor of
+refitting the same data with no injection at all. Both read 0 % on the leg.
+
+### `INTRINSICS: ESTIMATED`, and the half of it that is usually left out
+
+v3 §15 gives K and, in the same breath, what to do when it cannot be obtained. It cannot: Safari
+exposes no focal length, no sensor size and no lens identifier, and the Phase 5 device run
+reported `label: 背面デュアル広角カメラ`, `720×1280`, `aspectRatio 0.563` and nothing about
+optics. So K comes from an assumed 67° field of view across the long edge, and every record says
+so.
+
+**And every judged frame reports how far the pose moves when `f` is scaled ±20 %.** A stated
+assumption whose consequences are unmeasured is a guess with a number attached. On the automated
+leg it moves the rotation by 0.012° and the translation direction by 0.057°; whether that holds
+on a real lens is the device run's to say. §H.0 is why K is recomputed per frame rather than read
+once: rotating the device swaps the frame dimensions on the same track, and `fx, fy, cx, cy` all
+change with them.
+
+### Three things this phase does not do
+
+- **No metric scale.** `LOCAL_UNITS`, and ‖t‖ is 1 because it was normalised — which is not a
+  measurement. v4 §18 states the prohibition and v3 §15 states it too.
+- **No map.** The triangulated points exist only to run the cheirality test and the reprojection
+  error; they are not retained. Phase 9 triangulates for keeping.
+- **§33's `GOOD` stays unreachable**, deliberately. Phase 6 supplies the `reprojectionError`
+  Phase 4 named as missing, but §33's state is computed in `FlowStage` from what Phase 4
+  measures, and plumbing a Phase 6 quantity back into a passed phase's state machine is a change
+  to Phase 4 rather than an addition to Phase 6. Deferred to the phase where a single fused pose
+  exists to carry it; `goodBlockedBy` continues to name what is missing.

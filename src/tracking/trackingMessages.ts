@@ -269,6 +269,9 @@ export interface PoseInjection {
   readonly inliersAfter: number;
   readonly planarBefore: boolean;
   readonly planarAfter: boolean;
+  /** The same two, for the control — the noise floor of refitting the same data. */
+  readonly controlInliers: number;
+  readonly controlPlanar: boolean;
   readonly seed: number;
 }
 

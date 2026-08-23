@@ -297,13 +297,17 @@ export class PoseStage {
       recoveredDeg: round(injectedDeg, 4),
       controlDeg: round(controlDeg, 4),
       axis: [...axis],
-      // An image-space rotation is a bijection and preserves incidence, so the fit should find
-      // the same inliers and the same planarity. If it does not, the fit is responding to
-      // something other than the geometry.
+      // An image-space rotation is a bijection and preserves incidence, so the *exact* epipolar
+      // geometry maps exactly: `b'ᵀ(Hⱼ⁻ᵀF)a = (Hⱼb)ᵀHⱼ⁻ᵀFa = bᵀFa`. What does not map exactly is
+      // the **pixel threshold** the inlier test applies — a Sampson distance is not invariant
+      // under a projective map of one image — so a correspondence sitting on 1.5 px can cross.
+      // The control's figures are recorded beside these so that noise floor is visible.
       inliersBefore: verification.result.inlierCount,
       inliersAfter: injected?.inliers ?? -1,
       planarBefore: verification.result.planar,
       planarAfter: injected?.planar ?? false,
+      controlInliers: control?.inliers ?? -1,
+      controlPlanar: control?.planar ?? verification.result.planar,
       seed,
     };
   }

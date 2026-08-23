@@ -50,6 +50,14 @@ import {
   USABLE_INLIER_RATIO,
   isPlanarByCounts,
 } from '../../src/geometry/verify';
+import {
+  INJECTION_TOLERANCE_DEG,
+  MAX_CONTROL_ROTATION_DEG,
+  MIN_INJECTION_SAMPLES as MIN_POSE_INJECTIONS,
+  MIN_ROTATION_AGREEMENT_RATE,
+} from '../../src/testkit/Phase6Tests';
+import { MAX_REPROJECTION_PX, MIN_CHEIRALITY_FRACTION } from '../../src/geometry/pose';
+import { INJECTED_ROTATION_DEG } from '../../src/tracking/PoseStage';
 import { SHIFT_AGREEMENT_FRACTION, SHIFT_AGREEMENT_PX } from '../../src/tracking/SceneShift';
 import { findIntegrityIssues } from '../../src/core/validate';
 
@@ -60,6 +68,7 @@ const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase3', 'evidence'),
   join(process.cwd(), 'docs', 'phase4', 'evidence'),
   join(process.cwd(), 'docs', 'phase5', 'evidence'),
+  join(process.cwd(), 'docs', 'phase6', 'evidence'),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
@@ -810,6 +819,158 @@ describe('Phase 5 evidence', () => {
         .toBe(0);
       expect(ctx?.verification?.overRun?.['stateMismatches'] ?? 0, `${file} state mismatches`)
         .toBe(0);
+    }
+  });
+});
+
+describe('Phase 6 evidence', () => {
+  const phase6 = bundles.filter((b) => b.bundle.phase === 6);
+  const device = phase6.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 6 bundle carries the pose context that produced its verdict', () => {
+    for (const { file, bundle } of phase6) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: {
+          devEntry?: boolean;
+          pose?: Record<string, Record<string, unknown>>;
+          verification?: Record<string, unknown>;
+          flow?: Record<string, unknown>;
+        };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.pose, `${file} pose context`).toBeTruthy();
+      // The measurement POSE-005 is decided on. Without it a reader cannot tell a solver from
+      // a stage that returns the same pose on every frame.
+      expect(ctx?.pose?.['injectedRotation'], `${file} injection context`).toBeTruthy();
+      expect(ctx?.pose?.['gyroscope'], `${file} gyroscope context`).toBeTruthy();
+      // v3 §15 requires the flag, so it must be in the record rather than implied by the code.
+      expect(ctx?.pose?.['intrinsics'], `${file} intrinsics`).toBeTruthy();
+      expect(
+        (ctx?.pose?.['intrinsics'] as Record<string, unknown> | undefined)?.['estimated'],
+        `${file} INTRINSICS: ESTIMATED`,
+      ).toBe(true);
+      // Phase 6's inputs are Phases 4 and 5's outputs: a rotation means nothing without the
+      // correspondences and the verified model it was decomposed from.
+      expect(ctx?.verification, `${file} verification context`).toBeTruthy();
+      expect(ctx?.flow, `${file} flow context`).toBeTruthy();
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 6 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  /**
+   * The gate, re-derived from the bundle's own numbers rather than read off its verdict.
+   *
+   * Both halves are required. A large recovered difference alone is scored by a solver
+   * returning noise, so the control has to be near zero as well; and the injection's two
+   * invariants have to hold, because an image-space rotation is a bijection and cannot change
+   * which correspondences fit or which model wins.
+   */
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass followed a rotation it was never told about, and only that',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const p5 = bundle.testResults.find((r) => r.spec.id === 'POSE-005');
+        expect(p5?.verdict, `${file} POSE-005`).toBe(Verdict.PASS);
+
+        const samples = Number(p5?.metrics['injectionSamples']);
+        const requested = Number(p5?.metrics['requestedDeg']);
+        const recovered = Number(p5?.metrics['medianRecoveredDeg']);
+        const control = Number(p5?.metrics['medianControlDeg']);
+
+        expect(samples, `${file} injected frames`).toBeGreaterThanOrEqual(MIN_POSE_INJECTIONS);
+        expect(requested, `${file} injected rotation`).toBe(INJECTED_ROTATION_DEG);
+        expect(Math.abs(recovered - requested), `${file} recovered difference`)
+          .toBeLessThanOrEqual(INJECTION_TOLERANCE_DEG);
+        expect(control, `${file} control`).toBeLessThanOrEqual(MAX_CONTROL_ROTATION_DEG);
+        // "To within a tolerance", as the plan says: the epipolar geometry maps exactly under an
+        // image-space rotation but the pixel threshold does not, so a correspondence on 1.5 px
+        // can cross. The control's own drift is in the record as the noise floor.
+        const maxDrift = Number(p5?.metrics['maxDrift']);
+        expect(Number(p5?.metrics['medianInlierDrift']), `${file} inlier drift`)
+          .toBeLessThanOrEqual(maxDrift);
+        expect(Number(p5?.metrics['planarFlips']) / samples, `${file} planar flip rate`)
+          .toBeLessThanOrEqual(maxDrift);
+      }
+    },
+  );
+
+  /** POSE-002, the one instrument that exists nowhere but the device. */
+  it.runIf(claimsPass.length > 0)('a claimed pass agrees with the gyroscope on a real turn', () => {
+    for (const { file, bundle } of claimsPass) {
+      const p2 = bundle.testResults.find((r) => r.spec.id === 'POSE-002');
+      expect(p2?.verdict, `${file} POSE-002`).toBe(Verdict.PASS);
+      expect(p2?.metrics['gyroAvailable'], `${file} gyroscope`).toBe(true);
+      // An agreement between two zeros is not an agreement.
+      expect(Number(p2?.metrics['medianGyroDeg']), `${file} measured rotation`).toBeGreaterThan(0);
+      expect(Number(p2?.metrics['medianVisualDeg']), `${file} recovered rotation`).toBeGreaterThan(0);
+      expect(Number(p2?.metrics['agreementRate']), `${file} agreement rate`)
+        .toBeGreaterThanOrEqual(MIN_ROTATION_AGREEMENT_RATE);
+    }
+  });
+
+  it.runIf(claimsPass.length > 0)('a claimed pass recovered poses that stand up geometrically', () => {
+    for (const { file, bundle } of claimsPass) {
+      const p1 = bundle.testResults.find((r) => r.spec.id === 'POSE-001');
+      expect(Number(p1?.metrics['posedFrames']), `${file} posed frames`)
+        .toBeGreaterThanOrEqual(MIN_JUDGED_FRAMES);
+      expect(Number(p1?.metrics['medianCheiralityFraction']), `${file} cheirality`)
+        .toBeGreaterThanOrEqual(MIN_CHEIRALITY_FRACTION);
+      expect(Number(p1?.metrics['medianReprojectionPx']), `${file} reprojection`)
+        .toBeLessThanOrEqual(MAX_REPROJECTION_PX);
+    }
+  });
+
+  /** v3 §16, which v4 dropped entirely and which prevents an invisible failure. */
+  it.runIf(claimsPass.length > 0)('a claimed pass never decomposed a plane with an Essential matrix', () => {
+    for (const { file, bundle } of claimsPass) {
+      const p3 = bundle.testResults.find((r) => r.spec.id === 'POSE-003');
+      expect(Number(p3?.metrics['planarFromEssential']), `${file} planar via Essential`).toBe(0);
+      // "Translation confidenceを低下させる", measured on the mechanism rather than on the
+      // confidence figures. Each of those is a minimum over several terms, so comparing them
+      // across scene classes compares two different binding constraints — two consecutive runs
+      // of the automated leg disagreed on that comparison with nothing about §16 changed. The
+      // plan's amendment records it.
+      expect(Number(p3?.metrics['planarTranslationNotLowered']), `${file} planar not lowered`).toBe(0);
+      expect(Number(p3?.metrics['medianPlanarUnseparated']), `${file} planar ambiguity`)
+        .toBeGreaterThan(Number(p3?.metrics['medianNonPlanarUnseparated']));
+    }
+  });
+
+  /**
+   * §44 and v4 §1.4, on the configuration that looks like success from every angle but one.
+   *
+   * Checked against the *evidence* rather than only against the code, because a camera that
+   * turned without moving passes every test Phase 5 applies and the direction fitted to it is
+   * noise with a unit length.
+   */
+  it.runIf(device.length > 0)('invents no translation where there was no parallax', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: {
+          pose?: {
+            failClosed?: Record<string, number>;
+            integrity?: Record<string, number>;
+            overRun?: Record<string, number>;
+          };
+        };
+      }).phaseContext;
+      const fc = ctx?.pose?.failClosed;
+      expect(fc?.['lowParallaxWithTranslation'] ?? 0, `${file} translation with no parallax`).toBe(0);
+      expect(fc?.['unverifiedWithRotation'] ?? 0, `${file} rotation on an unverified frame`).toBe(0);
+      const integrity = ctx?.pose?.integrity;
+      expect(integrity?.['scaleViolations'] ?? 0, `${file} scale violations`).toBe(0);
+      expect(integrity?.['poseWithoutVerdict'] ?? 0, `${file} pose without a verdict`).toBe(0);
+      expect(integrity?.['confidenceAboveWorstTerm'] ?? 0, `${file} confidence above its worst term`)
+        .toBe(0);
+      expect(ctx?.pose?.overRun?.['stateMismatches'] ?? 0, `${file} state mismatches`).toBe(0);
     }
   });
 });
