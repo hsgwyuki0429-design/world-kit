@@ -11,14 +11,15 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
     "test:audit": "node scripts/audit-fake-data.mjs && node scripts/audit-architecture.mjs",
-    "test:e2e": "node scripts/run-e2e.mjs && node scripts/run-e2e-phase1.mjs && node scripts/run-e2e-phase2.mjs && node scripts/run-e2e-phase3.mjs && node scripts/run-e2e-phase3-alignment.mjs && node scripts/run-e2e-phase4.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs && node scripts/run-e2e-phase1.mjs && node scripts/run-e2e-phase2.mjs && node scripts/run-e2e-phase3.mjs && node scripts/run-e2e-phase3-alignment.mjs && node scripts/run-e2e-phase4.mjs && node scripts/run-e2e-phase5.mjs",
     "test": "npm run test:audit && npm run typecheck && npm run test:unit",
     "test:e2e:phase0": "node scripts/run-e2e.mjs",
     "test:e2e:phase1": "node scripts/run-e2e-phase1.mjs",
     "test:e2e:phase2": "node scripts/run-e2e-phase2.mjs",
     "test:e2e:phase3": "node scripts/run-e2e-phase3.mjs",
     "test:e2e:phase3:align": "node scripts/run-e2e-phase3-alignment.mjs",
-    "test:e2e:phase4": "node scripts/run-e2e-phase4.mjs"
+    "test:e2e:phase4": "node scripts/run-e2e-phase4.mjs",
+    "test:e2e:phase5": "node scripts/run-e2e-phase5.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

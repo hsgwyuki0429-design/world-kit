@@ -28,13 +28,17 @@ import { runPhase1Tests, PHASE1_SPECS } from './testkit/Phase1Tests';
 import { runPhase2Tests, PHASE2_SPECS } from './testkit/Phase2Tests';
 import { runPhase3Tests, PHASE3_SPECS } from './testkit/Phase3Tests';
 import { runPhase4Tests, PHASE4_SPECS } from './testkit/Phase4Tests';
+import { runPhase5Tests, PHASE5_SPECS } from './testkit/Phase5Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
+import { VerificationSession } from './tracking/VerificationSession';
+import { INJECTION_SAMPLE_EVERY } from './tracking/VerificationStage';
 import { RotationRateMonitor } from './capture/RotationRateMonitor';
 import { asTrackingResult, DEFAULT_TRACKING_OPTIONS } from './tracking/trackingMessages';
 import type { TrackingOptions } from './tracking/trackingMessages';
 import { renderPhase3Screen } from './ui/Phase3Screen';
 import { renderPhase4Screen } from './ui/Phase4Screen';
+import { renderPhase5Screen } from './ui/Phase5Screen';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -65,6 +69,7 @@ const PHASE2 = 2;
 const PHASE3 = 3;
 const PHASE4 = 4;
 const PHASE5 = 5;
+const PHASE6 = 6;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -82,8 +87,10 @@ const PHASE3_TICK_MS = 500;
 const PHASE3_SAMPLE_EVERY = 8;
 /** Same again for the TRACKING screen. */
 const PHASE4_TICK_MS = 500;
+/** ...and for the GEOMETRIC VERIFICATION screen. */
+const PHASE5_TICK_MS = 500;
 
-type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4';
+type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -156,6 +163,25 @@ class Phase0App {
   private phase4Timer: number | null = null;
   private phase4DevEntry = false;
   private readonly flow = new FlowSession();
+  /**
+   * Phase 5's own "am I running", for the third time and for the same reason (§H.5).
+   *
+   * The GEOMETRIC VERIFICATION screen is reached from a TRACKING screen whose pipeline,
+   * detection and optical flow are all live — it has to be, because that is how Phase 4
+   * passes — so `pipeline.isRunning()`, `trackingRequested` and `flowRequested` are all
+   * already true on arrival. A predicate built from any of them renders START VERIFICATION as
+   * "VERIFYING", disabled, before anyone touches it. That is the defect Phase 3 shipped twice
+   * and Phase 4 was written to avoid; it is not repeated here either.
+   */
+  private verifyRequested = false;
+  private verifyEverRan = false;
+  private phase5Results: TestResult[] = [];
+  private phase5Bundle: EvidenceBundle | null = null;
+  private phase5Timer: number | null = null;
+  private phase5DevEntry = false;
+  /** Counts frames offered to the worker while verifying, so GEO-003 is sampled, not constant. */
+  private verifyFrames = 0;
+  private readonly verification = new VerificationSession();
   private readonly rotation = new RotationRateMonitor();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
@@ -435,6 +461,42 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase5') {
+      const p = this.pipeline.getStats();
+      renderPhase5Screen(
+        this.root,
+        {
+          phase5: this.registry.get(PHASE5),
+          phase6: this.registry.get(PHASE6),
+          canEnterPhase6: this.registry.canEnter(PHASE6),
+          phase6Implemented: isPhaseImplemented(PHASE6),
+          phase6BlockedReason: this.registry.blockedReason(PHASE6),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          // The one predicate, read by the control, the tests and the evidence alike (§H.5).
+          running: this.isVerifying(),
+          stats: this.verification.stats(this.isVerifying()),
+          alignment: this.alignment,
+          overlay: this.lastOverlay,
+          overlayAge: this.lastOverlayAge,
+          overlayWidth: this.lastOverlayWidth,
+          overlayHeight: this.lastOverlayHeight,
+          sourceWidth: p.sourceWidth,
+          sourceHeight: p.sourceHeight,
+          results: this.phase5Results,
+        },
+        {
+          onStart: () => void this.onStartPhase5(),
+          onStop: () => this.onStopPhase5('user stopped verification'),
+          onBack: () => this.leavePhase5(),
+          onEnterPhase6: () => this.enterPhase6(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase5Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase5Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase4') {
       const p = this.pipeline.getStats();
       renderPhase4Screen(
@@ -789,7 +851,9 @@ class Phase0App {
   private onCameraEnded(reason: string): void {
     this.cameraEndedUnexpectedly = true;
     logger.error(
-      this.screen === 'phase4'
+      this.screen === 'phase5'
+        ? PHASE5
+        : this.screen === 'phase4'
         ? PHASE4
         : this.screen === 'phase3'
           ? PHASE3
@@ -801,7 +865,8 @@ class Phase0App {
       'the preview is removed and the state reported as CAMERA_ENDED; no last frame is ' +
         'left on screen',
     );
-    if (this.screen === 'phase4') this.onStopPhase4(reason);
+    if (this.screen === 'phase5') this.onStopPhase5(reason);
+    else if (this.screen === 'phase4') this.onStopPhase4(reason);
     else if (this.screen === 'phase3') this.onStopPhase3(reason);
     else if (this.screen === 'phase2') this.onStopPipeline(reason);
     else this.onStopCamera(reason);
@@ -1007,8 +1072,13 @@ class Phase0App {
     // different sessions rather than one: Phase 3's statistics describe a detector run
     // independently on every frame, and folding Phase 4's refill-only detections into them
     // would quietly change what the committed Phase 3 evidence means.
-    if (result.flow) this.flow.record(result, performance.now());
+    const now = performance.now();
+    if (result.flow) this.flow.record(result, now);
     else this.features.record(result);
+    // Phase 5's frame rides on the same message as Phase 4's, because they describe one frame.
+    // It is accumulated by its own session for the same reason Phase 4's is separate from
+    // Phase 3's: folding it in would change what the committed Phase 4 evidence means.
+    if (result.verification) this.verification.record(result, now);
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -1208,14 +1278,41 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 5 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase5(): boolean {
-    logger.warn(PHASE5, 'App', 'refused entry to Phase 5', {
-      reason: isPhaseImplemented(PHASE5)
-        ? this.registry.blockedReason(PHASE5)
-        : 'Phase 5 has not been written in this build',
-    });
-    return false;
+  /** Enter the GEOMETRIC VERIFICATION screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase5(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE5)) {
+      logger.warn(PHASE5, 'App', 'refused entry to Phase 5', {
+        reason: 'Phase 5 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE5)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE5, 'App', 'refused entry to Phase 5', {
+          reason: this.registry.blockedReason(PHASE5),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase5DevEntry = true;
+      logger.warn(PHASE5, 'App', 'Phase 5 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    // Phase 4's tick refreshes the tracking options twice a second with `verify: false`. Left
+    // running it would switch verification off again between every pair of frames — the exact
+    // shape of the bug Phase 4's own entry had to fix against Phase 3's tick.
+    this.stopPhase4Ticking();
+    this.screen = 'phase5';
+    if (this.registry.get(PHASE5).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE5, PhaseState.IMPLEMENTING, 'GEOMETRIC VERIFICATION screen opened');
+    }
+    this.evaluatePhase5();
+    this.render();
+    return true;
   }
 
   /**
@@ -1397,6 +1494,243 @@ class Phase0App {
       logger.error(
         PHASE4, 'EvidenceRecorder',
         `Phase 4 evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Phase 5 — Geometric Verification                                        */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Whether anything is actually verifying.
+   *
+   * §H.5 for the third time: Phase 5's own state (`verifyRequested`) AND a pipeline running
+   * to serve it. Everything below Phase 5 is already live when this screen opens — the
+   * camera, the worker, detection and the optical flow — so a predicate assembled from any of
+   * them says "verifying" before verification has started, and a control built from that
+   * predicate cannot be pressed at all. The screen, the tests and the evidence read this and
+   * nothing else.
+   */
+  private isVerifying(): boolean {
+    return this.verifyRequested && this.pipeline.isRunning();
+  }
+
+  /**
+   * What the tracking stage is asked to do while Phase 5 is running.
+   *
+   * `verify: true` is the difference, and Phase 4's whole configuration is kept underneath it
+   * unchanged: Phase 5 verifies the population Phase 4 tracks, so changing the tracker's
+   * parameters here would mean the correspondences being verified are not the ones Phase 4
+   * passed with.
+   *
+   * `wantInjection` is sampled rather than set on every frame. GEO-003 costs a second full
+   * RANSAC pass, and running it every frame would put the cost of the measurement inside
+   * GEO-005's measurement of the cost — the same reasoning as Phase 2's 1 Hz cross-check and
+   * Phase 3's sampled contrast check.
+   */
+  private verifyOptions(): TrackingOptions {
+    this.verifyFrames++;
+    return {
+      ...this.flowOptions(),
+      verify: true,
+      wantInjection: this.verifyFrames % INJECTION_SAMPLE_EVERY === 0,
+    };
+  }
+
+  /**
+   * MUST be reached from the click handler, for the same reason Phase 4's is: `getUserMedia`
+   * needs the user gesture. In practice the camera is already live — Phase 5 is reached from a
+   * running TRACKING screen — but the path where it is not has to work, because a reload on
+   * this screen is a normal thing for an operator to do.
+   */
+  private async onStartPhase5(): Promise<void> {
+    if (this.cameraOpening || this.verifyRequested) return;
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE5, 'CameraSource', `verification could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and verification does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase5();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE5, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and verification still starts; if no frames arrive the ' +
+            'tests stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    // §H.5: adopted, not restarted — and what is adopted is brought to a defined state, for
+    // the same reason as in Phase 4. Injected load moves the tier, the tier sets the
+    // resolution the flow is solved at, and the flow produces the correspondences being
+    // verified here.
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      if (this.pipeline.isStressed()) {
+        this.pipeline.setStress(false);
+        logger.info(PHASE5, 'App', 'injected load turned off for verification', {
+          why: 'stress moves the tier, and the tier sets the scale every baseline is measured in',
+        });
+      }
+      logger.info(PHASE5, 'App', 'adopted the running Phase 4 tracker', {
+        note: 'the camera, worker and tracked population stay as they are; only the tracking ' +
+          'options change. Phase 5 verifies the population Phase 4 passed with, not a new one',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.verifyOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.startPhase5Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase5();
+    this.render();
+  }
+
+  private onStopPhase5(reason: string): void {
+    this.stopPhase5Ticking();
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase5();
+    this.render();
+  }
+
+  private leavePhase5(): void {
+    this.onStopPhase5('left the GEOMETRIC VERIFICATION screen');
+    this.screen = 'phase4';
+    this.render();
+  }
+
+  /** Phase 6 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase6(): boolean {
+    logger.warn(PHASE6, 'App', 'refused entry to Phase 6', {
+      reason: isPhaseImplemented(PHASE6)
+        ? this.registry.blockedReason(PHASE6)
+        : 'Phase 6 has not been written in this build',
+    });
+    return false;
+  }
+
+  private startPhase5Ticking(): void {
+    this.stopPhase5Ticking();
+    this.phase5Timer = window.setInterval(() => {
+      this.pipeline.setTrackingOptions(this.verifyOptions());
+      // Carried over from Phases 3 and 4, and it matters more here rather than less (§H.5): a
+      // correspondence is two positions in the acquired buffer's frame, so a buffer rotated
+      // against the screen makes every baseline and every residual a measurement of the wrong
+      // thing while every count-based check still passes (§H.7).
+      this.probeAlignment();
+      this.evaluatePhase5();
+      this.render();
+    }, PHASE5_TICK_MS);
+  }
+
+  private stopPhase5Ticking(): void {
+    if (this.phase5Timer !== null) {
+      clearInterval(this.phase5Timer);
+      this.phase5Timer = null;
+    }
+  }
+
+  private evaluatePhase5(): void {
+    const previous = this.registry.get(PHASE5).state;
+    this.phase5Results = runPhase5Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      verificationEverRan: this.verifyEverRan,
+      stats: this.verification.stats(this.isVerifying()),
+    });
+
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(this.phase5Results, leg);
+    this.registry.applyEvaluation(PHASE5, evaluation);
+    const next = this.registry.get(PHASE5).state;
+    if (previous !== next) {
+      logger.info(PHASE5, 'App', `phase ${PHASE5}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    this.buildPhase5Evidence(evaluation.state, evaluation.reason);
+  }
+
+  private buildPhase5Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE5,
+      phaseName: PHASE_NAMES[PHASE5] ?? 'Geometric Verification',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase5Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phase 4's own record travels in the Phase 5 bundle, because Phase 5's inputs are
+        // Phase 4's outputs: an inlier ratio means nothing without the population and the
+        // survival rate that produced the correspondences it was computed over.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        devEntry: this.phase5DevEntry,
+        previewPresented: isPreviewPresented(),
+        overlayAlignment: this.alignment
+          ? {
+              ...this.alignment,
+              scores: { ...this.alignment.scores },
+              routeRejectedFor: this.routeRejectedForOrientation,
+              minIdentityOverRandom: MIN_IDENTITY_OVER_RANDOM,
+              note:
+                'Carried into Phase 5 from Phase 3 for the same reason, and it binds harder ' +
+                'here: a correspondence is two positions in the acquired buffer\'s frame, so ' +
+                'a buffer rotated against the video makes every baseline and every residual ' +
+                'in this bundle a measurement of the wrong thing, while every count-based ' +
+                'criterion v3 §14 names still passes (§H.7).',
+            }
+          : null,
+      },
+    });
+    this.phase5Bundle = built.bundle;
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        PHASE5, 'EvidenceRecorder',
+        `Phase 5 evidence has ${built.integrityIssues.length} integrity issue(s)`,
         'the bundle is still offered for download so the problem is inspectable',
         undefined,
         { issues: built.integrityIssues.slice(0, 10) },
@@ -1711,6 +2045,23 @@ class Phase0App {
       getPhase4Evidence: () => this.phase4Bundle,
       getPhase4EvidenceJson: () => (this.phase4Bundle ? serialiseEvidence(this.phase4Bundle) : null),
       getPhase4State: () => this.registry.get(PHASE4),
+
+      phase5Specs: PHASE5_SPECS,
+      enterPhase5: (devOverride = false) => this.enterPhase5(devOverride),
+      leavePhase5: () => this.leavePhase5(),
+      /**
+       * Read-only, exactly as for Phase 4 and for the same reason.
+       *
+       * There is no `startVerification()` here either. The automated leg presses
+       * `#start-verification` in the DOM, because reaching past the control is how the
+       * Phase 3 leg twice certified a screen whose button could not be pressed while the
+       * engine behind it answered perfectly well (§H.5).
+       */
+      getVerificationStats: () => this.verification.stats(this.isVerifying()),
+      getPhase5Results: () => this.phase5Results,
+      getPhase5Evidence: () => this.phase5Bundle,
+      getPhase5EvidenceJson: () => (this.phase5Bundle ? serialiseEvidence(this.phase5Bundle) : null),
+      getPhase5State: () => this.registry.get(PHASE5),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

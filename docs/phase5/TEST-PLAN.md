@@ -122,7 +122,8 @@ that is what its anchor uses. Phase 8 replaces this with the real thing.
 | `MIN_CORRESPONDENCES` | 20 | below this an 8-point model has almost no redundancy |
 | `RANSAC_CONFIDENCE` | 0.99 | the standard adaptive-termination target |
 | `MAX_RANSAC_ITERATIONS` | 500 | the cap that keeps §H's 6 ms line reachable |
-| `PLANAR_H_ADVANTAGE` | 1.0 | homography inliers ≥ fundamental inliers → `PLANAR SCENE` |
+| ~~`PLANAR_H_ADVANTAGE`~~ | ~~1.0~~ | ~~homography inliers ≥ fundamental inliers → `PLANAR SCENE`~~ — **withdrawn, see below** |
+| `PLANAR_H_SHARE` | 0.45 | `H / (H + F) > 0.45` → `PLANAR SCENE`; ORB-SLAM's constant for this same choice |
 | `DEGENERATE_SPREAD_PX` | 20.0 | inliers whose spatial spread is below this describe a point, not a scene |
 | `MIN_JUDGED_FRAMES` | 15 | per condition, as Phases 3 and 4 used |
 | `OUTLIER_INJECTION_FRACTION` | 0.30 | GEO-003's corruption rate |
@@ -150,6 +151,40 @@ project has for correspondence uncertainty rather than to a guess about scenes.
 enough outside `MIN_BASELINE_PX` that they are not merely a large-but-plausible motion. 25 px
 is over 16× the inlier threshold. A verifier that fails to reject a 25 px displacement is not
 rejecting anything.
+
+### Amendment — `PLANAR_H_ADVANTAGE` withdrawn, `PLANAR_H_SHARE` in its place
+
+Recorded here, in place, at the point the change was made (§29). **No pass criterion moved.**
+GEO-003's 0.90 recall, GEO-004's four conditions and v3 §14's four figures are exactly as this
+plan committed them; what changed is an engine constant that this plan's own test proved wrong.
+
+The withdrawn rule read v3 §16's "where the Homography wins" as `hCount >= fCount`. That is
+wrong in precisely the case §16 exists for. On a planar scene the fundamental matrix is not
+determined — every `[e]ₓH` fits, for any epipole `e` — so RANSAC has two free parameters the
+correct correspondences do not constrain, and it spends them capturing whatever else is in the
+set. Measured on a synthetic plane with 30% of its targets displaced 25 px:
+
+| | homography | fundamental |
+| --- | --- | --- |
+| inliers admitted | 70 of 100 | 74 – 77 of 100 |
+| injected outliers admitted | **0** | 4 – 7 |
+
+The homography admitted the untouched correspondences and not one outlier. The fundamental
+matrix admitted the same 70 plus the outliers its free epipole reached — and so "won" on count,
+the degenerate model was selected, and GEO-003's recall came out at 0.77–0.87 against a
+verifier that had in fact identified every outlier under the right model. GEO-004 was
+simultaneously reporting `non-planar` for frames that are planar by construction.
+
+`PLANAR_H_SHARE = 0.45` compares the share of combined support, `H / (H + F)`, which is
+ORB-SLAM's constant (Mur-Artal, Montiel & Tardós 2015) for this identical choice between the
+two models. That work compares robust score sums where this compares inlier counts — the
+coarser statistic — and uses the ratio to select an initialisation method where §16 uses it to
+lower Phase 6's translation confidence; what carries over is the shape of the comparison and
+its reason, which is that a model with a free dimension per point cannot be judged against one
+without it by counting. On the measurements above the cases separate with room on both sides: a
+clean plane scores 0.500, a plane with outliers 0.476–0.486, a two-depth scene 0.400–0.415.
+
+`tests/unit/verification.test.ts` holds the regression.
 
 ## What Phase 5 measures, per frame pair
 

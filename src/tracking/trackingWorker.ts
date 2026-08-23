@@ -32,6 +32,7 @@ import { FeatureDetector, DEFAULT_DETECTOR_CONFIG } from './FeatureDetector';
 import { detectWithRefill, REFILL_QUALITY_FACTOR, REFILL_SEPARATION_FACTOR } from './FeaturePopulation';
 import { GRID_CELLS, featureStateFor } from './featureTypes';
 import { FlowStage } from './FlowStage';
+import { VerificationStage } from './VerificationStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -80,6 +81,8 @@ let level0Calibration: TrackingResult['level0Calibration'] = null;
  * it that could drift.
  */
 const flowStage = new FlowStage(detector, refillDetector);
+/** Phase 5. Given the flow stage's own tracker, so it verifies the population Phase 4 holds. */
+const verificationStage = new VerificationStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -298,6 +301,7 @@ function runTracking(
     // a displacement that describes the gap rather than the scene.
     if (flowActive) {
       flowStage.reset();
+      verificationStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -311,6 +315,7 @@ function runTracking(
   if (options.track) return runFlow(options, p, levelIndex, meanLuma, topLevelMad);
   if (flowActive) {
     flowStage.reset();
+    verificationStage.reset();
     flowActive = false;
   }
 
@@ -402,6 +407,7 @@ function runTracking(
     overlay: overlay.buffer,
     flow: null,
     flowAge: null,
+    verification: null,
   };
 }
 
@@ -422,7 +428,7 @@ function runFlow(
   topLevelMad: number,
 ): TrackingResult {
   flowActive = true;
-  return flowStage.process({
+  const result = flowStage.process({
     levels: p.levels,
     detectLevel: levelIndex,
     target: options.target,
@@ -430,6 +436,13 @@ function runFlow(
     meanLuma,
     topLevelMad,
   });
+  if (!options.verify) return result;
+
+  // Phase 5 runs on the population Phase 4 just produced, in the same worker and on the same
+  // frame. Splitting them would let an inlier ratio be reported beside a population from a
+  // different frame.
+  const verification = verificationStage.process(flowStage.getTracker(), options.wantInjection);
+  return { ...result, verification };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

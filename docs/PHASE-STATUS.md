@@ -18,7 +18,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
-| 5 | Geometric Verification | NOT_STARTED | Phase Lock is open. v3 §14 is next; v4 §17 restates it without the numbers. |
+| 5 | Geometric Verification | IMPLEMENTING | Built and green on the automated leg — 4/4 required + 2/2 advisory at `TESTING`. Awaiting a device run (Rule 004). |
 | 6 | Relative Pose | BLOCKED | |
 | 7 | IMU Support / Fusion | BLOCKED | |
 | 8 | Keyframe System | BLOCKED | |
@@ -632,3 +632,124 @@ changed here is that the probe learned to say when it cannot tell:
 built so no rotation or reflection maps its landmarks onto themselves. It scores identity at
 17.7× chance.
 
+---
+
+## Phase 5 — IMPLEMENTING
+
+Built against **v3 §14 and §16**, which v4 does not restate — see
+[`SPEC-VERSIONS.md`](SPEC-VERSIONS.md). The automated leg reaches `TESTING` with all four
+required tests and both advisory tests passing; `PASSED` needs iPhone Safari over HTTPS
+(Rule 004), and [`phase5/HOW-TO-RUN-DEVICE-TEST.md`](phase5/HOW-TO-RUN-DEVICE-TEST.md) is the
+run.
+
+The test plan was written and committed before any Phase 5 code existed (§29):
+[`phase5/TEST-PLAN.md`](phase5/TEST-PLAN.md).
+
+### What exists
+
+`src/geometry/` — a new layer, and the strictest rule in the architecture audit: it may not
+import from `tracking`, `capture`, `pipeline`, `debug` or `testkit`. `linalg.ts` (cyclic Jacobi
+symmetric eigen-decomposition, so a null vector can be found without a general SVD), `twoView.ts`
+(Hartley-normalised eight-point fundamental matrix with rank-2 enforcement, four-point DLT
+homography, Sampson distance, symmetric transfer error), `ransac.ts` (adaptive termination at
+`N = log(1−p)/log(1−wˢ)`, seeded, refitting on its inliers), `verify.ts` (both models on every
+frame, v3 §16's comparison, v3 §14's state in one pure function).
+
+`src/tracking/VerificationStage.ts` is the whole Phase 5 frame with no worker around it, so the
+unit tests drive the exact code the worker runs. `VerificationSession` accumulates it,
+`Phase5Tests` evaluates GEO-001..006, and the GEOMETRIC VERIFICATION screen shows it. 45 new unit
+tests; 579 in total.
+
+### The baseline problem, and the anchor this phase introduces
+
+Phase 4's device run measured a median frame-to-frame displacement of **4.7 px**. Two views that
+close determine nothing: every model fits, the inlier ratio comes out at 1.00, and it verifies
+nothing at all. So Phase 5 does not verify consecutive frames. It holds a **verification anchor**
+tens of frames back and relates the current frame to that, re-taking it when the two views drift
+past 120 px and stop sharing enough scene.
+
+**This is a stand-in for Phase 8's keyframe system and is documented as one**, in the plan and in
+the code. Three of v3 §20's four keyframe conditions need a pose that Phase 6 has not produced;
+the fourth — displacement — is the one Phase 5 can measure, so it is the one the anchor uses.
+
+### The number that carries the phase, and what a fake would do to it
+
+v3 §14 names four figures: 30 inliers, ratio 0.35, 100 inliers, ratio 0.50. **A stage that marks
+every correspondence an inlier satisfies all four perfectly**, because the inlier count is then
+the correspondence count and the ratio is exactly 1.00 — it scores better than a working verifier
+on every one of them.
+
+So on a sample of frames the harness takes the real correspondence set, displaces 30% of the
+targets by 25 px in seeded directions, and hands the result to the verifier with no marking of
+which it touched. Recall against that ground truth is the only figure in the phase a
+pass-through cannot produce: it scores exactly 0.00. The untouched rejection rate is reported
+beside it, because recall alone is scored perfectly by rejecting everything, and the pair is the
+measurement.
+
+`tests/unit/verification.test.ts` runs both stages through the same session and the same suite
+and shows the difference. The automated leg reads **100% of injected outliers rejected against 0%
+of untouched**, over 61 sampled frames.
+
+### v3 §16 decided the phase, and the first reading of it was wrong
+
+The leg's first run failed GEO-003 at **0.816** against 0.90, and the cause reproduces in Node
+with no camera involved. On a plane with 30% of its targets displaced 25 px, the homography
+admitted **exactly the untouched correspondences and not one outlier** — 70 of 100 — while the
+fundamental matrix admitted 74 to 77: the same 70, plus outliers it captured with the epipole a
+planar scene leaves free. On a plane `F` is not determined at all, every `[e]ₓH` fits, and RANSAC
+had two free parameters that the correct data did not constrain.
+
+Read as `hCount >= fCount`, that is a non-planar scene. So the degenerate model was selected, its
+absorbed outliers survived as inliers, and GEO-004 was simultaneously reporting `non-planar` for
+frames that are planar by construction. **The verifier had found every outlier and the selection
+rule threw the answer away.**
+
+`PLANAR_H_ADVANTAGE = 1.0` is withdrawn. `PLANAR_H_SHARE = 0.45` compares `H / (H + F)` —
+ORB-SLAM's constant for this identical choice between the two models. No pass criterion moved:
+the amendment is recorded in place in the test plan, with the measurement that forced it, and the
+regression is in `tests/unit/verification.test.ts`. A clean plane scores 0.500, a plane with
+outliers 0.476–0.486, a two-depth scene 0.400–0.415.
+
+### What the automated leg can decide
+
+Phase 3's leg had to exclude the tests carrying its meaning, because Chromium's fake camera is a
+rolling gradient. Phase 4's leg generated its own feed because its conditions are about motion.
+Phase 5's are about **geometry**, and a video file can contain geometry exactly — with one
+requirement a single panning texture cannot meet.
+
+A pan of one flat texture *is* a planar scene, so §16 would answer PLANAR on every frame and
+GEO-004's other half would never occur. The feed therefore has two depth layers: a background
+that pans slowly and a foreground that pans 3.5× faster **in the same direction**, which is what
+a camera translating parallel to two fronto-parallel planes produces. Both layers' displacements
+stay parallel to one direction, so a fundamental matrix explains them both; no single homography
+matches two disparities. A third segment is a smooth low-gradient field, for GEO-002.
+
+GEO-005 is excluded and gated on a wider configuration tripwire instead, for the reason §H.4
+gives: a device budget cannot be adjudicated on headless Chromium with SwiftShader. Rule 004
+stands regardless — nothing here passes a phase.
+
+### The fixture was measuring its own artefacts, and only a rebuild showed it
+
+Rebuilding the parallax segment so its depth edges stopped sweeping across the frame collapsed
+the population from 77 correspondences to 18. The texture underneath had a mean gradient of
+**4.67 and produced zero corners** at detection's level — below `TEXTURE_RICH_FLOOR`, so the
+classifier had been calling every frame `AMBIGUOUS` and GEO-001's texture-rich class had been
+empty the whole time without anything saying so.
+
+What had been carrying the first run was six stripe boundaries sweeping across the frame at
+9.5 px per frame: strong, trackable corners belonging to no surface. A two-view geometry measured
+on them is a measurement of the fixture. The feed now uses Phase 4's texture, whose leg tracked
+210 points on this same 640×480 source — mean gradient 14.0, 467 corners at level 1.
+
+### Three things this phase does not do
+
+- **No pose.** `Pose candidate` is the last step of v3 §14's chain and belongs to §15, which is
+  Phase 6. Nothing here decomposes a matrix into rotation and translation.
+- **No reprojection error.** An inlier's residual against a fundamental matrix is a Sampson
+  distance, not a reprojection error, and calling it one would be claiming a pose that does not
+  exist. §11's `reprojectionError` stays `null` through this phase, and GEO-006 checks it.
+- **No intrinsics.** Which is what lets Phase 5 run before Phase 6 derives them.
+
+§33's tracking `GOOD` therefore still cannot be reached on the TRACKING screen: it needs an
+inlier ratio *and* a reprojection error, and only the first now exists. This screen's `GOOD` is
+v3 §14's verification verdict and it is a different claim.

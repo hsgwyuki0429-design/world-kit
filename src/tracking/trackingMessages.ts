@@ -31,6 +31,15 @@ export interface TrackingOptions {
    * the Phase 4 test plan gives — a refill can hide a tracker that lost everything.
    */
   readonly track: boolean;
+  /**
+   * Whether to verify the tracked correspondences geometrically (Phase 5, v3 §14).
+   *
+   * `false` in Phase 4. When `true` the worker also maintains the verification anchor, which
+   * is what gives the correspondences a two-view baseline — see `FlowTracker.takeAnchor`.
+   */
+  readonly verify: boolean;
+  /** Run GEO-003's injected-outlier measurement on this frame. Costs a second RANSAC pass. */
+  readonly wantInjection: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -47,6 +56,8 @@ export interface TrackingOptions {
 export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   detect: true,
   track: false,
+  verify: false,
+  wantInjection: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -174,6 +185,61 @@ export interface TrackingFlow {
   readonly refillUrgency: string;
 }
 
+/**
+ * GEO-003's measurement: what the harness corrupted, and what the verifier rejected.
+ *
+ * The verifier is handed the corrupted set with no marking. `injectedRecall` is the fraction
+ * of the harness's own outliers it found — the one number in Phase 5 that a stage returning
+ * its input cannot produce, because returning its input scores exactly 0.
+ */
+export interface VerificationInjection {
+  readonly injected: number;
+  readonly clean: number;
+  readonly injectedRejected: number;
+  readonly cleanRejected: number;
+  readonly injectedRecall: number;
+  /** ...and the rate among untouched correspondences, so rejecting everything cannot pass. */
+  readonly cleanRejectionRate: number;
+  readonly survivingInliers: number;
+  readonly state: string;
+  readonly displacementPx: number;
+  readonly seed: number;
+}
+
+/** One frame of Phase 5: v3 §14's chain up to — and stopping before — the pose candidate. */
+export interface VerificationReport {
+  readonly frames: number;
+  readonly correspondences: number;
+  /** Frames since the verification anchor was taken. `-1` when there is none. */
+  readonly anchorAge: number;
+  readonly reAnchored: boolean;
+  readonly reAnchorReason: string;
+  /** `UNVERIFIED` / `USABLE` / `GOOD`, from the one shared pure function. */
+  readonly state: string;
+  readonly stateReason: string;
+  readonly goodBlockedBy: readonly string[];
+  /** Median displacement between the two views. Below the floor, nothing can be verified. */
+  readonly baselinePx: number;
+  /** `FUNDAMENTAL` / `HOMOGRAPHY`, or `null` on a frame that verified nothing. */
+  readonly model: string | null;
+  readonly inliers: number;
+  readonly outliers: number;
+  readonly inlierRatio: number;
+  /** Both counts, so v3 §16's planar decision is auditable rather than asserted. */
+  readonly fundamentalInliers: number;
+  readonly homographyInliers: number;
+  readonly planar: boolean;
+  readonly spreadPx: number;
+  readonly degenerate: boolean;
+  readonly meanErrorPx: number;
+  readonly iterations: number;
+  /** `false` means the cap bound before RANSAC's confidence target was met. */
+  readonly terminatedEarly: boolean;
+  readonly verifyMs: number;
+  readonly seed: number;
+  readonly injection: VerificationInjection | null;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -219,6 +285,14 @@ export interface TrackingResult {
    * differently from one detection has just replaced. `null` outside Phase 4.
    */
   readonly flowAge: ArrayBuffer | null;
+  /**
+   * Phase 5's frame, or `null` when verification is not running.
+   *
+   * On the same message as the flow result, because they describe one frame: the
+   * correspondences verified here are the population reported there, and splitting them would
+   * let the screen show an inlier ratio from one frame beside a population from another.
+   */
+  readonly verification: VerificationReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

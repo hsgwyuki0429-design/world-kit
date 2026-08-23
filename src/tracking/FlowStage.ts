@@ -304,7 +304,19 @@ export class FlowStage {
       overlay: overlay.buffer,
       flow,
       flowAge: ages.buffer,
+      verification: null,
     };
+  }
+
+  /**
+   * The live population, for Phase 5's anchor and correspondence set.
+   *
+   * Phase 5 inherits Phase 4's machinery rather than rebuilding it (§H.5), and what it does
+   * with it — takes an anchor, forms correspondences against it, re-anchors when the anchor
+   * stops supporting a two-view geometry — is `VerificationStage`'s to decide.
+   */
+  getTracker(): FlowTracker {
+    return this.tracker;
   }
 }
 

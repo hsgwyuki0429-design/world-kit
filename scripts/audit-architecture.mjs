@@ -46,6 +46,17 @@ const FORBIDDEN = {
     from: ['game', 'renderer', 'ui'],
     why: 'mapping writes to world; it must not read from its consumers.',
   },
+  // Phase 5 adds this one, and it is the strictest rule in the table on purpose. The two-view
+  // solvers are the stage under test in Phase 5, and GEO-003 scores them against outliers the
+  // harness injected and never marked. A solver able to import from `tracking` could read the
+  // population it is being asked to judge — including, once Phase 8 exists, whatever the
+  // injector left behind. Pure math over the arrays it is handed, and nothing else.
+  geometry: {
+    from: ['game', 'renderer', 'ui', 'world', 'capture', 'pipeline', 'tracking', 'mapping', 'debug', 'testkit'],
+    why: 'the geometry solvers are the stage Phase 5 tests. They take arrays and return ' +
+      'models; reaching the tracker, the camera or the test kit would let a solver see the ' +
+      'answer it is being scored against (§H.7, GEO-003).',
+  },
 };
 
 function walk(dir, out = []) {
