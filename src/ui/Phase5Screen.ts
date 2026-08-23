@@ -28,7 +28,6 @@
  * this screen a measurement of the wrong thing.
  */
 
-import { Verdict } from '../core/types';
 import type { PhaseInfo, TestResult } from '../core/types';
 import { CameraState } from '../capture/CameraSource';
 import { getPreviewVideo } from './PreviewVideo';
@@ -60,6 +59,8 @@ import {
 import type { VerificationClassStats, VerificationStats } from '../tracking/verificationStats';
 import { MIN_IDENTITY_OVER_RANDOM } from '../debug/OverlayAlignmentProbe';
 import type { AlignmentReading } from '../debug/OverlayAlignmentProbe';
+import { card, el, num, pct, px, stat } from './dom';
+import { evidenceSection, navigationSection, testsSection } from './phaseSections';
 
 export interface Phase5ViewModel {
   readonly phase5: PhaseInfo;
@@ -100,43 +101,6 @@ export interface Phase5Handlers {
   onEnterPhase6: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
-}
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
-
-function stat(label: string, value: string | null, cls = ''): HTMLElement {
-  return el('div', { class: 'stat' }, [
-    el('div', { class: 'k' }, [label]),
-    el('div', { class: `v ${cls}` }, [value ?? '—']),
-  ]);
-}
-
-function pct(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 1000) / 10}%`;
-}
-
-function px(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100} px`;
-}
-
-function num(n: number): string | null {
-  return n < 0 ? null : String(n);
 }
 
 /** Kept across renders, as in Phase 4: recreating it would blank the overlay twice a second. */
@@ -223,9 +187,27 @@ export function renderPhase5Screen(
   root.append(renderTexture(vm));
   root.append(renderPlanar(vm));
   root.append(renderCost(vm));
-  root.append(renderTests(vm));
-  root.append(renderEvidence(vm, handlers));
-  root.append(renderNavigation(vm, handlers));
+  root.append(testsSection(5, vm.phase5, vm.results));
+  root.append(
+    evidenceSection(5, vm.phase5, vm.results, {
+      onDownload: handlers.onDownloadEvidence,
+      onCopy: handlers.onCopyEvidence,
+    }),
+  );
+  root.append(
+    navigationSection(
+      { index: 4, label: 'BACK TO TRACKING', onClick: handlers.onBack },
+      {
+        index: 6,
+        name: 'RELATIVE POSE',
+        phase: vm.phase6,
+        canEnter: vm.canEnterPhase6,
+        implemented: vm.phase6Implemented,
+        blockedReason: vm.phase6BlockedReason,
+        onClick: handlers.onEnterPhase6,
+      },
+    ),
+  );
 }
 
 function renderPreview(vm: Phase5ViewModel, handlers: Phase5Handlers): HTMLElement {
@@ -559,105 +541,4 @@ function renderCost(vm: Phase5ViewModel): HTMLElement {
   ]);
 }
 
-function renderTests(vm: Phase5ViewModel): HTMLElement {
-  if (vm.results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
-  }
-  const counts = {
-    pass: vm.results.filter((r) => r.verdict === Verdict.PASS).length,
-    fail: vm.results.filter((r) => r.verdict === Verdict.FAIL).length,
-    pending: vm.results.filter((r) => r.verdict === Verdict.PENDING).length,
-  };
-  const rows = vm.results.map((r) =>
-    el('details', { class: 'row' }, [
-      el('summary', {}, [
-        el('span', { class: 'id' }, [r.spec.id]),
-        el('span', { class: 'title' }, [r.spec.title]),
-        el('span', { class: 'req' }, [r.spec.required ? 'REQ' : 'ADV']),
-        el('span', { class: `verdict v-${r.verdict}` }, [r.verdict]),
-      ]),
-      el('dl', { class: 'detail-grid' }, [
-        el('dt', {}, ['Expected']), el('dd', {}, [r.spec.expected]),
-        el('dt', {}, ['Criteria']), el('dd', {}, [r.spec.passCriteria]),
-        el('dt', {}, ['Observed']), el('dd', { class: 'mono' }, [r.observed]),
-        el('dt', {}, ['Reason']), el('dd', {}, [r.reason]),
-      ]),
-    ]),
-  );
-  return card(`Tests — Phase 5 · ${vm.phase5.state}`, [
-    el('div', { class: 'verdict-head' }, [
-      el('div', { class: `verdict-state ${vm.phase5.state}`, id: 'phase5-verdict' }, [
-        vm.phase5.state,
-      ]),
-      el('div', { class: 'verdict-counts' }, [
-        `${counts.pass} PASS · ${counts.fail} FAIL · ${counts.pending} PENDING`,
-      ]),
-    ]),
-    el('p', { class: 'verdict-reason' }, [vm.phase5.reason]),
-    ...rows,
-  ]);
-}
-
-function renderEvidence(vm: Phase5ViewModel, handlers: Phase5Handlers): HTMLElement {
-  const pending = vm.results.filter((r) => r.spec.required && r.verdict === Verdict.PENDING);
-  const children: (Node | string)[] = [];
-  if (pending.length > 0) {
-    children.push(
-      el('p', { class: 'evidence-warning', id: 'phase5-pending-warning' }, [
-        `This export would record ${vm.phase5.state}, not a pass: ` +
-          `${pending.map((r) => r.spec.id).join(', ')} still PENDING.`,
-      ]),
-    );
-  }
-  children.push(
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'download-evidence-p5',
-        textContent: `DOWNLOAD EVIDENCE JSON — ${vm.phase5.state}`,
-        onclick: handlers.onDownloadEvidence,
-      } as never),
-      el('button', {
-        class: 'secondary',
-        id: 'copy-evidence-p5',
-        textContent: 'COPY EVIDENCE JSON',
-        onclick: handlers.onCopyEvidence,
-      } as never),
-    ]),
-  );
-  return card('Evidence', children);
-}
-
 /** Phase Lock on screen, as on every screen before it: a closed door says which lock holds it. */
-function renderNavigation(vm: Phase5ViewModel, handlers: Phase5Handlers): HTMLElement {
-  const open = vm.canEnterPhase6 && vm.phase6Implemented;
-  const label = !vm.phase6Implemented
-    ? 'RELATIVE POSE — NOT IMPLEMENTED'
-    : !vm.canEnterPhase6
-      ? 'RELATIVE POSE — LOCKED'
-      : 'GO TO RELATIVE POSE';
-  const note = !vm.phase6Implemented
-    ? 'Phase 6 has not been written in this build.'
-    : !vm.canEnterPhase6
-      ? vm.phase6BlockedReason
-      : `Phase 6 is ${vm.phase6.state}.`;
-
-  return card('Navigation', [
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'back-to-phase4',
-        textContent: 'BACK TO TRACKING',
-        onclick: handlers.onBack,
-      } as never),
-      el('button', {
-        class: 'primary',
-        id: 'go-to-phase6',
-        disabled: !open,
-        textContent: label,
-        onclick: handlers.onEnterPhase6,
-      } as never),
-    ]),
-    el('p', { class: 'footnote' }, [note]),
-  ]);
-}

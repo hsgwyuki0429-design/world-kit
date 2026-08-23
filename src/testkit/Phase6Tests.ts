@@ -35,6 +35,8 @@ import {
   ROTATION_AGREEMENT_FRACTION,
 } from '../tracking/PoseSession';
 import type { PoseStats } from '../tracking/poseStats';
+import type { Evaluation, PhaseTest } from './runTests';
+import { deg, pct, runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -76,25 +78,7 @@ export interface Phase6Context {
   readonly verifyMs: number;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase6Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase6Context) => Evaluation;
-}
-
-function pct(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 1000) / 10}%`;
-}
-
-function deg(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100}°`;
-}
+type Phase6Test = PhaseTest<Phase6Context>;
 
 function notRunning(ctx: Phase6Context, metrics: Record<string, JsonValue>): Evaluation | null {
   if (ctx.poseEverRan && ctx.stats.poseFrames > 0) return null;
@@ -213,6 +197,7 @@ const POSE_002: Phase6Test = {
     const metrics: Record<string, JsonValue> = {
       gyroAvailable: s.gyroAvailable,
       rotationSamples: s.rotationSamples,
+      rotationComparisons: s.rotationComparisons,
       medianVisualDeg: s.medianVisualRotationDeg,
       medianGyroDeg: s.medianGyroRotationDeg,
       medianDisagreementDeg: s.medianRotationDisagreementDeg,
@@ -247,6 +232,18 @@ const POSE_002: Phase6Test = {
     }
 
     const problems: string[] = [];
+    // A rate outside 0..1 is not a measurement, and it must not be able to clear a floor by
+    // being large. The device run of 2026-08-23 reported **232.3%** — an untrimmed numerator
+    // over a bounded denominator — and this criterion passed on it without being applied. The
+    // session can no longer produce that; this is the second lock, on the reading rather than
+    // on the arithmetic, because a criterion satisfied by an impossible number is not a test.
+    if (s.rotationAgreementRate > 1 || (s.rotationAgreementRate < 0 && s.rotationSamples > 0)) {
+      problems.push(
+        `the agreement rate reads ${pct(s.rotationAgreementRate)} over ${s.rotationSamples} ` +
+          'frames, which is not a rate. Something is counting agreements over a different set ' +
+          'from the one it is dividing by',
+      );
+    }
     const tolerance = Math.max(
       ROTATION_AGREEMENT_DEG,
       ROTATION_AGREEMENT_FRACTION * s.medianGyroRotationDeg,
@@ -270,7 +267,7 @@ const POSE_002: Phase6Test = {
     return {
       verdict: problems.length === 0 ? Verdict.PASS : Verdict.FAIL,
       observed:
-        `${s.rotationSamples} comparable frames: the camera recovered ` +
+        `${s.rotationSamples} of ${s.rotationComparisons} comparable frames retained: the camera recovered ` +
         `${deg(s.medianVisualRotationDeg)} against the gyroscope's ${deg(s.medianGyroRotationDeg)}, ` +
         `median disagreement ${deg(s.medianRotationDisagreementDeg)}, ` +
         `${pct(s.rotationAgreementRate)} agreeing`,
@@ -726,17 +723,7 @@ export const PHASE6_TESTS: readonly Phase6Test[] = [
 export const PHASE6_SPECS: readonly TestSpec[] = PHASE6_TESTS.map((t) => t.spec);
 
 export function runPhase6Tests(ctx: Phase6Context): TestResult[] {
-  return PHASE6_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE6_TESTS, ctx);
 }
 
 /** Re-exported so the screen shows the same numbers the tests judge (Rule 002). */

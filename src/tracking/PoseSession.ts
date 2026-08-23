@@ -23,8 +23,7 @@ import type { GyroSample } from './gyroRotation';
 import { poseStateFollowsFrom } from './poseStats';
 import type { PoseInjectionSample, PoseStats, RotationAgreementSample } from './poseStats';
 import type { PoseReport, TrackingResult } from './trackingMessages';
-
-const MAX_SAMPLES = 400;
+import { median, round, trim } from '../core/stats';
 
 /**
  * The gyroscope tolerance: `max(3°, 30 % of what was measured)`.
@@ -51,22 +50,6 @@ export const MIN_GYRO_SAMPLES = 4;
  */
 export const MIN_COMPARABLE_ROTATION_DEG = 2.0;
 
-function median(values: readonly number[]): number {
-  if (values.length === 0) return -1;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? (s[mid] ?? 0) : (((s[mid - 1] ?? 0) + (s[mid] ?? 0)) / 2);
-}
-
-function round(n: number, dp = 3): number {
-  const f = 10 ** dp;
-  return Number.isFinite(n) ? Math.round(n * f) / f : n;
-}
-
-function trim(list: unknown[], max = MAX_SAMPLES): void {
-  while (list.length > max) list.shift();
-}
-
 export class PoseSession {
   private readonly rotations: number[] = [];
   private readonly reprojections: number[] = [];
@@ -85,10 +68,19 @@ export class PoseSession {
   private readonly controlDeg: number[] = [];
   private readonly injectedDrift: number[] = [];
   private readonly controlDrift: number[] = [];
-  private readonly agreements: RotationAgreementSample[] = [];
-  private readonly visualRotations: number[] = [];
-  private readonly gyroRotations: number[] = [];
-  private readonly disagreements: number[] = [];
+  /**
+   * POSE-002's comparisons, as **one** bounded window that everything is derived from.
+   *
+   * It was four parallel structures — three trimmed arrays and an untrimmed `agreedFrames`
+   * counter — and the counter kept climbing while the arrays stopped at 400. The device run of
+   * 2026-08-23 therefore reported an agreement rate of **232.3%**, which is not a rate. One
+   * window, one numerator, one denominator: the mismatch is now impossible rather than merely
+   * fixed. `FlowSession` has always done it this way for FLOW-002, which is why Phase 4 never
+   * had the defect.
+   */
+  private readonly comparisons: RotationAgreementSample[] = [];
+  /** Total comparisons ever made, which is not the window's length once §56's bound bites. */
+  private rotationComparisons = 0;
   private readonly stateFrames = new Map<string, number>();
 
   /** The gyroscope's own samples. Bounded: only the current anchor interval is ever needed. */
@@ -112,7 +104,6 @@ export class PoseSession {
   private unverifiedWithRotation = 0;
   private injectionPlanarFlips = 0;
   private controlPlanarFlips = 0;
-  private agreedFrames = 0;
   private scaleViolations = 0;
   private intrinsicsUnmarked = 0;
   private reprojectionWithoutTriangulation = 0;
@@ -128,12 +119,11 @@ export class PoseSession {
       this.planarTranslationConfidence, this.nonPlanarTranslationConfidence,
       this.planarUnseparated, this.nonPlanarUnseparated,
       this.injectedDeg, this.controlDeg, this.injectedDrift, this.controlDrift,
-      this.visualRotations, this.gyroRotations,
-      this.disagreements,
     ]) l.length = 0;
     this.directions.length = 0;
     this.injections.length = 0;
-    this.agreements.length = 0;
+    this.comparisons.length = 0;
+    this.rotationComparisons = 0;
     this.gyro.length = 0;
     this.stateFrames.clear();
     this.anchorAt = -1;
@@ -152,7 +142,6 @@ export class PoseSession {
     this.unverifiedWithRotation = 0;
     this.injectionPlanarFlips = 0;
     this.controlPlanarFlips = 0;
-    this.agreedFrames = 0;
     this.scaleViolations = 0;
     this.intrinsicsUnmarked = 0;
     this.reprojectionWithoutTriangulation = 0;
@@ -325,14 +314,7 @@ export class PoseSession {
     const disagreement = Math.abs(p.rotationDeg - g.netDeg);
     const tolerance = Math.max(ROTATION_AGREEMENT_DEG, ROTATION_AGREEMENT_FRACTION * g.netDeg);
     const agreed = disagreement <= tolerance;
-    if (agreed) this.agreedFrames++;
-
-    this.visualRotations.push(p.rotationDeg);
-    this.gyroRotations.push(g.netDeg);
-    this.disagreements.push(disagreement);
-    trim(this.visualRotations);
-    trim(this.gyroRotations);
-    trim(this.disagreements);
+    this.rotationComparisons++;
 
     const sample: RotationAgreementSample = {
       at: now,
@@ -345,8 +327,8 @@ export class PoseSession {
       anchorAgeMs: round(now - this.anchorAt, 1),
       gyroSamples: g.samples,
     };
-    this.agreements.push(sample);
-    while (this.agreements.length > 30) this.agreements.shift();
+    this.comparisons.push(sample);
+    trim(this.comparisons);
   }
 
   getLast(): PoseReport | null {
@@ -401,15 +383,18 @@ export class PoseSession {
 
       gyroAvailable: this.gyroAvailable,
       gyroReason: this.gyroReason,
-      rotationSamples: this.disagreements.length,
-      medianVisualRotationDeg: round(median(this.visualRotations), 3),
-      medianGyroRotationDeg: round(median(this.gyroRotations), 3),
-      medianRotationDisagreementDeg: round(median(this.disagreements), 3),
+      // Every figure below is over the retained window, and `rotationSamples` is that window's
+      // size — so the rate's denominator is the same set its numerator is counted from.
+      rotationSamples: this.comparisons.length,
+      rotationComparisons: this.rotationComparisons,
+      medianVisualRotationDeg: round(median(this.comparisons.map((c) => c.visualDeg)), 3),
+      medianGyroRotationDeg: round(median(this.comparisons.map((c) => c.gyroNetDeg)), 3),
+      medianRotationDisagreementDeg: round(median(this.comparisons.map((c) => c.disagreementDeg)), 3),
       rotationAgreementRate:
-        this.disagreements.length > 0
-          ? round(this.agreedFrames / this.disagreements.length, 4)
+        this.comparisons.length > 0
+          ? round(this.comparisons.filter((c) => c.agreed).length / this.comparisons.length, 4)
           : -1,
-      rotationAgreements: this.agreements.slice(-12),
+      rotationAgreements: this.comparisons.slice(-12),
 
       planarPosedFrames: this.planarPosedFrames,
       nonPlanarPosedFrames: this.nonPlanarPosedFrames,
@@ -530,6 +515,7 @@ export class PoseSession {
         available: s.gyroAvailable,
         reason: s.gyroReason,
         samples: s.rotationSamples,
+        comparisonsMade: s.rotationComparisons,
         medianVisualDeg: s.medianVisualRotationDeg,
         medianGyroDeg: s.medianGyroRotationDeg,
         medianDisagreementDeg: s.medianRotationDisagreementDeg,

@@ -11,7 +11,6 @@
  * lacks" failure of Rule 002, and it is what CAM-002 checks for.
  */
 
-import { Verdict } from '../core/types';
 import type { PhaseInfo, TestResult } from '../core/types';
 import { CameraState } from '../capture/CameraSource';
 import type { CameraOpenResult, CameraSettingsSnapshot } from '../capture/CameraSource';
@@ -21,6 +20,8 @@ import type { LedgerEntry } from '../capture/ScenarioLedger';
 // One preview element for the whole app, since Phase 2 shows the same camera (see
 // `PreviewVideo.ts`). Re-exported so existing importers of this module are unaffected.
 import { getPreviewVideo, isPreviewPresented } from './PreviewVideo';
+import { card, el, stat } from './dom';
+import { evidenceSection, navigationSection, testsSection } from './phaseSections';
 
 export { getPreviewVideo, isPreviewPresented };
 
@@ -51,32 +52,7 @@ export interface Phase1Handlers {
   onCopyEvidence: () => void;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
-
 /** A measured value, or an explicit dash. Never a plausible-looking placeholder. */
-function stat(label: string, value: string | null, cls = ''): HTMLElement {
-  return el('div', { class: 'stat' }, [
-    el('div', { class: 'k' }, [label]),
-    el('div', { class: `v ${cls}` }, [value ?? '—']),
-  ]);
-}
-
 
 export function renderPhase1Screen(
   root: HTMLElement,
@@ -95,10 +71,28 @@ export function renderPhase1Screen(
   root.append(renderPreview(vm, handlers));
   root.append(renderOverlayStats(vm));
   root.append(renderScenarios(vm));
-  root.append(renderTests(vm));
-  root.append(renderEvidence(vm, handlers));
+  root.append(testsSection(1, vm.phase1, vm.results));
+  root.append(
+    evidenceSection(1, vm.phase1, vm.results, {
+      onDownload: handlers.onDownloadEvidence,
+      onCopy: handlers.onCopyEvidence,
+    }),
+  );
 
-  root.append(renderNavigation(vm, handlers));
+  root.append(
+    navigationSection(
+      { index: 0, label: 'BACK TO CAPABILITY', onClick: handlers.onBack },
+      {
+        index: 2,
+        name: 'FRAME PIPELINE',
+        phase: vm.phase2,
+        canEnter: vm.canEnterPhase2,
+        implemented: vm.phase2Implemented,
+        blockedReason: vm.phase2BlockedReason,
+        onClick: handlers.onEnterPhase2,
+      },
+    ),
+  );
 }
 
 /**
@@ -109,38 +103,6 @@ export function renderPhase1Screen(
  * button that looks available for a phase the engine cannot enter is the UI implying a
  * capability the engine lacks.
  */
-function renderNavigation(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLElement {
-  const open = vm.canEnterPhase2 && vm.phase2Implemented;
-  const label = !vm.phase2Implemented
-    ? 'FRAME PIPELINE — NOT IMPLEMENTED'
-    : !vm.canEnterPhase2
-      ? 'FRAME PIPELINE — LOCKED'
-      : 'GO TO FRAME PIPELINE';
-  const note = !vm.phase2Implemented
-    ? 'Phase 2 has not been written in this build.'
-    : !vm.canEnterPhase2
-      ? vm.phase2BlockedReason
-      : `Phase 2 is ${vm.phase2.state}.`;
-
-  return card('Navigation', [
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'back-to-phase0',
-        textContent: 'BACK TO CAPABILITY',
-        onclick: handlers.onBack,
-      } as never),
-      el('button', {
-        class: 'primary',
-        id: 'go-to-phase2',
-        disabled: !open,
-        textContent: label,
-        onclick: handlers.onEnterPhase2,
-      } as never),
-    ]),
-    el('p', { class: 'footnote' }, [note]),
-  ]);
-}
 
 function renderPreview(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLElement {
   const children: (Node | string)[] = [];
@@ -277,71 +239,3 @@ function renderScenarios(vm: Phase1ViewModel): HTMLElement {
   ]);
 }
 
-function renderTests(vm: Phase1ViewModel): HTMLElement {
-  if (vm.results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
-  }
-  const counts = {
-    pass: vm.results.filter((r) => r.verdict === Verdict.PASS).length,
-    fail: vm.results.filter((r) => r.verdict === Verdict.FAIL).length,
-    pending: vm.results.filter((r) => r.verdict === Verdict.PENDING).length,
-  };
-  const rows = vm.results.map((r) =>
-    el('details', { class: 'row' }, [
-      el('summary', {}, [
-        el('span', { class: 'id' }, [r.spec.id]),
-        el('span', { class: 'title' }, [r.spec.title]),
-        el('span', { class: 'req' }, [r.spec.required ? 'REQ' : 'ADV']),
-        el('span', { class: `verdict v-${r.verdict}` }, [r.verdict]),
-      ]),
-      el('dl', { class: 'detail-grid' }, [
-        el('dt', {}, ['Expected']), el('dd', {}, [r.spec.expected]),
-        el('dt', {}, ['Criteria']), el('dd', {}, [r.spec.passCriteria]),
-        el('dt', {}, ['Observed']), el('dd', { class: 'mono' }, [r.observed]),
-        el('dt', {}, ['Reason']), el('dd', {}, [r.reason]),
-      ]),
-    ]),
-  );
-  return card(`Tests — Phase 1 · ${vm.phase1.state}`, [
-    el('div', { class: 'verdict-head' }, [
-      el('div', { class: `verdict-state ${vm.phase1.state}`, id: 'phase1-verdict' }, [
-        vm.phase1.state,
-      ]),
-      el('div', { class: 'verdict-counts' }, [
-        `${counts.pass} PASS · ${counts.fail} FAIL · ${counts.pending} PENDING`,
-      ]),
-    ]),
-    el('p', { class: 'verdict-reason' }, [vm.phase1.reason]),
-    ...rows,
-  ]);
-}
-
-function renderEvidence(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLElement {
-  const pending = vm.results.filter((r) => r.spec.required && r.verdict === Verdict.PENDING);
-  const children: (Node | string)[] = [];
-  if (pending.length > 0) {
-    children.push(
-      el('p', { class: 'evidence-warning', id: 'phase1-pending-warning' }, [
-        `This export would record ${vm.phase1.state}, not a pass: ` +
-          `${pending.map((r) => r.spec.id).join(', ')} still PENDING.`,
-      ]),
-    );
-  }
-  children.push(
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'download-evidence-p1',
-        textContent: `DOWNLOAD EVIDENCE JSON — ${vm.phase1.state}`,
-        onclick: handlers.onDownloadEvidence,
-      } as never),
-      el('button', {
-        class: 'secondary',
-        id: 'copy-evidence-p1',
-        textContent: 'COPY EVIDENCE JSON',
-        onclick: handlers.onCopyEvidence,
-      } as never),
-    ]),
-  );
-  return card('Evidence', children);
-}

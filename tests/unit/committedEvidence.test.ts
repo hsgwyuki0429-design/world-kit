@@ -57,6 +57,13 @@ import {
   MIN_ROTATION_AGREEMENT_RATE,
 } from '../../src/testkit/Phase6Tests';
 import { MAX_REPROJECTION_PX, MIN_CHEIRALITY_FRACTION } from '../../src/geometry/pose';
+import {
+  BIAS_AXIS_TOLERANCE_DEG,
+  BIAS_TOLERANCE_DPS,
+  MIN_BIAS_SAMPLES_JUDGED,
+  MIN_JUDGED_FRAMES as MIN_FUSION_FRAMES,
+} from '../../src/testkit/Phase7Tests';
+import { GYRO_BIAS_INJECTION_DPS } from '../../src/tracking/FusionStage';
 import { INJECTED_ROTATION_DEG } from '../../src/tracking/PoseStage';
 import { SHIFT_AGREEMENT_FRACTION, SHIFT_AGREEMENT_PX } from '../../src/tracking/SceneShift';
 import { findIntegrityIssues } from '../../src/core/validate';
@@ -69,6 +76,7 @@ const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase4', 'evidence'),
   join(process.cwd(), 'docs', 'phase5', 'evidence'),
   join(process.cwd(), 'docs', 'phase6', 'evidence'),
+  join(process.cwd(), 'docs', 'phase7', 'evidence'),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {
@@ -823,6 +831,182 @@ describe('Phase 5 evidence', () => {
   });
 });
 
+describe('Phase 7 evidence', () => {
+  const phase7 = bundles.filter((b) => b.bundle.phase === 7);
+  const device = phase7.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
+  const claimsPass = device.filter((b) => b.bundle.overallVerdict === PhaseState.PASSED);
+
+  it('every Phase 7 bundle carries the fusion context that produced its verdict', () => {
+    for (const { file, bundle } of phase7) {
+      const ctx = (bundle as unknown as {
+        phaseContext?: {
+          devEntry?: boolean;
+          fusion?: Record<string, unknown>;
+          pose?: Record<string, unknown>;
+          verification?: Record<string, unknown>;
+          flow?: Record<string, unknown>;
+        };
+      }).phaseContext;
+      expect(ctx, `${file} has no phaseContext`).toBeTruthy();
+      expect(typeof ctx?.devEntry, `${file} devEntry`).toBe('boolean');
+      expect(ctx?.fusion, `${file} fusion context`).toBeTruthy();
+      // What actually arrived, rather than what the platform advertised. IMU-001 and IMU-002 are
+      // both decided on this list, and a bundle without it cannot be read either way.
+      expect(Array.isArray(ctx?.fusion?.['sensors']), `${file} sensor inventory`).toBe(true);
+      expect(ctx?.fusion?.['imuReason'], `${file} imuReason`).toBeTruthy();
+      // Phase 7's input is Phase 6's output, which is Phase 5's, which is Phase 4's. A fused
+      // orientation means nothing without the visual pose it corrected.
+      expect(ctx?.pose, `${file} pose context`).toBeTruthy();
+      expect(ctx?.verification, `${file} verification context`).toBeTruthy();
+      expect(ctx?.flow, `${file} flow context`).toBeTruthy();
+    }
+  });
+
+  /**
+   * IMU-006 and IMU-009, re-derived from every bundle's own numbers rather than read off a
+   * verdict — and applied to **every** Phase 7 bundle, not only to the ones claiming a pass.
+   *
+   * These two need no sensor, so a desktop leg is as accountable for them as a device is. And
+   * IMU-006 is the one record in the phase with no tolerance at all: `POSITION: UNAVAILABLE` has
+   * to be a value a later phase must remove deliberately, so a single record carrying a position
+   * is a failure whatever else the run did.
+   */
+  it('no Phase 7 bundle carries a position, a scale, or an Euler triple', () => {
+    for (const { file, bundle } of phase7) {
+      const f = (bundle as unknown as { phaseContext?: { fusion?: Record<string, unknown> } })
+        .phaseContext?.fusion;
+      expect(f?.['position'] ?? null, `${file} position`).toBeNull();
+      expect(f?.['scale'], `${file} scale`).toBe('UNKNOWN');
+      expect(Number(f?.['positionsReported'] ?? 0), `${file} records with a position`).toBe(0);
+      expect(Number(f?.['scaleViolations'] ?? 0), `${file} scale violations`).toBe(0);
+      // §18: a quaternion has four components; a three-component orientation is an Euler triple.
+      expect(Number(f?.['eulerEmitted'] ?? 0), `${file} Euler triples`).toBe(0);
+      // Rule 002 at frame granularity, and the check that came out of Phase 6's 232.3 %.
+      expect(Number(f?.['modeMismatches'] ?? 0), `${file} mode mismatches`).toBe(0);
+      expect(Number(f?.['rateOutOfRange'] ?? 0), `${file} rates outside 0..1`).toBe(0);
+      expect(
+        Number(f?.['confidenceAboveWorstTerm'] ?? 0),
+        `${file} confidences above their own worst term`,
+      ).toBe(0);
+    }
+  });
+
+  /**
+   * v3 §68's pass condition, checked on every bundle whose run had no IMU.
+   *
+   * The automated leg is permanently in this case and the device may or may not be, so the check
+   * is written against the *condition* rather than against the leg: where nothing reported, the
+   * mode must have been `VISION_ONLY` throughout and the bias must be absent rather than zero.
+   */
+  it('a run with no IMU continued on vision alone and claimed nothing from absent sensors', () => {
+    for (const { file, bundle } of phase7) {
+      const f = (bundle as unknown as { phaseContext?: { fusion?: Record<string, unknown> } })
+        .phaseContext?.fusion;
+      if (f?.['imuAvailable'] === true) continue;
+      const modes = (f?.['modeFrames'] ?? {}) as Record<string, number>;
+      expect(Number(modes['FUSED'] ?? 0), `${file} fused frames with no sensors`).toBe(0);
+      expect(Number(modes['DEAD_RECKONING'] ?? 0), `${file} dead-reckoned frames with no sensors`)
+        .toBe(0);
+      // An unmeasured quantity is absent, not zero.
+      expect(f?.['gyroBiasDps'] ?? null, `${file} bias with no gyroscope`).toBeNull();
+      expect(Number(f?.['biasZeroWithoutGyro'] ?? 0), `${file} bias records with no gyroscope`)
+        .toBe(0);
+      expect(Number(f?.['imuConsistency'] ?? 0), `${file} imuConsistency with no IMU`).toBe(-1);
+      const withheld = (f?.['confidenceWithheld'] ?? []) as string[];
+      expect(
+        withheld.some((w) => w.includes('IMUConsistency')),
+        `${file} names imuConsistency as withheld`,
+      ).toBe(true);
+    }
+  });
+
+  it.runIf(device.length > 0)('never passed Phase 7 through the dev override', () => {
+    for (const { file, bundle } of device) {
+      const ctx = (bundle as unknown as { phaseContext?: { devEntry?: boolean } }).phaseContext;
+      expect(ctx?.devEntry ?? false, `${file} used the desktop dev override`).toBe(false);
+    }
+  });
+
+  /**
+   * The gate, re-derived from the bundle's own numbers rather than read off its verdict.
+   *
+   * All three halves are required. The magnitude alone is scored by a filter that found
+   * *something* the right size — on a device with real motion that is entirely possible — so the
+   * direction has to match too; and the injected twin's own innovation has to stay inside
+   * IMU-003's tolerance, because a filter that absorbed the bias into its attitude instead of
+   * into its bias state is left disagreeing with vision. That last one is the criterion the
+   * unit fixture proved load-bearing: gravity alone recovers the bias difference, so criteria
+   * 1–3 do not by themselves establish that vision was fused.
+   */
+  it.runIf(claimsPass.length > 0)(
+    'a claimed pass found a gyroscope bias it was never told about, on the axis it was applied to',
+    () => {
+      for (const { file, bundle } of claimsPass) {
+        const r = bundle.testResults.find((x) => x.spec.id === 'IMU-005');
+        expect(r?.verdict, `${file} IMU-005`).toBe(Verdict.PASS);
+
+        const samples = Number(r?.metrics['biasSamples']);
+        const requested = Number(r?.metrics['requestedInjectionDps']);
+        const recovered = Number(r?.metrics['medianBiasDifferenceDps']);
+        const axisError = Number(r?.metrics['medianBiasAxisErrorDeg']);
+        const injectedInnovation = Number(r?.metrics['medianInjectedInnovationDeg']);
+        const tolerance = Number(r?.metrics['toleranceDeg']);
+
+        expect(samples, `${file} bias measurements`).toBeGreaterThanOrEqual(MIN_BIAS_SAMPLES_JUDGED);
+        expect(requested, `${file} injected bias`).toBe(GYRO_BIAS_INJECTION_DPS);
+        expect(Math.abs(recovered - requested), `${file} recovered difference`)
+          .toBeLessThanOrEqual(BIAS_TOLERANCE_DPS);
+        expect(axisError, `${file} direction of the difference`)
+          .toBeGreaterThanOrEqual(0);
+        expect(axisError, `${file} direction of the difference`)
+          .toBeLessThanOrEqual(BIAS_AXIS_TOLERANCE_DEG);
+        if (injectedInnovation >= 0 && tolerance > 0) {
+          expect(injectedInnovation, `${file} injected filter left disagreeing with vision`)
+            .toBeLessThanOrEqual(tolerance);
+        }
+      }
+    },
+  );
+
+  /** IMU-001: a pass-through reports exactly zero here on every frame, and nothing else does. */
+  it.runIf(claimsPass.length > 0)('a claimed pass had an orientation of its own', () => {
+    for (const { file, bundle } of claimsPass) {
+      const r = bundle.testResults.find((x) => x.spec.id === 'IMU-001');
+      expect(r?.verdict, `${file} IMU-001`).toBe(Verdict.PASS);
+      expect(Number(r?.metrics['maxFusedVsVisualDeg']), `${file} fused vs visual`)
+        .toBeGreaterThan(0);
+      expect(Number(r?.metrics['propagatingFrames']), `${file} propagating frames`)
+        .toBeGreaterThanOrEqual(MIN_FUSION_FRAMES);
+    }
+  });
+
+  /** IMU-003: an innovation of exactly zero throughout is a copy, not a prediction. */
+  it.runIf(claimsPass.length > 0)('a claimed pass predicted rather than copied', () => {
+    for (const { file, bundle } of claimsPass) {
+      const r = bundle.testResults.find((x) => x.spec.id === 'IMU-003');
+      expect(r?.verdict, `${file} IMU-003`).toBe(Verdict.PASS);
+      const samples = Number(r?.metrics['innovationSamples']);
+      expect(samples, `${file} applied updates`).toBeGreaterThanOrEqual(MIN_FUSION_FRAMES);
+      expect(Number(r?.metrics['zeroInnovationSamples']), `${file} zero innovations`)
+        .toBeLessThan(samples);
+      expect(Number(r?.metrics['medianInnovationDeg']), `${file} median innovation`)
+        .toBeLessThanOrEqual(Number(r?.metrics['toleranceDeg']));
+    }
+  });
+
+  /** IMU-007: a propagated orientation does not get better with age, and stops being offered. */
+  it.runIf(claimsPass.length > 0)('a claimed pass let its confidence fall while running open-loop', () => {
+    for (const { file, bundle } of claimsPass) {
+      const r = bundle.testResults.find((x) => x.spec.id === 'IMU-007');
+      expect(r?.verdict, `${file} IMU-007`).toBe(Verdict.PASS);
+      expect(Number(r?.metrics['dropoutConfidenceRises']), `${file} confidence rises open-loop`)
+        .toBe(0);
+      expect(Number(r?.metrics['usableBeyondMax']), `${file} usable past the propagation limit`)
+        .toBe(0);
+    }
+  });
+});
+
 describe('Phase 6 evidence', () => {
   const phase6 = bundles.filter((b) => b.bundle.phase === 6);
   const device = phase6.filter((b) => b.bundle.leg === EvidenceLeg.REAL_DEVICE);
@@ -902,6 +1086,29 @@ describe('Phase 6 evidence', () => {
     },
   );
 
+  /**
+   * Bundles whose per-frame agreement rate is known not to be a rate, and why they are kept.
+   *
+   * `PoseSession` bounded what it retained (§56) but counted agreements with an *unbounded*
+   * counter, so once a run passed 400 comparisons the numerator kept climbing over a frozen
+   * denominator. The bundle below reports **232.3 % agreeing**, which is not a percentage of
+   * anything — and POSE-002's "at least 60 % of individual frames agree" criterion passed on it
+   * *without being applied*, because an inflated number clears a floor trivially.
+   *
+   * The bundle is kept rather than deleted, for the reason Phase 1 keeps a FAILED one: the
+   * record of a defect is evidence, and removing it leaves the fix looking like a change with
+   * no cause. What it is exempted from is the one figure the defect touched. Everything else in
+   * that run — 400 retained comparisons, a 4.568° gyroscope rotation against the camera's
+   * 4.388°, a median disagreement of 0.762° against a 3° tolerance — was measured correctly,
+   * and POSE-005's gate (7.999° recovered for an 8° injection, control 0.448°) is untouched.
+   *
+   * **What this list does not do is excuse the criterion.** POSE-002's fourth criterion was not
+   * exercised on that run, and no bundle in this list may be read as having satisfied it.
+   */
+  const RATE_PREDATES_THE_FIX = new Set([
+    'phase6-real-device-PASSED-2026-08-23T03-04-13-558Z.json',
+  ]);
+
   /** POSE-002, the one instrument that exists nowhere but the device. */
   it.runIf(claimsPass.length > 0)('a claimed pass agrees with the gyroscope on a real turn', () => {
     for (const { file, bundle } of claimsPass) {
@@ -911,8 +1118,26 @@ describe('Phase 6 evidence', () => {
       // An agreement between two zeros is not an agreement.
       expect(Number(p2?.metrics['medianGyroDeg']), `${file} measured rotation`).toBeGreaterThan(0);
       expect(Number(p2?.metrics['medianVisualDeg']), `${file} recovered rotation`).toBeGreaterThan(0);
-      expect(Number(p2?.metrics['agreementRate']), `${file} agreement rate`)
-        .toBeGreaterThanOrEqual(MIN_ROTATION_AGREEMENT_RATE);
+      // ...and the substance of the comparison: the two instruments have to agree, inside the
+      // tolerance the session derived from what was measured. This is the physics check, and it
+      // is the one the defect above did not touch.
+      const tolerance = Math.max(
+        3.0,
+        0.3 * Number(p2?.metrics['medianGyroDeg']),
+      );
+      expect(Number(p2?.metrics['medianDisagreementDeg']), `${file} median disagreement`)
+        .toBeLessThanOrEqual(tolerance);
+
+      const rate = Number(p2?.metrics['agreementRate']);
+      if (RATE_PREDATES_THE_FIX.has(file)) {
+        // Named, not waved through: assert it *is* the broken shape, so the exemption cannot
+        // quietly outlive the bundle it was written for.
+        expect(rate, `${file} is listed as predating the rate fix`).toBeGreaterThan(1);
+        continue;
+      }
+      // A rate outside 0..1 is not a measurement and may not clear a floor by being large.
+      expect(rate, `${file} agreement rate is a rate`).toBeLessThanOrEqual(1);
+      expect(rate, `${file} agreement rate`).toBeGreaterThanOrEqual(MIN_ROTATION_AGREEMENT_RATE);
     }
   });
 

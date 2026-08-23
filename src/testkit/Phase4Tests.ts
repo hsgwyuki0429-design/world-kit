@@ -44,6 +44,8 @@ import {
 } from '../tracking/trackingState';
 import { ROTATING_DEG, ROTATION_WINDOW_MS } from '../tracking/FlowSession';
 import type { FlowStats } from '../tracking/flowStats';
+import type { Evaluation, PhaseTest } from './runTests';
+import { runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -76,17 +78,7 @@ export interface Phase4Context {
   readonly stats: FlowStats;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase4Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase4Context) => Evaluation;
-}
+type Phase4Test = PhaseTest<Phase4Context>;
 
 function pct(n: number): string {
   return `${Math.round(n * 1000) / 10}%`;
@@ -749,17 +741,7 @@ export const PHASE4_TESTS: readonly Phase4Test[] = [
 export const PHASE4_SPECS: readonly TestSpec[] = PHASE4_TESTS.map((t) => t.spec);
 
 export function runPhase4Tests(ctx: Phase4Context): TestResult[] {
-  return PHASE4_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE4_TESTS, ctx);
 }
 
 /** Re-exported so the screen shows the same numbers the tests judge (Rule 002). */

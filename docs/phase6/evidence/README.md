@@ -2,16 +2,100 @@
 
 | File | Leg | Passes the phase? |
 | --- | --- | --- |
+| `phase6-real-device-PASSED-2026-08-23T03-04-13-558Z.json` | `REAL_DEVICE` | **Yes** — 5/5 required, 2/2 advisory |
+| `phase6-real-device-PASSED-2026-08-23T03-04-13-558Z.jpg` | `REAL_DEVICE` | The screen from that run |
 | `phase6-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004 — and see below) |
 | `phase6-desktop-chromium.png` | `DESKTOP_DEV` | No — the screen at the end of that run |
 
-No device bundle yet.
+iPhone / iOS 18.7 / Safari 26.6 over HTTPS, `devEntry: false`, tier `BASIC 960x540@20` processing
+540×960 in portrait. The transition log climbs through the conditions one at a time —
+`POSE-001..005 pending → 003,004,005 → 003,004 → 003 → PASSED` — rather than arriving at a
+verdict in one step.
 
 **This phase is the first where the automated leg is short of an instrument, not just of
 authority.** Rule 004 already meant a `DESKTOP_DEV` bundle could never pass; here, one of the two
 things the phase is scored against — the gyroscope — **does not exist** on headless Chromium.
 POSE-002 reports `PENDING` with that reason and the leg reaches `TESTING` at best, which is Rule
 004 restated as a measurement rather than as a policy.
+
+## What the device measured
+
+```
+3001 pose frames: 1137 POSE, 371 ROTATION_ONLY, 1493 NO_POSE
+median rotation 3.38°, reprojection 1.083 px, 100% in front of both cameras
+POSE-005: 230 injected frames — an 8° turn moved the pose 7.999° against 0.448° for the control;
+          inlier drift 1.45% against the control's 1.46%, 11 planar flips against 15
+POSE-002: the camera recovered 4.388° against the gyroscope's 4.568°, median disagreement 0.762°
+v3 §16: 104 planar posed from the homography, 0 via an Essential matrix;
+        2 unseparated candidates on a plane against 1 with depth, 0 not lowered
+POSE-004: 371 frames with no parallax, 0 named a translation;
+          1449 frames Phase 5 declined, 0 carried a rotation
+cost 0.373 ms pose + 0.865 ms RANSAC = 1.238 ms against §H's 6 ms for both together
+±20% focal moves the rotation 0.64° and the translation direction 3.12°
+```
+
+## The defect this run found, and what it means for the verdict
+
+**POSE-002 reported `232.3% agreeing`.** That is not a percentage of anything, and the screenshot
+shows it in green as a pass.
+
+`PoseSession` bounds what it retains (§56) but counted agreements with an **unbounded** counter,
+so once the run passed 400 comparisons the numerator kept climbing over a frozen denominator.
+`FlowSession` never had this — FLOW-002 counts its agreements out of the same trimmed window it
+divides by — and Phase 6 now does the same, so the mismatch is impossible by construction rather
+than merely repaired. `tests/unit/poseStage.test.ts` drives the session past its own bound.
+
+**The consequence for this bundle, stated plainly: POSE-002's fourth criterion — "at least 60 % of
+individual frames agree, not merely the median" — was not exercised.** An inflated number clears a
+floor trivially. Its other three criteria were measured correctly, including the substantive one:
+
+| criterion | measured |
+| --- | --- |
+| ≥ 15 comparable frames | 400 retained of 929 made |
+| gyroscope measured a non-zero rotation | 4.568° |
+| median disagreement within tolerance | **0.762° against 3.0°** |
+| ≥ 60 % of individual frames agree | **not evaluated** |
+
+The verdict stands on what was measured. The physics comparison — the reason POSE-002 exists —
+passed on real data with a wide margin, and POSE-005's gate is untouched and decisive. A short
+re-run would settle the fourth criterion; until one exists, this bundle is named in
+`committedEvidence.test.ts` as predating the fix, and the re-derivation asserts that it *is* the
+broken shape so the exemption cannot quietly outlive it.
+
+## Three things the device settled that the leg could not
+
+**The gyroscope wobbled, and the net-versus-path distinction earned itself.** The recorded
+samples show `gyroPathDeg 20.5` against `gyroNetDeg 4.6` — the operator turned back and forth
+about four times as far as the camera ended up rotated. Had `PoseSession` integrated `|ω|`, as
+`FlowSession` does for a different purpose, the "gyroscope" would have read 20.5° against the
+camera's 4.6° and POSE-002 would have failed a **correct** solver.
+
+**The two amendments made before this run were both necessary, and the device proves it.**
+
+- POSE-003's withdrawn cross-class comparison: this run reports planar translation confidence
+  **0.0909 against 0.0773** with depth. Under the original criterion — planar must be *below*
+  non-planar — this device run would have **failed**, while the mechanism it was meant to measure
+  is exactly right (2 unseparated candidates on a plane against 1 with depth, 0 frames not
+  lowered, 0 planar frames decomposed from an Essential matrix).
+- POSE-005's zero tolerance: this run shows **11 planar flips for the injection against 15 for
+  the control**. The control — the same data refitted, no injection at all — flipped *more*.
+  Under the original criterion this would have failed too.
+
+**The focal-length assumption matters on real optics.** ±20 % on `f` moves the recovered rotation
+by 0.64° and the translation direction by **3.12°**, against 0.012° and 0.057° on the synthetic
+leg. That is what the sensitivity report exists to say: the rotation survives the guess, the
+translation direction depends on it, and any later phase reading a direction from this one
+inherits that.
+
+## One thing worth knowing before reading the confidence figures
+
+`medianConfidence` is **0**, and the terms say why: `trackedFeatures 0.2136 — 127 against §11's
+80 degraded / 300 good`. v3 §19's confidence is the minimum over its terms, and on this device
+the binding term is the population, not the geometry. That is the §11 shortfall Phase 4's device
+run already recorded, surfacing again one phase later — the pose is well determined and the
+confidence attached to it is low because the feature count is low.
+
+## Two criteria the leg's own variance corrected, both recorded in the plan
 
 Regenerate the desktop bundle with `npm run test:e2e:phase6`.
 
@@ -59,7 +143,7 @@ consequences of the assumption are measured rather than asserted. On this synthe
 pose barely depends on the guess. Whether that holds on a real lens with real perspective is the
 device run's to say, and the same two numbers are in every bundle.
 
-## Two criteria the leg's own variance corrected, both recorded in the plan
+### Both, in detail
 
 Neither is a threshold moved to make a number pass — both are criteria that turned out to be
 measuring something other than what they named, corrected with the measurement that showed it

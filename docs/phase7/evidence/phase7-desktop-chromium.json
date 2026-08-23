@@ -1,0 +1,4018 @@
+{
+  "schemaVersion": 1,
+  "leg": "DESKTOP_DEV",
+  "phase": 7,
+  "phaseName": "IMU Support / Fusion",
+  "createdAt": "2026-08-23T11:26:44.519Z",
+  "appVersion": "0.1.0",
+  "origin": "http://localhost:46349",
+  "secureContext": true,
+  "device": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+    "platformHint": "Linux x86_64",
+    "osGuess": "Linux",
+    "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+    "isLikelyIOS": false,
+    "maxTouchPoints": 1,
+    "screenWidth": 430,
+    "screenHeight": 932,
+    "viewportWidth": 430,
+    "viewportHeight": 932,
+    "devicePixelRatio": 2,
+    "hardwareConcurrency": 4,
+    "languages": [
+      "en-US"
+    ],
+    "timezone": "UTC"
+  },
+  "capabilityMatrix": {
+    "records": [
+      {
+        "id": "platform.secureContext",
+        "group": "platform",
+        "label": "Secure context (HTTPS)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "secure context over http://localhost:46349",
+        "data": {
+          "isSecureContext": true,
+          "protocol": "http:",
+          "host": "localhost:46349",
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787484371044
+      },
+      {
+        "id": "platform.iosSafariGuess",
+        "group": "platform",
+        "label": "iOS/Safari (UA guess)",
+        "state": "UNAVAILABLE",
+        "method": "INFERENCE",
+        "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
+        "data": {
+          "osGuess": "Linux",
+          "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+          "maxTouchPoints": 1
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787484371045
+      },
+      {
+        "id": "camera.getUserMedia",
+        "group": "camera",
+        "label": "getUserMedia",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getUserMedia is present in a secure context. Not invoked in Phase 0 — opening the camera is Phase 1 (CAM-001), and probing it here would trigger a permission prompt",
+        "data": {
+          "hasMediaDevices": true,
+          "hasGetUserMedia": true,
+          "secureContext": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787484371045
+      },
+      {
+        "id": "camera.enumerateDevices",
+        "group": "camera",
+        "label": "Video input devices",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "1 videoinput device(s) enumerated",
+        "data": {
+          "videoInputCount": 1,
+          "audioInputCount": 3,
+          "totalDevices": 7,
+          "labelsHidden": false,
+          "deviceIdsHidden": false
+        },
+        "durationMs": 39.7,
+        "timestamp": 1787484371084
+      },
+      {
+        "id": "camera.supportedConstraints",
+        "group": "camera",
+        "label": "Media constraints",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
+        "data": {
+          "supportedCount": 36,
+          "facingMode": true,
+          "width": true,
+          "height": true,
+          "frameRate": true,
+          "aspectRatio": true,
+          "deviceId": true,
+          "missing": []
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787484371085
+      },
+      {
+        "id": "camera.trackControl",
+        "group": "camera",
+        "label": "Track capability control",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getCapabilities / getSettings / applyConstraints all present — Phase 2 can negotiate resolution and frame rate at runtime",
+        "data": {
+          "getCapabilities": true,
+          "getSettings": true,
+          "applyConstraints": true
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371085
+      },
+      {
+        "id": "compute.webassembly",
+        "group": "compute",
+        "label": "WebAssembly (executed)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "compiled and executed a real 41-byte module: add(2,3) === 5",
+        "data": {
+          "moduleBytes": 41,
+          "addResult": 5,
+          "hasInstantiateStreaming": true,
+          "hasMemory": true
+        },
+        "durationMs": 0.6,
+        "timestamp": 1787484371085
+      },
+      {
+        "id": "compute.worker",
+        "group": "compute",
+        "label": "Web Worker round-trip",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "blob worker round-trip succeeded in 6.6 ms",
+        "data": {
+          "roundTripMs": 6.6,
+          "tokenMatched": true
+        },
+        "durationMs": 8,
+        "timestamp": 1787484371093
+      },
+      {
+        "id": "compute.offscreenCanvas",
+        "group": "compute",
+        "label": "OffscreenCanvas",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "drew and read back an exact pixel [10,20,30,255] from an OffscreenCanvas",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.6,
+        "timestamp": 1787484371094
+      },
+      {
+        "id": "compute.transferControlToOffscreen",
+        "group": "compute",
+        "label": "Canvas -> Offscreen transfer",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferControlToOffscreen returned a live OffscreenCanvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787484371094
+      },
+      {
+        "id": "compute.offscreenInWorker",
+        "group": "compute",
+        "label": "OffscreenCanvas inside worker",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferred an OffscreenCanvas into a worker, drew there and read back the exact pixel",
+        "data": {
+          "ok": true,
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 6.9,
+        "timestamp": 1787484371101
+      },
+      {
+        "id": "compute.sharedArrayBuffer",
+        "group": "compute",
+        "label": "SharedArrayBuffer",
+        "state": "UNAVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "SharedArrayBuffer is absent — requires COOP+COEP headers, which static hosting such as GitHub Pages cannot set. WASM threads must not be assumed.",
+        "data": {
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371101
+      },
+      {
+        "id": "graphics.webgl2",
+        "group": "graphics",
+        "label": "WebGL2",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebGL2 context created on ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "data": {
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "rendererMasked": false,
+          "maxTextureSize": 8192,
+          "maxViewportDims": [
+            8192,
+            8192
+          ],
+          "colorBufferFloat": true,
+          "textureFloatLinear": true,
+          "extensionCount": 29
+        },
+        "durationMs": 11.8,
+        "timestamp": 1787484371113
+      },
+      {
+        "id": "graphics.webgpu",
+        "group": "graphics",
+        "label": "WebGPU",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+        "data": {
+          "hasNavigatorGpu": true,
+          "adapter": null
+        },
+        "durationMs": 2,
+        "timestamp": 1787484371115
+      },
+      {
+        "id": "graphics.createImageBitmap",
+        "group": "graphics",
+        "label": "createImageBitmap",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "created a real 4x4 ImageBitmap from a canvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 1.8,
+        "timestamp": 1787484371117
+      },
+      {
+        "id": "graphics.canvas2dReadback",
+        "group": "graphics",
+        "label": "Canvas 2D readback",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "main-thread canvas readback is byte-exact [10,20,30,255]",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787484371117
+      },
+      {
+        "id": "media.imageCapture",
+        "group": "media",
+        "label": "ImageCapture",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "ImageCapture is present",
+        "data": {},
+        "durationMs": 0,
+        "timestamp": 1787484371117
+      },
+      {
+        "id": "media.webcodecs",
+        "group": "media",
+        "label": "WebCodecs VideoFrame",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "VideoFrame is present — Phase 2 can pull frames without a canvas round-trip",
+        "data": {
+          "VideoFrame": true,
+          "VideoDecoder": true,
+          "VideoEncoder": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787484371117
+      },
+      {
+        "id": "media.videoFrameCallback",
+        "group": "media",
+        "label": "requestVideoFrameCallback",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "requestVideoFrameCallback is present — frame scheduling can be driven by real decoded frames rather than by rAF guessing",
+        "data": {
+          "playsInline": true
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787484371117
+      },
+      {
+        "id": "storage.estimate",
+        "group": "storage",
+        "label": "Storage quota",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "storage quota reported by the platform: 1.0 GB (used 0.0 B)",
+        "data": {
+          "quotaBytes": 1093848571,
+          "usageBytes": 0
+        },
+        "durationMs": 1.7,
+        "timestamp": 1787484371119
+      },
+      {
+        "id": "storage.localStorage",
+        "group": "storage",
+        "label": "localStorage",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "wrote, read and removed a real localStorage key",
+        "data": {},
+        "durationMs": 1,
+        "timestamp": 1787484371120
+      },
+      {
+        "id": "storage.indexedDB",
+        "group": "storage",
+        "label": "IndexedDB",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
+        "data": {},
+        "durationMs": 2.9,
+        "timestamp": 1787484371123
+      },
+      {
+        "id": "storage.performanceMemory",
+        "group": "storage",
+        "label": "JS heap metrics",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "performance.memory is present; heap numbers in the debug HUD will be real",
+        "data": {
+          "deviceMemory": 8
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787484371123
+      },
+      {
+        "id": "spatial.webxr",
+        "group": "spatial",
+        "label": "WebXR",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebXR present; immersive-ar=false, immersive-vr=false",
+        "data": {
+          "hasNavigatorXr": true,
+          "immersiveAR": false,
+          "immersiveVR": false
+        },
+        "durationMs": 6.3,
+        "timestamp": 1787484371129
+      },
+      {
+        "id": "spatial.nativeBridge",
+        "group": "spatial",
+        "label": "Native app bridge",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no window.webkit.messageHandlers bridge — the page is not hosted by a native app, so no native iOS framework can be reached from JavaScript",
+        "data": {
+          "handlerNames": []
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787484371129
+      },
+      {
+        "id": "spatial.cameraDepth",
+        "group": "spatial",
+        "label": "Camera depth",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no depth-related media constraint and no WebXR depth-sensing route (webxr=false) — DEPTH: UNAVAILABLE. Any depth used later must be labelled MONOCULAR ESTIMATE and never presented as native depth (§44)",
+        "data": {
+          "depthConstraintKeys": [],
+          "webxrAvailable": false
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787484371130
+      },
+      {
+        "id": "spatial.arkit",
+        "group": "spatial",
+        "label": "Native ARKit",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "ARKit has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. ARKit: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371130
+      },
+      {
+        "id": "spatial.roomplan",
+        "group": "spatial",
+        "label": "RoomPlan",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "RoomPlan has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. RoomPlan: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371130
+      },
+      {
+        "id": "spatial.metricScale",
+        "group": "spatial",
+        "label": "Metric scale",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "A monocular camera provides no absolute scale (§18, §90). No depth sensor, WebXR session or native bridge is reachable to supply one, so the world will be built in LOCAL UNITS and SCALE stays UNKNOWN until something actually measures it.",
+        "data": {
+          "scaleStatus": "UNKNOWN",
+          "units": "LOCAL_UNITS"
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371130
+      },
+      {
+        "id": "motion.deviceMotion",
+        "group": "motion",
+        "label": "DeviceMotion",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceMotionEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "data": {
+          "requiresPermission": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371130
+      },
+      {
+        "id": "motion.deviceOrientation",
+        "group": "motion",
+        "label": "DeviceOrientation",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceOrientationEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "data": {
+          "requiresPermission": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787484371130
+      }
+    ],
+    "startedAt": 1787484371024,
+    "completedAt": 1787484371130,
+    "totalDurationMs": 85.3
+  },
+  "testResults": [
+    {
+      "spec": {
+        "id": "IMU-001",
+        "title": "Motion permission granted",
+        "required": true,
+        "input": "a run where DeviceMotion was granted and is delivering",
+        "expected": "all of §17's fields present, and the filter's output differing from the visual pose in the way a filter's should",
+        "passCriteria": "rotationRate, acceleration and accelerationIncludingGravity all arriving at a measured rate the bundle records; >= 15 frames reported FUSED; the filter propagated between visual updates; and a non-zero gyroscope bias estimate or a recorded reason why the run could not observe one",
+        "failureCondition": "FUSED reported on a run where the fused orientation is identical to the visual orientation on every frame — that is a pass-through, and it is what \"not fusing\" looks like"
+      },
+      "verdict": "PENDING",
+      "observed": "no IMU is reporting — listening for devicemotion; no event with rotationRate has arrived yet",
+      "reason": "this record is about what the fusion does with the sensors, and there are none. The run continues on vision alone, which is v3 §68’s pass condition and IMU-002’s subject — so the absence is decided there rather than rounded up here",
+      "metrics": {
+        "sensors": [
+          {
+            "name": "acceleration",
+            "arriving": false,
+            "detail": "no finite value has arrived on this channel"
+          },
+          {
+            "name": "accelerationIncludingGravity",
+            "arriving": false,
+            "detail": "no finite value has arrived on this channel"
+          },
+          {
+            "name": "rotationRate",
+            "arriving": false,
+            "detail": "no finite value has arrived on this channel"
+          },
+          {
+            "name": "interval",
+            "arriving": true,
+            "detail": "delivering finite values"
+          },
+          {
+            "name": "deviceorientation",
+            "arriving": false,
+            "detail": "not consumed: it is a fused attitude the platform computed, and consuming it would make the filter agree with itself rather than with the sensors"
+          },
+          {
+            "name": "magnetometer",
+            "arriving": false,
+            "detail": "not read by Phase 7 at all — the heading is RELATIVE for that reason, and v3 §17 does not require an absolute one"
+          }
+        ],
+        "measuredImuHz": -1,
+        "reportedImuHz": 0.06,
+        "fusedFrames": 0,
+        "propagatingFrames": 0,
+        "biasMagnitudeDps": -1,
+        "biasReason": "no gyroscope is reporting, so the bias is unmeasured — and therefore absent, not zero",
+        "medianFusedVsVisualDeg": -1,
+        "maxFusedVsVisualDeg": -1,
+        "zeroFusedVsVisualFrames": 0,
+        "fusedVsVisualSamples": 0
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-002",
+        "title": "Motion permission denied",
+        "required": true,
+        "input": "a run where DeviceMotion is absent, denied, or silent",
+        "expected": "the system continues on vision alone and says so",
+        "passCriteria": "mode reports VISION_ONLY on every frame and never FUSED; the fused orientation equals the visual orientation exactly; gyroBiasDps is null rather than zero; imuConsistency is withheld from the confidence by name rather than scored as good",
+        "failureCondition": "any fused state produced from absent sensors, or a run that stops"
+      },
+      "verdict": "PASS",
+      "observed": "334 frames, all VISION_ONLY — listening for devicemotion; no event with rotationRate has arrived yet. Bias null, imuConsistency withheld by name",
+      "reason": "v3 §68’s pass condition, met: IMU unavailableでもVision-only modeで継続可能. The run continued, the fused orientation is the visual one unchanged, and nothing was invented from sensors that are not reporting — the bias is null rather than zero, because a zero would be a claim that it was estimated and found to be nothing",
+      "metrics": {
+        "imuAvailable": false,
+        "imuReason": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "modeFrames": {
+          "VISION_ONLY": 334
+        },
+        "fusionFrames": 334,
+        "gyroBiasDps": null,
+        "biasZeroWithoutGyro": 0,
+        "confidenceWithheld": [
+          "IMUConsistency — no IMU is reporting on this run (v3 §68: vision-only continues)"
+        ],
+        "imuConsistency": -1,
+        "medianFusedVsVisualDeg": -1,
+        "modeMismatches": 0
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-003",
+        "title": "Camera rotation",
+        "required": true,
+        "input": "frames where the camera demonstrably rotated",
+        "expected": "the fused orientation follows it, and the two instruments disagree only a little",
+        "passCriteria": ">= 15 updates where both the visual increment and the propagated prediction could be formed; median innovation within max(3°, 30% of measured); and the innovation not identically zero",
+        "failureCondition": "an innovation of exactly zero throughout — a filter whose prediction always matches its measurement exactly is not predicting, it is copying"
+      },
+      "verdict": "PENDING",
+      "observed": "no IMU is reporting — listening for devicemotion; no event with rotationRate has arrived yet",
+      "reason": "this record is about what the fusion does with the sensors, and there are none. The run continues on vision alone, which is v3 §68’s pass condition and IMU-002’s subject — so the absence is decided there rather than rounded up here",
+      "metrics": {
+        "innovationSamples": 0,
+        "medianInnovationDeg": -1,
+        "maxInnovationDeg": -1,
+        "medianVisualIncrementDeg": -1,
+        "toleranceDeg": 3,
+        "innovationsWithinTolerance": 0,
+        "zeroInnovationSamples": 0
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-004",
+        "title": "Visual + IMU consistency",
+        "required": true,
+        "input": "the fused confidence, and the gravity direction the accelerometer reports",
+        "expected": "v3 §19's seventh term is present, valued, and able to fall",
+        "passCriteria": "imuConsistency present in the fused confidence terms and named; at least one frame below 1, or a recorded reason the instruments never disagreed enough; the fused confidence never above its own worst term; and median gravity disagreement within 10° over >= 15 samples",
+        "failureCondition": "an imuConsistency pinned at 1 whatever the sensors did; or a fused confidence above the visual confidence purely because a second sensor was present"
+      },
+      "verdict": "PENDING",
+      "observed": "no IMU is reporting — listening for devicemotion; no event with rotationRate has arrived yet",
+      "reason": "this record is about what the fusion does with the sensors, and there are none. The run continues on vision alone, which is v3 §68’s pass condition and IMU-002’s subject — so the absence is decided there rather than rounded up here",
+      "metrics": {
+        "imuConsistency": -1,
+        "medianImuConsistency": -1,
+        "minImuConsistency": -1,
+        "imuConsistencyBelowOne": 0,
+        "imuConsistencySamples": 0,
+        "gravityDegSamples": 0,
+        "medianGravityDeg": -1,
+        "gravityRejected": 1,
+        "confidence": 0,
+        "visualConfidence": 0,
+        "confidenceAboveWorstTerm": 0,
+        "fusedAboveVisual": 0,
+        "confidenceTerms": [
+          {
+            "name": "inlierRatio",
+            "value": 1,
+            "note": "0.9375 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+          },
+          {
+            "name": "reprojectionError",
+            "value": 0,
+            "note": "18.0041 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
+          },
+          {
+            "name": "trackedFeatures",
+            "value": 0.3091,
+            "note": "148 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+          },
+          {
+            "name": "featureDistribution",
+            "value": 0.6183,
+            "note": "81.833 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
+          },
+          {
+            "name": "temporalStability",
+            "value": 0.7435,
+            "note": "3.8469° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
+          },
+          {
+            "name": "modelConsistency",
+            "value": 1,
+            "note": "cheirality left exactly one candidate standing (Phase 6's measurement of the visual pose, carried through unchanged)"
+          },
+          {
+            "name": "imuConsistency",
+            "value": -1,
+            "note": "no IMU is reporting, so there is nothing to be consistent with — v3 §19 lists this term and this run cannot measure it; it is withheld by name rather than scored as 1"
+          },
+          {
+            "name": "propagation",
+            "value": 1,
+            "note": "462.4 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
+          }
+        ]
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-005",
+        "title": "Injected gyroscope bias",
+        "required": true,
+        "input": "a second filter fed the same visual poses and the same gyroscope samples offset by a known 3 °/s, handed over unmarked",
+        "expected": "the injected filter's bias estimate exceeds the control's by the injected amount",
+        "passCriteria": ">= 10 frames where both filters had converged enough to report; |b_injected − b_control| within 1 °/s of 3 °/s; the difference lying within 25° of the injected axis; and the injected filter's median innovation inside IMU-003's tolerance",
+        "failureCondition": "a difference near zero. A pass-through and a dead-reckoner both score 0.0 °/s here, while satisfying every other numeric criterion in this phase"
+      },
+      "verdict": "PENDING",
+      "observed": "there is no gyroscope to bias — listening for devicemotion; no event with rotationRate has arrived yet",
+      "reason": "IMU-005 injects a bias into a gyroscope. With no gyroscope there is nothing to inject into, and the plan excludes the record with that reason rather than passing it. The automated leg is permanently here; only a device can decide this one",
+      "metrics": {
+        "biasSamples": 0,
+        "medianBiasDifferenceDps": -1,
+        "medianBiasAxisErrorDeg": -1,
+        "requestedInjectionDps": 3,
+        "injectionAxis": [
+          0,
+          0,
+          1
+        ],
+        "medianInjectedInnovationDeg": -1,
+        "toleranceDeg": 3,
+        "gyroBiasDps": null,
+        "biasDifferences": []
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-006",
+        "title": "No absolute position from the IMU",
+        "required": true,
+        "input": "every fused record produced in the run",
+        "expected": "no position, in any unit, from any source — and a number behind the refusal",
+        "passCriteria": "no record carries a position; scale reads UNKNOWN throughout; velocity and accelBias are absent with their reasons stated rather than reported as zero; and the accelerometer is double-integrated for the record only, with the resulting drift reported",
+        "failureCondition": "any position field with a value. There is no tolerance on this one"
+      },
+      "verdict": "PASS",
+      "observed": "334 records, no position in any of them, scale UNKNOWN throughout. no accelerometer reported, so the drift this phase declined to produce could not be measured on this run",
+      "reason": "v3 §17’s two prohibitions and v4 §19’s one, held. The accelerometer reports m/s² and Phase 6’s translation is a unit direction in LOCAL_UNITS, so fusing them needs the scale a monocular camera does not have. The drift measurement needs an accelerometer and this run had none",
+      "metrics": {
+        "positionsReported": 0,
+        "scaleViolations": 0,
+        "scale": "UNKNOWN",
+        "positionReason": "the accelerometer reports m/s² and Phase 6’s translation is a unit direction in LOCAL_UNITS with no scale, so fusing them needs the scale — which is exactly the quantity a monocular camera does not have (v3 §15, §17; v4 §18, §19)",
+        "velocityReason": "velocity is refused for the same reason as position: integrating an acceleration gives a velocity in m/s, and there is nothing in LOCAL_UNITS to correct it against (v3 §17, §18). It is absent rather than reported as zero",
+        "accelBiasReason": "accelerometer bias is not observable without position observability, and position is refused — so estimating it would be estimating a quantity nothing can correct (v3 §18)",
+        "deadReckonedPositionM": 0,
+        "deadReckonedSeconds": 0
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-007",
+        "title": "Vision dropout",
+        "required": true,
+        "input": "intervals where the visual pose stops arriving",
+        "expected": "the orientation continues, and its confidence falls while it does",
+        "passCriteria": ">= 15 frames of propagation without a visual update, or a recorded reason they never occurred; mode becomes DEAD_RECKONING; the fused confidence falls monotonically with propagatedMs; past 3000 ms the pose is no longer offered as usable; and the innovation on the first corrected frame is recorded",
+        "failureCondition": "a confidence that does not fall while running open-loop; or a fused pose still offered as usable after 3 s without a measurement"
+      },
+      "verdict": "PENDING",
+      "observed": "no IMU is reporting — listening for devicemotion; no event with rotationRate has arrived yet",
+      "reason": "this record is about what the fusion does with the sensors, and there are none. The run continues on vision alone, which is v3 §68’s pass condition and IMU-002’s subject — so the absence is decided there rather than rounded up here",
+      "metrics": {
+        "dropoutFrames": 0,
+        "longestPropagatedMs": 1981.9,
+        "dropoutConfidenceRises": 0,
+        "usableBeyondMax": 0,
+        "reconvergences": 0,
+        "medianReconvergenceInnovationDeg": -1,
+        "dropouts": [],
+        "modeFrames": {
+          "VISION_ONLY": 334
+        }
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-008",
+        "title": "Fusion cost",
+        "required": false,
+        "input": ">= 10 frames where the fusion ran",
+        "expected": "mean fusion cost <= 1 ms",
+        "passCriteria": "mean fusion cost <= 1 ms, with the sensor rate beside it",
+        "failureCondition": "over budget. Advisory because §34 ranks correctness above performance, and because §H has no line for fusion at all — any cost here is spent from margin"
+      },
+      "verdict": "PASS",
+      "observed": "0.0341 ms mean over 334 frames, against a 1 ms budget, with the IMU delivering at -1 Hz",
+      "reason": "an orientation error-state filter is a handful of 3×3 operations per sample, and it costs about what that predicts — which matters because §H had no millisecond left to give it",
+      "metrics": {
+        "meanFusionMs": 0.0341,
+        "fusionCostSamples": 334,
+        "measuredImuHz": -1,
+        "budgetMs": 1
+      },
+      "timestamp": 1787484404516
+    },
+    {
+      "spec": {
+        "id": "IMU-009",
+        "title": "Metadata honesty",
+        "required": false,
+        "input": "every fused record produced in the run",
+        "expected": "the record says what was measured and nothing else",
+        "passCriteria": "every record carries SCALE: UNKNOWN and a null position; gyroBiasDps null where no gyroscope reported, never zero; orientation carried as a quaternion with no Euler triple anywhere; mode never disagreeing with the inputs it was derived from; the fused confidence never above its lowest measured term; and every rate inside 0..1",
+        "failureCondition": "any of the above unmet"
+      },
+      "verdict": "PASS",
+      "observed": "334 records inspected: scale UNKNOWN, no position, orientation carried as a quaternion, heading RELATIVE (no magnetometer is read), every mode implied by its own inputs, every rate inside 0..1",
+      "reason": "the record is honest about the two things this phase refused and the one it could not have: no position, no scale, and a heading that is relative because nothing here reads a magnetometer. §18’s quaternion preference is met by there being no Euler conversion in the codebase to emit one",
+      "metrics": {
+        "scaleViolations": 0,
+        "positionsReported": 0,
+        "biasZeroWithoutGyro": 0,
+        "eulerEmitted": 0,
+        "modeMismatches": 0,
+        "confidenceAboveWorstTerm": 0,
+        "rateOutOfRange": 0,
+        "heading": "RELATIVE",
+        "sensors": [
+          {
+            "name": "acceleration",
+            "arriving": false,
+            "detail": "no finite value has arrived on this channel"
+          },
+          {
+            "name": "accelerationIncludingGravity",
+            "arriving": false,
+            "detail": "no finite value has arrived on this channel"
+          },
+          {
+            "name": "rotationRate",
+            "arriving": false,
+            "detail": "no finite value has arrived on this channel"
+          },
+          {
+            "name": "interval",
+            "arriving": true,
+            "detail": "delivering finite values"
+          },
+          {
+            "name": "deviceorientation",
+            "arriving": false,
+            "detail": "not consumed: it is a fused attitude the platform computed, and consuming it would make the filter agree with itself rather than with the sensors"
+          },
+          {
+            "name": "magnetometer",
+            "arriving": false,
+            "detail": "not read by Phase 7 at all — the heading is RELATIVE for that reason, and v3 §17 does not require an absolute one"
+          }
+        ]
+      },
+      "timestamp": 1787484404516
+    }
+  ],
+  "overallVerdict": "TESTING",
+  "overallReason": "PENDING: IMU-001, IMU-003, IMU-004, IMU-005, IMU-007 — not yet evaluable",
+  "stateTransitions": [
+    {
+      "timestamp": 1787484371010,
+      "subject": "phase[0] Environment / Capability",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "capability detection starting"
+    },
+    {
+      "timestamp": 1787484371134,
+      "subject": "phase[0] Environment / Capability",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484371156,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484372262,
+      "subject": "phase[3] Feature Detection",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484372614,
+      "subject": "phase[4] Optical Flow Tracking",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484373461,
+      "subject": "phase[5] Geometric Verification",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484374128,
+      "subject": "phase[6] Relative Pose",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484374453,
+      "subject": "phase[7] IMU Support / Fusion",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787484375022,
+      "subject": "phase[7] IMU Support / Fusion",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: IMU-001, IMU-003, IMU-004, IMU-005, IMU-007 — not yet evaluable"
+    }
+  ],
+  "errorLog": [],
+  "fullLog": [
+    {
+      "timestamp": 1787484371022,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "Phase 0 starting",
+      "data": {
+        "appVersion": "0.1.0",
+        "leg": "DESKTOP_DEV",
+        "origin": "http://localhost:46349"
+      }
+    },
+    {
+      "timestamp": 1787484371130,
+      "level": "INFO",
+      "phase": 0,
+      "source": "CapabilityDetector",
+      "message": "capability detection complete",
+      "data": {
+        "records": 31,
+        "totalProbeMs": 85.3
+      }
+    },
+    {
+      "timestamp": 1787484371139,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "phase 0: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484371154,
+      "level": "WARN",
+      "phase": 2,
+      "source": "App",
+      "message": "Phase 2 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787484371156,
+      "level": "INFO",
+      "phase": 2,
+      "source": "App",
+      "message": "phase 2: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484371208,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "pipeline started",
+      "data": {
+        "startTier": "BASIC 960x540@30",
+        "routeOrder": [
+          "VIDEO_FRAME",
+          "IMAGE_BITMAP",
+          "MAIN_CANVAS"
+        ]
+      }
+    },
+    {
+      "timestamp": 1787484371235,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FrameWorker",
+      "message": "preprocessing worker ready",
+      "data": {
+        "hasDocument": false,
+        "isWorkerGlobalScope": true,
+        "canvas2dAvailable": true
+      }
+    },
+    {
+      "timestamp": 1787484371399,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "acquisition route VIDEO_FRAME selected",
+      "data": {
+        "successes": 5,
+        "meanAcquireMs": 0.14
+      }
+    },
+    {
+      "timestamp": 1787484371780,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 5.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 5.3,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787484372261,
+      "level": "WARN",
+      "phase": 3,
+      "source": "App",
+      "message": "Phase 3 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787484372262,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "phase 3: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484372335,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "adopted the running Phase 2 pipeline",
+      "data": {
+        "note": "the camera and worker stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1787484372612,
+      "level": "WARN",
+      "phase": 4,
+      "source": "App",
+      "message": "Phase 4 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787484372614,
+      "level": "INFO",
+      "phase": 4,
+      "source": "App",
+      "message": "phase 4: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484372682,
+      "level": "INFO",
+      "phase": 4,
+      "source": "App",
+      "message": "adopted the running Phase 3 pipeline",
+      "data": {
+        "note": "the camera, worker and detected population stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1787484372686,
+      "level": "INFO",
+      "phase": 4,
+      "source": "RotationRateMonitor",
+      "message": "gyroscope: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet"
+      }
+    },
+    {
+      "timestamp": 1787484373460,
+      "level": "WARN",
+      "phase": 5,
+      "source": "App",
+      "message": "Phase 5 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787484373461,
+      "level": "INFO",
+      "phase": 5,
+      "source": "App",
+      "message": "phase 5: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484373514,
+      "level": "INFO",
+      "phase": 5,
+      "source": "App",
+      "message": "adopted the running Phase 4 tracker",
+      "data": {
+        "note": "the camera, worker and tracked population stay as they are; only the tracking options change. Phase 5 verifies the population Phase 4 passed with, not a new one"
+      }
+    },
+    {
+      "timestamp": 1787484374127,
+      "level": "WARN",
+      "phase": 6,
+      "source": "App",
+      "message": "Phase 6 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787484374128,
+      "level": "INFO",
+      "phase": 6,
+      "source": "App",
+      "message": "phase 6: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484374180,
+      "level": "INFO",
+      "phase": 6,
+      "source": "App",
+      "message": "adopted the running Phase 5 verifier",
+      "data": {
+        "note": "the camera, worker, population and verification anchor stay as they are; only the tracking options change. Phase 6 decomposes the model Phase 5 selected"
+      }
+    },
+    {
+      "timestamp": 1787484374185,
+      "level": "INFO",
+      "phase": 6,
+      "source": "RotationRateMonitor",
+      "message": "gyroscope: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "why": "POSE-002 compares the recovered rotation against this and nothing else reads it"
+      }
+    },
+    {
+      "timestamp": 1787484374452,
+      "level": "WARN",
+      "phase": 7,
+      "source": "App",
+      "message": "Phase 7 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787484374453,
+      "level": "INFO",
+      "phase": 7,
+      "source": "App",
+      "message": "phase 7: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787484374513,
+      "level": "INFO",
+      "phase": 7,
+      "source": "App",
+      "message": "adopted the running Phase 6 pose recovery",
+      "data": {
+        "note": "the camera, worker, population, anchor and pose options stay as they are. Phase 7 fuses the poses Phase 6 recovers and changes nothing about how they are recovered — editing the solver here would mean fusing a pose Phase 6 never passed with"
+      }
+    },
+    {
+      "timestamp": 1787484374517,
+      "level": "INFO",
+      "phase": 7,
+      "source": "RotationRateMonitor",
+      "message": "motion sensors: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "why": "IMU-002 is decided on what actually arrives, and v3 §68 asks for the run to continue when nothing does"
+      }
+    },
+    {
+      "timestamp": 1787484375946,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "median worker latency 140.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
+        "medianWorkerMs": 140.1,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787484380055,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@30 -> BASIC 960x540@20",
+      "data": {
+        "reason": "median worker latency 138.9 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
+        "medianWorkerMs": 138.9,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787484384077,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
+      "data": {
+        "reason": "median worker latency 132.2 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)",
+        "medianWorkerMs": 132.2,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787484388119,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: REDUCED 640x360@20 -> REDUCED 640x360@15",
+      "data": {
+        "reason": "median worker latency 83.7 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)",
+        "medianWorkerMs": 83.7,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    }
+  ],
+  "legDetermination": {
+    "signals": {
+      "uaSuggestsIOS": false,
+      "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
+      "maxTouchPoints": 1,
+      "protocol": "http:",
+      "hostname": "localhost",
+      "isLocalHost": true,
+      "navigatorWebdriver": true,
+      "hardwareConcurrency": 4,
+      "devicePixelRatio": 2,
+      "screen": "430x932",
+      "failedChecks": [
+        "UA does not look like iOS/iPadOS",
+        "protocol is http:, not https:",
+        "host is local, so this is not a device reaching a real origin",
+        "navigator.webdriver is true (automated browser)"
+      ]
+    },
+    "explanation": "Classified as DESKTOP_DEV because: UA does not look like iOS/iPadOS; protocol is http:, not https:; host is local, so this is not a device reaching a real origin; navigator.webdriver is true (automated browser). Rule 004 means this run cannot pass a phase, only catch regressions."
+  },
+  "phaseContext": {
+    "camera": {
+      "state": "LIVE",
+      "live": true,
+      "trackReadyState": "live",
+      "rungUsed": 2,
+      "attempts": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
+          "ok": false,
+          "errorName": "OverconstrainedError",
+          "durationMs": 2
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal",
+          "ok": true,
+          "durationMs": 5
+        }
+      ],
+      "requestedLadder": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal"
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal"
+        },
+        {
+          "rung": 3,
+          "label": "rear camera (preferred), any resolution"
+        },
+        {
+          "rung": 4,
+          "label": "any camera, any resolution"
+        }
+      ],
+      "achievedSettings": {
+        "width": 640,
+        "height": 480,
+        "frameRate": 30,
+        "facingMode": "unreported",
+        "deviceId": "76f2f36980690c1daf801bb6f0a5b7f3cfe643ccff7179eb7869903665465042",
+        "label": "/home/user/world-kit/node_modules/.cache/fusion-motion.y4m",
+        "aspectRatio": 1.333
+      },
+      "openDurationMs": 7,
+      "failure": null
+    },
+    "pipeline": {
+      "running": true,
+      "startedAt": 248.10000000009313,
+      "uptimeMs": 33308,
+      "route": "VIDEO_FRAME",
+      "routeLocked": true,
+      "routeProbes": [
+        {
+          "route": "VIDEO_FRAME",
+          "ok": true,
+          "attempts": 329,
+          "successes": 328,
+          "meanAcquireMs": 0.07,
+          "error": null,
+          "note": "selected"
+        },
+        {
+          "route": "IMAGE_BITMAP",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        },
+        {
+          "route": "MAIN_CANVAS",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        }
+      ],
+      "workerStarted": true,
+      "workerScope": {
+        "hasDocument": false,
+        "hasWindow": false,
+        "isWorkerGlobalScope": true,
+        "hasOffscreenCanvas": true,
+        "canvas2dAvailable": true,
+        "hardwareConcurrency": 4
+      },
+      "workerErrors": [],
+      "callbacks": 998,
+      "admitted": 329,
+      "completed": 328,
+      "pacedOut": 81,
+      "backpressured": 588,
+      "lost": 0,
+      "acquireFailures": 0,
+      "deliveredFps": 10.46,
+      "sourceFps": 30,
+      "sessionDeliveredFps": 9.85,
+      "maxResultGapMs": 218.8,
+      "uiCostMs": {
+        "count": 329,
+        "mean": 0.13,
+        "p50": 0.1,
+        "p95": 0.2,
+        "min": 0,
+        "max": 0.9
+      },
+      "acquireMs": {
+        "count": 329,
+        "mean": 0.07,
+        "p50": 0.1,
+        "p95": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      "workerMs": {
+        "count": 328,
+        "mean": 80.04,
+        "p50": 75.5,
+        "p95": 146.8,
+        "min": 3.4,
+        "max": 171.5
+      },
+      "roundTripMs": {
+        "count": 328,
+        "mean": 80.76,
+        "p50": 75.9,
+        "p95": 147.2,
+        "min": 3.7,
+        "max": 172.2
+      },
+      "tierStep": 4,
+      "tierLabel": "REDUCED 640x360@15",
+      "targetFps": 15,
+      "procWidth": 480,
+      "procHeight": 360,
+      "decisions": [
+        {
+          "at": 819.6000000000931,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 5.3,
+          "budgetMs": 33.33,
+          "deliveredFps": 31.15,
+          "windowSize": 15,
+          "reason": "median worker latency 5.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 4985.399999999907,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 140.1,
+          "budgetMs": 33.33,
+          "deliveredFps": 15.6,
+          "windowSize": 15,
+          "reason": "median worker latency 140.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+        },
+        {
+          "at": 9095.399999999907,
+          "direction": "DOWN",
+          "fromStep": 1,
+          "toStep": 2,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "BASIC 960x540@20",
+          "fromTargetFps": 30,
+          "toTargetFps": 20,
+          "medianWorkerMs": 138.9,
+          "budgetMs": 33.33,
+          "deliveredFps": 10.41,
+          "windowSize": 15,
+          "reason": "median worker latency 138.9 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+        },
+        {
+          "at": 13116.899999999907,
+          "direction": "DOWN",
+          "fromStep": 2,
+          "toStep": 3,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "REDUCED 640x360@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 132.2,
+          "budgetMs": 50,
+          "deliveredFps": 7.97,
+          "windowSize": 15,
+          "reason": "median worker latency 132.2 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+        },
+        {
+          "at": 17159.399999999907,
+          "direction": "DOWN",
+          "fromStep": 3,
+          "toStep": 4,
+          "fromLabel": "REDUCED 640x360@20",
+          "toLabel": "REDUCED 640x360@15",
+          "fromTargetFps": 20,
+          "toTargetFps": 15,
+          "medianWorkerMs": 83.7,
+          "budgetMs": 50,
+          "deliveredFps": 7.73,
+          "windowSize": 15,
+          "reason": "median worker latency 83.7 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+        }
+      ],
+      "spontaneousDegrade": true,
+      "maxDecisionsPer10s": 3,
+      "sourceSizesObserved": [
+        "640x480"
+      ],
+      "processedSizesObserved": [
+        "640x480",
+        "480x360"
+      ],
+      "sourceWidth": 640,
+      "sourceHeight": 480,
+      "maxAspectError": 0,
+      "overBudgetFrames": 0,
+      "upscaledFrames": 0,
+      "framesAfterSourceChange": 0,
+      "procMatchedAfterSourceChange": null,
+      "tierUsage": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "frames": 46,
+          "sizes": [
+            "640x480"
+          ]
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "frames": 42,
+          "sizes": [
+            "640x480"
+          ]
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "frames": 26,
+          "sizes": [
+            "640x480"
+          ]
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "frames": 44,
+          "sizes": [
+            "480x360"
+          ]
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "frames": 170,
+          "sizes": [
+            "480x360"
+          ]
+        }
+      ],
+      "decisionOutcomes": [
+        {
+          "decisionIndex": 0,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 5.3,
+          "afterMedianWorkerMs": 4.4,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 1,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 140.1,
+          "afterMedianWorkerMs": 144.2,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 2,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 138.9,
+          "afterMedianWorkerMs": 136.3,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 3,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 132.2,
+          "afterMedianWorkerMs": 70.1,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 4,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 83.7,
+          "afterMedianWorkerMs": 80.7,
+          "samples": 15
+        }
+      ],
+      "pyramidLevels": [
+        {
+          "width": 480,
+          "height": 360,
+          "bytes": 172800
+        },
+        {
+          "width": 240,
+          "height": 180,
+          "bytes": 43200
+        },
+        {
+          "width": 120,
+          "height": 90,
+          "bytes": 10800
+        }
+      ],
+      "pyramidConsistent": true,
+      "pyramidProblems": [],
+      "meanLuma": 131.96,
+      "topMadMax": 52.431,
+      "topMadMedian": 41.487,
+      "topMadSamples": 326,
+      "stripMadMax": 52.249,
+      "stripMadMedian": 39.146,
+      "stripMadSamples": 226,
+      "distinctChecksums": 236,
+      "crossCheck": {
+        "count": 31,
+        "unmatched": 0,
+        "medianAbsDifference": 1.18,
+        "maxAbsDifference": 1.675,
+        "sceneStdDev": 0.251,
+        "sceneRange": 0.959,
+        "costMs": {
+          "count": 31,
+          "mean": 2.01,
+          "p50": 1.4,
+          "p95": 3.4,
+          "min": 1.1,
+          "max": 3.7
+        }
+      },
+      "stressPasses": 0,
+      "stressIntervals": [],
+      "anyStressed": false,
+      "segments": [
+        {
+          "index": 0,
+          "stressed": false,
+          "startedAt": 248.1,
+          "endedAt": null,
+          "observedMs": 33196,
+          "results": 328,
+          "meanFps": 9.85,
+          "maxGapMs": 218.8,
+          "wasHidden": false,
+          "endReason": "open at 33556.1"
+        }
+      ],
+      "longestCleanSegment": {
+        "index": 0,
+        "stressed": false,
+        "startedAt": 248.1,
+        "endedAt": null,
+        "observedMs": 33196,
+        "results": 328,
+        "meanFps": 9.85,
+        "maxGapMs": 218.8,
+        "wasHidden": false,
+        "endReason": "open at 33556.1"
+      },
+      "wasEverHidden": false,
+      "hiddenCount": 0,
+      "recentFrames": [
+        {
+          "frameId": 289,
+          "at": 29823,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 75.7,
+          "roundTripMs": 76.2,
+          "meanLuma": 132.49,
+          "checksum": 376225446,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 290,
+          "at": 29918,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 70.3,
+          "roundTripMs": 70.8,
+          "meanLuma": 132.37,
+          "checksum": 1511179923,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 291,
+          "at": 30014,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 66.7,
+          "roundTripMs": 67.1,
+          "meanLuma": 132.12,
+          "checksum": 436689128,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 292,
+          "at": 30120,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 72.8,
+          "roundTripMs": 73.2,
+          "meanLuma": 132.19,
+          "checksum": 1873015415,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 293,
+          "at": 30228,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 81.1,
+          "roundTripMs": 81.4,
+          "meanLuma": 132.36,
+          "checksum": 908805594,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 294,
+          "at": 30332,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 84.8,
+          "roundTripMs": 85.2,
+          "meanLuma": 132.24,
+          "checksum": 1854146767,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 295,
+          "at": 30424,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 77.2,
+          "roundTripMs": 77.7,
+          "meanLuma": 132.02,
+          "checksum": 1776475081,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 296,
+          "at": 30528,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 80.8,
+          "roundTripMs": 81.2,
+          "meanLuma": 132.05,
+          "checksum": 432442118,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 297,
+          "at": 30625,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 77.7,
+          "roundTripMs": 78.3,
+          "meanLuma": 132.09,
+          "checksum": 2175582741,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 298,
+          "at": 30716,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 67,
+          "roundTripMs": 67.3,
+          "meanLuma": 131.87,
+          "checksum": 1696100935,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 299,
+          "at": 30814,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 66.6,
+          "roundTripMs": 67.1,
+          "meanLuma": 131.68,
+          "checksum": 2424941968,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 300,
+          "at": 30911,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 64.5,
+          "roundTripMs": 64.8,
+          "meanLuma": 131.85,
+          "checksum": 1302070216,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 301,
+          "at": 30981,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 66.9,
+          "roundTripMs": 67.3,
+          "meanLuma": 132.06,
+          "checksum": 1216720979,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 302,
+          "at": 31086,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 72,
+          "roundTripMs": 72.5,
+          "meanLuma": 132.09,
+          "checksum": 1952345980,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 303,
+          "at": 31178,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 65,
+          "roundTripMs": 65.3,
+          "meanLuma": 131.98,
+          "checksum": 2534763968,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 304,
+          "at": 31249,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 68.8,
+          "roundTripMs": 69.1,
+          "meanLuma": 132.01,
+          "checksum": 2631645639,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 305,
+          "at": 31345,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 64.7,
+          "roundTripMs": 65.3,
+          "meanLuma": 132.13,
+          "checksum": 924258362,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 306,
+          "at": 31403,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 56.1,
+          "roundTripMs": 56.5,
+          "meanLuma": 132.28,
+          "checksum": 4009399409,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 307,
+          "at": 31477,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 63.3,
+          "roundTripMs": 63.8,
+          "meanLuma": 132.41,
+          "checksum": 1711835167,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 308,
+          "at": 31539,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 58.9,
+          "roundTripMs": 59.1,
+          "meanLuma": 132.51,
+          "checksum": 4148853624,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 309,
+          "at": 31610,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 63.1,
+          "roundTripMs": 63.5,
+          "meanLuma": 132.63,
+          "checksum": 1027636272,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 310,
+          "at": 31683,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 69.5,
+          "roundTripMs": 69.8,
+          "meanLuma": 132.73,
+          "checksum": 994055806,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 311,
+          "at": 31803,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 88.1,
+          "roundTripMs": 88.7,
+          "meanLuma": 132.6,
+          "checksum": 1843083742,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 312,
+          "at": 31894,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 81,
+          "roundTripMs": 81.3,
+          "meanLuma": 132.45,
+          "checksum": 804426403,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 313,
+          "at": 31992,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 78,
+          "roundTripMs": 78.5,
+          "meanLuma": 132.51,
+          "checksum": 2709686598,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 314,
+          "at": 32097,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 83.4,
+          "roundTripMs": 83.8,
+          "meanLuma": 132.57,
+          "checksum": 3129628980,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 315,
+          "at": 32191,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 76.8,
+          "roundTripMs": 77.2,
+          "meanLuma": 132.46,
+          "checksum": 497395127,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 316,
+          "at": 32295,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 79.8,
+          "roundTripMs": 81.2,
+          "meanLuma": 132.37,
+          "checksum": 3399514560,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 317,
+          "at": 32399,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 86,
+          "roundTripMs": 86.3,
+          "meanLuma": 132.08,
+          "checksum": 1593034767,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 318,
+          "at": 32491,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 77.8,
+          "roundTripMs": 78.3,
+          "meanLuma": 132.24,
+          "checksum": 3089022296,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 319,
+          "at": 32591,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 77.6,
+          "roundTripMs": 78.1,
+          "meanLuma": 132.41,
+          "checksum": 2198173422,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 320,
+          "at": 32689,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 75.9,
+          "roundTripMs": 76.2,
+          "meanLuma": 132.37,
+          "checksum": 3636590106,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 321,
+          "at": 32798,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 80.7,
+          "roundTripMs": 81.2,
+          "meanLuma": 132.06,
+          "checksum": 731267615,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 322,
+          "at": 32891,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 77.4,
+          "roundTripMs": 77.9,
+          "meanLuma": 131.97,
+          "checksum": 2422736831,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 323,
+          "at": 32995,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 81.2,
+          "roundTripMs": 81.7,
+          "meanLuma": 132.19,
+          "checksum": 1972987300,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 324,
+          "at": 33093,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 79.8,
+          "roundTripMs": 80.3,
+          "meanLuma": 132.33,
+          "checksum": 3950906252,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 325,
+          "at": 33192,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 78.1,
+          "roundTripMs": 78.4,
+          "meanLuma": 132.17,
+          "checksum": 1700451379,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 326,
+          "at": 33282,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 68.4,
+          "roundTripMs": 68.6,
+          "meanLuma": 132.08,
+          "checksum": 2546349440,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 327,
+          "at": 33385,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 71.5,
+          "roundTripMs": 72,
+          "meanLuma": 132.12,
+          "checksum": 3471429751,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 328,
+          "at": 33495,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 81.7,
+          "roundTripMs": 82,
+          "meanLuma": 131.96,
+          "checksum": 4129701856,
+          "stressPasses": 0
+        }
+      ],
+      "controller": {
+        "config": {
+          "windowSize": 15,
+          "downThreshold": 0.9,
+          "upThreshold": 0.5,
+          "deliveredFpsFloorRatio": 0.75,
+          "deliveredFpsBlameRatio": 0.5,
+          "upWindowsRequired": 3,
+          "cooldownMs": 4000,
+          "upAfterDownCooldownMs": 8000
+        },
+        "ladder": [
+          {
+            "step": 0,
+            "label": "HIGH 1280x720@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 1,
+            "label": "BASIC 960x540@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 2,
+            "label": "BASIC 960x540@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 3,
+            "label": "REDUCED 640x360@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 4,
+            "label": "REDUCED 640x360@15",
+            "budgetMs": 50
+          }
+        ],
+        "startStep": 1,
+        "floorStep": 4,
+        "currentStep": 4,
+        "currentTier": "REDUCED 640x360@15",
+        "deepestStep": 4,
+        "windowFill": 15,
+        "decisions": [
+          {
+            "at": 819.6000000000931,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 5.3,
+            "budgetMs": 33.33,
+            "deliveredFps": 31.15,
+            "windowSize": 15,
+            "reason": "median worker latency 5.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 4985.399999999907,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 140.1,
+            "budgetMs": 33.33,
+            "deliveredFps": 15.6,
+            "windowSize": 15,
+            "reason": "median worker latency 140.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+          },
+          {
+            "at": 9095.399999999907,
+            "direction": "DOWN",
+            "fromStep": 1,
+            "toStep": 2,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "BASIC 960x540@20",
+            "fromTargetFps": 30,
+            "toTargetFps": 20,
+            "medianWorkerMs": 138.9,
+            "budgetMs": 33.33,
+            "deliveredFps": 10.41,
+            "windowSize": 15,
+            "reason": "median worker latency 138.9 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          },
+          {
+            "at": 13116.899999999907,
+            "direction": "DOWN",
+            "fromStep": 2,
+            "toStep": 3,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "REDUCED 640x360@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 132.2,
+            "budgetMs": 50,
+            "deliveredFps": 7.97,
+            "windowSize": 15,
+            "reason": "median worker latency 132.2 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+          },
+          {
+            "at": 17159.399999999907,
+            "direction": "DOWN",
+            "fromStep": 3,
+            "toStep": 4,
+            "fromLabel": "REDUCED 640x360@20",
+            "toLabel": "REDUCED 640x360@15",
+            "fromTargetFps": 20,
+            "toTargetFps": 15,
+            "medianWorkerMs": 83.7,
+            "budgetMs": 50,
+            "deliveredFps": 7.73,
+            "windowSize": 15,
+            "reason": "median worker latency 83.7 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+          }
+        ],
+        "note": "Every decision carries the median worker latency and the budget it was compared against. The controller reads no clock of its own — only the timestamps on the samples it is given (§59)."
+      },
+      "segmentLog": {
+        "segments": [
+          {
+            "index": 0,
+            "stressed": false,
+            "startedAt": 248.1,
+            "endedAt": null,
+            "observedMs": 33196,
+            "results": 328,
+            "meanFps": 9.85,
+            "maxGapMs": 218.8,
+            "wasHidden": false,
+            "endReason": "open at 33556.1"
+          }
+        ],
+        "droppedSegments": 0,
+        "longestCleanMs": 33196,
+        "note": "The timeline is cut wherever load injection was switched on or off. FRAME-001 reads the longest unstressed segment; stressed segments are measured and reported but never counted toward continuity."
+      },
+      "crossCheckDetail": {
+        "count": 31,
+        "unmatched": 0,
+        "medianAbsDifference": 1.18,
+        "maxAbsDifference": 1.675,
+        "sceneStdDev": 0.251,
+        "sceneRange": 0.959,
+        "costMs": {
+          "count": 31,
+          "mean": 2.01,
+          "p50": 1.4,
+          "p95": 3.4,
+          "min": 1.1,
+          "max": 3.7
+        },
+        "recentSamples": [
+          {
+            "frameId": 85,
+            "at": 8519.600000000093,
+            "mainMeanLuma": 131.187,
+            "workerMeanLuma": 132.839,
+            "absDifference": 1.6518229166666742,
+            "costMs": 3.3999999999068677
+          },
+          {
+            "frameId": 92,
+            "at": 9613.200000000186,
+            "mainMeanLuma": 131.041,
+            "workerMeanLuma": 132.716,
+            "absDifference": 1.674612630208344,
+            "costMs": 1.1999999997206032
+          },
+          {
+            "frameId": 99,
+            "at": 10746.5,
+            "mainMeanLuma": 131.325,
+            "workerMeanLuma": 132.929,
+            "absDifference": 1.6045377604166902,
+            "costMs": 2.7000000001862645
+          },
+          {
+            "frameId": 107,
+            "at": 11880.80000000028,
+            "mainMeanLuma": 131.191,
+            "workerMeanLuma": 132.741,
+            "absDifference": 1.5499348958333314,
+            "costMs": 1.099999999627471
+          },
+          {
+            "frameId": 114,
+            "at": 12981.30000000028,
+            "mainMeanLuma": 131,
+            "workerMeanLuma": 132.66,
+            "absDifference": 1.660208333333344,
+            "costMs": 2.6999999997206032
+          },
+          {
+            "frameId": 126,
+            "at": 14046.30000000028,
+            "mainMeanLuma": 131.155,
+            "workerMeanLuma": 132.324,
+            "absDifference": 1.1698509837962945,
+            "costMs": 2.7999999998137355
+          },
+          {
+            "frameId": 137,
+            "at": 15046.600000000093,
+            "mainMeanLuma": 130.849,
+            "workerMeanLuma": 131.984,
+            "absDifference": 1.1351866319444355,
+            "costMs": 1.3999999999068677
+          },
+          {
+            "frameId": 150,
+            "at": 16147.80000000028,
+            "mainMeanLuma": 131.191,
+            "workerMeanLuma": 132.367,
+            "absDifference": 1.1758072916666436,
+            "costMs": 1.1000000000931323
+          },
+          {
+            "frameId": 159,
+            "at": 17179.700000000186,
+            "mainMeanLuma": 130.856,
+            "workerMeanLuma": 132.036,
+            "absDifference": 1.1798046874999955,
+            "costMs": 1.2999999998137355
+          },
+          {
+            "frameId": 169,
+            "at": 18180.399999999907,
+            "mainMeanLuma": 131.401,
+            "workerMeanLuma": 132.558,
+            "absDifference": 1.1571585648148357,
+            "costMs": 2.7000000001862645
+          },
+          {
+            "frameId": 181,
+            "at": 19246.200000000186,
+            "mainMeanLuma": 130.607,
+            "workerMeanLuma": 131.712,
+            "absDifference": 1.1055034722222103,
+            "costMs": 3.6999999997206032
+          },
+          {
+            "frameId": 191,
+            "at": 20246.899999999907,
+            "mainMeanLuma": 131.271,
+            "workerMeanLuma": 132.462,
+            "absDifference": 1.1908145254629687,
+            "costMs": 1.1000000000931323
+          },
+          {
+            "frameId": 202,
+            "at": 21246.899999999907,
+            "mainMeanLuma": 131.218,
+            "workerMeanLuma": 132.275,
+            "absDifference": 1.0566102430555588,
+            "costMs": 3.2000000001862645
+          },
+          {
+            "frameId": 213,
+            "at": 22279.700000000186,
+            "mainMeanLuma": 130.834,
+            "workerMeanLuma": 132.019,
+            "absDifference": 1.1847656250000114,
+            "costMs": 1.2999999998137355
+          },
+          {
+            "frameId": 223,
+            "at": 23279.899999999907,
+            "mainMeanLuma": 131.054,
+            "workerMeanLuma": 132.208,
+            "absDifference": 1.1538223379629642,
+            "costMs": 2.900000000372529
+          },
+          {
+            "frameId": 234,
+            "at": 24346.80000000028,
+            "mainMeanLuma": 130.962,
+            "workerMeanLuma": 132.13,
+            "absDifference": 1.1677835648148118,
+            "costMs": 1.2999999998137355
+          },
+          {
+            "frameId": 244,
+            "at": 25413.100000000093,
+            "mainMeanLuma": 130.764,
+            "workerMeanLuma": 131.857,
+            "absDifference": 1.0925188078703627,
+            "costMs": 2.7999999998137355
+          },
+          {
+            "frameId": 255,
+            "at": 26446.600000000093,
+            "mainMeanLuma": 131.455,
+            "workerMeanLuma": 132.663,
+            "absDifference": 1.2077531828703911,
+            "costMs": 1.2000000001862645
+          },
+          {
+            "frameId": 266,
+            "at": 27479.899999999907,
+            "mainMeanLuma": 130.886,
+            "workerMeanLuma": 131.994,
+            "absDifference": 1.1076056134259318,
+            "costMs": 1.1000000000931323
+          },
+          {
+            "frameId": 277,
+            "at": 28579.80000000028,
+            "mainMeanLuma": 131.248,
+            "workerMeanLuma": 132.351,
+            "absDifference": 1.103760127314814,
+            "costMs": 1.1999999997206032
+          },
+          {
+            "frameId": 288,
+            "at": 29646.5,
+            "mainMeanLuma": 131.156,
+            "workerMeanLuma": 132.308,
+            "absDifference": 1.1526591435185196,
+            "costMs": 2.7000000001862645
+          },
+          {
+            "frameId": 298,
+            "at": 30646.600000000093,
+            "mainMeanLuma": 130.733,
+            "workerMeanLuma": 131.866,
+            "absDifference": 1.132650462962971,
+            "costMs": 1.3999999999068677
+          },
+          {
+            "frameId": 311,
+            "at": 31712.899999999907,
+            "mainMeanLuma": 131.464,
+            "workerMeanLuma": 132.6,
+            "absDifference": 1.1366189236111097,
+            "costMs": 1.2000000001862645
+          },
+          {
+            "frameId": 321,
+            "at": 32713.100000000093,
+            "mainMeanLuma": 130.928,
+            "workerMeanLuma": 132.062,
+            "absDifference": 1.1333969907407493,
+            "costMs": 3.2999999998137355
+          }
+        ],
+        "note": "Each pair is one video frame measured twice: on the main thread with an independent 64x48 readback, and in the worker on the pixels the pipeline actually delivered. The readback costs what §H.1 measured, which is why it runs at 1 Hz and is excluded from the pipeline UI cost in FRAME-005."
+      },
+      "ladder": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "pixelBudget": 921600,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "pixelBudget": 518400,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "pixelBudget": 518400,
+          "budgetMs": 50
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        }
+      ],
+      "routeOrder": [
+        "VIDEO_FRAME",
+        "IMAGE_BITMAP",
+        "MAIN_CANVAS"
+      ],
+      "constants": {
+        "pacingResyncIntervals": 2,
+        "pacingToleranceMs": 2,
+        "routeLockSuccesses": 5,
+        "pendingTimeoutMs": 3000,
+        "stripIntervalMs": 100,
+        "crossCheckIntervalMs": 1000,
+        "stressTargetBudgetMultiple": 6,
+        "pyramidLevels": 3,
+        "stripSize": "64x48"
+      },
+      "note": "Frames declined by rate pacing (pacedOut) are the scheduler working as designed and are not drops. Frames declined because the worker was busy (backpressured) are deliberate too. Only `lost` counts frames that were handed over and never came back, and only that is held against FRAME-001."
+    },
+    "flow": {
+      "flowFrames": 287,
+      "trackedFrames": 285,
+      "population": {
+        "tracked": 151,
+        "redetected": 60,
+        "total": 211,
+        "cumulativeTracked": 49330,
+        "cumulativeRedetected": 24948,
+        "maxTrackLength": 57
+      },
+      "byMotion": {
+        "STATIC": {
+          "frames": 0,
+          "framesSeen": 0,
+          "medianSurvival": -1,
+          "medianDisplacementPx": -1,
+          "medianFbErrorPx": -1,
+          "medianTracked": -1,
+          "medianCellSpread": -1,
+          "medianRejectFraction": -1,
+          "lostFrames": 0,
+          "degradedFrames": 0
+        },
+        "SLOW": {
+          "frames": 233,
+          "framesSeen": 233,
+          "medianSurvival": 0.7054,
+          "medianDisplacementPx": 4.775,
+          "medianFbErrorPx": 0.011,
+          "medianTracked": 161,
+          "medianCellSpread": 10.884,
+          "medianRejectFraction": 0.2264,
+          "lostFrames": 0,
+          "degradedFrames": 0
+        },
+        "FAST": {
+          "frames": 52,
+          "framesSeen": 52,
+          "medianSurvival": 0.5444,
+          "medianDisplacementPx": 10.595,
+          "medianFbErrorPx": 0,
+          "medianTracked": 197,
+          "medianCellSpread": 12.7,
+          "medianRejectFraction": 0.3933,
+          "lostFrames": 0,
+          "degradedFrames": 3
+        },
+        "OCCLUDED": {
+          "frames": 0,
+          "framesSeen": 0,
+          "medianSurvival": -1,
+          "medianDisplacementPx": -1,
+          "medianFbErrorPx": -1,
+          "medianTracked": -1,
+          "medianCellSpread": -1,
+          "medianRejectFraction": -1,
+          "lostFrames": 0,
+          "degradedFrames": 0
+        },
+        "INDETERMINATE": 2
+      },
+      "forwardBackward": {
+        "acceptable": 45074,
+        "reduced": 4256,
+        "rejected": 17841,
+        "medianPx": 0.01
+      },
+      "shiftCrossCheck": {
+        "samples": 285,
+        "medianDisagreementPx": 0.778,
+        "medianMeasuredShiftPx": 4,
+        "medianTrackedDisplacementPx": 4.778,
+        "agreementRate": 0.9684,
+        "recent": [
+          {
+            "trackedDisplacementPx": 4.772,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.772,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.706,
+            "trackedCount": 143,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.18,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.82,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.897,
+            "trackedCount": 187,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.18,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.82,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.863,
+            "trackedCount": 182,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.18,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.82,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.851,
+            "trackedCount": 185,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.18,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.82,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.868,
+            "trackedCount": 189,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.182,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.818,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.856,
+            "trackedCount": 192,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.77,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.77,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.697,
+            "trackedCount": 155,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.777,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.777,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.693,
+            "trackedCount": 151,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.771,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.771,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.711,
+            "trackedCount": 156,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.775,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.775,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.699,
+            "trackedCount": 148,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.769,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.769,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.716,
+            "trackedCount": 148,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.775,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.775,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.714,
+            "trackedCount": 159,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 28.93,
+            "sceneShiftPx": 24.331050121192877,
+            "disagreementPx": 4.599,
+            "tolerancePx": 8.516,
+            "agreed": true,
+            "confidence": 1.475,
+            "trackedCount": 73,
+            "sceneDx0": 4,
+            "sceneDy0": 24
+          },
+          {
+            "trackedDisplacementPx": 3.181,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.819,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.829,
+            "trackedCount": 167,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.781,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.781,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.682,
+            "trackedCount": 163,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.78,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.78,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.719,
+            "trackedCount": 158,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.777,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.777,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.697,
+            "trackedCount": 152,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.781,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.781,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.706,
+            "trackedCount": 165,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.777,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.777,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.698,
+            "trackedCount": 166,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.78,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.78,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.697,
+            "trackedCount": 148,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.777,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.777,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.703,
+            "trackedCount": 144,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.779,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.779,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.698,
+            "trackedCount": 148,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.778,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.778,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.701,
+            "trackedCount": 149,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.783,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.783,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.685,
+            "trackedCount": 151,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          }
+        ]
+      },
+      "rotation": {
+        "gyroAvailable": false,
+        "gyroReason": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "rotatingFrames": 0,
+        "medianRotationDeg": -1,
+        "medianSpreadRotating": -1,
+        "medianSpreadTranslating": -1,
+        "windowMs": 1000,
+        "rotatingDeg": 5
+      },
+      "occlusions": [],
+      "state": {
+        "current": "TRACKING",
+        "reason": "151 of 211 points carried from the previous frame. GOOD is not claimed: inlierRatio — §14 geometric verification (Phase 5) has not been written; reprojectionError — §15 pose (Phase 6) has not been written; features 211 < 300",
+        "goodBlockedBy": [
+          "inlierRatio — §14 geometric verification (Phase 5) has not been written",
+          "reprojectionError — §15 pose (Phase 6) has not been written",
+          "features 211 < 300"
+        ],
+        "frames": {
+          "READY": 1,
+          "TRACKING": 282,
+          "DEGRADED": 4
+        },
+        "mismatches": 0,
+        "geometryChanges": 1
+      },
+      "refill": {
+        "medianOffered": 333,
+        "medianDeclinedTooClose": 235,
+        "medianDeclinedOutOfReach": 39,
+        "cumulativeRedetected": 24948,
+        "note": "What §11's refill produced each frame and why each point was or was not admitted. Declined-too-close means the point is already being tracked, which is a healthy tracker rather than a failing one; declined-out-of-reach means it sat where the solver's window cannot cover it. Without the split, a population below §11's minimum cannot be told apart from a detector that found little."
+      },
+      "cost": {
+        "meanFlowMs": 56.848,
+        "meanShiftMs": 3.742,
+        "meanTrackedPoints": 171.9,
+        "samples": 287
+      },
+      "lastRecordSamples": [
+        {
+          "id": 21553,
+          "x": 113.95038190035064,
+          "y": 88.61651200061597,
+          "x0": 227.90076380070127,
+          "y0": 177.23302400123194,
+          "cornerStrength": 37261.63671875,
+          "age": 55,
+          "trackLength": 56,
+          "forwardBackwardError": 0.066,
+          "reprojectionError": null,
+          "qualityScore": 0.5354447842249344,
+          "cell": 19
+        },
+        {
+          "id": 22787,
+          "x": 163.46709411877563,
+          "y": 126.66777369063531,
+          "x0": 326.93418823755127,
+          "y0": 253.33554738127063,
+          "cornerStrength": 31666.736328125,
+          "age": 35,
+          "trackLength": 36,
+          "forwardBackwardError": 0.002,
+          "reprojectionError": null,
+          "qualityScore": 0.5063262431797345,
+          "cell": 37
+        },
+        {
+          "id": 24067,
+          "x": 190.17782828189266,
+          "y": 39.914252579995676,
+          "x0": 380.3556565637853,
+          "y0": 79.82850515999135,
+          "cornerStrength": 25624.361328125,
+          "age": 13,
+          "trackLength": 14,
+          "forwardBackwardError": 0.006,
+          "reprojectionError": null,
+          "qualityScore": 0.4010424014356915,
+          "cell": 14
+        },
+        {
+          "id": 24194,
+          "x": 194.9969533864023,
+          "y": 98.63152447373764,
+          "x0": 389.9939067728046,
+          "y0": 197.26304894747528,
+          "cornerStrength": 30219.658203125,
+          "age": 11,
+          "trackLength": 12,
+          "forwardBackwardError": 0.008,
+          "reprojectionError": null,
+          "qualityScore": 0.459891918975033,
+          "cell": 30
+        },
+        {
+          "id": 24248,
+          "x": 124.095168651318,
+          "y": 76.77259155750232,
+          "x0": 248.190337302636,
+          "y0": 153.54518311500465,
+          "cornerStrength": 21277.482421875,
+          "age": 11,
+          "trackLength": 12,
+          "forwardBackwardError": 2.744,
+          "reprojectionError": null,
+          "qualityScore": 0.3238071773075755,
+          "cell": 20
+        },
+        {
+          "id": 24369,
+          "x": 170.73759396785073,
+          "y": 42.9713733073916,
+          "x0": 341.47518793570146,
+          "y0": 85.9427466147832,
+          "cornerStrength": 22335.330078125,
+          "age": 9,
+          "trackLength": 10,
+          "forwardBackwardError": 0.008,
+          "reprojectionError": null,
+          "qualityScore": 0.36524263263525064,
+          "cell": 13
+        },
+        {
+          "id": 24754,
+          "x": 220.23459764880786,
+          "y": 75.71991945331035,
+          "x0": 440.4691952976157,
+          "y0": 151.4398389066207,
+          "cornerStrength": 20460.826171875,
+          "age": 3,
+          "trackLength": 4,
+          "forwardBackwardError": 0.017,
+          "reprojectionError": null,
+          "qualityScore": 0.33638203120999993,
+          "cell": 23
+        },
+        {
+          "id": 24839,
+          "x": 59.60216687815057,
+          "y": 41.009470323332835,
+          "x0": 119.20433375630114,
+          "y0": 82.01894064666567,
+          "cornerStrength": 57788.12890625,
+          "age": 1,
+          "trackLength": 2,
+          "forwardBackwardError": 1.648,
+          "reprojectionError": null,
+          "qualityScore": 0.9455034445822089,
+          "cell": 9
+        },
+        {
+          "id": 24865,
+          "x": 213.76454934039936,
+          "y": 121.16244184305559,
+          "x0": 427.5290986807987,
+          "y0": 242.32488368611118,
+          "cornerStrength": 33641.9921875,
+          "age": 1,
+          "trackLength": 2,
+          "forwardBackwardError": 0.003,
+          "reprojectionError": null,
+          "qualityScore": 0.5504351862212447,
+          "cell": 39
+        },
+        {
+          "id": 24896,
+          "x": 119,
+          "y": 171,
+          "x0": 238,
+          "y0": 342,
+          "cornerStrength": 47204.88671875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.7205252486847361,
+          "cell": 43
+        },
+        {
+          "id": 24913,
+          "x": 111,
+          "y": 168,
+          "x0": 222,
+          "y0": 336,
+          "cornerStrength": 29074.875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.44379264512738476,
+          "cell": 43
+        },
+        {
+          "id": 24931,
+          "x": 34,
+          "y": 158,
+          "x0": 68,
+          "y0": 316,
+          "cornerStrength": 24155.998046875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.36871196415855945,
+          "cell": 41
+        }
+      ],
+      "note": "Motion classes are measured from the image by an integer SAD translation search on the pyramid’s top level, which shares no code with the Lucas-Kanade solver and never reads the feature list. `tracked` counts only points carried forward from the previous frame; `redetected` counts what §11’s refill added, and the two are never summed into a survival figure — a refill can top the population back up while the tracker is losing everything."
+    },
+    "verification": {
+      "verifiedFrames": 280,
+      "judgedFrames": 230,
+      "current": {
+        "state": "UNVERIFIED",
+        "reason": "25 inlier(s), below v3 §14's minimum of 30",
+        "goodBlockedBy": [
+          "inliers 25 <= 100"
+        ],
+        "correspondences": 27,
+        "inliers": 25,
+        "inlierRatio": 0.9259,
+        "baselinePx": 84.104,
+        "model": null,
+        "planar": false,
+        "anchorAge": 22
+      },
+      "overRun": {
+        "medianCorrespondences": 88.5,
+        "medianInliers": 71,
+        "medianInlierRatio": 0.9732,
+        "medianBaselinePx": 52.23,
+        "medianSpreadPx": 87.96,
+        "stateFrames": {
+          "UNVERIFIED": 83,
+          "GOOD": 62,
+          "USABLE": 135
+        },
+        "stateMismatches": 0,
+        "reAnchors": 14,
+        "cappedFrames": 0,
+        "degenerateFrames": 0
+      },
+      "byTexture": {
+        "TEXTURE_RICH": {
+          "frames": 280,
+          "judged": 230,
+          "medianCorrespondences": 88.5,
+          "medianInliers": 71,
+          "medianInlierRatio": 0.9732,
+          "medianBaselinePx": 52.23,
+          "medianSpreadPx": 87.96,
+          "unverified": 83,
+          "usable": 135,
+          "good": 62
+        },
+        "TEXTURE_POOR": {
+          "frames": 0,
+          "judged": 0,
+          "medianCorrespondences": -1,
+          "medianInliers": -1,
+          "medianInlierRatio": -1,
+          "medianBaselinePx": -1,
+          "medianSpreadPx": -1,
+          "unverified": 0,
+          "usable": 0,
+          "good": 0
+        }
+      },
+      "injectedOutliers": {
+        "samples": 46,
+        "medianRecall": 1,
+        "medianCleanRejection": 0.0248,
+        "medianSurvivingInliers": 55.5,
+        "recent": [
+          {
+            "injected": 20,
+            "clean": 47,
+            "injectedRejected": 20,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 47,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1393936047,
+            "at": 22754.100000000093
+          },
+          {
+            "injected": 20,
+            "clean": 45,
+            "injectedRejected": 20,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0222,
+            "survivingInliers": 44,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1953898175,
+            "at": 22852.200000000186
+          },
+          {
+            "injected": 19,
+            "clean": 43,
+            "injectedRejected": 19,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 43,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2870966781,
+            "at": 22949.700000000186
+          },
+          {
+            "injected": 18,
+            "clean": 42,
+            "injectedRejected": 18,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0476,
+            "survivingInliers": 40,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 4056687318,
+            "at": 23051.899999999907
+          },
+          {
+            "injected": 8,
+            "clean": 17,
+            "injectedRejected": 7,
+            "cleanRejected": 1,
+            "injectedRecall": 0.875,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 17,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 2986146282,
+            "at": 25709.100000000093
+          },
+          {
+            "injected": 8,
+            "clean": 17,
+            "injectedRejected": 7,
+            "cleanRejected": 1,
+            "injectedRecall": 0.875,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 17,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 1560052732,
+            "at": 25800.200000000186
+          },
+          {
+            "injected": 7,
+            "clean": 17,
+            "injectedRejected": 7,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 17,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 3810917383,
+            "at": 25906.30000000028
+          },
+          {
+            "injected": 7,
+            "clean": 16,
+            "injectedRejected": 2,
+            "cleanRejected": 6,
+            "injectedRecall": 0.2857,
+            "cleanRejectionRate": 0.375,
+            "survivingInliers": 15,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 3096235741,
+            "at": 26004.700000000186
+          },
+          {
+            "injected": 7,
+            "clean": 16,
+            "injectedRejected": 6,
+            "cleanRejected": 3,
+            "injectedRecall": 0.8571,
+            "cleanRejectionRate": 0.1875,
+            "survivingInliers": 14,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 1160360830,
+            "at": 26126.399999999907
+          },
+          {
+            "injected": 17,
+            "clean": 38,
+            "injectedRejected": 17,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0263,
+            "survivingInliers": 37,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 4285559778,
+            "at": 28653.600000000093
+          },
+          {
+            "injected": 15,
+            "clean": 36,
+            "injectedRejected": 15,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 36,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3572689477,
+            "at": 28750.80000000028
+          },
+          {
+            "injected": 63,
+            "clean": 148,
+            "injectedRejected": 63,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 148,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 3450772777,
+            "at": 28841.600000000093
+          },
+          {
+            "injected": 56,
+            "clean": 130,
+            "injectedRejected": 52,
+            "cleanRejected": 6,
+            "injectedRecall": 0.9286,
+            "cleanRejectionRate": 0.0462,
+            "survivingInliers": 128,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 2907690134,
+            "at": 28922.5
+          },
+          {
+            "injected": 44,
+            "clean": 101,
+            "injectedRejected": 39,
+            "cleanRejected": 1,
+            "injectedRecall": 0.8864,
+            "cleanRejectionRate": 0.0099,
+            "survivingInliers": 105,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 3887545092,
+            "at": 29015.30000000028
+          },
+          {
+            "injected": 38,
+            "clean": 88,
+            "injectedRejected": 38,
+            "cleanRejected": 16,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.1818,
+            "survivingInliers": 72,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 874064638,
+            "at": 29118.600000000093
+          },
+          {
+            "injected": 47,
+            "clean": 110,
+            "injectedRejected": 42,
+            "cleanRejected": 1,
+            "injectedRecall": 0.8936,
+            "cleanRejectionRate": 0.0091,
+            "survivingInliers": 114,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 62670370,
+            "at": 31682.700000000186
+          },
+          {
+            "injected": 37,
+            "clean": 87,
+            "injectedRejected": 37,
+            "cleanRejected": 11,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.1264,
+            "survivingInliers": 76,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2529583784,
+            "at": 31802.899999999907
+          },
+          {
+            "injected": 33,
+            "clean": 77,
+            "injectedRejected": 33,
+            "cleanRejected": 8,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.1039,
+            "survivingInliers": 69,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1246896509,
+            "at": 31894.399999999907
+          },
+          {
+            "injected": 32,
+            "clean": 76,
+            "injectedRejected": 32,
+            "cleanRejected": 4,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0526,
+            "survivingInliers": 72,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3967298060,
+            "at": 31991.80000000028
+          },
+          {
+            "injected": 29,
+            "clean": 68,
+            "injectedRejected": 29,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0147,
+            "survivingInliers": 67,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1392366005,
+            "at": 32097.100000000093
+          }
+        ],
+        "note": "GEO-003. The harness displaces a known fraction of the correspondences by a known amount and hands the verifier the set with no marking. `medianRecall` is the fraction of the harness’s own outliers the verifier rejected — the one number in this phase a stage that returns its input cannot produce, because returning its input scores exactly 0 while satisfying every count-based criterion v3 §14 names."
+      },
+      "planarHandling": {
+        "bothModelsFitted": 280,
+        "planarFrames": 194,
+        "nonPlanarFrames": 86,
+        "planarMismatches": 0,
+        "medianFundamentalInliers": 88,
+        "medianHomographyInliers": 86.5,
+        "note": "v3 §16. Both models are fitted on every judged frame, never skipped as an optimisation: the fundamental matrix is the weaker constraint and normally admits at least as many points, so the homography reaching it is the signal that the scene is planar. Phase 6 lowers translation confidence there, because an Essential matrix decomposed from a planar scene is degenerate and yields a pose that looks entirely reasonable."
+      },
+      "cost": {
+        "meanVerifyMs": 3.741,
+        "samples": 280
+      },
+      "integrity": {
+        "partitionFaults": 0,
+        "modelWithoutVerdict": 0
+      }
+    },
+    "pose": {
+      "poseFrames": 275,
+      "current": {
+        "state": "NO_POSE",
+        "reason": "Phase 5 reported UNVERIFIED on this frame — 25 inlier(s), below v3 §14's minimum of 30",
+        "source": null,
+        "rotationDeg": -1,
+        "translation": null,
+        "scale": "LOCAL_UNITS",
+        "confidence": 0,
+        "rotationConfidence": 0,
+        "translationConfidence": 0,
+        "terms": [],
+        "withheld": [],
+        "cheirality": []
+      },
+      "intrinsics": {
+        "fx": 362.6,
+        "fy": 362.6,
+        "cx": 240,
+        "cy": 180,
+        "width": 480,
+        "height": 360,
+        "estimated": true,
+        "assumedFovDeg": 67,
+        "note": "v3 §15: INTRINSICS: ESTIMATED. Safari exposes no focal length, so K is derived from an assumed field of view and every record says so. §H.0 is why it is recomputed per frame rather than read once: rotating the device swaps the frame dimensions on the same track, and fx, fy, cx, cy all change with them."
+      },
+      "overRun": {
+        "stateFrames": {
+          "POSE": 183,
+          "NO_POSE": 92
+        },
+        "stateMismatches": 0,
+        "medianRotationDeg": 0.056,
+        "medianReprojectionPx": 0.051,
+        "medianCheiralityFraction": 1,
+        "medianConfidence": 0.3227,
+        "posedFrames": 183,
+        "translationSpreadDeg": 0.359,
+        "ambiguousFrames": 168
+      },
+      "sensitivity": {
+        "focalFactor": 0.2,
+        "medianRotationDeg": 0.0113,
+        "medianTranslationDeg": 0.0732,
+        "note": "How far the pose moves when the assumed focal length is scaled by ±20%. This is the other half of being allowed to say INTRINSICS: ESTIMATED — a quantity that barely moves does not depend on the guess, and one that moves does."
+      },
+      "gyroscope": {
+        "available": false,
+        "reason": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "samples": 0,
+        "comparisonsMade": 0,
+        "medianVisualDeg": -1,
+        "medianGyroDeg": -1,
+        "medianDisagreementDeg": -1,
+        "agreementRate": -1,
+        "recent": [],
+        "note": "POSE-002. The gyroscope is an instrument here and never an input: v3 §19 lists IMU consistency among the confidence terms and Phase 6 withholds it on purpose, because a confidence that consumed the gyroscope could not then be checked against it. Angles only — rotationRate is in the device frame and the camera frame differs by a fixed rotation nobody has measured; an angle is invariant under that, an axis is not."
+      },
+      "planarHandling": {
+        "planarPosedFrames": 168,
+        "nonPlanarPosedFrames": 15,
+        "planarFromEssential": 0,
+        "medianPlanarTranslationConfidence": 0.3591,
+        "medianNonPlanarTranslationConfidence": 0,
+        "medianPlanarUnseparated": 2,
+        "medianNonPlanarUnseparated": 1,
+        "planarTranslationNotLowered": 0,
+        "note": "v3 §16. A planar scene is decomposed from the homography, never the Essential matrix, and its translation confidence is lowered by the number of candidates cheirality could not separate — generically two on a plane, so 1/2. Counted, not assumed. The two confidence medians are reported and NOT compared across classes: each is a minimum over several terms, and on a frame with a thin population the binding term is not the planar one, so the cross-class comparison measures the population rather than v3 §16. The candidate counts beside them are what the penalty is made of."
+      },
+      "failClosed": {
+        "lowParallaxFrames": 0,
+        "lowParallaxWithTranslation": 0,
+        "unverifiedFrames": 81,
+        "unverifiedWithRotation": 0,
+        "note": "POSE-004. A camera that turned without moving produces large, well-conditioned image motion and no translation at all; the direction fitted to it would be noise with a unit length. Decided from the correspondences — what rotation alone leaves unexplained — rather than from the decomposition."
+      },
+      "injectedRotation": {
+        "samples": 29,
+        "requestedDeg": 8,
+        "medianRecoveredDeg": 8,
+        "medianControlDeg": 0,
+        "medianInlierDrift": 0,
+        "medianControlInlierDrift": 0,
+        "planarFlips": 0,
+        "controlPlanarFlips": 1,
+        "recent": [
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 10.312,
+            "controlDeg": -1,
+            "axis": [
+              -0.5209479928830407,
+              0.7665500313405227,
+              0.3755186255873005
+            ],
+            "inliersBefore": 30,
+            "inliersAfter": 30,
+            "planarBefore": false,
+            "planarAfter": false,
+            "controlInliers": 28,
+            "controlPlanar": false,
+            "seed": 423940525,
+            "at": 24469.700000000186
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": -1,
+            "controlDeg": -1,
+            "axis": [
+              0.3631106374607881,
+              0.8902415258389156,
+              0.2749921646789589
+            ],
+            "inliersBefore": 30,
+            "inliersAfter": 29,
+            "planarBefore": false,
+            "planarAfter": false,
+            "controlInliers": 29,
+            "controlPlanar": false,
+            "seed": 818163978,
+            "at": 24596.200000000186
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9991,
+            "controlDeg": 0.0195,
+            "axis": [
+              -0.8928530639037526,
+              0.23757371633623775,
+              -0.38258611525233116
+            ],
+            "inliersBefore": 95,
+            "inliersAfter": 95,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 95,
+            "controlPlanar": true,
+            "seed": 1400830558,
+            "at": 27167.30000000028
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9986,
+            "controlDeg": 0,
+            "axis": [
+              -0.738001028539384,
+              -0.3244205818909943,
+              0.5916973617655565
+            ],
+            "inliersBefore": 93,
+            "inliersAfter": 93,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 93,
+            "controlPlanar": true,
+            "seed": 3390066897,
+            "at": 27265.80000000028
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0011,
+            "controlDeg": 0,
+            "axis": [
+              -0.15643818205440288,
+              -0.9509518228095117,
+              0.26686649450761
+            ],
+            "inliersBefore": 90,
+            "inliersAfter": 90,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 90,
+            "controlPlanar": true,
+            "seed": 132642284,
+            "at": 27361.30000000028
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0013,
+            "controlDeg": 0,
+            "axis": [
+              0.7771309314327003,
+              0.5310209216288926,
+              -0.3377636691578077
+            ],
+            "inliersBefore": 87,
+            "inliersAfter": 87,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 87,
+            "controlPlanar": true,
+            "seed": 365238504,
+            "at": 27466.5
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9996,
+            "controlDeg": 0,
+            "axis": [
+              -0.45804673454694417,
+              -0.7166913786641095,
+              0.5258770357406941
+            ],
+            "inliersBefore": 81,
+            "inliersAfter": 81,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 81,
+            "controlPlanar": true,
+            "seed": 1822823215,
+            "at": 27571.600000000093
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9996,
+            "controlDeg": 0.0249,
+            "axis": [
+              0.16996934325506846,
+              0.7495886334949812,
+              0.6397087641173658
+            ],
+            "inliersBefore": 75,
+            "inliersAfter": 75,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 75,
+            "controlPlanar": true,
+            "seed": 692570003,
+            "at": 30228.100000000093
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9993,
+            "controlDeg": 0,
+            "axis": [
+              0.43204116170204454,
+              0.5889939413513987,
+              -0.682954296894377
+            ],
+            "inliersBefore": 69,
+            "inliersAfter": 69,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 69,
+            "controlPlanar": true,
+            "seed": 3663535690,
+            "at": 30331.899999999907
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9969,
+            "controlDeg": 0,
+            "axis": [
+              -0.48636003210222983,
+              0.8680896797656873,
+              0.09936914540149996
+            ],
+            "inliersBefore": 67,
+            "inliersAfter": 67,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 67,
+            "controlPlanar": true,
+            "seed": 1386979828,
+            "at": 30424.100000000093
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0006,
+            "controlDeg": 0,
+            "axis": [
+              0.5374447516586051,
+              -0.606699519662609,
+              -0.5857207796858328
+            ],
+            "inliersBefore": 65,
+            "inliersAfter": 65,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 65,
+            "controlPlanar": true,
+            "seed": 2027772282,
+            "at": 30527.700000000186
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9997,
+            "controlDeg": 0,
+            "axis": [
+              0.30507972768918784,
+              0.2728219353721405,
+              -0.9124113936886642
+            ],
+            "inliersBefore": 62,
+            "inliersAfter": 62,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 62,
+            "controlPlanar": true,
+            "seed": 153095940,
+            "at": 30624.80000000028
+          }
+        ],
+        "note": "POSE-005, and the one number in this phase a stage returning a constant pose cannot produce — it scores exactly 0.00° while satisfying every other numeric criterion. The harness applies K Rj K^-1 to the second view, which is exactly the camera having turned by Rj, and re-runs the whole chain on a set handed over unmarked. The control is the same set unmodified: without it a solver returning noise would also pass."
+      },
+      "cost": {
+        "meanPoseMs": 4.621,
+        "samples": 194
+      },
+      "integrity": {
+        "scaleViolations": 0,
+        "intrinsicsUnmarked": 0,
+        "reprojectionWithoutTriangulation": 0,
+        "pointsInFrontOverflow": 0,
+        "confidenceAboveWorstTerm": 0,
+        "poseWithoutVerdict": 0
+      }
+    },
+    "fusion": {
+      "running": false,
+      "fusionFrames": 334,
+      "mode": "VISION_ONLY",
+      "usable": true,
+      "orientation": [
+        0.9988242366176783,
+        -0.013094581263947268,
+        -0.036565510089227475,
+        0.02901102822288056
+      ],
+      "gyroBiasDps": null,
+      "position": null,
+      "positionReason": "the accelerometer reports m/s² and Phase 6’s translation is a unit direction in LOCAL_UNITS with no scale, so fusing them needs the scale — which is exactly the quantity a monocular camera does not have (v3 §15, §17; v4 §18, §19)",
+      "velocityReason": "velocity is refused for the same reason as position: integrating an acceleration gives a velocity in m/s, and there is nothing in LOCAL_UNITS to correct it against (v3 §17, §18). It is absent rather than reported as zero",
+      "accelBiasReason": "accelerometer bias is not observable without position observability, and position is refused — so estimating it would be estimating a quantity nothing can correct (v3 §18)",
+      "scale": "UNKNOWN",
+      "heading": "RELATIVE",
+      "innovationDeg": -1,
+      "propagatedMs": 462.4,
+      "gravityDeg": -1,
+      "imuConsistency": -1,
+      "confidence": 0,
+      "confidenceTerms": [
+        {
+          "name": "inlierRatio",
+          "value": 1,
+          "note": "0.9375 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "reprojectionError",
+          "value": 0,
+          "note": "18.0041 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "trackedFeatures",
+          "value": 0.3091,
+          "note": "148 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "featureDistribution",
+          "value": 0.6183,
+          "note": "81.833 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "temporalStability",
+          "value": 0.7435,
+          "note": "3.8469° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "modelConsistency",
+          "value": 1,
+          "note": "cheirality left exactly one candidate standing (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "imuConsistency",
+          "value": -1,
+          "note": "no IMU is reporting, so there is nothing to be consistent with — v3 §19 lists this term and this run cannot measure it; it is withheld by name rather than scored as 1"
+        },
+        {
+          "name": "propagation",
+          "value": 1,
+          "note": "462.4 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
+        }
+      ],
+      "confidenceWithheld": [
+        "IMUConsistency — no IMU is reporting on this run (v3 §68: vision-only continues)"
+      ],
+      "visualConfidence": 0,
+      "sensors": [
+        {
+          "name": "acceleration",
+          "arriving": false,
+          "detail": "no finite value has arrived on this channel"
+        },
+        {
+          "name": "accelerationIncludingGravity",
+          "arriving": false,
+          "detail": "no finite value has arrived on this channel"
+        },
+        {
+          "name": "rotationRate",
+          "arriving": false,
+          "detail": "no finite value has arrived on this channel"
+        },
+        {
+          "name": "interval",
+          "arriving": true,
+          "detail": "delivering finite values"
+        },
+        {
+          "name": "deviceorientation",
+          "arriving": false,
+          "detail": "not consumed: it is a fused attitude the platform computed, and consuming it would make the filter agree with itself rather than with the sensors"
+        },
+        {
+          "name": "magnetometer",
+          "arriving": false,
+          "detail": "not read by Phase 7 at all — the heading is RELATIVE for that reason, and v3 §17 does not require an absolute one"
+        }
+      ],
+      "imuAvailable": false,
+      "imuReason": "listening for devicemotion; no event with rotationRate has arrived yet",
+      "imuSamples": 0,
+      "measuredImuHz": -1,
+      "reportedImuHz": 0.06,
+      "gravitySamples": 0,
+      "gravityRejected": 1,
+      "fusedFrames": 0,
+      "propagatingFrames": 0,
+      "biasMagnitudeDps": -1,
+      "biasReason": "no gyroscope is reporting, so the bias is unmeasured — and therefore absent, not zero",
+      "modeFrames": {
+        "VISION_ONLY": 334
+      },
+      "modeMismatches": 0,
+      "innovationSamples": 0,
+      "medianInnovationDeg": -1,
+      "maxInnovationDeg": -1,
+      "zeroInnovationSamples": 0,
+      "medianVisualIncrementDeg": -1,
+      "toleranceDeg": 3,
+      "innovationsWithinTolerance": 0,
+      "fusedVsVisualSamples": 0,
+      "medianFusedVsVisualDeg": -1,
+      "maxFusedVsVisualDeg": -1,
+      "zeroFusedVsVisualFrames": 0,
+      "imuConsistencySamples": 0,
+      "medianImuConsistency": -1,
+      "minImuConsistency": -1,
+      "imuConsistencyBelowOne": 0,
+      "gravityDegSamples": 0,
+      "medianGravityDeg": -1,
+      "confidenceAboveWorstTerm": 0,
+      "fusedAboveVisual": 0,
+      "biasSamples": 0,
+      "medianBiasDifferenceDps": -1,
+      "medianBiasAxisErrorDeg": -1,
+      "requestedInjectionDps": 3,
+      "injectionAxis": [
+        0,
+        0,
+        1
+      ],
+      "medianInjectedInnovationDeg": -1,
+      "biasDifferences": [],
+      "positionsReported": 0,
+      "scaleViolations": 0,
+      "deadReckonedPositionM": 0,
+      "deadReckonedSeconds": 0,
+      "dropoutFrames": 0,
+      "longestPropagatedMs": 1981.9,
+      "dropouts": [],
+      "dropoutConfidenceRises": 0,
+      "usableBeyondMax": 0,
+      "reconvergences": 0,
+      "medianReconvergenceInnovationDeg": -1,
+      "meanFusionMs": 0.0341,
+      "fusionCostSamples": 334,
+      "eulerEmitted": 0,
+      "biasZeroWithoutGyro": 0,
+      "rateOutOfRange": 0
+    },
+    "rotation": {
+      "source": "WAITING",
+      "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+      "events": 3,
+      "eventsWithRotation": 0,
+      "measuredHz": 1.09,
+      "lastReading": null
+    },
+    "devEntry": true,
+    "previewPresented": true
+  }
+}

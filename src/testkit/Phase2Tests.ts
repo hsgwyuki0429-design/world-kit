@@ -17,6 +17,8 @@ import { CameraState } from '../capture/CameraSource';
 import { PYRAMID_LEVELS } from '../pipeline/pyramid';
 import { FLOOR_TIER_STEP, TIER_LADDER } from '../pipeline/tiers';
 import type { PipelineStats } from '../pipeline/stats';
+import type { PhaseTest } from './runTests';
+import { runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -71,17 +73,7 @@ export interface Phase2Context {
   readonly stats: PipelineStats;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase2Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase2Context) => Evaluation;
-}
+type Phase2Test = PhaseTest<Phase2Context>;
 
 function pct(n: number): string {
   return `${Math.round(n * 1000) / 10}%`;
@@ -769,15 +761,5 @@ export const PHASE2_TESTS: readonly Phase2Test[] = [
 export const PHASE2_SPECS: readonly TestSpec[] = PHASE2_TESTS.map((t) => t.spec);
 
 export function runPhase2Tests(ctx: Phase2Context): TestResult[] {
-  return PHASE2_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE2_TESTS, ctx);
 }

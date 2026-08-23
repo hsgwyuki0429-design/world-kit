@@ -132,8 +132,18 @@ v4 compresses all five into three short sections (§18, §19). What v3 stated an
   Homography wins, mark `PLANAR SCENE` and lower translation confidence. **Absent from v4
   entirely.** It is not optional: a room scan is largely planar, and using an Essential matrix
   on a planar scene produces a degenerate pose that looks fine. Phase 6 implements it.
+- **§17 IMU Usage** — *Gyroscope: 短時間回転推定*, *Acceleration: 長時間の絶対位置推定には直接
+  使用しない*, *IMUだけを積分して絶対位置を生成してはならない*, and *IMUはVisionの代替ではない*.
+  v4 §19 keeps the second prohibition in one line and drops the rest. Phase 7 implements all
+  four, and **measures the one it refuses**: the accelerometer is double-integrated over the run
+  for the record only, so the refusal carries a number rather than a citation (IMU-006).
 - **§18 EKF** — the fused state (position, velocity, orientation, gyroBias, accelBias) and
-  "Quaternion優先, Euler角だけで長時間Pose管理しない".
+  "Quaternion優先, Euler角だけで長時間Pose管理しない". **Phase 7 estimates two of the five** —
+  `orientation` and `gyroBias` — and refuses `position`, `velocity` and `accelBias`, because the
+  accelerometer reports m/s² and Phase 6's translation is a unit direction in `LOCAL_UNITS`: the
+  two are not in comparable units and the conversion factor does not exist. The quaternion
+  preference is met by there being **no Euler conversion in the codebase at all**, so nothing
+  could emit a triple by accident.
 - **§19 Pose Confidence** — **seven** candidate inputs, quoted here because Phase 6 implements
   six of them and has to be able to say which one it left out: `inlier ratio`,
   `reprojection error`, `tracked feature count`, `feature distribution`, `IMU consistency`,
@@ -141,6 +151,11 @@ v4 compresses all five into three short sections (§18, §19). What v3 stated an
   confidenceにしない. (An earlier revision of this file said "eight"; v3 §19 lists seven.)
   Phase 6 withholds `IMU consistency` on purpose — it is the instrument POSE-002 scores the
   phase with, and a confidence that consumed it could not then be checked against it.
+  **Phase 7 adds the seventh, to a second number.** Phase 6's confidence is untouched — editing
+  a passed phase is not a fix — so the fused pose gets its own confidence with all seven inputs,
+  and both travel in the bundle. The prohibition applies to the new one as it did to the old:
+  the combination is the minimum over its terms, and since the fused terms are a superset of the
+  visual ones, attaching a sensor can only ever lower the number.
 
 ### v3 §20 — Keyframe conditions
 
@@ -148,6 +163,19 @@ v4 §20 says keyframes should be kept and updated, without conditions. v3 gave t
 rotation ≥ 10°, **or** relative translation ≥ 0.10 local unit, **or** median feature
 displacement ≥ 30 px, **or** a significant change in tracking quality; minimum interval 0.5 s,
 maximum 5 s.
+
+### v3 §68 — Phase 7's pass condition
+
+v4 §19 gives Phase 7 two lines and no pass condition. v3 §68 gives one, and it is unusual among
+the per-phase tables in being about **absence**:
+
+> PASS条件：**IMU unavailableでもVision-only modeで継続可能。**
+
+That inverts every leg before it. Headless Chromium has no accelerometer and no gyroscope, so the
+automated leg is permanently in the case the spec asks the phase to handle — and IMU-002 is
+therefore the first required test in this project that the automated leg decides, on every
+commit. Rule 004 still holds: `DESKTOP_DEV` cannot pass a phase, and the device decides the other
+seven records.
 
 ### v3 §65, §66… — the per-phase test tables
 

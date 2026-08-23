@@ -26,7 +26,6 @@
  * assertion.
  */
 
-import { Verdict } from '../core/types';
 import type { PhaseInfo, TestResult } from '../core/types';
 import { CameraState } from '../capture/CameraSource';
 import { getPreviewVideo } from './PreviewVideo';
@@ -53,6 +52,8 @@ import {
 import type { PoseStats } from '../tracking/poseStats';
 import { MIN_IDENTITY_OVER_RANDOM } from '../debug/OverlayAlignmentProbe';
 import type { AlignmentReading } from '../debug/OverlayAlignmentProbe';
+import { card, deg, el, pct, px, stat, vec } from './dom';
+import { evidenceSection, navigationSection, testsSection } from './phaseSections';
 
 export interface Phase6ViewModel {
   readonly phase6: PhaseInfo;
@@ -86,48 +87,6 @@ export interface Phase6Handlers {
   onEnterPhase7: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
-}
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
-
-function stat(label: string, value: string | null, cls = ''): HTMLElement {
-  return el('div', { class: 'stat' }, [
-    el('div', { class: 'k' }, [label]),
-    el('div', { class: `v ${cls}` }, [value ?? '—']),
-  ]);
-}
-
-function pct(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 1000) / 10}%`;
-}
-
-function deg(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100}°`;
-}
-
-function px(n: number): string {
-  return n < 0 ? '—' : `${Math.round(n * 100) / 100} px`;
-}
-
-function vec(v: readonly number[] | null): string | null {
-  if (!v) return null;
-  return `[${v.map((x) => (Math.round(x * 1000) / 1000).toFixed(3)).join(', ')}]`;
 }
 
 let overlayCanvas: HTMLCanvasElement | null = null;
@@ -210,9 +169,27 @@ export function renderPhase6Screen(
   root.append(renderConfidence(vm));
   root.append(renderIntrinsics(vm));
   root.append(renderCost(vm));
-  root.append(renderTests(vm));
-  root.append(renderEvidence(vm, handlers));
-  root.append(renderNavigation(vm, handlers));
+  root.append(testsSection(6, vm.phase6, vm.results));
+  root.append(
+    evidenceSection(6, vm.phase6, vm.results, {
+      onDownload: handlers.onDownloadEvidence,
+      onCopy: handlers.onCopyEvidence,
+    }),
+  );
+  root.append(
+    navigationSection(
+      { index: 5, label: 'BACK TO VERIFICATION', onClick: handlers.onBack },
+      {
+        index: 7,
+        name: 'IMU SUPPORT / FUSION',
+        phase: vm.phase7,
+        canEnter: vm.canEnterPhase7,
+        implemented: vm.phase7Implemented,
+        blockedReason: vm.phase7BlockedReason,
+        onClick: handlers.onEnterPhase7,
+      },
+    ),
+  );
 }
 
 function renderPreview(vm: Phase6ViewModel, handlers: Phase6Handlers): HTMLElement {
@@ -363,10 +340,12 @@ function renderGyro(vm: Phase6ViewModel): HTMLElement {
       stat('Disagreement', deg(s.medianRotationDisagreementDeg),
         enough ? (agreeing ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
       stat('Comparable frames', enough
-        ? String(s.rotationSamples)
+        ? `${s.rotationSamples} of ${s.rotationComparisons}`
         : `${s.rotationSamples} / ${MIN_JUDGED_FRAMES}`),
       stat('Frames agreeing', pct(s.rotationAgreementRate),
-        s.rotationAgreementRate >= MIN_ROTATION_AGREEMENT_RATE ? 's-AVAILABLE' : ''),
+        s.rotationAgreementRate > 1
+          ? 's-PERMISSION_DENIED'
+          : s.rotationAgreementRate >= MIN_ROTATION_AGREEMENT_RATE ? 's-AVAILABLE' : ''),
       stat('This frame', s.poseFrames > 0 ? deg(s.rotationDeg) : null),
     ]),
     el('p', { class: 'footnote' }, [
@@ -379,6 +358,13 @@ function renderGyro(vm: Phase6ViewModel): HTMLElement {
           'Without the gyroscope there is no instrument independent of the pose solver that can ' +
             'say how far the camera actually turned, so POSE-002 reports PENDING with that ' +
             'reason instead of being judged. This is why Phase 6 cannot pass off the device.',
+    ]),
+    el('p', { class: 'footnote' }, [
+      'Every figure here is over the **retained window** — §56 bounds what a twenty-minute ' +
+        'session may keep — and "comparable frames" is that window beside the total ever ' +
+        'compared. They are shown together because they came apart once: an agreement counter ' +
+        'that kept climbing over a denominator that stopped at 400 reported 232.3% agreeing on ' +
+        'the device, and a rate above 100% is not a rate.',
     ]),
     el('p', { class: 'footnote' }, [
       `Only frames where the gyroscope measured at least ${MIN_COMPARABLE_ROTATION_DEG}° are ` +
@@ -620,101 +606,3 @@ function renderCost(vm: Phase6ViewModel): HTMLElement {
   ]);
 }
 
-function renderTests(vm: Phase6ViewModel): HTMLElement {
-  if (vm.results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
-  }
-  const counts = {
-    pass: vm.results.filter((r) => r.verdict === Verdict.PASS).length,
-    fail: vm.results.filter((r) => r.verdict === Verdict.FAIL).length,
-    pending: vm.results.filter((r) => r.verdict === Verdict.PENDING).length,
-  };
-  return card(`Tests — Phase 6 · ${vm.phase6.state}`, [
-    el('div', { class: 'verdict-head' }, [
-      el('div', { class: `verdict-state ${vm.phase6.state}`, id: 'phase6-verdict' }, [vm.phase6.state]),
-      el('div', { class: 'verdict-counts' }, [
-        `${counts.pass} PASS · ${counts.fail} FAIL · ${counts.pending} PENDING`,
-      ]),
-    ]),
-    el('p', { class: 'verdict-reason' }, [vm.phase6.reason]),
-    ...vm.results.map((r) =>
-      el('details', { class: 'row' }, [
-        el('summary', {}, [
-          el('span', { class: 'id' }, [r.spec.id]),
-          el('span', { class: 'title' }, [r.spec.title]),
-          el('span', { class: 'req' }, [r.spec.required ? 'REQ' : 'ADV']),
-          el('span', { class: `verdict v-${r.verdict}` }, [r.verdict]),
-        ]),
-        el('dl', { class: 'detail-grid' }, [
-          el('dt', {}, ['Expected']), el('dd', {}, [r.spec.expected]),
-          el('dt', {}, ['Criteria']), el('dd', {}, [r.spec.passCriteria]),
-          el('dt', {}, ['Observed']), el('dd', { class: 'mono' }, [r.observed]),
-          el('dt', {}, ['Reason']), el('dd', {}, [r.reason]),
-        ]),
-      ]),
-    ),
-  ]);
-}
-
-function renderEvidence(vm: Phase6ViewModel, handlers: Phase6Handlers): HTMLElement {
-  const pending = vm.results.filter((r) => r.spec.required && r.verdict === Verdict.PENDING);
-  const children: (Node | string)[] = [];
-  if (pending.length > 0) {
-    children.push(
-      el('p', { class: 'evidence-warning', id: 'phase6-pending-warning' }, [
-        `This export would record ${vm.phase6.state}, not a pass: ` +
-          `${pending.map((r) => r.spec.id).join(', ')} still PENDING.`,
-      ]),
-    );
-  }
-  children.push(
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'download-evidence-p6',
-        textContent: `DOWNLOAD EVIDENCE JSON — ${vm.phase6.state}`,
-        onclick: handlers.onDownloadEvidence,
-      } as never),
-      el('button', {
-        class: 'secondary',
-        id: 'copy-evidence-p6',
-        textContent: 'COPY EVIDENCE JSON',
-        onclick: handlers.onCopyEvidence,
-      } as never),
-    ]),
-  );
-  return card('Evidence', children);
-}
-
-function renderNavigation(vm: Phase6ViewModel, handlers: Phase6Handlers): HTMLElement {
-  const open = vm.canEnterPhase7 && vm.phase7Implemented;
-  const label = !vm.phase7Implemented
-    ? 'IMU SUPPORT / FUSION — NOT IMPLEMENTED'
-    : !vm.canEnterPhase7
-      ? 'IMU SUPPORT / FUSION — LOCKED'
-      : 'GO TO IMU SUPPORT / FUSION';
-  const note = !vm.phase7Implemented
-    ? 'Phase 7 has not been written in this build.'
-    : !vm.canEnterPhase7
-      ? vm.phase7BlockedReason
-      : `Phase 7 is ${vm.phase7.state}.`;
-
-  return card('Navigation', [
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'back-to-phase5',
-        textContent: 'BACK TO VERIFICATION',
-        onclick: handlers.onBack,
-      } as never),
-      el('button', {
-        class: 'primary',
-        id: 'go-to-phase7',
-        disabled: !open,
-        textContent: label,
-        onclick: handlers.onEnterPhase7,
-      } as never),
-    ]),
-    el('p', { class: 'footnote' }, [note]),
-  ]);
-}

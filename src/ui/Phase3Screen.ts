@@ -13,7 +13,6 @@
  * able to hide.
  */
 
-import { Verdict } from '../core/types';
 import type { PhaseInfo, TestResult } from '../core/types';
 import { CameraState } from '../capture/CameraSource';
 import { getPreviewVideo } from './PreviewVideo';
@@ -29,6 +28,8 @@ import {
 import type { TrackingStats } from '../tracking/trackingStats';
 import { MIN_IDENTITY_OVER_RANDOM } from '../debug/OverlayAlignmentProbe';
 import type { AlignmentReading } from '../debug/OverlayAlignmentProbe';
+import { card, el, stat } from './dom';
+import { evidenceSection, navigationSection, testsSection } from './phaseSections';
 
 export interface Phase3ViewModel {
   readonly phase3: PhaseInfo;
@@ -58,31 +59,6 @@ export interface Phase3Handlers {
   onEnterPhase4: () => void;
   onDownloadEvidence: () => void;
   onCopyEvidence: () => void;
-}
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  children: (Node | string)[] = [],
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') node.className = String(v);
-    else if (v !== undefined) (node as unknown as Record<string, unknown>)[k] = v;
-  }
-  for (const c of children) node.append(c);
-  return node;
-}
-
-function card(title: string, children: (Node | string)[]): HTMLElement {
-  return el('section', { class: 'card' }, [el('h2', {}, [title]), ...children]);
-}
-
-function stat(label: string, value: string | null, cls = ''): HTMLElement {
-  return el('div', { class: 'stat' }, [
-    el('div', { class: 'k' }, [label]),
-    el('div', { class: `v ${cls}` }, [value ?? '—']),
-  ]);
 }
 
 /** Kept across renders, like the video: recreating it would blank the overlay twice a second. */
@@ -155,45 +131,32 @@ export function renderPhase3Screen(
   root.append(renderPopulation(vm));
   root.append(renderScene(vm));
   root.append(renderProvenance(vm));
-  root.append(renderTests(vm));
-  root.append(renderEvidence(vm, handlers));
+  root.append(testsSection(3, vm.phase3, vm.results));
+  root.append(
+    evidenceSection(3, vm.phase3, vm.results, {
+      onDownload: handlers.onDownloadEvidence,
+      onCopy: handlers.onCopyEvidence,
+    }),
+  );
 
-  root.append(renderNavigation(vm, handlers));
+  root.append(
+    navigationSection(
+      { index: 2, label: 'BACK TO PIPELINE', onClick: handlers.onBack },
+      {
+        index: 4,
+        name: 'OPTICAL FLOW TRACKING',
+        goLabel: 'GO TO TRACKING',
+        phase: vm.phase4,
+        canEnter: vm.canEnterPhase4,
+        implemented: vm.phase4Implemented,
+        blockedReason: vm.phase4BlockedReason,
+        onClick: handlers.onEnterPhase4,
+      },
+    ),
+  );
 }
 
 /** Phase Lock on screen, as on the screens before it: a closed door says which lock holds it. */
-function renderNavigation(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLElement {
-  const open = vm.canEnterPhase4 && vm.phase4Implemented;
-  const label = !vm.phase4Implemented
-    ? 'OPTICAL FLOW TRACKING — NOT IMPLEMENTED'
-    : !vm.canEnterPhase4
-      ? 'OPTICAL FLOW TRACKING — LOCKED'
-      : 'GO TO TRACKING';
-  const note = !vm.phase4Implemented
-    ? 'Phase 4 has not been written in this build.'
-    : !vm.canEnterPhase4
-      ? vm.phase4BlockedReason
-      : `Phase 4 is ${vm.phase4.state}.`;
-
-  return card('Navigation', [
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'back-to-phase2',
-        textContent: 'BACK TO PIPELINE',
-        onclick: handlers.onBack,
-      } as never),
-      el('button', {
-        class: 'primary',
-        id: 'go-to-phase4',
-        disabled: !open,
-        textContent: label,
-        onclick: handlers.onEnterPhase4,
-      } as never),
-    ]),
-    el('p', { class: 'footnote' }, [note]),
-  ]);
-}
 
 function renderPreview(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLElement {
   const children: (Node | string)[] = [];
@@ -415,71 +378,3 @@ function renderProvenance(vm: Phase3ViewModel): HTMLElement {
   ]);
 }
 
-function renderTests(vm: Phase3ViewModel): HTMLElement {
-  if (vm.results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
-  }
-  const counts = {
-    pass: vm.results.filter((r) => r.verdict === Verdict.PASS).length,
-    fail: vm.results.filter((r) => r.verdict === Verdict.FAIL).length,
-    pending: vm.results.filter((r) => r.verdict === Verdict.PENDING).length,
-  };
-  const rows = vm.results.map((r) =>
-    el('details', { class: 'row' }, [
-      el('summary', {}, [
-        el('span', { class: 'id' }, [r.spec.id]),
-        el('span', { class: 'title' }, [r.spec.title]),
-        el('span', { class: 'req' }, [r.spec.required ? 'REQ' : 'ADV']),
-        el('span', { class: `verdict v-${r.verdict}` }, [r.verdict]),
-      ]),
-      el('dl', { class: 'detail-grid' }, [
-        el('dt', {}, ['Expected']), el('dd', {}, [r.spec.expected]),
-        el('dt', {}, ['Criteria']), el('dd', {}, [r.spec.passCriteria]),
-        el('dt', {}, ['Observed']), el('dd', { class: 'mono' }, [r.observed]),
-        el('dt', {}, ['Reason']), el('dd', {}, [r.reason]),
-      ]),
-    ]),
-  );
-  return card(`Tests — Phase 3 · ${vm.phase3.state}`, [
-    el('div', { class: 'verdict-head' }, [
-      el('div', { class: `verdict-state ${vm.phase3.state}`, id: 'phase3-verdict' }, [
-        vm.phase3.state,
-      ]),
-      el('div', { class: 'verdict-counts' }, [
-        `${counts.pass} PASS · ${counts.fail} FAIL · ${counts.pending} PENDING`,
-      ]),
-    ]),
-    el('p', { class: 'verdict-reason' }, [vm.phase3.reason]),
-    ...rows,
-  ]);
-}
-
-function renderEvidence(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLElement {
-  const pending = vm.results.filter((r) => r.spec.required && r.verdict === Verdict.PENDING);
-  const children: (Node | string)[] = [];
-  if (pending.length > 0) {
-    children.push(
-      el('p', { class: 'evidence-warning', id: 'phase3-pending-warning' }, [
-        `This export would record ${vm.phase3.state}, not a pass: ` +
-          `${pending.map((r) => r.spec.id).join(', ')} still PENDING.`,
-      ]),
-    );
-  }
-  children.push(
-    el('div', { class: 'button-row' }, [
-      el('button', {
-        class: 'secondary',
-        id: 'download-evidence-p3',
-        textContent: `DOWNLOAD EVIDENCE JSON — ${vm.phase3.state}`,
-        onclick: handlers.onDownloadEvidence,
-      } as never),
-      el('button', {
-        class: 'secondary',
-        id: 'copy-evidence-p3',
-        textContent: 'COPY EVIDENCE JSON',
-        onclick: handlers.onCopyEvidence,
-      } as never),
-    ]),
-  );
-  return card('Evidence', children);
-}

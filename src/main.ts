@@ -30,6 +30,7 @@ import { runPhase3Tests, PHASE3_SPECS } from './testkit/Phase3Tests';
 import { runPhase4Tests, PHASE4_SPECS } from './testkit/Phase4Tests';
 import { runPhase5Tests, PHASE5_SPECS } from './testkit/Phase5Tests';
 import { runPhase6Tests, PHASE6_SPECS } from './testkit/Phase6Tests';
+import { runPhase7Tests, PHASE7_SPECS } from './testkit/Phase7Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
 import { VerificationSession } from './tracking/VerificationSession';
@@ -43,6 +44,9 @@ import { renderPhase3Screen } from './ui/Phase3Screen';
 import { renderPhase4Screen } from './ui/Phase4Screen';
 import { renderPhase5Screen } from './ui/Phase5Screen';
 import { renderPhase6Screen } from './ui/Phase6Screen';
+import { renderPhase7Screen } from './ui/Phase7Screen';
+import { FusionStage } from './tracking/FusionStage';
+import { FusionSession } from './tracking/FusionSession';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -75,6 +79,7 @@ const PHASE4 = 4;
 const PHASE5 = 5;
 const PHASE6 = 6;
 const PHASE7 = 7;
+const PHASE8 = 8;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -96,8 +101,11 @@ const PHASE4_TICK_MS = 500;
 const PHASE5_TICK_MS = 500;
 /** ...and for the RELATIVE POSE screen. */
 const PHASE6_TICK_MS = 500;
+/** Same reasoning as every screen before it: re-render for a human, not for every frame. */
+const PHASE7_TICK_MS = 500;
 
-type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6';
+type Screen =
+  | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -114,6 +122,15 @@ class Phase0App {
   private sensorProbeDone = false;
   private integrityIssues: readonly { path: string; problem: string }[] = [];
 
+  /**
+   * One re-evaluation timer per phase screen, keyed by phase index.
+   *
+   * Seven `phaseNTimer` fields with seven identical start/stop pairs became this. The pairs were
+   * where a phase could have leaked a timer by clearing the wrong field, and a map keyed by the
+   * index makes that impossible rather than merely unlikely.
+   */
+  private readonly tickers = new Map<number, number>();
+
   private screen: Screen = 'phase0';
   private readonly camera = new CameraSource();
   private readonly monitor = new FrameIntegrityMonitor();
@@ -121,7 +138,6 @@ class Phase0App {
   private phase1Results: TestResult[] = [];
   private phase1Bundle: EvidenceBundle | null = null;
   private cameraOpening = false;
-  private phase1Timer: number | null = null;
   /**
    * The composition root supplies the worker.
    *
@@ -140,7 +156,6 @@ class Phase0App {
   private readonly features = new FeaturePopulation();
   private phase3Results: TestResult[] = [];
   private phase3Bundle: EvidenceBundle | null = null;
-  private phase3Timer: number | null = null;
   private phase3DevEntry = false;
   private detectionEverRan = false;
   /**
@@ -167,7 +182,6 @@ class Phase0App {
   private flowEverRan = false;
   private phase4Results: TestResult[] = [];
   private phase4Bundle: EvidenceBundle | null = null;
-  private phase4Timer: number | null = null;
   private phase4DevEntry = false;
   private readonly flow = new FlowSession();
   /**
@@ -184,7 +198,6 @@ class Phase0App {
   private verifyEverRan = false;
   private phase5Results: TestResult[] = [];
   private phase5Bundle: EvidenceBundle | null = null;
-  private phase5Timer: number | null = null;
   private phase5DevEntry = false;
   /** Counts frames offered to the worker while verifying, so GEO-003 is sampled, not constant. */
   private verifyFrames = 0;
@@ -201,11 +214,31 @@ class Phase0App {
   private poseEverRan = false;
   private phase6Results: TestResult[] = [];
   private phase6Bundle: EvidenceBundle | null = null;
-  private phase6Timer: number | null = null;
   private phase6DevEntry = false;
   private poseFrames = 0;
   private readonly pose = new PoseSession();
   private readonly rotation = new RotationRateMonitor();
+  /**
+   * Phase 7's own "am I running", for the fifth time and for the same reason (§H.5).
+   *
+   * Six stages are live when the IMU SUPPORT / FUSION screen opens — camera, pipeline,
+   * detector, tracker, verifier, pose — because that is how Phase 6 passes. A predicate
+   * assembled from any of them says "fusing" before fusion has started.
+   */
+  private fusionRequested = false;
+  private fusionEverRan = false;
+  private phase7Results: TestResult[] = [];
+  private phase7Bundle: EvidenceBundle | null = null;
+  private phase7DevEntry = false;
+  /**
+   * The stage and its accumulator.
+   *
+   * Seeded from the app's start time so the injected bias does not land on the same axis on
+   * every run — POSE-005's rule, one phase along: a run that is right about one axis by luck
+   * must not be able to be right about it twice.
+   */
+  private readonly fusionStage = new FusionStage(Date.now());
+  private readonly fusion = new FusionSession();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
   private alignment: AlignmentReading | null = null;
@@ -217,7 +250,6 @@ class Phase0App {
   private lastOverlayHeight = 0;
   private phase2Results: TestResult[] = [];
   private phase2Bundle: EvidenceBundle | null = null;
-  private phase2Timer: number | null = null;
   private phase2DevEntry = false;
   private pipelineEverStarted = false;
   /** Why the last request to inject load was refused, shown verbatim on the screen. */
@@ -484,6 +516,36 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase7') {
+      renderPhase7Screen(
+        this.root,
+        {
+          phase7: this.registry.get(PHASE7),
+          phase8: this.registry.get(PHASE8),
+          canEnterPhase8: this.registry.canEnter(PHASE8),
+          phase8Implemented: isPhaseImplemented(PHASE8),
+          phase8BlockedReason: this.registry.blockedReason(PHASE8),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          // The one predicate, read by the control, the tests and the evidence alike (§H.5).
+          running: this.isFusing(),
+          stats: this.fusion.stats(this.isFusing()),
+          sourceWidth: this.pipeline.getStats().sourceWidth,
+          sourceHeight: this.pipeline.getStats().sourceHeight,
+          results: this.phase7Results,
+        },
+        {
+          onStart: () => void this.onStartPhase7(),
+          onStop: () => this.onStopPhase7('user stopped fusion'),
+          onBack: () => this.leavePhase7(),
+          onEnterPhase8: () => this.enterPhase8(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase7Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase7Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase6') {
       const p = this.pipeline.getStats();
       renderPhase6Screen(
@@ -821,28 +883,99 @@ class Phase0App {
   }
 
   private startPhase1Ticking(): void {
-    this.stopPhase1Ticking();
     // Re-render on a timer so the measured values stay live. The preview element is
     // re-appended synchronously inside the same render call, which the HTML spec's
     // "await a stable state" rule makes a no-op for playback — and CAM-003 measures the
     // longest frame gap, so if that reasoning were wrong the test would say so.
-    this.phase1Timer = window.setInterval(() => {
+    this.startTicking(PHASE1, PHASE1_TICK_MS, () => {
       this.evaluatePhase1();
       this.render();
-    }, PHASE1_TICK_MS);
+    });
   }
 
   private stopPhase1Ticking(): void {
-    if (this.phase1Timer !== null) {
-      clearInterval(this.phase1Timer);
-      this.phase1Timer = null;
+    this.stopTicking(PHASE1);
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Per-phase lifecycle, written once                                       */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Re-evaluate a phase screen on a timer, replacing whatever was running for it.
+   *
+   * Not per frame: a screen's numbers change 30 times a second and re-rendering the DOM at that
+   * rate would put the UI's own cost inside the measurement it is displaying. Twice a second is
+   * enough for a human and cheap enough not to distort the run — the reasoning Phase 2 wrote
+   * down and every screen since has followed.
+   */
+  private startTicking(index: number, intervalMs: number, tick: () => void): void {
+    this.stopTicking(index);
+    this.tickers.set(index, window.setInterval(tick, intervalMs));
+  }
+
+  private stopTicking(index: number): void {
+    const id = this.tickers.get(index);
+    if (id !== undefined) {
+      clearInterval(id);
+      this.tickers.delete(index);
     }
+  }
+
+  /**
+   * Keep a freshly built bundle, and say so loudly if it does not describe itself.
+   *
+   * `findIntegrityIssues` walks the bundle for values that cannot be true of a real run — a
+   * verdict that its own results do not support, a rate outside 0..1, a NaN where a measurement
+   * should be. The bundle is still offered for download when it finds something, because a
+   * broken bundle is evidence of the break and withholding it would leave the defect
+   * undiagnosable (§80).
+   */
+  private keepBundle(index: number, built: { bundle: EvidenceBundle; integrityIssues: readonly unknown[] }): EvidenceBundle {
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        index, 'EvidenceRecorder',
+        `Phase ${index} evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
+    return built.bundle;
+  }
+
+  /**
+   * Grade a phase's results, record the verdict, and rebuild its evidence bundle.
+   *
+   * Seven copies of this said the same thing. **Nothing here decides anything**: the verdict
+   * comes from `PhaseRegistry.evaluate` over the results the suite produced, and the leg comes
+   * from `LegDetermination`. That is what lets `tests/unit/committedEvidence.test.ts` re-derive
+   * a committed bundle's verdict from its own results and catch a hand-edited one.
+   *
+   * The leg defaults to `DESKTOP_DEV` where none has been determined, which is the conservative
+   * direction: Rule 004 says a desktop leg cannot pass a phase, so an undetermined leg cannot
+   * either.
+   */
+  private applyPhase(
+    index: number,
+    results: readonly TestResult[],
+    buildEvidence: (verdict: PhaseState, reason: string) => void,
+  ): void {
+    const previous = this.registry.get(index).state;
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(results, leg);
+    this.registry.applyEvaluation(index, evaluation);
+    const next = this.registry.get(index).state;
+    if (previous !== next) {
+      logger.info(index, 'App', `phase ${index}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    buildEvidence(evaluation.state, evaluation.reason);
   }
 
   private evaluatePhase1(): void {
     const video = getPreviewVideo();
-    const previous = this.registry.get(PHASE1).state;
-
     this.phase1Results = runPhase1Tests({
       cameraState: this.camera.getState(),
       openResult: this.camera.getLastResult(),
@@ -857,16 +990,9 @@ class Phase0App {
       cameraEndedUnexpectedly: this.cameraEndedUnexpectedly,
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase1Results, leg);
-    this.registry.applyEvaluation(PHASE1, evaluation);
-    const next = this.registry.get(PHASE1).state;
-    if (previous !== next) {
-      logger.info(PHASE1, 'App', `phase ${PHASE1}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase1Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE1, this.phase1Results, (verdict, reason) =>
+      this.buildPhase1Evidence(verdict, reason),
+    );
   }
 
   private buildPhase1Evidence(verdict: PhaseState, reason: string): void {
@@ -890,16 +1016,7 @@ class Phase0App {
         previewPresented: isPreviewPresented(),
       },
     });
-    this.phase1Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE1, 'EvidenceRecorder',
-        `Phase 1 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase1Bundle = this.keepBundle(PHASE1, built);
   }
 
   /**
@@ -1052,22 +1169,17 @@ class Phase0App {
   }
 
   private startPhase2Ticking(): void {
-    this.stopPhase2Ticking();
-    this.phase2Timer = window.setInterval(() => {
+    this.startTicking(PHASE2, PHASE2_TICK_MS, () => {
       this.evaluatePhase2();
       this.render();
-    }, PHASE2_TICK_MS);
+    });
   }
 
   private stopPhase2Ticking(): void {
-    if (this.phase2Timer !== null) {
-      clearInterval(this.phase2Timer);
-      this.phase2Timer = null;
-    }
+    this.stopTicking(PHASE2);
   }
 
   private evaluatePhase2(): void {
-    const previous = this.registry.get(PHASE2).state;
     this.phase2Results = runPhase2Tests({
       cameraState: this.camera.getState(),
       cameraEverOpened: this.cameraEverOpened,
@@ -1075,16 +1187,9 @@ class Phase0App {
       stats: this.pipeline.getStats(),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase2Results, leg);
-    this.registry.applyEvaluation(PHASE2, evaluation);
-    const next = this.registry.get(PHASE2).state;
-    if (previous !== next) {
-      logger.info(PHASE2, 'App', `phase ${PHASE2}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase2Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE2, this.phase2Results, (verdict, reason) =>
+      this.buildPhase2Evidence(verdict, reason),
+    );
   }
 
   private buildPhase2Evidence(verdict: PhaseState, reason: string): void {
@@ -1107,16 +1212,7 @@ class Phase0App {
         previewPresented: isPreviewPresented(),
       },
     });
-    this.phase2Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE2, 'EvidenceRecorder',
-        `Phase 2 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase2Bundle = this.keepBundle(PHASE2, built);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -1144,6 +1240,14 @@ class Phase0App {
     // Phase 3's: folding it in would change what the committed Phase 4 evidence means.
     if (result.verification) this.verification.record(result, now);
     if (result.pose) this.pose.record(result, now);
+    // Phase 7 is driven from here rather than from its tick, because `propagatedMs` is measured
+    // from the last frame vision produced a pose and a 500 ms tick could not see the gaps
+    // between them. `notePose` filters NO_POSE frames itself, so every frame reaches the stage
+    // and only the ones that recovered something advance the visual clock.
+    if (this.isFusing() && result.pose) {
+      this.fusionStage.notePose(result.pose, result.verification?.reAnchored ?? false, now);
+      this.fusion.record(this.fusionStage.report(now, result.pose), now);
+    }
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -1479,8 +1583,7 @@ class Phase0App {
   }
 
   private startPhase4Ticking(): void {
-    this.stopPhase4Ticking();
-    this.phase4Timer = window.setInterval(() => {
+    this.startTicking(PHASE4, PHASE4_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.flowOptions());
       // Carried over from Phase 3 deliberately (§H.5): Phase 4 measures displacements in the
       // acquired buffer's frame, so a buffer rotated against the screen makes every number on
@@ -1488,18 +1591,14 @@ class Phase0App {
       this.probeAlignment();
       this.evaluatePhase4();
       this.render();
-    }, PHASE4_TICK_MS);
+    });
   }
 
   private stopPhase4Ticking(): void {
-    if (this.phase4Timer !== null) {
-      clearInterval(this.phase4Timer);
-      this.phase4Timer = null;
-    }
+    this.stopTicking(PHASE4);
   }
 
   private evaluatePhase4(): void {
-    const previous = this.registry.get(PHASE4).state;
     this.phase4Results = runPhase4Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -1507,16 +1606,9 @@ class Phase0App {
       stats: this.flow.stats(this.isTracking()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase4Results, leg);
-    this.registry.applyEvaluation(PHASE4, evaluation);
-    const next = this.registry.get(PHASE4).state;
-    if (previous !== next) {
-      logger.info(PHASE4, 'App', `phase ${PHASE4}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase4Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE4, this.phase4Results, (verdict, reason) =>
+      this.buildPhase4Evidence(verdict, reason),
+    );
   }
 
   private buildPhase4Evidence(verdict: PhaseState, reason: string): void {
@@ -1554,16 +1646,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase4Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE4, 'EvidenceRecorder',
-        `Phase 4 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase4Bundle = this.keepBundle(PHASE4, built);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -1723,35 +1806,286 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 7 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase7(): boolean {
-    logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
-      reason: isPhaseImplemented(PHASE7)
-        ? this.registry.blockedReason(PHASE7)
-        : 'Phase 7 has not been written in this build',
+  /* ---------------------------------------------------------------------- */
+  /* Phase 7 — IMU Support / Fusion                                          */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Whether anything is actually fusing.
+   *
+   * §H.5 for the fifth time, and from one predicate: fusion asked for AND a pipeline running to
+   * serve it. Six stages are already live when this screen opens — camera, pipeline, detector,
+   * tracker, verifier, pose — so a predicate assembled from any of them says "fusing" before
+   * fusion has started, and the control built from it cannot be pressed. The screen, the tests
+   * and the evidence read this and nothing else.
+   *
+   * Note what it does **not** include: whether the IMU is delivering. A run with no sensors is
+   * still fusing — it is reporting `VISION_ONLY`, which is v3 §68's own pass condition, and
+   * gating the predicate on the IMU would make IMU-002 undecidable by making its own case look
+   * like "not started".
+   */
+  private isFusing(): boolean {
+    return this.fusionRequested && this.pipeline.isRunning();
+  }
+
+  /** Enter the IMU SUPPORT / FUSION screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase7(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE7)) {
+      logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
+        reason: 'Phase 7 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE7)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
+          reason: this.registry.blockedReason(PHASE7),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase7DevEntry = true;
+      logger.warn(PHASE7, 'App', 'Phase 7 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    // Phase 6's tick refreshes the tracking options twice a second; left running it would keep
+    // resetting the injection schedule under Phase 7's feet.
+    this.stopPhase6Ticking();
+    this.screen = 'phase7';
+    if (this.registry.get(PHASE7).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE7, PhaseState.IMPLEMENTING, 'IMU SUPPORT / FUSION screen opened');
+    }
+    this.evaluatePhase7();
+    this.render();
+    return true;
+  }
+
+  /**
+   * MUST be reached from the click handler: the motion permission has to be requested inside
+   * the user's gesture, and an `await` before it puts it outside and iOS throws.
+   *
+   * The camera is normally already open — this screen is reached from Phase 6's, which cannot
+   * pass without it — so the usual path here is: ask for motion, adopt the running pipeline,
+   * start fusing. A refusal of the motion permission is not a failure of this method: the run
+   * continues on vision alone, and that is the case v3 §68 asks this phase to handle.
+   */
+  private async onStartPhase7(): Promise<void> {
+    if (this.cameraOpening || this.fusionRequested) return;
+
+    this.fusionStage.reset();
+    this.fusion.reset();
+
+    // First, synchronously, inside the gesture. `RotationRateMonitor` already owns the one
+    // listener and the one permission call; Phase 7 takes the second callback rather than
+    // attaching a listener of its own — two `requestPermission()` calls in one gesture is a
+    // second prompt on some builds and a rejection on others.
+    void this.rotation
+      .start(
+        (reading) => {
+          this.flow.noteRotation({ at: reading.at, degPerSecond: reading.degPerSecond });
+          this.pose.noteGyro({
+            at: reading.at,
+            x: reading.beta,
+            y: reading.gamma,
+            z: reading.alpha,
+          });
+        },
+        (sample) => {
+          this.fusionStage.noteImu(sample);
+          this.fusion.noteImu(sample);
+        },
+      )
+      .then((source) => {
+        if (!this.rotation.isLive()) {
+          const detail = this.rotation.getDetail();
+          this.flow.noteGyroUnavailable(detail);
+          this.pose.noteGyroUnavailable(detail);
+          this.fusion.noteImuUnavailable(detail);
+        }
+        logger.info(PHASE7, 'RotationRateMonitor', `motion sensors: ${source}`, {
+          detail: this.rotation.getDetail(),
+          why: 'IMU-002 is decided on what actually arrives, and v3 §68 asks for the run to ' +
+            'continue when nothing does',
+        });
+        this.evaluatePhase7();
+        this.render();
+      });
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE7, 'CameraSource', `fusion could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and fusion does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase7();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE7, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and fusion still starts; if no frames arrive the tests ' +
+            'stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      logger.info(PHASE7, 'App', 'adopted the running Phase 6 pose recovery', {
+        note: 'the camera, worker, population, anchor and pose options stay as they are. ' +
+          'Phase 7 fuses the poses Phase 6 recovers and changes nothing about how they are ' +
+          'recovered — editing the solver here would mean fusing a pose Phase 6 never passed with',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.poseOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.fusionRequested = true;
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.fusionEverRan = true;
+      this.startPhase7Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase7();
+    this.render();
+  }
+
+  private onStopPhase7(reason: string): void {
+    this.stopPhase7Ticking();
+    this.fusionRequested = false;
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase7();
+    this.render();
+  }
+
+  private leavePhase7(): void {
+    this.onStopPhase7('left the IMU SUPPORT / FUSION screen');
+    this.screen = 'phase6';
+    this.render();
+  }
+
+  /** Phase 8 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase8(): boolean {
+    logger.warn(PHASE8, 'App', 'refused entry to Phase 8', {
+      reason: isPhaseImplemented(PHASE8)
+        ? this.registry.blockedReason(PHASE8)
+        : 'Phase 8 has not been written in this build',
     });
     return false;
   }
 
+  private startPhase7Ticking(): void {
+    this.startTicking(PHASE7, PHASE7_TICK_MS, () => {
+      this.pipeline.setTrackingOptions(this.poseOptions());
+      this.probeAlignment();
+      // A frame with no tracking result still advances the propagation clock, so the report is
+      // refreshed here as well as from `onTracking`: a run where the worker has stopped
+      // answering is exactly the dropout IMU-007 is about, and it must not freeze the screen at
+      // the last frame that worked.
+      if (this.isFusing()) {
+        const now = performance.now();
+        this.fusion.record(this.fusionStage.report(now, this.pose.getLast()), now);
+      }
+      this.evaluatePhase7();
+      this.render();
+    });
+  }
+
+  private stopPhase7Ticking(): void {
+    this.stopTicking(PHASE7);
+  }
+
+  private evaluatePhase7(): void {
+    this.phase7Results = runPhase7Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      fusionEverRan: this.fusionEverRan,
+      stats: this.fusion.stats(this.isFusing()),
+    });
+
+    this.applyPhase(PHASE7, this.phase7Results, (verdict, reason) =>
+      this.buildPhase7Evidence(verdict, reason),
+    );
+  }
+
+  private buildPhase7Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE7,
+      phaseName: PHASE_NAMES[PHASE7] ?? 'IMU Support / Fusion',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase7Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phases 4, 5 and 6 travel in the Phase 7 bundle because Phase 7's input is their
+        // output: a fused orientation means nothing without the visual pose it corrected and
+        // the verified model that pose was decomposed from.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        pose: this.pose.describe(),
+        fusion: this.fusion.describe(),
+        rotation: toJsonSafe(this.rotation.describe()) as JsonValue,
+        devEntry: this.phase7DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase7Bundle = this.keepBundle(PHASE7, built);
+  }
+
   private startPhase6Ticking(): void {
-    this.stopPhase6Ticking();
-    this.phase6Timer = window.setInterval(() => {
+    this.startTicking(PHASE6, PHASE6_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.poseOptions());
       this.probeAlignment();
       this.evaluatePhase6();
       this.render();
-    }, PHASE6_TICK_MS);
+    });
   }
 
   private stopPhase6Ticking(): void {
-    if (this.phase6Timer !== null) {
-      clearInterval(this.phase6Timer);
-      this.phase6Timer = null;
-    }
+    this.stopTicking(PHASE6);
   }
 
   private evaluatePhase6(): void {
-    const previous = this.registry.get(PHASE6).state;
     this.phase6Results = runPhase6Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -1761,16 +2095,9 @@ class Phase0App {
       verifyMs: this.verification.stats(this.isPosing()).meanVerifyMs,
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase6Results, leg);
-    this.registry.applyEvaluation(PHASE6, evaluation);
-    const next = this.registry.get(PHASE6).state;
-    if (previous !== next) {
-      logger.info(PHASE6, 'App', `phase ${PHASE6}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase6Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE6, this.phase6Results, (verdict, reason) =>
+      this.buildPhase6Evidence(verdict, reason),
+    );
   }
 
   private buildPhase6Evidence(verdict: PhaseState, reason: string): void {
@@ -1814,16 +2141,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase6Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE6, 'EvidenceRecorder',
-        `Phase 6 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase6Bundle = this.keepBundle(PHASE6, built);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -1997,8 +2315,7 @@ class Phase0App {
   }
 
   private startPhase5Ticking(): void {
-    this.stopPhase5Ticking();
-    this.phase5Timer = window.setInterval(() => {
+    this.startTicking(PHASE5, PHASE5_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.verifyOptions());
       // Carried over from Phases 3 and 4, and it matters more here rather than less (§H.5): a
       // correspondence is two positions in the acquired buffer's frame, so a buffer rotated
@@ -2007,18 +2324,14 @@ class Phase0App {
       this.probeAlignment();
       this.evaluatePhase5();
       this.render();
-    }, PHASE5_TICK_MS);
+    });
   }
 
   private stopPhase5Ticking(): void {
-    if (this.phase5Timer !== null) {
-      clearInterval(this.phase5Timer);
-      this.phase5Timer = null;
-    }
+    this.stopTicking(PHASE5);
   }
 
   private evaluatePhase5(): void {
-    const previous = this.registry.get(PHASE5).state;
     this.phase5Results = runPhase5Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -2026,16 +2339,9 @@ class Phase0App {
       stats: this.verification.stats(this.isVerifying()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase5Results, leg);
-    this.registry.applyEvaluation(PHASE5, evaluation);
-    const next = this.registry.get(PHASE5).state;
-    if (previous !== next) {
-      logger.info(PHASE5, 'App', `phase ${PHASE5}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase5Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE5, this.phase5Results, (verdict, reason) =>
+      this.buildPhase5Evidence(verdict, reason),
+    );
   }
 
   private buildPhase5Evidence(verdict: PhaseState, reason: string): void {
@@ -2077,16 +2383,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase5Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE5, 'EvidenceRecorder',
-        `Phase 5 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase5Bundle = this.keepBundle(PHASE5, built);
   }
 
   /**
@@ -2212,24 +2509,19 @@ class Phase0App {
   }
 
   private startPhase3Ticking(): void {
-    this.stopPhase3Ticking();
-    this.phase3Timer = window.setInterval(() => {
+    this.startTicking(PHASE3, PHASE3_TICK_MS, () => {
       this.pipeline.setTrackingOptions(this.trackingOptions());
       this.probeAlignment();
       this.evaluatePhase3();
       this.render();
-    }, PHASE3_TICK_MS);
+    });
   }
 
   private stopPhase3Ticking(): void {
-    if (this.phase3Timer !== null) {
-      clearInterval(this.phase3Timer);
-      this.phase3Timer = null;
-    }
+    this.stopTicking(PHASE3);
   }
 
   private evaluatePhase3(): void {
-    const previous = this.registry.get(PHASE3).state;
     this.phase3Results = runPhase3Tests({
       cameraState: this.camera.getState(),
       pipelineEverStarted: this.pipelineEverStarted,
@@ -2237,16 +2529,9 @@ class Phase0App {
       stats: this.features.stats(this.isDetecting()),
     });
 
-    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
-    const evaluation = PhaseRegistry.evaluate(this.phase3Results, leg);
-    this.registry.applyEvaluation(PHASE3, evaluation);
-    const next = this.registry.get(PHASE3).state;
-    if (previous !== next) {
-      logger.info(PHASE3, 'App', `phase ${PHASE3}: ${previous} -> ${next}`, {
-        reason: evaluation.reason,
-      });
-    }
-    this.buildPhase3Evidence(evaluation.state, evaluation.reason);
+    this.applyPhase(PHASE3, this.phase3Results, (verdict, reason) =>
+      this.buildPhase3Evidence(verdict, reason),
+    );
   }
 
   private buildPhase3Evidence(verdict: PhaseState, reason: string): void {
@@ -2283,16 +2568,7 @@ class Phase0App {
           : null,
       },
     });
-    this.phase3Bundle = built.bundle;
-    if (built.integrityIssues.length > 0) {
-      logger.error(
-        PHASE3, 'EvidenceRecorder',
-        `Phase 3 evidence has ${built.integrityIssues.length} integrity issue(s)`,
-        'the bundle is still offered for download so the problem is inspectable',
-        undefined,
-        { issues: built.integrityIssues.slice(0, 10) },
-      );
-    }
+    this.phase3Bundle = this.keepBundle(PHASE3, built);
   }
 
   /**
@@ -2423,6 +2699,16 @@ class Phase0App {
       getPhase6Evidence: () => this.phase6Bundle,
       getPhase6EvidenceJson: () => (this.phase6Bundle ? serialiseEvidence(this.phase6Bundle) : null),
       getPhase6State: () => this.registry.get(PHASE6),
+
+      phase7Specs: PHASE7_SPECS,
+      enterPhase7: (devOverride = false) => this.enterPhase7(devOverride),
+      leavePhase7: () => this.leavePhase7(),
+      /** Read-only, as for Phases 4, 5 and 6: the leg presses `#start-fusion` in the DOM. */
+      getFusionStats: () => this.fusion.stats(this.isFusing()),
+      getPhase7Results: () => this.phase7Results,
+      getPhase7Evidence: () => this.phase7Bundle,
+      getPhase7EvidenceJson: () => (this.phase7Bundle ? serialiseEvidence(this.phase7Bundle) : null),
+      getPhase7State: () => this.registry.get(PHASE7),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

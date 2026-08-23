@@ -19,8 +19,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 6 | Relative Pose | IMPLEMENTING | Built and green on the automated leg at `TESTING` — POSE-002 needs a gyroscope the leg does not have. Awaiting a device run (Rule 004). |
-| 7 | IMU Support / Fusion | BLOCKED | v3 §17, §18 — the phase where the IMU stops being Phase 6's witness and becomes an input. |
+| 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
+| 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
@@ -818,24 +818,77 @@ v3 §14's verification verdict and it is a different claim.
 
 ---
 
-## Phase 6 — IMPLEMENTING
+## Phase 6 — PASSED
 
 Built against **v3 §15, §16, §19 and §67**, which v4 compresses into a two-line §18 — both of
 whose lines are kept, one of them a prohibition. See [`SPEC-VERSIONS.md`](SPEC-VERSIONS.md).
 The test plan was written and committed before `src/geometry/pose.ts` existed (§29):
 [`phase6/TEST-PLAN.md`](phase6/TEST-PLAN.md).
 
-The automated leg reaches `TESTING` with five of six decidable tests passing.
-[`phase6/HOW-TO-RUN-DEVICE-TEST.md`](phase6/HOW-TO-RUN-DEVICE-TEST.md) is the device run.
+**Passed on the device on 2026-08-23**: iPhone / iOS 18.7 / Safari 26.6 over HTTPS, 5/5 required
+and 2/2 advisory, `devEntry: false`, with the transition log climbing through the conditions one
+at a time rather than arriving at a verdict in one step.
 
 ```
-479 pose frames: 251 POSE, 75 ROTATION_ONLY, 153 NO_POSE
-POSE-005: 49 injected frames — an 8° turn moved the pose 8.000° against 0.003° for the control
-v3 §16: 227 planar posed from the homography, 0 via an Essential matrix;
-        cheirality left 2 unseparated candidates on a plane against 1 with depth
-POSE-004: 75 frames with no parallax, 0 of which named a translation
-cost 4.33 ms pose + 0.88 ms RANSAC = 5.21 ms against §H's 6 ms for both together
+3001 pose frames: 1137 POSE, 371 ROTATION_ONLY, 1493 NO_POSE
+POSE-005: 230 injected frames — an 8° turn moved the pose 7.999° against 0.448° for the control;
+          inlier drift 1.45% against the control's 1.46%, 11 planar flips against 15
+POSE-002: the camera recovered 4.388° against the gyroscope's 4.568°, disagreement 0.762°
+v3 §16: 104 planar posed from the homography, 0 via an Essential matrix
+POSE-004: 371 frames with no parallax, 0 named a translation; 1449 declined, 0 carried a rotation
+cost 0.373 ms pose + 0.865 ms RANSAC = 1.238 ms against §H's 6 ms for both together
+±20% focal moves the rotation 0.64° and the translation direction 3.12°
 ```
+
+### The defect the device run found, and what the verdict rests on
+
+**POSE-002 reported `232.3 % agreeing`**, and the screen showed it in green as a pass. That is not
+a percentage of anything. `PoseSession` bounds what it retains (§56) but counted agreements with
+an **unbounded** counter, so past 400 comparisons the numerator kept climbing over a frozen
+denominator. `FlowSession` never had this — FLOW-002 counts its agreements out of the same trimmed
+window it divides by — and Phase 6 now does the same, so the mismatch is impossible by
+construction rather than repaired.
+
+**So POSE-002's fourth criterion — "at least 60 % of individual frames agree, not merely the
+median" — was not exercised**: an inflated number clears a floor trivially. Its other three were
+measured correctly, including the substantive one:
+
+| criterion | measured |
+| --- | --- |
+| ≥ 15 comparable frames | 400 retained of 929 made |
+| the gyroscope measured a non-zero rotation | 4.568° |
+| median disagreement within tolerance | **0.762° against 3.0°** |
+| ≥ 60 % of individual frames agree | **not evaluated** |
+
+The verdict stands on what was measured: the physics comparison passed on real data with a wide
+margin, and POSE-005's gate is untouched. A short re-run settles the fourth criterion; until one
+exists the bundle is named in `committedEvidence.test.ts` as predating the fix, and the
+re-derivation asserts it *is* the broken shape so the exemption cannot outlive it.
+
+### The device settled three things the leg could not
+
+**The gyroscope wobbled, and the net-versus-path distinction earned itself.** The recorded samples
+show `gyroPathDeg 20.5` against `gyroNetDeg 4.6` — the operator turned back and forth about four
+times as far as the camera ended up rotated. Had this integrated `|ω|`, as `FlowSession` does for
+a different question, the instrument would have read 20.5° against the camera's 4.6° and POSE-002
+would have failed a **correct** solver.
+
+**Both amendments made before the run were necessary, and the device proves it.** Under POSE-003's
+original cross-class comparison this run reports planar translation confidence **0.0909 against
+0.0773** with depth — it would have **failed**, while the mechanism it meant to measure is exactly
+right. Under POSE-005's original zero tolerance it shows **11 planar flips for the injection
+against 15 for the control** — the control, refitting the same data with no injection at all,
+flipped *more*. It would have failed too.
+
+**The focal-length assumption matters on real optics.** ±20 % on `f` moves the recovered rotation
+by 0.64° and the translation direction by **3.12°**, against 0.012° and 0.057° on the synthetic
+leg. The rotation survives the guess; the translation direction depends on it, and any later phase
+reading a direction from this one inherits that.
+
+**And the confidence is bound by the population, not the geometry.** `medianConfidence` is 0, with
+the terms saying why: `trackedFeatures 0.2136 — 127 against §11's 80 degraded / 300 good`. v3 §19's
+confidence is the minimum over its terms, so the §11 shortfall Phase 4's device run recorded
+surfaces again here — the pose is well determined and the confidence attached to it is low.
 
 ### This is the first phase the automated leg is short of an *instrument*
 
@@ -961,3 +1014,311 @@ change with them.
   measures, and plumbing a Phase 6 quantity back into a passed phase's state machine is a change
   to Phase 4 rather than an addition to Phase 6. Deferred to the phase where a single fused pose
   exists to carry it; `goodBlockedBy` continues to name what is missing.
+
+---
+
+## Phase 7 — TESTING
+
+Built. `docs/phase7/TEST-PLAN.md` was committed before any Phase 7 code existed (§29), and the
+automated leg is green: `docs/phase7/evidence/phase7-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands — nothing passes this phase until an iPhone / Safari /
+HTTPS run exists. `docs/phase7/HOW-TO-RUN-DEVICE-TEST.md` is that run.
+
+### The first automated leg in this project that decides a required test
+
+v3 §68's pass condition for this phase is unusual among the per-phase tables in being about
+**absence**:
+
+> PASS条件：**IMU unavailableでもVision-only modeで継続可能。**
+
+Headless Chromium has no accelerometer and no gyroscope. That is not the leg's limitation — it is
+the condition the spec asks the phase to handle, and it is permanently the case there. So IMU-002
+is decided on every commit, through the real control on the real screen, alongside IMU-006 and
+IMU-009 which need no sensor either. Every leg before this one was short of the instrument its
+phase was scored against and could only report `PENDING`.
+
+Rule 004 is untouched: `DESKTOP_DEV` cannot pass a phase. What changed is that one required
+record is now checked continuously rather than once, by hand, on a phone.
+
+### Two of v3 §18's five filter states, and three refusals with a number behind them
+
+| state | Phase 7 | why |
+| --- | --- | --- |
+| `orientation` | estimated | observable from the gyroscope, the visual rotation and gravity |
+| `gyroBias` | estimated | vision and a biased gyroscope disagree consistently in one direction |
+| `position` | **refused** | the accelerometer reports m/s² and Phase 6's translation has no scale |
+| `velocity` | **refused** | same reason |
+| `accelBias` | **refused** | not observable without position observability |
+
+The refusal is a unit mismatch, not a preference: fusing an acceleration with a scaleless
+direction requires the scale, which is precisely the quantity a monocular camera does not have.
+So **IMU-006 measures what would have happened had it been done anyway** — the accelerometer is
+double-integrated over the run, for the record only, never fed to the pose, and the drift is
+reported. A refusal with a number behind it is a finding; a refusal with a citation behind it is
+an assertion.
+
+`POSITION: UNAVAILABLE` is carried as a **value**, not an absent field, so Phase 9 has to remove
+it deliberately rather than by forgetting.
+
+### The instrument this phase is scored against
+
+Phase 6's witness was the gyroscope. Phase 7 *consumes* the gyroscope, so it needs a different
+one, and there is only one kind left: ground truth the harness makes and does not disclose.
+
+**IMU-005 — an injected gyroscope bias.** Two `OrientationEkf` instances run on the same visual
+poses and the same gyroscope, and one is fed every sample with a constant 3.0 °/s added before it
+sees it. Neither is told which it is. The measurement is the **difference** between their bias
+estimates: the phone's own bias is unknown and common to both, so it cancels — which is what
+makes this decidable on a device whose real bias nobody can look up.
+
+3.0 °/s is not arbitrary. Phase 6's POSE-002 tolerates `max(3.0°, 30 % of measured)`, and the
+device's anchor intervals ran about a second, so a 3 °/s bias accumulates 3° per anchor — exactly
+the smallest bias that would have shown up as a Phase 6 failure.
+
+A fusion that returns the visual pose unchanged scores **0.0 °/s** here while passing almost
+everything else: its orientation tracks the camera perfectly, its innovation is exactly zero —
+*better* than a real filter's — and it never invents a position.
+
+### The finding that corrected the test plan
+
+The plan's table said a dead-reckoning fusion also scores 0 on the bias difference. **It does
+not.** Gravity is a two-degree-of-freedom measurement, but on a device that *turns*, the body
+axes move relative to it and over a minute all three body-frame bias components become observable
+through gravity alone. Driving the real `FusionStage` for 60 s with **no visual updates at all**:
+
+| | control | injected | difference |
+| --- | --- | --- | --- |
+| measured, gravity only | (0.400, −0.900, 0.200) | (0.400, 2.100, 0.200) | **2.9996 °/s on *y*** |
+
+against a true bias of (0.4, −0.9, 0.2) °/s and a 3.0 °/s injection on *y*.
+
+So IMU-005's criteria 1–3 are not by themselves evidence that vision was fused. Two things
+follow, and neither relaxes anything:
+
+1. **Criterion 4 is load-bearing** — the injected filter's own innovation must stay inside
+   IMU-003's tolerance. It was already in the committed plan, and it is what separates a filter
+   applying the visual correction at a gain near zero: such a filter is left disagreeing with
+   vision by a margin that grows without bound.
+2. **`biasDifferenceDps` is withheld until 10 *visual* updates have been applied** — not because
+   the estimate is poor without them, but because a number a dead-reckoner can produce cannot be
+   the gate on a fusion. A run with no vision reports `PENDING` and cannot pass the record.
+
+The criteria are unchanged. What changed is the reasoning printed beside them, and the amendment
+is recorded in place in the plan with the measurement that forced it (§29).
+
+### A second fixture defect, found the same way
+
+The first version of the stage fixture reported on pose frames only — so `propagatedMs` was
+`now − lastPoseAt` evaluated at the instant the pose arrived, which is **exactly 0 on every
+frame**, and IMU-001's third criterion (that the filter propagates between visual updates) could
+not be tested at all. The app reports on every render frame and Phase 6 delivers at about 20 Hz;
+the fixture now does the same. The same shape as Phase 6's withdrawn direction-spread criterion:
+a run that cannot distinguish the failure from correct behaviour is measuring the fixture.
+
+### Phase 7's confidence is a second number, not an edit to Phase 6's
+
+Phase 6's `poseConfidence` is untouched. It describes the *visual* pose and it withholds v3 §19's
+`IMU consistency` for a reason that is still true: POSE-002 scores Phase 6 against the gyroscope,
+and a confidence that consumed it could not be checked against it. Phase 6 has passed on the
+device with that arrangement, and changing it now would be editing a passed phase.
+
+So Phase 7 computes a separate confidence for the *fused* pose with all seven of §19's inputs,
+and both travel in the bundle. The fused terms are the visual terms plus `imuConsistency` and
+`propagation`, and the combination is the **minimum** — so a minimum over a superset cannot
+exceed the minimum over the subset, and **attaching a sensor can only ever lower the number**.
+v3 §19's prohibition (不確実なPoseは強制的に高confidenceにしない) holds by construction rather
+than by test.
+
+`propagation` is not one of §19's seven. It is there because v3 §17 limits how long a propagated
+orientation is worth anything — 短時間回転推定 — and IMU-007 requires the confidence to fall while
+running open-loop. It is flat while vision is live and ramps to zero between 500 ms and 3000 ms.
+
+**3000 ms is derived, not chosen.** With the bias uncorrected at the ~1 °/s a consumer MEMS part
+drifts, the orientation error reaches Phase 6's own 3° agreement floor after three seconds — the
+point at which a propagated orientation stops being as good as a measurement. Past it the pose is
+`DEAD_RECKONING` with a confidence of zero and `usable: false`.
+
+### The world frame is defined, not assumed
+
+iOS and other platforms disagree about the sign of `accelerationIncludingGravity`, and one sample
+from one device cannot settle it. So no sign convention is assumed: whatever direction the
+measured gravity vector points in the body frame at initialisation **is** the world's down axis,
+by definition. Every later gravity reading is checked against that definition, and `gravityDeg`
+then means "has the filter drifted relative to where down was when it started" — which is the
+question worth asking.
+
+A gravity sample is used only when ‖g‖ is within ±0.5 m/s² of 9.81. Outside that the phone was
+accelerating and the difference is not a gravity direction at all, so it is rejected rather than
+fed in with a larger noise: a measurement of the wrong quantity is not a noisy measurement of the
+right one.
+
+### What the leg's sensor list caught
+
+```
+acceleration ABSENT, accelerationIncludingGravity ABSENT, rotationRate ABSENT,
+interval ARRIVING, deviceorientation ABSENT, magnetometer ABSENT
+```
+
+Headless Chromium **fires `devicemotion` with a valid `interval` and every vector `null`** — which
+is what a half-granted permission looks like on some builds. A channel counts as arriving only
+when it has delivered a finite three-vector, not when the event fired; a run that had counted
+events would have called this an IMU. An absent channel is carried as an empty array rather than
+as zeros for the matching reason: a phone on a table reports a real `[0, 0, 0]` rotation rate.
+
+### Three things this phase does not do
+
+- **No position, no velocity, no scale.** See the table above; the drift is measured and reported
+  so the refusal carries a number.
+- **No absolute heading.** `webkitCompassHeading` exists on this platform and Phase 7 does not
+  read it, so the heading is `RELATIVE` — to wherever gravity pointed when the filter started.
+  The sensor inventory lists the magnetometer as a channel it declines rather than omitting it.
+- **§33's `GOOD` stays unreachable**, for the fourth phase running and for the reason Phase 6
+  gave: the state is computed in `FlowStage` from what Phase 4 measures, and plumbing a later
+  phase's quantity into a passed phase's state machine is a change to Phase 4. `goodBlockedBy`
+  continues to name what is missing.
+
+---
+
+## Consolidation, 2026-08-23 — after Phase 7
+
+Seven phases had accumulated seven copies of a good deal of code. This pass removed **3,900
+lines and added 2,100**, most of the addition being the documentation on the modules that
+replaced the copies. Nothing about what any phase measures changed, and that is checked rather
+than asserted — see *How the numbers were held still* below.
+
+### What was shared, and what deliberately was not
+
+| Moved to | What it replaced |
+| --- | --- |
+| `src/ui/dom.ts` | `el` × 8, `card` × 8, `stat` × 7, and the formatters × 3–4, all byte-identical |
+| `src/ui/phaseSections.ts` | `renderTests`, `renderEvidence`, `renderNavigation` × 7 |
+| `src/core/stats.ts` | `median`, `round` and §56's `trim` × 4 sessions |
+| `src/testkit/runTests.ts` | the `Evaluation` shape × 8, `PhaseNTest` × 8, and the runner loop × 8 |
+| `scripts/lib/harness.mjs` | `serve` + MIME × 8, the launch arguments × 5, the phase ladder × 4 |
+| `scripts/lib/feed.mjs` | the two-layer texture × 3, and the Y4M writer × 4 |
+| `src/main.ts` | seven `phaseNTimer` fields, seven start/stop pairs, seven `evaluatePhaseN` tails |
+
+Four things that look shareable were left alone, each for a reason:
+
+- **Phase 0's tests and evidence cards.** They list `CAP-0001..CAP-00NN` with `Input` and `Fail
+  if` rows, carry no phase verdict head, and include the raw-JSON panel. A different card that
+  happens to share a name; folding it in would have meant a parameter ignored six times in seven.
+- **`Phase2Tests`, `Phase3Tests` and `Phase4Tests` keep their own percentage formatter.** It is
+  *unguarded*: it prints `-50%` where the shared one prints an em dash. The two look like the
+  same function and are not, and unifying them would have silently changed what three passed
+  phases print.
+- **Phase 0's browser context.** No touch, no mobile flag, no console capture — it probes
+  capabilities and screenshots the result, and a touch-enabled context changes what
+  `CapabilityDetector` reports about the platform it is on.
+- **Phase 1's second browser launch.** It must *not* carry `--use-fake-ui-for-media-stream`.
+  CAM-002 is about what the app does when a user says no, and a flag that answers the prompt
+  with yes would make the run measure nothing. The shared `launch()` takes `autoGrant` as a
+  parameter for that one leg's sake, and the flag lists it produces are identical, argument for
+  argument, to the eight hand-written ones it replaced.
+
+### `climbTo` is the one that was worth doing for its own sake
+
+Five legs each walked the same ladder — enter Phase 2, start the pipeline, enter Phase 3, press
+`#start-detection`, and so on — because §H.5 records what skipping it cost: on a device, Phase 6
+is reached from a screen whose camera, pipeline, detector, tracker and verifier are *already
+running*. A leg that enters a phase cold exercises a sequence no device ever takes, and twice
+that difference was a control the engine answered for while nobody could press it.
+
+That sequence is now written down in one place, and it still presses the controls a person
+presses. `expectLocked` and `pressStart` came out of the same five legs and keep the same two
+checks: the door to the next phase must be shut and say why (Rule 005), and the start button must
+be pressable on arrival and must change its label once the run is going (Rule 002).
+
+### How the numbers were held still
+
+Three checks, none of which is "the tests still pass":
+
+1. **The screens' markup was rendered before and after and compared.** All seven phase screens
+   were driven to the moment of arrival and their last three cards dumped from the live DOM.
+   **21 of 21 cards came back byte-identical** — same ids, same classes, same text, same em
+   dashes. `scripts/dump-screen-markup.mjs` is the instrument, kept because the next refactor of
+   this kind will want it.
+2. **The synthetic feeds were regenerated and hashed.** The four legs that film a scene write a
+   Y4M file whose pixels the committed measurements were taken on. All four hash **identically**
+   to the pre-refactor files — `2fff849d…` for Phase 4, `b461c50b…` for Phase 5, `1fe5d79f…` for
+   Phase 6, `74769e88…` for Phase 7.
+3. **Every leg was re-run and its bundle compared field by field** against the committed one:
+   verdicts exactly, measurements against run-to-run variance.
+
+### What check 3 found, which the other two could not
+
+**The Phase 4 leg had stopped injecting stress, and it still exited 0.**
+
+The original turned injected load on after starting the pipeline and left it on across both
+handovers, *so the leg covers a pipeline arriving in a state neither Phase 3 nor Phase 4 may
+measure in*. That step sat **between** two rungs of the ladder, and `climbTo` — which models the
+ladder as a list of rungs — had nowhere to put it. The extraction swallowed it.
+
+The leg stayed green, because the assertion it feeds (`tracking started with N stress passes
+still injected`) passes vacuously when nothing was ever injected. A check that cannot fail is not
+a check, and this one had quietly become one.
+
+Nothing in the diff showed it. What showed it was running the old code and the new code **on the
+same machine**, three times each:
+
+| | `anyStressed` | `segments` | `longestCleanSegment.index` |
+| --- | --- | --- | --- |
+| old code, 3 runs | `true`, `true`, `true` | 3, 3, 3 | 2, 2, 2 |
+| new code, 3 runs | `false`, `false`, `false` | 1, 1, 1 | 0, 0, 0 |
+
+`climbTo` now takes an `onRung(n, page)` hook, and the injection lives in the Phase 4 leg that
+wants it rather than in the shared ladder — a step only some legs take belongs to those legs. The
+fixed leg reports `anyStressed=true`, 3 segments, index 2 and `stressPasses=0`, matching the old
+code on every stress figure. The other legs were audited the same way: only Phase 3's had a
+comparable step and it survived; a structural diff of every leg's call sequence shows nothing
+else dropped.
+
+### Why the comparison needed four corners, not two
+
+The first pass compared the committed bundles against a post-refactor run and found 59–217 fields
+moved per bundle. That comparison is **confounded**: the committed bundles were captured on a
+different day, so it measures code *and* machine conditions together. Two more runs settle it:
+
+| | old code | new code |
+| --- | --- | --- |
+| **earlier conditions** | the committed bundles | — |
+| **same session** | run the old code again | two runs |
+
+- new code twice, same session → the noise floor.
+- old code vs new code, same session → the code, isolated.
+
+Held that way, phases 0–3 and 5–7 sit **at** the noise floor. A field only counts as a candidate
+if each version agrees with *itself* across its runs and the two disagree: at two samples per
+side that gave **6 of 771 scalar summaries**, on a codebase where the old code disagrees with
+itself on 25–62 fields per bundle.
+
+**Two samples per side is not enough**, and the six are what taught that. A field with a narrow
+spread passes a self-consistency filter by chance. Taking a third sample of each version:
+
+| candidate | old code ×3 | new code ×3 | |
+| --- | --- | --- | --- |
+| `phase4 pipeline.anyStressed` | true, true, true | false, false | **real — the dropped stress step** |
+| `phase4 longestCleanSegment.index` | 2, 2, 2 | 0, 0 | **real — same cause** |
+| `phase4 overlayAlignment.best` | rot90 ×3 | rot180, rot180, flipY, rot90 | noise — 3 values in 4 runs |
+| `phase5 medianDeclinedOutOfReach` | 37, 37, **38** | 38, 38, 38 | noise — ranges overlap |
+| `phase5 medianDeclinedTooClose` | 275, 275, **272.5** | 272, 272, **275** | noise — ranges overlap |
+| `phase7 medianReprojectionPx` | 0.051, 0.051, **0.049** | 0.052, 0.052, **0.051** | noise — ranges overlap |
+
+Every third sample of the four noise rows landed inside the other version's range. The two real
+ones are the same defect, and it is fixed above.
+
+**With the fix in and three samples of each version: 0 of 771 scalar summaries** differ where
+both versions are self-consistent. `overlayAlignment.best` is the probe's own `NOT ARMED` verdict
+(best/random 1.06×) showing up as the argmax of noise — it produced three distinct values across
+four runs of the same code.
+
+Field *counts* are a poor instrument here and were nearly misleading: the movement is dominated
+by list structures — the adaptive controller's decision sequence and `shiftCrossCheck`'s sliding
+window — where one frame of timing offset renumbers every index. Dropping list indices and
+comparing only scalar summaries is what made the six visible.
+
+An earlier attempt to prove point 1 by comparing the *source* of the extracted functions was
+abandoned: the comparison was matching multi-line chunks rather than tokens, and it reported
+differences that were line wraps. A check that cannot tell a real difference from a reformat is
+not a check — the same shape as the fixtures Phases 6 and 7 each had to throw away.

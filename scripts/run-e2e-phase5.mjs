@@ -42,15 +42,14 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { climbTo, expectLocked, launch, openApp, pressStart, serve } from './lib/harness.mjs';
+import { blankLuma, farLuma, isNear, nearLuma, writeY4M } from './lib/feed.mjs';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 const DIST = join(ROOT, 'dist');
 const OUT_DIR = join(ROOT, 'docs', 'phase5', 'evidence');
-const CHROMIUM = '/opt/pw-browsers/chromium';
 const VIDEO = join(ROOT, 'node_modules', '.cache', 'parallax-scene.y4m');
 
 /** Long enough for the loop to run several times over, and for each anchor to live and die. */
@@ -103,94 +102,17 @@ const GEO_COST_CEILING_MS = 60.0;
 /* The feed                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Background texture — Phase 4's leg texture, reused rather than reinvented.
- *
- * The first version of this leg used a smoother field of the same shape at roughly a third of
- * these frequencies, on the reasoning that Phase 4 had been bitten by *too much* high-frequency
- * energy aliasing under box-halving. Measured against the real `FeatureDetector` at level 1 it
- * produced a mean gradient of **4.67 and zero corners** — below `TEXTURE_RICH_FLOOR`, so the
- * classifier called every frame AMBIGUOUS and GEO-001's texture-rich class stayed empty.
- *
- * What made the first run look healthy anyway is worth writing down, because it is the more
- * useful finding: its correspondences were coming from the *moving depth edges* of the near
- * layer, not from the scene. Six stripe boundaries sweeping across the frame at 9.5 px per
- * frame are strong, trackable corners — and they are corners that belong to no surface. A
- * two-view geometry measured on them is measuring the fixture's own artefact. Removing the
- * sweeping edges removed the population, which is how the weakness surfaced at all.
- *
- * The frequencies below are Phase 4's, whose leg tracked 210 points on this same 640×480 feed:
- * mean gradient 14.0 and 467 corners at level 1.
- */
-const FAR_K = (2 * Math.PI) / 128;
-function farLuma(x, y) {
-  const v =
-    128 +
-    46 * Math.sin(FAR_K * x) * Math.cos(y * 0.031 + 0.3) +
-    32 * Math.sin(3 * FAR_K * x + y * 0.047) +
-    26 * Math.cos(5 * FAR_K * x - y * 0.019 + 1.1) +
-    20 * Math.sin(11 * FAR_K * x + 0.7) * Math.sin(y * 0.11) +
-    14 * Math.cos(21 * FAR_K * x + y * 0.19);
-  return Math.max(0, Math.min(255, Math.round(v)));
-}
-
-/**
- * Foreground texture: the same construction at a different period and different phases.
- *
- * Different so that a foreground corner is not a background corner — if the two layers shared a
- * texture, a point could be matched across the depth boundary and the disparity that makes this
- * scene non-planar would be smeared by mismatches.
- */
-const NEAR_K = (2 * Math.PI) / 96;
-function nearLuma(x, y) {
-  const v =
-    132 +
-    46 * Math.cos(NEAR_K * x + 1.9) * Math.sin(y * 0.043 - 0.6) +
-    32 * Math.cos(3 * NEAR_K * x - y * 0.053 + 2.4) +
-    26 * Math.sin(5 * NEAR_K * x + y * 0.023 - 0.8) +
-    20 * Math.cos(11 * NEAR_K * x - 1.3) * Math.cos(y * 0.097) +
-    14 * Math.sin(21 * NEAR_K * x - y * 0.17);
-  return Math.max(0, Math.min(255, Math.round(v)));
-}
-
-/** A smooth field. Not dark — a dark frame is Phase 4's occlusion, which is a different thing. */
-function blankLuma(x, y) {
-  return Math.max(0, Math.min(255, Math.round(122 + 7 * Math.sin(x * 0.004) + 5 * Math.cos(y * 0.005))));
-}
-
-/**
- * Is this pixel on the near layer?
- *
- * One boundary, fixed in image coordinates: the left `coverage` of the frame shows the near
- * layer, the rest the far one. A depth edge is where points are occluded and revealed, and the
- * first version of this leg put the edges *in the near layer's own coordinates* so that they
- * swept across the frame at the near layer's speed — six boundaries at 9.5 px per frame, each
- * destroying the tracks in the band it crossed. The near layer's points then died faster than
- * an anchor lived, the non-planar signal was carried by whatever few survived, and the two
- * models' inlier counts came out five apart where the geometry says forty.
- *
- * With one stationary edge only the points that cross it are lost, which over an anchor's life
- * is the near-layer points within about 90 px of it. That is a real occlusion and the tracker
- * should survive it; six sweeping ones were a fixture that measured its own churn.
- */
-function isNear(x, coverage) {
-  if (coverage <= 0) return false;
-  return x < W * coverage;
-}
-
 function buildY4M() {
-  const header = Buffer.from(`YUV4MPEG2 W${W} H${H} F30:1 Ip A1:1 C420mpeg2\n`, 'ascii');
-  const frameTag = Buffer.from('FRAME\n', 'ascii');
-  const u = Buffer.alloc((W / 2) * (H / 2), 128);
-  const v = Buffer.alloc((W / 2) * (H / 2), 128);
-
-  const parts = [header];
   let farX = 0;
   let farY = 0;
-  let count = 0;
-  for (const seg of SEGMENTS) {
-    for (let f = 0; f < seg.frames; f++) {
-      const y = Buffer.alloc(W * H);
+  let si = 0;
+  let left = SEGMENTS[0].frames;
+  const { frames, megabytes } = writeY4M(VIDEO, {
+    width: W,
+    height: H,
+    frames: SEGMENTS.reduce((a, s) => a + s.frames, 0),
+    frame: (y) => {
+      const seg = SEGMENTS[si];
       const nearX = farX * NEAR_FACTOR;
       const nearY = farY * NEAR_FACTOR;
       for (let yy = 0; yy < H; yy++) {
@@ -198,47 +120,22 @@ function buildY4M() {
         for (let xx = 0; xx < W; xx++) {
           if (seg.blank) {
             y[row + xx] = blankLuma(xx + farX, yy + farY);
-          } else if (isNear(xx, seg.near)) {
+          } else if (isNear(xx, W, seg.near)) {
             y[row + xx] = nearLuma(xx + nearX, yy + nearY);
           } else {
             y[row + xx] = farLuma(xx + farX, yy + farY);
           }
         }
       }
-      parts.push(frameTag, y, u, v);
       farX += DIRECTION.x * seg.speed;
       farY += DIRECTION.y * seg.speed;
-      count++;
-    }
-  }
-  mkdirSync(join(ROOT, 'node_modules', '.cache'), { recursive: true });
-  writeFileSync(VIDEO, Buffer.concat(parts));
-  const mb = Math.round((count * W * H * 1.5) / 1e5) / 10;
+      if (--left === 0 && si + 1 < SEGMENTS.length) left = SEGMENTS[++si].frames;
+    },
+  });
   console.log(
-    `[p5] wrote ${W}x${H}, ${count} frames (${mb} MB): ` +
+    `[p5] wrote ${W}x${H}, ${frames} frames (${megabytes} MB): ` +
       SEGMENTS.map((s) => `${s.frames}× ${s.name}`).join(', '),
   );
-}
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-};
-
-function serve(dir) {
-  return new Promise((res) => {
-    const server = createServer((req, r) => {
-      const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
-      let f = join(dir, p === '/' ? 'index.html' : p);
-      if (!existsSync(f)) f = join(dir, 'index.html');
-      r.writeHead(200, { 'content-type': MIME[extname(f)] ?? 'application/octet-stream' });
-      createReadStream(f).pipe(r);
-    });
-    server.listen(0, '127.0.0.1', () => res(server));
-  });
 }
 
 buildY4M();
@@ -254,78 +151,24 @@ let exitCode = 0;
 /** Tests this leg cannot decide, each with the reason that applies to it specifically. */
 const excluded = new Map();
 
-const browser = await chromium.launch({
-  executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined,
-  args: [
-    '--enable-unsafe-swiftshader',
-    '--use-fake-device-for-media-stream',
-    '--use-fake-ui-for-media-stream',
-    `--use-file-for-fake-video-capture=${VIDEO}`,
-  ],
-});
+const browser = await launch({ video: VIDEO });
 
 let snap;
-const errors = [];
+let errors = [];
 
 try {
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text());
-  });
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  if (!(await page.evaluate(() => window.__SPATIAL_READY__))) throw new Error('app failed to start');
+  const app = await openApp(browser, url);
+  const { context, page } = app;
+  errors = app.errors;
   await context.grantPermissions(['camera'], { origin: new URL(url).origin });
 
-  // Take the device's path, all the way. On a phone Phase 5 is reached from a TRACKING screen
-  // whose optical flow is running over a detector that is running over a pipeline that is
-  // running — all three have to be, because that is how Phase 4 passes — so this screen
-  // inherits three live stages. Entering cold exercises a sequence no device ever takes, and
-  // §H.5 records at length what that cost two Phase 3 device runs.
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase2(true)))) {
-    throw new Error('could not enter Phase 2 even with the desktop override');
-  }
-  await page.evaluate(() => window.__SPATIAL_DEBUG__.startPipeline());
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getPipelineStats().completed > 30, undefined, {
-    timeout: 25_000,
-  });
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase3(true)))) {
-    throw new Error('could not enter Phase 3 even with the desktop override');
-  }
-  await page.waitForSelector('#start-detection', { timeout: 10_000 });
-  await page.click('#start-detection');
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getTrackingStats().detections > 5, undefined, {
-    timeout: 25_000,
-  });
-
-  if (!(await page.evaluate(() => window.__SPATIAL_DEBUG__.enterPhase4(true)))) {
-    throw new Error('could not enter Phase 4 even with the desktop override');
-  }
-  await page.waitForSelector('#start-tracking', { timeout: 10_000 });
-  await page.click('#start-tracking');
-  await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getFlowStats().flowFrames > 5, undefined, {
-    timeout: 25_000,
-  });
-
+  // Take the device's path, all the way: every phase below this one is left running,
+  // because that is the state a device arrives in. `climbTo` presses the same controls a
+  // person presses on each rung — reaching past them is what §H.5 records at length.
+  await climbTo(page, 5, { log: (n) => console.log(`[p5] phase ${n} running`) });
   // Phase Lock, on the control a person would use. Phase 4 cannot pass on this leg (Rule 004),
   // so the door to Phase 5 must be shut and must say why.
-  const gate = await page.evaluate(() => {
-    const b = document.getElementById('go-to-phase5');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  });
-  if (gate.disabled !== true || !String(gate.text).includes('LOCKED')) {
-    throw new Error(
-      'GO TO GEOMETRIC VERIFICATION should be locked on this leg — Phase 4 is TESTING, not ' +
-        `PASSED — but it reads ${JSON.stringify(gate.text)} (disabled ${gate.disabled}). Rule 005.`,
-    );
-  }
+  const gate = await expectLocked(page, 5, 'GO TO GEOMETRIC VERIFICATION');
   console.log(`[p5] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({
@@ -344,20 +187,10 @@ try {
   // Press the control a person presses. There is deliberately no `startVerification()` in the
   // debug API: reaching past the DOM is how Phase 3's leg twice certified a screen whose
   // button had become unpressable while the engine behind it answered perfectly well (§H.5).
-  await page.waitForSelector('#start-verification', { timeout: 10_000 });
-  const before = await page.evaluate(() => {
-    const b = document.getElementById('start-verification');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
+  const confirmRunning = await pressStart(page, '#start-verification', {
+    idle: 'START VERIFICATION',
+    busy: 'VERIFYING',
   });
-  if (before.disabled !== false || before.text !== 'START VERIFICATION') {
-    throw new Error(
-      `START VERIFICATION is not pressable on arrival: label ${JSON.stringify(before.text)}, ` +
-        `disabled ${before.disabled}. Phase 5 arrives over a live camera, a live pipeline, a ` +
-        'live detector and a live tracker — a control derived from any of those is already ' +
-        'pressed, and a person could not start the run at all (Rule 002, §H.5)',
-    );
-  }
-  await page.click('#start-verification');
 
   await page.waitForFunction(
     () => window.__SPATIAL_DEBUG__.getVerificationStats().verifiedFrames > 0,
@@ -365,16 +198,7 @@ try {
     { timeout: 25_000 },
   );
 
-  const after = await page.evaluate(() => {
-    const b = document.getElementById('start-verification');
-    return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  });
-  if (after.text !== 'VERIFYING' || after.disabled !== true) {
-    throw new Error(
-      `verification is running but the control says ${JSON.stringify(after.text)} ` +
-        `(disabled ${after.disabled}) — the control and the engine disagree (Rule 002)`,
-    );
-  }
+  await confirmRunning();
 
   console.log(`[p5] holding for ${VERIFY_MS / 1000} s…`);
   await page.waitForTimeout(VERIFY_MS);

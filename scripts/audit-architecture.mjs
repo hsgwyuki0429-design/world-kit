@@ -57,6 +57,15 @@ const FORBIDDEN = {
       'models; reaching the tracker, the camera or the test kit would let a solver see the ' +
       'answer it is being scored against (§H.7, GEO-003).',
   },
+  // Phase 7 adds this one, under the same rule and for the same reason. IMU-005 scores the
+  // filter against a gyroscope bias the harness injected and never disclosed; a filter able to
+  // reach `capture` could read the sensor stream before the harness touched it, and one able to
+  // reach `tracking` could read the injection itself. It takes numbers and returns a state.
+  fusion: {
+    from: ['game', 'renderer', 'ui', 'world', 'capture', 'pipeline', 'tracking', 'mapping', 'debug', 'testkit'],
+    why: 'the orientation filter is the stage Phase 7 tests. Reaching the sensors or the ' +
+      'harness would let it see the bias it is being scored on finding (§H.7, IMU-005).',
+  },
 };
 
 function walk(dir, out = []) {

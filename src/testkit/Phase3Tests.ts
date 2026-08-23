@@ -27,6 +27,8 @@ import {
   TEXTURE_RICH_FLOOR,
 } from '../tracking/featureTypes';
 import type { TrackingStats } from '../tracking/trackingStats';
+import type { PhaseTest } from './runTests';
+import { runTests } from './runTests';
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds — fixed in the test plan before any of this was measured          */
@@ -65,17 +67,7 @@ export interface Phase3Context {
   readonly stats: TrackingStats;
 }
 
-interface Evaluation {
-  verdict: Verdict;
-  observed: string;
-  reason: string;
-  metrics?: Record<string, JsonValue>;
-}
-
-interface Phase3Test {
-  spec: TestSpec;
-  evaluate: (ctx: Phase3Context) => Evaluation;
-}
+type Phase3Test = PhaseTest<Phase3Context>;
 
 function pct(n: number): string {
   return `${Math.round(n * 1000) / 10}%`;
@@ -574,15 +566,5 @@ export const PHASE3_TESTS: readonly Phase3Test[] = [
 export const PHASE3_SPECS: readonly TestSpec[] = PHASE3_TESTS.map((t) => t.spec);
 
 export function runPhase3Tests(ctx: Phase3Context): TestResult[] {
-  return PHASE3_TESTS.map((test) => {
-    const e = test.evaluate(ctx);
-    return {
-      spec: test.spec,
-      verdict: e.verdict,
-      observed: e.observed,
-      reason: e.reason,
-      metrics: e.metrics ?? {},
-      timestamp: Date.now(),
-    };
-  });
+  return runTests(PHASE3_TESTS, ctx);
 }
