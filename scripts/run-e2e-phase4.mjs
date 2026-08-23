@@ -158,7 +158,7 @@ try {
   await climbTo(page, 4, (n) => console.log(`[p4] phase ${n} running`));
   // Phase Lock, on the control a person would use. Phase 3 cannot pass on this leg (Rule 004),
   // so the door to Phase 4 must be shut and must say why.
-  const gate = await expectLocked(page, 5, 'GO TO GEOMETRIC VERIFICATION');
+  const gate = await expectLocked(page, 4, 'GO TO TRACKING');
   console.log(`[p4] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({

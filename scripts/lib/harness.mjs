@@ -158,18 +158,24 @@ export async function climbTo(page, target, log = () => {}) {
 /**
  * The Phase Lock, checked on the control a person would use (Rule 005).
  *
- * A leg is `DESKTOP_DEV` and cannot pass a phase (Rule 004), so the door to the next one must be
- * shut on every leg and must say why. Checking the button rather than the registry is the point:
- * the registry could be right while the screen offered the door anyway.
+ * `phase` is **the phase the leg is about to test**, and the check runs from the screen below it
+ * — the door has to be shut *before* the leg walks through it with the desktop override. A leg
+ * is `DESKTOP_DEV` and cannot pass a phase (Rule 004), so that door is shut on every leg and
+ * must say why.
+ *
+ * Checking the button rather than the registry is the whole point: the registry could be right
+ * while the screen offered the door anyway. The corollary is that a wrong `phase` here finds no
+ * button and reports `null` rather than passing quietly — which is how the off-by-one this
+ * function was introduced with was caught, on the first full run after the extraction.
  */
-export async function expectLocked(page, nextPhase, label) {
+export async function expectLocked(page, phase, label) {
   const gate = await page.evaluate((n) => {
     const b = document.getElementById(`go-to-phase${n}`);
     return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
-  }, nextPhase);
+  }, phase);
   if (gate.disabled !== true || !String(gate.text).includes('LOCKED')) {
     throw new Error(
-      `${label} should be locked on this leg — the previous phase is TESTING, not PASSED — but ` +
+      `${label} should be locked on this leg — Phase ${phase - 1} is TESTING, not PASSED — but ` +
         `it reads ${JSON.stringify(gate.text)} (disabled ${gate.disabled}). Rule 005.`,
     );
   }

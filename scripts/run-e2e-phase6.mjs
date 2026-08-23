@@ -201,7 +201,7 @@ try {
   await climbTo(page, 6, (n) => console.log(`[p6] phase ${n} running`));
   // Phase Lock, on the control a person would use. Phase 5 cannot pass on this leg (Rule 004),
   // so the door to Phase 6 must be shut and must say why.
-  const gate = await expectLocked(page, 7, 'GO TO IMU SUPPORT / FUSION');
+  const gate = await expectLocked(page, 6, 'GO TO RELATIVE POSE');
   console.log(`[p6] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({
