@@ -99,6 +99,16 @@ Combined: the IMU is good for short-horizon rotation, usable for a gravity vecto
 useless for absolute position or heading — exactly the split §17 assumes, now measured
 rather than assumed.
 
+**Phase 7 was built to that split, and all four facts held.** Gravity is taken as the
+difference of the two accelerations and *defines* the world's down axis rather than being
+checked against an assumed one — which is what lets the phase avoid a sign convention the
+platforms disagree about. `absolute: false` is why the fused heading reports `RELATIVE`;
+`webkitCompassHeading` is listed in the sensor inventory as a channel Phase 7 declines to read,
+so the omission is on the record rather than implied. And the 60 Hz cadence is what makes the
+gyroscope bias observable at all: the filter propagates on every sample and is corrected by a
+visual increment about once a second, because the information a run collects about the bias is
+proportional to that interval's length. See `docs/phase7/TEST-PLAN.md`.
+
 Device facts worth carrying into later phases:
 
 | | |

@@ -667,6 +667,16 @@ describe('vision stops — IMU-007', () => {
     expect(run.stats.medianReconvergenceInnovationDeg).toBeGreaterThanOrEqual(0);
     expect(verdictOf(g, 'IMU-007')).toBe(Verdict.PASS);
   });
+
+  it('files both of two dropouts that fall inside one visual update interval', () => {
+    // Vision returns and stops again before an update can be applied. The first interval has no
+    // reconvergence to record, and filing it with none is right; dropping it would make the
+    // dropout count disagree with the frames that produced it.
+    const twice = runStage({ seconds: 80, dropout: [40_000, 44_000] });
+    expect(twice.stats.dropouts.length).toBeGreaterThanOrEqual(1);
+    const frames = twice.stats.dropouts.reduce((a, d) => a + d.frames, 0);
+    expect(frames).toBe(twice.stats.dropoutFrames);
+  });
 });
 
 /* -------------------------------------------------------------------------- */

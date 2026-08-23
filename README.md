@@ -28,15 +28,18 @@ GEO-003 and recovering before it passed; RANSAC rejected **90.9 %** of outliers 
 injected without telling it, against **6.0 %** of the correspondences it left alone. **Phase 6
 passed on 2026-08-23**: an 8° camera rotation the harness applied and never disclosed moved the
 recovered pose by **7.999°**, against 0.448° for the control, and the camera's rotation agreed
-with the gyroscope to 0.762°. Phase 7 (IMU Support / Fusion) is unlocked. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+with the gyroscope to 0.762°. **Phase 7 (IMU Support / Fusion) is built and its automated leg
+is the first in this project to decide a required test**: v3 §68's pass condition for the phase
+is about *absence* — IMU unavailableでもVision-only modeで継続可能 — and headless Chromium is
+permanently in that case, so IMU-002 is checked on every commit rather than once by hand. The
+device run is still owed. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
 npm test          # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
-npm run test:e2e  # automated DESKTOP_DEV legs for Phases 0-6, with evidence and screenshots
+npm run test:e2e  # automated DESKTOP_DEV legs for Phases 0-7, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
 
@@ -219,6 +222,9 @@ docs/
   phase6/TEST-PLAN.md            POSE-001..007, written before the code
   phase6/HOW-TO-RUN-DEVICE-TEST.md
   phase6/evidence/
+  phase7/TEST-PLAN.md            IMU-001..009, written before the code
+  phase7/HOW-TO-RUN-DEVICE-TEST.md
+  phase7/evidence/
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
   capture/       CapabilityDetector, MotionCapabilityProbe, RotationRateMonitor,
@@ -229,13 +235,17 @@ src/
   geometry/      linalg (Jacobi eigen + SVD), twoView (F and H), ransac, verify,
                  rotation, intrinsics, pose (E/H decomposition, cheirality) —
                  pure array arithmetic; may import nothing but core (audited)
+  fusion/        quat (no Euler conversion exists), orientationEkf (6-state ESKF:
+                 orientation + gyro bias) — same rule as geometry: numbers in,
+                 state out, may import nothing but core (audited)
   tracking/      trackingWorker (preprocessing + detection + flow + verification),
                  FeatureDetector, FeaturePopulation, LucasKanade, SceneShift,
                  FlowTracker, FlowStage, FlowSession, trackingState,
                  VerificationStage, VerificationSession, PoseStage, PoseSession,
-                 poseConfidence, gyroRotation, types and messages
-  testkit/       Phase0Tests..Phase6Tests
-  ui/            Phase0Screen..Phase6Screen, PreviewVideo, styles
+                 poseConfidence, gyroRotation, FusionStage, FusionSession,
+                 fusionConfidence, types and messages
+  testkit/       Phase0Tests..Phase7Tests
+  ui/            Phase0Screen..Phase7Screen, PreviewVideo, styles
   mapping/ world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e*
 ```
@@ -577,10 +587,43 @@ line. There is no threshold separating that from a fixed vector; they are the sa
 The spread is reported and not judged, and the tests now assert that the constant-pose stage
 **passes POSE-001** and fails POSE-005 alone.
 
+## What Phase 7 does
+
+Phase 7 — IMU Support / Fusion (**v3 §17, §18, §19, §68**, which v4 compresses into a two-line
+§19) — fuses the device's own motion sensing with Phase 6's visual pose, **as an auxiliary to it
+and never as a replacement**, and refuses the part of it this platform cannot support.
+
+v3 §18 names five filter states. **Phase 7 estimates two**: `orientation` and `gyroBias`, both
+observable without a scale. `position`, `velocity` and `accelBias` are refused, because the
+accelerometer reports m/s² and Phase 6's translation is a unit direction in `LOCAL_UNITS` — and
+inventing the conversion factor between them is exactly the fabrication Rule 001 lists. **IMU-006
+measures what would have happened had it been done anyway**: the accelerometer is
+double-integrated over the run, for the record only, and the drift is reported. A refusal with a
+number behind it is a finding.
+
+The anti-fake gate is **IMU-005**, and it is needed because a "fusion" that returns the visual
+pose unchanged passes almost everything else in the phase — its orientation tracks the camera
+perfectly, its innovation is exactly zero (*better* than a real filter's), and it never invents a
+position. So two filters run on the same visual poses and the same gyroscope, one of them fed
+every sample with a constant 3.0 °/s added before it sees it, and neither told which it is. The
+measurement is the **difference** between their bias estimates: the phone's own bias is unknown
+and common to both, so it cancels.
+
+`tests/unit/fusion.test.ts` drives the real `FusionStage` over synthetic sensors and grades it
+with the real `runPhase7Tests`, beside a hand-written pass-through that **fails** IMU-005,
+IMU-001 and IMU-003 while passing IMU-004, IMU-006 and IMU-008 — the plan's claim, executed
+rather than asserted.
+
+That fixture also corrected the plan. It says a dead-reckoner scores 0 on the bias difference;
+**it does not.** Gravity is two degrees of freedom, but on a device that *turns* the body axes
+move relative to it and all three bias components become observable through gravity alone — with
+no visual updates at all, a true (0.4, −0.9, 0.2) °/s came back as (0.400, −0.900, 0.200) and the
+injected twin's difference as 2.9996 °/s on the injected axis. The criteria did not change; what
+changed is the reasoning printed beside them, recorded in place with the measurement (§29).
+
 ## Next
 
-Phase 7 — IMU Support / Fusion (v3 §17, §18), where the gyroscope stops being Phase 6's witness
-and becomes an input.
+Phase 8 — Keyframe System (v3 §20), once Phase 7 has a device run behind it.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

@@ -154,12 +154,13 @@ describe('implemented phases', () => {
     expect(isPhaseImplemented(4)).toBe(true);
     expect(isPhaseImplemented(5)).toBe(true);
     expect(isPhaseImplemented(6)).toBe(true);
-    // Phase 7 (IMU Support / Fusion) has not been written. This assertion is the tripwire that
+    expect(isPhaseImplemented(7)).toBe(true);
+    // Phase 8 (Keyframe System) has not been written. This assertion is the tripwire that
     // makes someone update the set deliberately rather than letting the UI offer a screen that
-    // does not exist — it has fired for Phases 2 through 6 in turn, each time on the phase whose
+    // does not exist — it has fired for Phases 2 through 7 in turn, each time on the phase whose
     // screen was about to be added.
-    expect(isPhaseImplemented(7)).toBe(false);
-    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(isPhaseImplemented(8)).toBe(false);
+    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 });
 

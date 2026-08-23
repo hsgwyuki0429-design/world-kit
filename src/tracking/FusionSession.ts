@@ -280,6 +280,15 @@ export class FusionSession {
     } else if (this.open) {
       // Vision is back. The interval is complete except for its reconvergence innovation, which
       // arrives on the next applied update — so it waits rather than being closed with a −1.
+      //
+      // If one is *already* waiting, vision returned and stopped again before an update could be
+      // applied — a second dropout inside the first update interval. The earlier one is filed
+      // with no reconvergence rather than being overwritten: it happened, and losing it would
+      // make the dropout count disagree with the frames that produced it.
+      if (this.awaitingReconvergence) {
+        this.dropouts.push(this.awaitingReconvergence);
+        trim(this.dropouts, 64);
+      }
       this.awaitingReconvergence = { ...this.open, reconvergenceInnovationDeg: -1 };
       this.open = null;
     }

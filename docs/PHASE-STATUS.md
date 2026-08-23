@@ -20,7 +20,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
-| 7 | IMU Support / Fusion | NOT_STARTED | Phase Lock is open. v3 §17, §18 — where the IMU stops being Phase 6's witness and becomes an input. |
+| 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
@@ -1014,3 +1014,166 @@ change with them.
   measures, and plumbing a Phase 6 quantity back into a passed phase's state machine is a change
   to Phase 4 rather than an addition to Phase 6. Deferred to the phase where a single fused pose
   exists to carry it; `goodBlockedBy` continues to name what is missing.
+
+---
+
+## Phase 7 — TESTING
+
+Built. `docs/phase7/TEST-PLAN.md` was committed before any Phase 7 code existed (§29), and the
+automated leg is green: `docs/phase7/evidence/phase7-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands — nothing passes this phase until an iPhone / Safari /
+HTTPS run exists. `docs/phase7/HOW-TO-RUN-DEVICE-TEST.md` is that run.
+
+### The first automated leg in this project that decides a required test
+
+v3 §68's pass condition for this phase is unusual among the per-phase tables in being about
+**absence**:
+
+> PASS条件：**IMU unavailableでもVision-only modeで継続可能。**
+
+Headless Chromium has no accelerometer and no gyroscope. That is not the leg's limitation — it is
+the condition the spec asks the phase to handle, and it is permanently the case there. So IMU-002
+is decided on every commit, through the real control on the real screen, alongside IMU-006 and
+IMU-009 which need no sensor either. Every leg before this one was short of the instrument its
+phase was scored against and could only report `PENDING`.
+
+Rule 004 is untouched: `DESKTOP_DEV` cannot pass a phase. What changed is that one required
+record is now checked continuously rather than once, by hand, on a phone.
+
+### Two of v3 §18's five filter states, and three refusals with a number behind them
+
+| state | Phase 7 | why |
+| --- | --- | --- |
+| `orientation` | estimated | observable from the gyroscope, the visual rotation and gravity |
+| `gyroBias` | estimated | vision and a biased gyroscope disagree consistently in one direction |
+| `position` | **refused** | the accelerometer reports m/s² and Phase 6's translation has no scale |
+| `velocity` | **refused** | same reason |
+| `accelBias` | **refused** | not observable without position observability |
+
+The refusal is a unit mismatch, not a preference: fusing an acceleration with a scaleless
+direction requires the scale, which is precisely the quantity a monocular camera does not have.
+So **IMU-006 measures what would have happened had it been done anyway** — the accelerometer is
+double-integrated over the run, for the record only, never fed to the pose, and the drift is
+reported. A refusal with a number behind it is a finding; a refusal with a citation behind it is
+an assertion.
+
+`POSITION: UNAVAILABLE` is carried as a **value**, not an absent field, so Phase 9 has to remove
+it deliberately rather than by forgetting.
+
+### The instrument this phase is scored against
+
+Phase 6's witness was the gyroscope. Phase 7 *consumes* the gyroscope, so it needs a different
+one, and there is only one kind left: ground truth the harness makes and does not disclose.
+
+**IMU-005 — an injected gyroscope bias.** Two `OrientationEkf` instances run on the same visual
+poses and the same gyroscope, and one is fed every sample with a constant 3.0 °/s added before it
+sees it. Neither is told which it is. The measurement is the **difference** between their bias
+estimates: the phone's own bias is unknown and common to both, so it cancels — which is what
+makes this decidable on a device whose real bias nobody can look up.
+
+3.0 °/s is not arbitrary. Phase 6's POSE-002 tolerates `max(3.0°, 30 % of measured)`, and the
+device's anchor intervals ran about a second, so a 3 °/s bias accumulates 3° per anchor — exactly
+the smallest bias that would have shown up as a Phase 6 failure.
+
+A fusion that returns the visual pose unchanged scores **0.0 °/s** here while passing almost
+everything else: its orientation tracks the camera perfectly, its innovation is exactly zero —
+*better* than a real filter's — and it never invents a position.
+
+### The finding that corrected the test plan
+
+The plan's table said a dead-reckoning fusion also scores 0 on the bias difference. **It does
+not.** Gravity is a two-degree-of-freedom measurement, but on a device that *turns*, the body
+axes move relative to it and over a minute all three body-frame bias components become observable
+through gravity alone. Driving the real `FusionStage` for 60 s with **no visual updates at all**:
+
+| | control | injected | difference |
+| --- | --- | --- | --- |
+| measured, gravity only | (0.400, −0.900, 0.200) | (0.400, 2.100, 0.200) | **2.9996 °/s on *y*** |
+
+against a true bias of (0.4, −0.9, 0.2) °/s and a 3.0 °/s injection on *y*.
+
+So IMU-005's criteria 1–3 are not by themselves evidence that vision was fused. Two things
+follow, and neither relaxes anything:
+
+1. **Criterion 4 is load-bearing** — the injected filter's own innovation must stay inside
+   IMU-003's tolerance. It was already in the committed plan, and it is what separates a filter
+   applying the visual correction at a gain near zero: such a filter is left disagreeing with
+   vision by a margin that grows without bound.
+2. **`biasDifferenceDps` is withheld until 10 *visual* updates have been applied** — not because
+   the estimate is poor without them, but because a number a dead-reckoner can produce cannot be
+   the gate on a fusion. A run with no vision reports `PENDING` and cannot pass the record.
+
+The criteria are unchanged. What changed is the reasoning printed beside them, and the amendment
+is recorded in place in the plan with the measurement that forced it (§29).
+
+### A second fixture defect, found the same way
+
+The first version of the stage fixture reported on pose frames only — so `propagatedMs` was
+`now − lastPoseAt` evaluated at the instant the pose arrived, which is **exactly 0 on every
+frame**, and IMU-001's third criterion (that the filter propagates between visual updates) could
+not be tested at all. The app reports on every render frame and Phase 6 delivers at about 20 Hz;
+the fixture now does the same. The same shape as Phase 6's withdrawn direction-spread criterion:
+a run that cannot distinguish the failure from correct behaviour is measuring the fixture.
+
+### Phase 7's confidence is a second number, not an edit to Phase 6's
+
+Phase 6's `poseConfidence` is untouched. It describes the *visual* pose and it withholds v3 §19's
+`IMU consistency` for a reason that is still true: POSE-002 scores Phase 6 against the gyroscope,
+and a confidence that consumed it could not be checked against it. Phase 6 has passed on the
+device with that arrangement, and changing it now would be editing a passed phase.
+
+So Phase 7 computes a separate confidence for the *fused* pose with all seven of §19's inputs,
+and both travel in the bundle. The fused terms are the visual terms plus `imuConsistency` and
+`propagation`, and the combination is the **minimum** — so a minimum over a superset cannot
+exceed the minimum over the subset, and **attaching a sensor can only ever lower the number**.
+v3 §19's prohibition (不確実なPoseは強制的に高confidenceにしない) holds by construction rather
+than by test.
+
+`propagation` is not one of §19's seven. It is there because v3 §17 limits how long a propagated
+orientation is worth anything — 短時間回転推定 — and IMU-007 requires the confidence to fall while
+running open-loop. It is flat while vision is live and ramps to zero between 500 ms and 3000 ms.
+
+**3000 ms is derived, not chosen.** With the bias uncorrected at the ~1 °/s a consumer MEMS part
+drifts, the orientation error reaches Phase 6's own 3° agreement floor after three seconds — the
+point at which a propagated orientation stops being as good as a measurement. Past it the pose is
+`DEAD_RECKONING` with a confidence of zero and `usable: false`.
+
+### The world frame is defined, not assumed
+
+iOS and other platforms disagree about the sign of `accelerationIncludingGravity`, and one sample
+from one device cannot settle it. So no sign convention is assumed: whatever direction the
+measured gravity vector points in the body frame at initialisation **is** the world's down axis,
+by definition. Every later gravity reading is checked against that definition, and `gravityDeg`
+then means "has the filter drifted relative to where down was when it started" — which is the
+question worth asking.
+
+A gravity sample is used only when ‖g‖ is within ±0.5 m/s² of 9.81. Outside that the phone was
+accelerating and the difference is not a gravity direction at all, so it is rejected rather than
+fed in with a larger noise: a measurement of the wrong quantity is not a noisy measurement of the
+right one.
+
+### What the leg's sensor list caught
+
+```
+acceleration ABSENT, accelerationIncludingGravity ABSENT, rotationRate ABSENT,
+interval ARRIVING, deviceorientation ABSENT, magnetometer ABSENT
+```
+
+Headless Chromium **fires `devicemotion` with a valid `interval` and every vector `null`** — which
+is what a half-granted permission looks like on some builds. A channel counts as arriving only
+when it has delivered a finite three-vector, not when the event fired; a run that had counted
+events would have called this an IMU. An absent channel is carried as an empty array rather than
+as zeros for the matching reason: a phone on a table reports a real `[0, 0, 0]` rotation rate.
+
+### Three things this phase does not do
+
+- **No position, no velocity, no scale.** See the table above; the drift is measured and reported
+  so the refusal carries a number.
+- **No absolute heading.** `webkitCompassHeading` exists on this platform and Phase 7 does not
+  read it, so the heading is `RELATIVE` — to wherever gravity pointed when the filter started.
+  The sensor inventory lists the magnetometer as a channel it declines rather than omitting it.
+- **§33's `GOOD` stays unreachable**, for the fourth phase running and for the reason Phase 6
+  gave: the state is computed in `FlowStage` from what Phase 4 measures, and plumbing a later
+  phase's quantity into a passed phase's state machine is a change to Phase 4. `goodBlockedBy`
+  continues to name what is missing.

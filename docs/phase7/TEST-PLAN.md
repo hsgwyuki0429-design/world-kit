@@ -136,6 +136,55 @@ injected bias and both fakes above.
 | `FUSION_BUDGET_MS` | 1.0 | §H allocates no line to fusion — see below |
 | `MAX_IMU_ONLY_POSITION_M` | — | **no threshold: any value at all is a failure** (IMU-006) |
 
+### Thresholds this plan named but did not fix, fixed at implementation and recorded here
+
+Four criteria above are stated qualitatively — "the direction matches too", "within the
+tolerance", "not identically zero". Their numbers were fixed while the code was written, **before
+any device result was seen**, and are recorded here so they are auditable rather than buried in a
+constant. None of them relaxes a criterion; each supplies a number a criterion already required.
+
+| Symbol | Value | Where it comes from |
+| --- | --- | --- |
+| `BIAS_AXIS_TOLERANCE_DEG` | 25.0 | IMU-005 criterion 3 |
+| `GRAVITY_AGREEMENT_DEG` | 10.0 | IMU-004 criterion 4 |
+| `MIN_INNOVATION_AGREEMENT_RATE` | 0.60 | IMU-003, and Phase 6's POSE-002 used 0.60 for the same shape |
+| `VISUAL_INNOVATION_LIMIT_DEG` | 9.0 | where `imuConsistency` reaches zero |
+| `GRAVITY_LIMIT_DEG` | 15.0 | ...and where the gravity half of it does |
+| `DEAD_RECKONING_AFTER_MS` | 500 | when a gap between poses becomes an open-loop run |
+| `VISUAL_UPDATE_INTERVAL_MS` | 1000 | how long an interval the filter is given |
+
+**`BIAS_AXIS_TOLERANCE_DEG` = 25°.** The tolerance on the magnitude is 1 °/s out of 3, so a
+difference that is correct to within a third can sit up to `asin(1/3) = 19.5°` off the injected
+axis and still satisfy criterion 2. A direction tolerance tighter than that would fail runs
+criterion 2 accepts, which is not a stricter test — it is two criteria disagreeing about the same
+measurement. 25° is that figure with room for the estimator's own anisotropy, and it is far
+below the 90° at which a difference carries no directional information at all.
+
+**`GRAVITY_AGREEMENT_DEG` = 10°.** Twice the 5° the filter itself assigns a gravity measurement
+(`GRAVITY_NOISE_RAD`). At one sigma the filter is already saying it does not trust a gravity
+reading to better than 5°, so a *median* disagreement inside twice that is the filter behaving as
+its own noise model says it should. Beyond it, the accelerometer and the filter are describing
+different vertical directions.
+
+**`VISUAL_INNOVATION_LIMIT_DEG` = 9° and `GRAVITY_LIMIT_DEG` = 15°.** Three times the
+corresponding agreement floor in each case — Phase 6's 3° for the visual comparison, the filter's
+own 5° for gravity. The term has to be able to *fall* (IMU-004's criterion 2), so it cannot
+saturate at the first sign of disagreement; and it has to reach zero somewhere the two
+instruments are genuinely inconsistent rather than merely noisy.
+
+**`DEAD_RECKONING_AFTER_MS` = 500.** Phase 6's device run produced a full pose on 1137 of 3001
+frames at about 20 Hz, so ordinary gaps between poses run to a couple of hundred milliseconds and
+the mode must not flip on those. 500 ms is beyond routine and well inside the three seconds past
+which a propagated orientation stops being worth as much as a measurement.
+
+**`VISUAL_UPDATE_INTERVAL_MS` = 1000.** Not for cost. The information a run collects about the
+bias through vision is proportional to the interval length: over a total time `T` split into
+intervals of `Δt`, it is `T·Δt/σ²`, so halving the interval halves what the run learns. At
+`Δt = 1 s` and Phase 6's measured accuracy a minute resolves the bias to about 0.4 °/s; at one
+visual frame per update it resolves it to 1.7 °/s, which cannot separate a 3 °/s injection from
+nothing within a 1 °/s tolerance. A second is also what is reliably available — an increment
+cannot be formed across a Phase 5 re-anchor, and those come every few seconds.
+
 Four need their derivation stated.
 
 **`GYRO_BIAS_INJECTION_DPS` = 3.0.** Phase 6's POSE-002 tolerates a visual/inertial disagreement

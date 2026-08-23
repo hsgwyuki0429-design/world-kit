@@ -30,6 +30,7 @@ import { runPhase3Tests, PHASE3_SPECS } from './testkit/Phase3Tests';
 import { runPhase4Tests, PHASE4_SPECS } from './testkit/Phase4Tests';
 import { runPhase5Tests, PHASE5_SPECS } from './testkit/Phase5Tests';
 import { runPhase6Tests, PHASE6_SPECS } from './testkit/Phase6Tests';
+import { runPhase7Tests, PHASE7_SPECS } from './testkit/Phase7Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
 import { VerificationSession } from './tracking/VerificationSession';
@@ -43,6 +44,9 @@ import { renderPhase3Screen } from './ui/Phase3Screen';
 import { renderPhase4Screen } from './ui/Phase4Screen';
 import { renderPhase5Screen } from './ui/Phase5Screen';
 import { renderPhase6Screen } from './ui/Phase6Screen';
+import { renderPhase7Screen } from './ui/Phase7Screen';
+import { FusionStage } from './tracking/FusionStage';
+import { FusionSession } from './tracking/FusionSession';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -75,6 +79,7 @@ const PHASE4 = 4;
 const PHASE5 = 5;
 const PHASE6 = 6;
 const PHASE7 = 7;
+const PHASE8 = 8;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -96,8 +101,11 @@ const PHASE4_TICK_MS = 500;
 const PHASE5_TICK_MS = 500;
 /** ...and for the RELATIVE POSE screen. */
 const PHASE6_TICK_MS = 500;
+/** Same reasoning as every screen before it: re-render for a human, not for every frame. */
+const PHASE7_TICK_MS = 500;
 
-type Screen = 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6';
+type Screen =
+  | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -206,6 +214,28 @@ class Phase0App {
   private poseFrames = 0;
   private readonly pose = new PoseSession();
   private readonly rotation = new RotationRateMonitor();
+  /**
+   * Phase 7's own "am I running", for the fifth time and for the same reason (§H.5).
+   *
+   * Six stages are live when the IMU SUPPORT / FUSION screen opens — camera, pipeline,
+   * detector, tracker, verifier, pose — because that is how Phase 6 passes. A predicate
+   * assembled from any of them says "fusing" before fusion has started.
+   */
+  private fusionRequested = false;
+  private fusionEverRan = false;
+  private phase7Results: TestResult[] = [];
+  private phase7Bundle: EvidenceBundle | null = null;
+  private phase7Timer: number | null = null;
+  private phase7DevEntry = false;
+  /**
+   * The stage and its accumulator.
+   *
+   * Seeded from the app's start time so the injected bias does not land on the same axis on
+   * every run — POSE-005's rule, one phase along: a run that is right about one axis by luck
+   * must not be able to be right about it twice.
+   */
+  private readonly fusionStage = new FusionStage(Date.now());
+  private readonly fusion = new FusionSession();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
   private alignment: AlignmentReading | null = null;
@@ -484,6 +514,36 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase7') {
+      renderPhase7Screen(
+        this.root,
+        {
+          phase7: this.registry.get(PHASE7),
+          phase8: this.registry.get(PHASE8),
+          canEnterPhase8: this.registry.canEnter(PHASE8),
+          phase8Implemented: isPhaseImplemented(PHASE8),
+          phase8BlockedReason: this.registry.blockedReason(PHASE8),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          // The one predicate, read by the control, the tests and the evidence alike (§H.5).
+          running: this.isFusing(),
+          stats: this.fusion.stats(this.isFusing()),
+          sourceWidth: this.pipeline.getStats().sourceWidth,
+          sourceHeight: this.pipeline.getStats().sourceHeight,
+          results: this.phase7Results,
+        },
+        {
+          onStart: () => void this.onStartPhase7(),
+          onStop: () => this.onStopPhase7('user stopped fusion'),
+          onBack: () => this.leavePhase7(),
+          onEnterPhase8: () => this.enterPhase8(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase7Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase7Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase6') {
       const p = this.pipeline.getStats();
       renderPhase6Screen(
@@ -1144,6 +1204,14 @@ class Phase0App {
     // Phase 3's: folding it in would change what the committed Phase 4 evidence means.
     if (result.verification) this.verification.record(result, now);
     if (result.pose) this.pose.record(result, now);
+    // Phase 7 is driven from here rather than from its tick, because `propagatedMs` is measured
+    // from the last frame vision produced a pose and a 500 ms tick could not see the gaps
+    // between them. `notePose` filters NO_POSE frames itself, so every frame reaches the stage
+    // and only the ones that recovered something advance the visual clock.
+    if (this.isFusing() && result.pose) {
+      this.fusionStage.notePose(result.pose, result.verification?.reAnchored ?? false, now);
+      this.fusion.record(this.fusionStage.report(now, result.pose), now);
+    }
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -1723,14 +1791,291 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 7 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase7(): boolean {
-    logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
-      reason: isPhaseImplemented(PHASE7)
-        ? this.registry.blockedReason(PHASE7)
-        : 'Phase 7 has not been written in this build',
+  /* ---------------------------------------------------------------------- */
+  /* Phase 7 — IMU Support / Fusion                                          */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Whether anything is actually fusing.
+   *
+   * §H.5 for the fifth time, and from one predicate: fusion asked for AND a pipeline running to
+   * serve it. Six stages are already live when this screen opens — camera, pipeline, detector,
+   * tracker, verifier, pose — so a predicate assembled from any of them says "fusing" before
+   * fusion has started, and the control built from it cannot be pressed. The screen, the tests
+   * and the evidence read this and nothing else.
+   *
+   * Note what it does **not** include: whether the IMU is delivering. A run with no sensors is
+   * still fusing — it is reporting `VISION_ONLY`, which is v3 §68's own pass condition, and
+   * gating the predicate on the IMU would make IMU-002 undecidable by making its own case look
+   * like "not started".
+   */
+  private isFusing(): boolean {
+    return this.fusionRequested && this.pipeline.isRunning();
+  }
+
+  /** Enter the IMU SUPPORT / FUSION screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase7(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE7)) {
+      logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
+        reason: 'Phase 7 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE7)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE7, 'App', 'refused entry to Phase 7', {
+          reason: this.registry.blockedReason(PHASE7),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase7DevEntry = true;
+      logger.warn(PHASE7, 'App', 'Phase 7 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    // Phase 6's tick refreshes the tracking options twice a second; left running it would keep
+    // resetting the injection schedule under Phase 7's feet.
+    this.stopPhase6Ticking();
+    this.screen = 'phase7';
+    if (this.registry.get(PHASE7).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE7, PhaseState.IMPLEMENTING, 'IMU SUPPORT / FUSION screen opened');
+    }
+    this.evaluatePhase7();
+    this.render();
+    return true;
+  }
+
+  /**
+   * MUST be reached from the click handler: the motion permission has to be requested inside
+   * the user's gesture, and an `await` before it puts it outside and iOS throws.
+   *
+   * The camera is normally already open — this screen is reached from Phase 6's, which cannot
+   * pass without it — so the usual path here is: ask for motion, adopt the running pipeline,
+   * start fusing. A refusal of the motion permission is not a failure of this method: the run
+   * continues on vision alone, and that is the case v3 §68 asks this phase to handle.
+   */
+  private async onStartPhase7(): Promise<void> {
+    if (this.cameraOpening || this.fusionRequested) return;
+
+    this.fusionStage.reset();
+    this.fusion.reset();
+
+    // First, synchronously, inside the gesture. `RotationRateMonitor` already owns the one
+    // listener and the one permission call; Phase 7 takes the second callback rather than
+    // attaching a listener of its own — two `requestPermission()` calls in one gesture is a
+    // second prompt on some builds and a rejection on others.
+    void this.rotation
+      .start(
+        (reading) => {
+          this.flow.noteRotation({ at: reading.at, degPerSecond: reading.degPerSecond });
+          this.pose.noteGyro({
+            at: reading.at,
+            x: reading.beta,
+            y: reading.gamma,
+            z: reading.alpha,
+          });
+        },
+        (sample) => {
+          this.fusionStage.noteImu(sample);
+          this.fusion.noteImu(sample);
+        },
+      )
+      .then((source) => {
+        if (!this.rotation.isLive()) {
+          const detail = this.rotation.getDetail();
+          this.flow.noteGyroUnavailable(detail);
+          this.pose.noteGyroUnavailable(detail);
+          this.fusion.noteImuUnavailable(detail);
+        }
+        logger.info(PHASE7, 'RotationRateMonitor', `motion sensors: ${source}`, {
+          detail: this.rotation.getDetail(),
+          why: 'IMU-002 is decided on what actually arrives, and v3 §68 asks for the run to ' +
+            'continue when nothing does',
+        });
+        this.evaluatePhase7();
+        this.render();
+      });
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE7, 'CameraSource', `fusion could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and fusion does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase7();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE7, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and fusion still starts; if no frames arrive the tests ' +
+            'stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      logger.info(PHASE7, 'App', 'adopted the running Phase 6 pose recovery', {
+        note: 'the camera, worker, population, anchor and pose options stay as they are. ' +
+          'Phase 7 fuses the poses Phase 6 recovers and changes nothing about how they are ' +
+          'recovered — editing the solver here would mean fusing a pose Phase 6 never passed with',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.poseOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.fusionRequested = true;
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.fusionEverRan = true;
+      this.startPhase7Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase7();
+    this.render();
+  }
+
+  private onStopPhase7(reason: string): void {
+    this.stopPhase7Ticking();
+    this.fusionRequested = false;
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase7();
+    this.render();
+  }
+
+  private leavePhase7(): void {
+    this.onStopPhase7('left the IMU SUPPORT / FUSION screen');
+    this.screen = 'phase6';
+    this.render();
+  }
+
+  /** Phase 8 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase8(): boolean {
+    logger.warn(PHASE8, 'App', 'refused entry to Phase 8', {
+      reason: isPhaseImplemented(PHASE8)
+        ? this.registry.blockedReason(PHASE8)
+        : 'Phase 8 has not been written in this build',
     });
     return false;
+  }
+
+  private startPhase7Ticking(): void {
+    this.stopPhase7Ticking();
+    this.phase7Timer = window.setInterval(() => {
+      this.pipeline.setTrackingOptions(this.poseOptions());
+      this.probeAlignment();
+      // A frame with no tracking result still advances the propagation clock, so the report is
+      // refreshed here as well as from `onTracking`: a run where the worker has stopped
+      // answering is exactly the dropout IMU-007 is about, and it must not freeze the screen at
+      // the last frame that worked.
+      if (this.isFusing()) {
+        const now = performance.now();
+        this.fusion.record(this.fusionStage.report(now, this.pose.getLast()), now);
+      }
+      this.evaluatePhase7();
+      this.render();
+    }, PHASE7_TICK_MS);
+  }
+
+  private stopPhase7Ticking(): void {
+    if (this.phase7Timer !== null) {
+      clearInterval(this.phase7Timer);
+      this.phase7Timer = null;
+    }
+  }
+
+  private evaluatePhase7(): void {
+    const previous = this.registry.get(PHASE7).state;
+    this.phase7Results = runPhase7Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      fusionEverRan: this.fusionEverRan,
+      stats: this.fusion.stats(this.isFusing()),
+    });
+
+    const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
+    const evaluation = PhaseRegistry.evaluate(this.phase7Results, leg);
+    this.registry.applyEvaluation(PHASE7, evaluation);
+    const next = this.registry.get(PHASE7).state;
+    if (previous !== next) {
+      logger.info(PHASE7, 'App', `phase ${PHASE7}: ${previous} -> ${next}`, {
+        reason: evaluation.reason,
+      });
+    }
+    this.buildPhase7Evidence(evaluation.state, evaluation.reason);
+  }
+
+  private buildPhase7Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE7,
+      phaseName: PHASE_NAMES[PHASE7] ?? 'IMU Support / Fusion',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase7Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phases 4, 5 and 6 travel in the Phase 7 bundle because Phase 7's input is their
+        // output: a fused orientation means nothing without the visual pose it corrected and
+        // the verified model that pose was decomposed from.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        pose: this.pose.describe(),
+        fusion: this.fusion.describe(),
+        rotation: toJsonSafe(this.rotation.describe()) as JsonValue,
+        devEntry: this.phase7DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase7Bundle = built.bundle;
+    if (built.integrityIssues.length > 0) {
+      logger.error(
+        PHASE7, 'EvidenceRecorder',
+        `Phase 7 evidence has ${built.integrityIssues.length} integrity issue(s)`,
+        'the bundle is still offered for download so the problem is inspectable',
+        undefined,
+        { issues: built.integrityIssues.slice(0, 10) },
+      );
+    }
   }
 
   private startPhase6Ticking(): void {
@@ -2423,6 +2768,16 @@ class Phase0App {
       getPhase6Evidence: () => this.phase6Bundle,
       getPhase6EvidenceJson: () => (this.phase6Bundle ? serialiseEvidence(this.phase6Bundle) : null),
       getPhase6State: () => this.registry.get(PHASE6),
+
+      phase7Specs: PHASE7_SPECS,
+      enterPhase7: (devOverride = false) => this.enterPhase7(devOverride),
+      leavePhase7: () => this.leavePhase7(),
+      /** Read-only, as for Phases 4, 5 and 6: the leg presses `#start-fusion` in the DOM. */
+      getFusionStats: () => this.fusion.stats(this.isFusing()),
+      getPhase7Results: () => this.phase7Results,
+      getPhase7Evidence: () => this.phase7Bundle,
+      getPhase7EvidenceJson: () => (this.phase7Bundle ? serialiseEvidence(this.phase7Bundle) : null),
+      getPhase7State: () => this.registry.get(PHASE7),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),
