@@ -351,6 +351,109 @@ export interface PoseReport {
   readonly injection: PoseInjection | null;
 }
 
+/**
+ * One `devicemotion` reading, as the main thread hands it to the fusion stage.
+ *
+ * All three vectors are in the **device body frame**, in the units the event uses: m/s² for the
+ * accelerations and °/s for `rotationRate`, converted to rad/s at the one place that integrates
+ * it. `at` is `performance.now()` at delivery rather than the event's own timestamp, because
+ * Safari's `DeviceMotionEvent.timeStamp` has a different epoch from the frame clock and Phase 7
+ * measures gaps *between a pose and an IMU sample*.
+ *
+ * `interval` is the sensor's own reported period, kept because IMU-001 judges the delivered rate
+ * against what the platform claims rather than against an assumed 60 Hz.
+ */
+export interface ImuSample {
+  readonly at: number;
+  /** Linear acceleration with gravity removed by the platform, m/s². */
+  readonly acceleration: readonly number[];
+  /** ...and the same reading with gravity left in. Their difference is the gravity direction. */
+  readonly accelerationIncludingGravity: readonly number[];
+  /** Body-frame angular rate, rad/s. Converted at the listener — the filter never sees degrees. */
+  readonly rotationRate: readonly number[];
+  /** The event's own `interval`, seconds. `-1` when the platform did not supply one. */
+  readonly interval: number;
+}
+
+/**
+ * One frame of Phase 7: what the filter holds, and the two numbers that prove it is a filter.
+ *
+ * `fusedVsVisualDeg` is zero on every frame for a "fusion" that returns the visual pose, and
+ * `biasDifferenceDps` is zero for one that ignores the gyroscope — the plan's IMU-002 and
+ * IMU-005 are exactly those two readings, which is why both are on the record rather than
+ * derived by whoever grades it.
+ */
+export interface FusionReport {
+  readonly frames: number;
+  /** `VISION_ONLY` / `FUSED` / `DEAD_RECKONING`. */
+  readonly mode: string;
+  /** Whether the orientation is still worth using — false past `MAX_PROPAGATION_MS`. */
+  readonly usable: boolean;
+  /** §18: quaternion, body → world. Euler angles are not produced at all. */
+  readonly orientation: readonly number[] | null;
+  /** The filter's gyroscope bias estimate, °/s per axis. `null` before any IMU reported. */
+  readonly gyroBiasDps: readonly number[] | null;
+  /** v3 §17's position. Always `null` in Phase 7, with the reason attached rather than implied. */
+  readonly position: readonly number[] | null;
+  readonly positionReason: string;
+  /** v4 §18: never a metre. */
+  readonly scale: string;
+  /** No magnetometer is read, so the heading is relative to the first gravity reading. */
+  readonly heading: string;
+  /** How far the visual increment sat from the propagated one, degrees. `-1` before any update. */
+  readonly innovationDeg: number;
+  /** The same for the injected twin — a filter that found the bias is not left disagreeing. */
+  readonly injectedInnovationDeg: number;
+  /** The angle of the visual increment the last update was formed from, degrees. */
+  readonly visualIncrementDeg: number;
+  /** Milliseconds since Phase 6 last produced a pose — IMU-007's measurement. */
+  readonly propagatedMs: number;
+  /** ...and the same for the gravity update. */
+  readonly gravityDeg: number;
+  /** v3 §19's seventh term, which Phase 6 withheld on purpose. `-1` where it cannot be formed. */
+  readonly imuConsistency: number;
+  /** The **fused** pose's confidence — Phase 6's is untouched and travels beside it. */
+  readonly confidence: number;
+  readonly confidenceTerms: readonly ConfidenceTermRecord[];
+  readonly confidenceWithheld: readonly string[];
+  /** Phase 6's own number for the same frame. `-1` before any pose. */
+  readonly visualConfidence: number;
+  readonly visualUpdates: number;
+  readonly imuSamples: number;
+  readonly gravitySamples: number;
+  /** Samples whose ‖gravity‖ was too far from g to be a gravity direction at all. */
+  readonly gravityRejected: number;
+  /** 1σ of the orientation error state, degrees. `-1` before the filter is initialised. */
+  readonly orientationVarianceDeg: number;
+  /**
+   * IMU-005's answer: the twin filter's bias estimate minus this one's, °/s per axis.
+   *
+   * The device's own true bias is unknown and common to both, so it cancels; what is left is the
+   * harness's injection, which the filter was never told about. `null` until enough visual
+   * updates have accumulated for the estimate to mean anything.
+   */
+  readonly biasDifferenceDps: readonly number[] | null;
+  readonly injectedBiasDps: readonly number[] | null;
+  readonly requestedInjectionDps: number;
+  readonly injectionAxis: readonly number[];
+  /** IMU-006: how far double-integrating the accelerometer would have wandered, metres. */
+  readonly deadReckonedPositionM: number;
+  readonly deadReckonedSeconds: number;
+  /**
+   * How far the fused orientation sits from Phase 6's, degrees. **Zero on a pass-through, always.**
+   *
+   * Not an error: the filter's world frame is the one gravity defined at initialisation and
+   * Phase 6's is its verification anchor, so the two quaternions are expressed in different
+   * frames and the angle between them has no absolute meaning. What it *does* distinguish is the
+   * one thing IMU-001's failure condition names — a fusion whose orientation is the visual
+   * orientation reports exactly 0 on every frame, and nothing else does. The number that is an
+   * error is `innovationDeg`, which compares two increments over the same interval.
+   */
+  readonly fusedVsVisualDeg: number;
+  /** IMU-008: what the fusion stage spent on this frame, ms. */
+  readonly fusionMs: number;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;

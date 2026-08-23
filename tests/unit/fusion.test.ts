@@ -32,6 +32,25 @@ import {
 } from '../../src/fusion/quat';
 import type { Quat } from '../../src/fusion/quat';
 import { OrientationEkf } from '../../src/fusion/orientationEkf';
+import {
+  FusionMode,
+  FusionStage,
+  GRAVITY_MS2,
+  GYRO_BIAS_INJECTION_DPS,
+  MAX_PROPAGATION_MS,
+} from '../../src/tracking/FusionStage';
+import { FusionSession } from '../../src/tracking/FusionSession';
+import type { FusionStats } from '../../src/tracking/fusionStats';
+import type {
+  ConfidenceTermRecord,
+  FusionReport,
+  ImuSample,
+  PoseReport,
+} from '../../src/tracking/trackingMessages';
+import { runPhase7Tests } from '../../src/testkit/Phase7Tests';
+import { Verdict } from '../../src/core/types';
+import type { TestResult } from '../../src/core/types';
+import { CameraState } from '../../src/capture/CameraSource';
 
 const DEG = Math.PI / 180;
 
@@ -386,5 +405,510 @@ describe('fail closed', () => {
     ekf.initialiseFrom([0, 0, -9.81]);
     ekf.predict([1, 1, 1], 0);
     expect(angleDeg(ekf.state().q)).toBe(0);
+  });
+});
+
+/* ========================================================================== */
+/* The real stage, and the two fakes the test plan names                       */
+/* ========================================================================== */
+
+/**
+ * Everything below drives `FusionStage` and `FusionSession` — the objects the app calls — and
+ * grades the result with `runPhase7Tests`, the suite the device runs. Nothing here reimplements
+ * the loop: a test that reimplemented it would be proving something about the reimplementation,
+ * which is how Phase 4's identity tracker and Phase 6's constant pose were caught.
+ *
+ * The claim being tested is the test plan's, verbatim: **a pass-through and a dead-reckoner both
+ * score 0.0 °/s on IMU-005 while satisfying every other numeric criterion in this phase.**
+ */
+
+const IDENTITY_TERMS: ConfidenceTermRecord[] = [
+  { name: 'inlierRatio', value: 0.9, note: 'synthetic' },
+  { name: 'reprojectionError', value: 0.88, note: 'synthetic' },
+  { name: 'trackedFeatures', value: 0.92, note: 'synthetic' },
+  { name: 'featureDistribution', value: 0.86, note: 'synthetic' },
+  { name: 'temporalStability', value: 0.95, note: 'synthetic' },
+  { name: 'modelConsistency', value: 1, note: 'synthetic' },
+];
+
+/** A Phase 6 report carrying `q` as the rotation relative to the verification anchor. */
+function poseReport(q: Quat, frames: number): PoseReport {
+  return {
+    frames,
+    state: 'POSE',
+    stateReason: 'synthetic',
+    source: 'FUNDAMENTAL',
+    rotationDeg: angleDeg(q),
+    axis: [0, 0, 1],
+    quaternion: [...q],
+    translation: [0, 0, 1],
+    scale: 'LOCAL_UNITS',
+    planeNormal: null,
+    intrinsics: null,
+    cheirality: [],
+    chosen: 0,
+    unseparatedCandidates: 1,
+    ambiguous: false,
+    pointsInFront: 90,
+    correspondences: 100,
+    reprojectionErrorPx: 0.4,
+    rotationOnlyResidualPx: 6,
+    rotationJumpDeg: 0.5,
+    planar: false,
+    confidence: 0.86,
+    rotationConfidence: 0.86,
+    translationConfidence: 0.86,
+    confidenceTerms: IDENTITY_TERMS,
+    confidenceWithheld: ['IMUConsistency — Phase 6 withholds it on purpose'],
+    sensitivity: null,
+    poseMs: 1.2,
+    injection: null,
+  };
+}
+
+interface RunOptions {
+  /** The device's own true gyroscope bias, rad/s — unknown to both filters, as on a phone. */
+  readonly trueBias?: number[];
+  readonly omega?: number[];
+  readonly seconds?: number;
+  /** `[fromMs, toMs]` where Phase 6 produces no pose at all. */
+  readonly dropout?: [number, number];
+  readonly seed?: number;
+  readonly accelNoise?: number;
+  readonly gyroNoise?: number;
+}
+
+interface Run {
+  readonly session: FusionSession;
+  readonly stats: FusionStats;
+  readonly reports: FusionReport[];
+}
+
+const GYRO_HZ = 60;
+const POSE_HZ = 20;
+const WORLD_DOWN = unit([0.08, -0.15, -0.98]) as number[];
+
+/**
+ * One synthetic run through the real stage.
+ *
+ * The truth advances by the *unbiased* rate and the gyroscope reports it plus the bias, so the
+ * bias exists before the filter runs — the same construction `simulate` above uses, one level
+ * further out.
+ */
+function runStage(o: RunOptions = {}): Run {
+  const {
+    trueBias = [0.4 * DEG, -0.9 * DEG, 0.2 * DEG],
+    omega = [0.12, 0.09, 0.2],
+    seconds = 60,
+    dropout,
+    seed = 0x7ea1,
+    accelNoise = 0.05,
+    gyroNoise = 2e-3,
+  } = o;
+  const random = rng(seed);
+  const stage = new FusionStage(1);
+  const session = new FusionSession();
+  const reports: FusionReport[] = [];
+
+  const dtGyro = 1000 / GYRO_HZ;
+  const dtPose = 1000 / POSE_HZ;
+  let trueQ: Quat = IDENTITY;
+  const anchorQ: Quat = IDENTITY;
+  let nextPoseAt = 0;
+  let poseFrames = 0;
+
+  for (let ms = 0; ms <= seconds * 1000; ms += dtGyro) {
+    const dt = dtGyro / 1000;
+    trueQ = normalise(multiply(trueQ, fromRotationVector(omega.map((w) => w * dt))));
+    const gravityBody = rotateInverse(trueQ, WORLD_DOWN).map((c) => c * GRAVITY_MS2);
+    const linear = [0, 1, 2].map(() => (random() - 0.5) * 2 * accelNoise);
+    const sample: ImuSample = {
+      at: ms,
+      acceleration: linear,
+      accelerationIncludingGravity: gravityBody.map((g, i) => g + (linear[i] ?? 0)),
+      rotationRate: omega.map(
+        (w, i) => w + (trueBias[i] ?? 0) + (random() - 0.5) * 2 * gyroNoise,
+      ),
+      interval: 1 / GYRO_HZ,
+    };
+    stage.noteImu(sample);
+    session.noteImu(sample);
+
+    // The app reports on every *render* frame and Phase 6 delivers a pose at about 20 Hz, so
+    // most frames have no pose on them — which is where `propagatedMs` becomes non-zero and the
+    // gyroscope is visibly doing the carrying. A fixture that reported only on pose frames would
+    // measure a propagation of exactly 0 forever and IMU-001's third criterion would be
+    // untestable; that is what the first version of this fixture did.
+    let pose: PoseReport | null = null;
+    if (ms >= nextPoseAt) {
+      nextPoseAt += dtPose;
+      const blind = dropout ? ms >= dropout[0] && ms < dropout[1] : false;
+      if (!blind) {
+        poseFrames++;
+        pose = poseReport(normalise(multiply(conjugate(anchorQ), trueQ)), poseFrames);
+        stage.notePose(pose, false, ms);
+      }
+    }
+    const fused = stage.report(ms, pose);
+    reports.push(fused);
+    session.record(fused, ms);
+  }
+  return { session, stats: session.stats(true), reports };
+}
+
+/** Grade a run exactly as the device does. */
+function grade(stats: FusionStats): Map<string, TestResult> {
+  const results = runPhase7Tests({
+    cameraState: CameraState.LIVE,
+    pipelineEverStarted: true,
+    fusionEverRan: stats.fusionFrames > 0,
+    stats,
+  });
+  return new Map(results.map((r) => [r.spec.id, r]));
+}
+
+const verdictOf = (g: Map<string, TestResult>, id: string): Verdict =>
+  g.get(id)?.verdict ?? Verdict.PENDING;
+
+/* -------------------------------------------------------------------------- */
+
+describe('the real stage, graded by the real suite', () => {
+  const run = runStage();
+  const g = grade(run.stats);
+
+  it('reports FUSED once both instruments are running', () => {
+    expect(run.stats.fusedFrames).toBeGreaterThan(100);
+    expect(run.stats.modeFrames[FusionMode.VISION_ONLY] ?? 0).toBeLessThan(5);
+  });
+
+  it('re-derives every mode and every usable flag from the inputs beside it (Rule 002)', () => {
+    expect(run.stats.modeMismatches).toBe(0);
+  });
+
+  it('recovers the injected bias it was never told about — IMU-005', () => {
+    expect(run.stats.biasSamples).toBeGreaterThanOrEqual(10);
+    expect(run.stats.medianBiasDifferenceDps).toBeCloseTo(GYRO_BIAS_INJECTION_DPS, 0);
+    expect(run.stats.medianBiasAxisErrorDeg).toBeLessThan(25);
+    expect(verdictOf(g, 'IMU-005')).toBe(Verdict.PASS);
+  });
+
+  it('...and the difference is the injection, not the phone’s own bias', () => {
+    // The control's estimate is the *device's* true bias, which the fixture set to
+    // (0.4, −0.9, 0.2) °/s. It cancels in the difference — the whole reason the gate works on a
+    // phone whose real bias nobody can look up.
+    const bias = run.stats.gyroBiasDps ?? [];
+    expect(Math.hypot(bias[0] ?? 0, bias[1] ?? 0, bias[2] ?? 0)).toBeGreaterThan(0.5);
+    expect(Math.hypot(bias[0] ?? 0, bias[1] ?? 0, bias[2] ?? 0)).toBeLessThan(2);
+  });
+
+  it('propagates between visual updates rather than being carried by them — IMU-001', () => {
+    expect(run.stats.propagatingFrames).toBeGreaterThanOrEqual(15);
+    expect(run.stats.maxFusedVsVisualDeg).toBeGreaterThan(0);
+    expect(verdictOf(g, 'IMU-001')).toBe(Verdict.PASS);
+  });
+
+  it('agrees with vision without copying it — IMU-003', () => {
+    expect(run.stats.innovationSamples).toBeGreaterThanOrEqual(15);
+    expect(run.stats.zeroInnovationSamples).toBe(0);
+    expect(run.stats.medianInnovationDeg).toBeLessThan(run.stats.toleranceDeg);
+    expect(verdictOf(g, 'IMU-003')).toBe(Verdict.PASS);
+  });
+
+  it('scores v3 §19’s seventh term and never above its own worst — IMU-004', () => {
+    expect(run.stats.confidenceAboveWorstTerm).toBe(0);
+    expect(run.stats.fusedAboveVisual).toBe(0);
+    expect(run.stats.imuConsistencySamples).toBeGreaterThanOrEqual(15);
+    expect(verdictOf(g, 'IMU-004')).toBe(Verdict.PASS);
+  });
+
+  it('never produces a position, and measures the drift it declined to produce — IMU-006', () => {
+    expect(run.stats.positionsReported).toBe(0);
+    expect(run.stats.scaleViolations).toBe(0);
+    expect(run.stats.deadReckonedPositionM).toBeGreaterThan(0);
+    expect(verdictOf(g, 'IMU-006')).toBe(Verdict.PASS);
+  });
+
+  it('emits no Euler triple and no rate outside 0..1 — IMU-009', () => {
+    expect(run.stats.eulerEmitted).toBe(0);
+    expect(run.stats.rateOutOfRange).toBe(0);
+    expect(verdictOf(g, 'IMU-009')).toBe(Verdict.PASS);
+  });
+
+  it('holds IMU-007 at PENDING on a run where vision never stopped', () => {
+    // The absence is reported, not rounded up — the same shape as every PENDING before it.
+    expect(verdictOf(g, 'IMU-007')).toBe(Verdict.PENDING);
+  });
+});
+
+describe('vision stops — IMU-007', () => {
+  const run = runStage({ seconds: 70, dropout: [40_000, 44_000] });
+  const g = grade(run.stats);
+
+  it('enters DEAD_RECKONING and keeps the orientation going', () => {
+    expect(run.stats.dropoutFrames).toBeGreaterThanOrEqual(15);
+    expect(run.stats.longestPropagatedMs).toBeGreaterThan(3000);
+    expect(run.reports.filter((r) => r.mode === FusionMode.DEAD_RECKONING).every((r) =>
+      r.orientation !== null && r.orientation.length === 4)).toBe(true);
+  });
+
+  it('falls monotonically while open-loop and stops offering the pose past three seconds', () => {
+    const open = run.reports.filter((r) => r.mode === FusionMode.DEAD_RECKONING);
+    for (let i = 1; i < open.length; i++) {
+      expect(open[i]?.confidence ?? 1).toBeLessThanOrEqual((open[i - 1]?.confidence ?? 1) + 1e-9);
+    }
+    expect(run.stats.dropoutConfidenceRises).toBe(0);
+    expect(open.some((r) => r.propagatedMs > MAX_PROPAGATION_MS)).toBe(true);
+    expect(open.filter((r) => r.propagatedMs > MAX_PROPAGATION_MS).every((r) => !r.usable)).toBe(true);
+    expect(run.stats.usableBeyondMax).toBe(0);
+  });
+
+  it('records the jump when vision returns rather than absorbing it', () => {
+    expect(run.stats.reconvergences).toBeGreaterThanOrEqual(1);
+    expect(run.stats.medianReconvergenceInnovationDeg).toBeGreaterThanOrEqual(0);
+    expect(verdictOf(g, 'IMU-007')).toBe(Verdict.PASS);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Fake 1 — a pass-through                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A "fusion" that sets the fused orientation equal to the visual pose.
+ *
+ * It reads the sensors — it even reports their rate honestly — and then ignores them. Its
+ * orientation tracks the camera perfectly, its innovation is zero because its prediction *is*
+ * its measurement, and it never invents a position. This is the easiest fake in the phase and
+ * the most convincing, and the point of the block below is that it is caught.
+ */
+function passThroughRun(o: { deadReckoner?: boolean } = {}): Run {
+  const session = new FusionSession();
+  const reports: FusionReport[] = [];
+  const random = rng(0x9c1);
+  let trueQ: Quat = IDENTITY;
+  const dtGyro = 1000 / GYRO_HZ;
+  const dtPose = 1000 / POSE_HZ;
+  let nextPoseAt = 0;
+  let frames = 0;
+  let visualUpdates = 0;
+  let lastUpdateAt = 0;
+
+  for (let ms = 0; ms <= 60_000; ms += dtGyro) {
+    const dt = dtGyro / 1000;
+    trueQ = normalise(multiply(trueQ, fromRotationVector([0.12 * dt, 0.09 * dt, 0.2 * dt])));
+    const gravityBody = rotateInverse(trueQ, WORLD_DOWN).map((c) => c * GRAVITY_MS2);
+    const linear = [0, 1, 2].map(() => (random() - 0.5) * 0.1);
+    session.noteImu({
+      at: ms,
+      acceleration: linear,
+      accelerationIncludingGravity: gravityBody.map((g, i) => g + (linear[i] ?? 0)),
+      rotationRate: [0.12, 0.09, 0.2],
+      interval: 1 / GYRO_HZ,
+    });
+    if (ms < nextPoseAt) continue;
+    nextPoseAt += dtPose;
+    frames++;
+    if (ms - lastUpdateAt >= 1000) {
+      visualUpdates++;
+      lastUpdateAt = ms;
+    }
+    const r: FusionReport = {
+      frames,
+      mode: FusionMode.FUSED,
+      usable: true,
+      // The whole fake, in one line.
+      orientation: o.deadReckoner ? [...trueQ] : [...trueQ],
+      gyroBiasDps: [0, 0, 0],
+      position: null,
+      positionReason: 'not produced',
+      scale: 'UNKNOWN',
+      heading: 'RELATIVE',
+      innovationDeg: 0,
+      injectedInnovationDeg: 0,
+      visualIncrementDeg: 12,
+      propagatedMs: 0,
+      gravityDeg: 0,
+      imuConsistency: 1,
+      confidence: 0.86,
+      confidenceTerms: [...IDENTITY_TERMS, { name: 'imuConsistency', value: 1, note: 'asserted' }],
+      confidenceWithheld: [],
+      visualConfidence: 0.86,
+      visualUpdates,
+      imuSamples: Math.round(ms / dtGyro) + 1,
+      gravitySamples: Math.round(ms / dtGyro) + 1,
+      gravityRejected: 0,
+      orientationVarianceDeg: 0.1,
+      // A second filter it never ran. Both fakes report the same thing here, and it is the one
+      // number in this phase they cannot fake: they have no bias state for an injection to move.
+      biasDifferenceDps: visualUpdates >= 10 ? [0, 0, 0] : null,
+      injectedBiasDps: [0, 0, 0],
+      requestedInjectionDps: GYRO_BIAS_INJECTION_DPS,
+      injectionAxis: [0, 1, 0],
+      deadReckonedPositionM: 0.3,
+      deadReckonedSeconds: ms / 1000,
+      fusedVsVisualDeg: 0,
+      fusionMs: 0.01,
+    };
+    reports.push(r);
+    session.record(r, ms);
+  }
+  return { session, stats: session.stats(true), reports };
+}
+
+describe('what a pass-through scores on the same suite', () => {
+  const run = passThroughRun();
+  const g = grade(run.stats);
+
+  it('passes almost everything — which is why IMU-005 exists', () => {
+    expect(verdictOf(g, 'IMU-006')).toBe(Verdict.PASS);
+    expect(verdictOf(g, 'IMU-008')).toBe(Verdict.PASS);
+    expect(verdictOf(g, 'IMU-004')).toBe(Verdict.PASS);
+  });
+
+  it('fails IMU-005: the injection moved nothing, because there is nothing to move', () => {
+    expect(run.stats.medianBiasDifferenceDps).toBe(0);
+    expect(verdictOf(g, 'IMU-005')).toBe(Verdict.FAIL);
+    expect(g.get('IMU-005')?.observed).toContain('0 °/s');
+  });
+
+  it('fails IMU-001: its orientation is the visual orientation on every frame', () => {
+    expect(run.stats.maxFusedVsVisualDeg).toBe(0);
+    expect(verdictOf(g, 'IMU-001')).toBe(Verdict.FAIL);
+  });
+
+  it('fails IMU-003: an innovation of exactly zero is a copy, not a prediction', () => {
+    expect(run.stats.zeroInnovationSamples).toBe(run.stats.innovationSamples);
+    expect(verdictOf(g, 'IMU-003')).toBe(Verdict.FAIL);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Fake 2 — dead reckoning with a camera attached                              */
+/* -------------------------------------------------------------------------- */
+
+describe('what a dead-reckoner scores on the same suite', () => {
+  /**
+   * The real stage, with the visual updates withheld. Not a hand-written fake this time: the
+   * filter is exactly the one the app runs, and the only difference is that nothing corrects it.
+   *
+   * It cannot reach IMU-005 at all — with no measurement to disagree with, the bias is
+   * unobservable and the stage reports `null` rather than a number, which is the honest outcome
+   * and still not a pass.
+   */
+  const session = new FusionSession();
+  const stage = new FusionStage(1);
+  const random = rng(0x4d1);
+  let trueQ: Quat = IDENTITY;
+  const dtGyro = 1000 / GYRO_HZ;
+  for (let ms = 0; ms <= 60_000; ms += dtGyro) {
+    const dt = dtGyro / 1000;
+    trueQ = normalise(multiply(trueQ, fromRotationVector([0.12 * dt, 0.09 * dt, 0.2 * dt])));
+    const gravityBody = rotateInverse(trueQ, WORLD_DOWN).map((c) => c * GRAVITY_MS2);
+    const linear = [0, 1, 2].map(() => (random() - 0.5) * 0.1);
+    const sample: ImuSample = {
+      at: ms,
+      acceleration: linear,
+      accelerationIncludingGravity: gravityBody.map((g, i) => g + (linear[i] ?? 0)),
+      rotationRate: [0.12 + 0.4 * DEG, 0.09 - 0.9 * DEG, 0.2 + 0.2 * DEG],
+      interval: 1 / GYRO_HZ,
+    };
+    stage.noteImu(sample);
+    session.noteImu(sample);
+    if (ms % (1000 / POSE_HZ) < dtGyro) {
+      const fused = stage.report(ms, null);
+      session.record(fused, ms);
+    }
+  }
+  const stats = session.stats(true);
+  const g = grade(stats);
+
+  it('never applies a visual update', () => {
+    expect(stats.innovationSamples).toBe(0);
+    expect(stats.biasSamples).toBe(0);
+  });
+
+  it('...and still finds the bias, because gravity observes it — the plan’s table was wrong', () => {
+    // The measurement that forced the amendment in `docs/phase7/TEST-PLAN.md`. The plan said a
+    // dead-reckoner scores 0 on the bias. It does not: on a device that turns, the body axes
+    // move relative to gravity and all three components become observable through it alone. The
+    // true bias here is (0.4, −0.9, 0.2) °/s, magnitude 1.0049.
+    expect(stats.biasMagnitudeDps).toBeCloseTo(1.0049, 2);
+    const last = session.getLast();
+    const control = last?.gyroBiasDps ?? [];
+    const injected = last?.injectedBiasDps ?? [];
+    const difference = injected.map((b, i) => b - (control[i] ?? 0));
+    // ...and the injection comes back essentially perfectly, on the injected axis, with no
+    // vision anywhere in the run. Criteria 1–3 of IMU-005 alone would have passed this.
+    expect(Math.hypot(difference[0] ?? 0, difference[1] ?? 0, difference[2] ?? 0)).toBeCloseTo(3, 1);
+  });
+
+  it('cannot pass IMU-005 anyway — the difference is withheld without visual updates', () => {
+    // Which is the whole point of that gate, and the second half of the amendment: a number a
+    // dead-reckoner can produce cannot be the gate on a fusion, so the stage refuses to report
+    // it until vision has actually corrected the filter.
+    expect(stats.biasSamples).toBe(0);
+    expect(verdictOf(g, 'IMU-005')).toBe(Verdict.PENDING);
+    expect(g.get('IMU-005')?.reason).toContain('visual updates');
+    expect(verdictOf(g, 'IMU-003')).not.toBe(Verdict.PASS);
+  });
+
+  it('and one that *claims* convergence is failed outright', () => {
+    // A dead-reckoner honest about its own state reports `null` and lands on PENDING. One that
+    // reports a converged zero — which is what a fake would do to look finished — is failed.
+    const claimed = passThroughRun({ deadReckoner: true });
+    expect(verdictOf(grade(claimed.stats), 'IMU-005')).toBe(Verdict.FAIL);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* IMU-002 — v3 §68's own pass condition, which is what the leg decides         */
+/* -------------------------------------------------------------------------- */
+
+describe('no IMU at all — the case the automated leg is permanently in', () => {
+  const session = new FusionSession();
+  const stage = new FusionStage(2);
+  session.noteImuUnavailable('DeviceMotionEvent is absent on this platform');
+  let trueQ: Quat = IDENTITY;
+  let frames = 0;
+  const reports: FusionReport[] = [];
+  for (let ms = 0; ms <= 5_000; ms += 1000 / POSE_HZ) {
+    trueQ = normalise(multiply(trueQ, fromRotationVector([0.006, 0.004, 0.01])));
+    frames++;
+    const pose = poseReport(trueQ, frames);
+    stage.notePose(pose, false, ms);
+    const fused = stage.report(ms, pose);
+    reports.push(fused);
+    session.record(fused, ms);
+  }
+  const stats = session.stats(true);
+  const g = grade(stats);
+
+  it('continues on vision alone and reports VISION_ONLY on every frame', () => {
+    expect(stats.fusionFrames).toBeGreaterThan(50);
+    expect(stats.modeFrames[FusionMode.VISION_ONLY]).toBe(stats.fusionFrames);
+    expect(stats.modeFrames[FusionMode.FUSED] ?? 0).toBe(0);
+  });
+
+  it('makes the fused orientation the visual orientation exactly — nothing is invented', () => {
+    const last = reports[reports.length - 1];
+    expect(last?.orientation).not.toBeNull();
+    expect(angleBetweenDeg(last?.orientation as Quat, trueQ)).toBeLessThan(1e-6);
+  });
+
+  it('reports the bias as null rather than zero — an unmeasured quantity is absent', () => {
+    expect(stats.gyroBiasDps).toBeNull();
+    expect(stats.biasZeroWithoutGyro).toBe(0);
+  });
+
+  it('withholds imuConsistency by name instead of scoring it as good', () => {
+    expect(stats.imuConsistency).toBe(-1);
+    expect(stats.confidenceWithheld.some((w) => w.includes('IMUConsistency'))).toBe(true);
+  });
+
+  it('passes IMU-002 and holds the sensor-dependent records at PENDING', () => {
+    expect(verdictOf(g, 'IMU-002')).toBe(Verdict.PASS);
+    for (const id of ['IMU-001', 'IMU-003', 'IMU-004', 'IMU-005', 'IMU-007']) {
+      expect(verdictOf(g, id)).toBe(Verdict.PENDING);
+    }
   });
 });

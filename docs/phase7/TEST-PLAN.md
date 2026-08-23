@@ -288,6 +288,34 @@ Not in v3's list. It is here because every other number in this phase is produce
 - **Excluded if:** no gyroscope. Reported `PENDING` with that reason; the automated leg is
   always in this case.
 
+> **Amendment, 2026-08-23 — recorded before the device leg ran, with the measurement that forced
+> it.** The table above says a dead-reckoning fusion scores `0` in both columns. **That is
+> wrong**, and the unit fixture found it: gravity is a two-degree-of-freedom measurement, but on
+> a device that *turns*, the body axes move relative to it and over a minute all three body-frame
+> bias components become observable through gravity alone. Driving `FusionStage` for 60 s with
+> **no visual updates at all**, a true bias of (0.4, −0.9, 0.2) °/s and the 3 °/s injection on
+> the *y* axis:
+>
+> | | control | injected | difference |
+> | --- | --- | --- | --- |
+> | measured, gravity only | (0.400, −0.900, 0.200) | (0.400, 2.100, 0.200) | **2.9996 °/s on *y*** |
+>
+> So criteria 1–3 are **not by themselves evidence that vision was fused**; a dead-reckoner with
+> the accelerometer switched on satisfies all three. Two things follow, and neither relaxes
+> anything:
+>
+> 1. **Criterion 4 is load-bearing, not a rounding-out.** It was already in this plan before the
+>    measurement, and it is what separates fake 2: a filter applying the visual correction at a
+>    gain near zero is left disagreeing with vision by a margin that grows without bound, which
+>    is exactly what criterion 4 refuses.
+> 2. **`biasDifferenceDps` is withheld until `MIN_BIAS_SAMPLES` *visual* updates have been
+>    applied** — not because the estimate is poor without them, but because a number a
+>    dead-reckoner can produce cannot be the gate on a fusion. A run with no vision therefore
+>    reports `PENDING` here rather than a difference, and cannot pass this record at all.
+>
+> The criteria themselves are unchanged. What changed is the reasoning printed beside them, which
+> claimed a separation that the fixture showed does not hold on its own.
+
 ### IMU-006 — No absolute position from the IMU · REQUIRED
 
 v3 §17's two prohibitions, and v4 §19's one, made measurable rather than cited.
