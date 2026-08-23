@@ -89,7 +89,10 @@ export interface PoseStats {
   /* POSE-002 — the gyroscope */
   readonly gyroAvailable: boolean;
   readonly gyroReason: string;
+  /** Comparisons in the retained window — the denominator of every figure below. */
   readonly rotationSamples: number;
+  /** ...and the total ever made, which is larger once §56's bound starts discarding. */
+  readonly rotationComparisons: number;
   readonly medianVisualRotationDeg: number;
   readonly medianGyroRotationDeg: number;
   readonly medianRotationDisagreementDeg: number;

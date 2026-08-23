@@ -19,8 +19,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
-| 6 | Relative Pose | IMPLEMENTING | Built and green on the automated leg at `TESTING` — POSE-002 needs a gyroscope the leg does not have. Awaiting a device run (Rule 004). |
-| 7 | IMU Support / Fusion | BLOCKED | v3 §17, §18 — the phase where the IMU stops being Phase 6's witness and becomes an input. |
+| 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
+| 7 | IMU Support / Fusion | NOT_STARTED | Phase Lock is open. v3 §17, §18 — where the IMU stops being Phase 6's witness and becomes an input. |
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
@@ -818,24 +818,77 @@ v3 §14's verification verdict and it is a different claim.
 
 ---
 
-## Phase 6 — IMPLEMENTING
+## Phase 6 — PASSED
 
 Built against **v3 §15, §16, §19 and §67**, which v4 compresses into a two-line §18 — both of
 whose lines are kept, one of them a prohibition. See [`SPEC-VERSIONS.md`](SPEC-VERSIONS.md).
 The test plan was written and committed before `src/geometry/pose.ts` existed (§29):
 [`phase6/TEST-PLAN.md`](phase6/TEST-PLAN.md).
 
-The automated leg reaches `TESTING` with five of six decidable tests passing.
-[`phase6/HOW-TO-RUN-DEVICE-TEST.md`](phase6/HOW-TO-RUN-DEVICE-TEST.md) is the device run.
+**Passed on the device on 2026-08-23**: iPhone / iOS 18.7 / Safari 26.6 over HTTPS, 5/5 required
+and 2/2 advisory, `devEntry: false`, with the transition log climbing through the conditions one
+at a time rather than arriving at a verdict in one step.
 
 ```
-479 pose frames: 251 POSE, 75 ROTATION_ONLY, 153 NO_POSE
-POSE-005: 49 injected frames — an 8° turn moved the pose 8.000° against 0.003° for the control
-v3 §16: 227 planar posed from the homography, 0 via an Essential matrix;
-        cheirality left 2 unseparated candidates on a plane against 1 with depth
-POSE-004: 75 frames with no parallax, 0 of which named a translation
-cost 4.33 ms pose + 0.88 ms RANSAC = 5.21 ms against §H's 6 ms for both together
+3001 pose frames: 1137 POSE, 371 ROTATION_ONLY, 1493 NO_POSE
+POSE-005: 230 injected frames — an 8° turn moved the pose 7.999° against 0.448° for the control;
+          inlier drift 1.45% against the control's 1.46%, 11 planar flips against 15
+POSE-002: the camera recovered 4.388° against the gyroscope's 4.568°, disagreement 0.762°
+v3 §16: 104 planar posed from the homography, 0 via an Essential matrix
+POSE-004: 371 frames with no parallax, 0 named a translation; 1449 declined, 0 carried a rotation
+cost 0.373 ms pose + 0.865 ms RANSAC = 1.238 ms against §H's 6 ms for both together
+±20% focal moves the rotation 0.64° and the translation direction 3.12°
 ```
+
+### The defect the device run found, and what the verdict rests on
+
+**POSE-002 reported `232.3 % agreeing`**, and the screen showed it in green as a pass. That is not
+a percentage of anything. `PoseSession` bounds what it retains (§56) but counted agreements with
+an **unbounded** counter, so past 400 comparisons the numerator kept climbing over a frozen
+denominator. `FlowSession` never had this — FLOW-002 counts its agreements out of the same trimmed
+window it divides by — and Phase 6 now does the same, so the mismatch is impossible by
+construction rather than repaired.
+
+**So POSE-002's fourth criterion — "at least 60 % of individual frames agree, not merely the
+median" — was not exercised**: an inflated number clears a floor trivially. Its other three were
+measured correctly, including the substantive one:
+
+| criterion | measured |
+| --- | --- |
+| ≥ 15 comparable frames | 400 retained of 929 made |
+| the gyroscope measured a non-zero rotation | 4.568° |
+| median disagreement within tolerance | **0.762° against 3.0°** |
+| ≥ 60 % of individual frames agree | **not evaluated** |
+
+The verdict stands on what was measured: the physics comparison passed on real data with a wide
+margin, and POSE-005's gate is untouched. A short re-run settles the fourth criterion; until one
+exists the bundle is named in `committedEvidence.test.ts` as predating the fix, and the
+re-derivation asserts it *is* the broken shape so the exemption cannot outlive it.
+
+### The device settled three things the leg could not
+
+**The gyroscope wobbled, and the net-versus-path distinction earned itself.** The recorded samples
+show `gyroPathDeg 20.5` against `gyroNetDeg 4.6` — the operator turned back and forth about four
+times as far as the camera ended up rotated. Had this integrated `|ω|`, as `FlowSession` does for
+a different question, the instrument would have read 20.5° against the camera's 4.6° and POSE-002
+would have failed a **correct** solver.
+
+**Both amendments made before the run were necessary, and the device proves it.** Under POSE-003's
+original cross-class comparison this run reports planar translation confidence **0.0909 against
+0.0773** with depth — it would have **failed**, while the mechanism it meant to measure is exactly
+right. Under POSE-005's original zero tolerance it shows **11 planar flips for the injection
+against 15 for the control** — the control, refitting the same data with no injection at all,
+flipped *more*. It would have failed too.
+
+**The focal-length assumption matters on real optics.** ±20 % on `f` moves the recovered rotation
+by 0.64° and the translation direction by **3.12°**, against 0.012° and 0.057° on the synthetic
+leg. The rotation survives the guess; the translation direction depends on it, and any later phase
+reading a direction from this one inherits that.
+
+**And the confidence is bound by the population, not the geometry.** `medianConfidence` is 0, with
+the terms saying why: `trackedFeatures 0.2136 — 127 against §11's 80 degraded / 300 good`. v3 §19's
+confidence is the minimum over its terms, so the §11 shortfall Phase 4's device run recorded
+surfaces again here — the pose is well determined and the confidence attached to it is low.
 
 ### This is the first phase the automated leg is short of an *instrument*
 

@@ -525,3 +525,120 @@ describe('intrinsics are per frame, not per session', () => {
   });
 });
 
+
+/**
+ * The defect the device found: a rate that cannot be a rate.
+ *
+ * `PoseSession` bounds what it keeps (§56), and POSE-002's agreement rate was a counter that
+ * kept climbing divided by an array that stopped at 400. The device run of 2026-08-23 reported
+ * **232.3% agreeing** — and POSE-002's "at least 60% of individual frames agree" criterion
+ * passed on it *without being applied*, because an inflated number clears a floor trivially.
+ *
+ * `FlowSession` never had this: FLOW-002 counts its agreements out of the same trimmed window it
+ * divides by. Phase 6 now does the same, so the mismatch is impossible rather than fixed — and
+ * the test below drives the session past its own bound, which is the only way to see it.
+ */
+describe('the agreement rate stays a rate past the session’s bound', () => {
+  /** Degrees the camera turns per frame, and how often the verification anchor is re-taken. */
+  const DEG_PER_FRAME = 1.5;
+  const ANCHOR_EVERY = 5;
+  const STEP_MS = 40;
+
+  function comparisonRun(frames: number, agreeEvery: number): ReturnType<PoseSession['stats']> {
+    const session = new PoseSession();
+    let now = 1000;
+    for (let i = 1; i <= frames; i++) {
+      // A gyroscope turning at a constant rate, and an anchor re-taken every few frames — which
+      // is what the real system does, and what bounds the interval the two are compared over.
+      // Without the re-anchor the gyroscope integrates from the first frame forever and nothing
+      // agrees with anything; that was this fixture's own first bug.
+      const reAnchored = i % ANCHOR_EVERY === 1;
+      for (let k = 0; k < 4; k++) {
+        session.noteGyro({ at: now + k * 9, x: 0, y: DEG_PER_FRAME / (STEP_MS / 1000), z: 0 });
+      }
+      const sinceAnchor = ((i - 1) % ANCHOR_EVERY) * DEG_PER_FRAME;
+      const rotation = fromAxisAngle([0, 1, 0], sinceAnchor);
+      const aa = toAxisAngle(rotation);
+      const agrees = i % agreeEvery === 0;
+      const report: PoseReport = {
+        frames: i,
+        state: PoseState.POSE,
+        stateReason: '',
+        source: GeometricModel.FUNDAMENTAL,
+        rotationDeg: agrees ? aa.angleDeg : aa.angleDeg + 40,
+        axis: aa.axis,
+        quaternion: toQuaternion(rotation),
+        translation: [1, 0, 0],
+        scale: SCALE_LOCAL_UNITS,
+        planeNormal: null,
+        intrinsics: {
+          fx: K.fx, fy: K.fy, cx: K.cx, cy: K.cy, width: W, height: H,
+          estimated: true, assumedFovDeg: K.assumedFovDeg,
+        },
+        cheirality: [],
+        chosen: 0,
+        unseparatedCandidates: 1,
+        ambiguous: false,
+        pointsInFront: 50,
+        correspondences: 50,
+        reprojectionErrorPx: 0.5,
+        rotationOnlyResidualPx: 30,
+        rotationJumpDeg: 0,
+        planar: false,
+        confidence: 1,
+        rotationConfidence: 1,
+        translationConfidence: 1,
+        confidenceTerms: [],
+        confidenceWithheld: [],
+        sensitivity: null,
+        poseMs: 0.3,
+        injection: null,
+      };
+      const v: VerificationReport = {
+        ...outcomeFor([{ ax: 1, ay: 1, bx: 2, by: 2 }], 1).report,
+        reAnchored,
+      };
+      session.record(frameFor(v, report, reAnchored), now);
+      now += STEP_MS;
+    }
+    return session.stats(true);
+  }
+
+  it('never exceeds 1, however many comparisons the run made', () => {
+    // Well past the 400-frame window — the shape the device hit at 929 comparisons.
+    const stats = comparisonRun(2000, 1);
+    expect(stats.rotationComparisons).toBeGreaterThan(stats.rotationSamples);
+    expect(stats.rotationAgreementRate).toBeLessThanOrEqual(1);
+    expect(stats.rotationAgreementRate).toBe(1);
+  });
+
+  it('reports the window it was computed over beside the total', () => {
+    const stats = comparisonRun(2000, 1);
+    expect(stats.rotationSamples).toBe(400);
+    expect(stats.rotationComparisons).toBeGreaterThan(400);
+  });
+
+  it('still measures disagreement rather than reporting everything as agreed', () => {
+    // Every second frame agrees; the rest miss by 40°, far outside the tolerance. The exact
+    // fraction depends on which frames clear MIN_COMPARABLE_ROTATION_DEG, so the assertion is
+    // that it lands strictly between the two extremes rather than at either.
+    const stats = comparisonRun(2000, 2);
+    expect(stats.rotationAgreementRate).toBeGreaterThan(0.05);
+    expect(stats.rotationAgreementRate).toBeLessThan(0.95);
+  });
+
+  it('and POSE-002 refuses a rate that is not a rate, rather than passing on it', () => {
+    // The second lock: on the reading, not on the arithmetic. A criterion satisfied by an
+    // impossible number is not a test.
+    const stats = comparisonRun(2000, 1);
+    const results = runPhase6Tests({
+      cameraState: CameraState.LIVE,
+      pipelineEverStarted: true,
+      poseEverRan: true,
+      stats: { ...stats, rotationAgreementRate: 2.3225 },
+      verifyMs: 1,
+    });
+    expect(verdictOf(results, 'POSE-002')).toBe(Verdict.FAIL);
+    expect(reasonOf(results, 'POSE-002')).toContain('not a rate');
+  });
+});

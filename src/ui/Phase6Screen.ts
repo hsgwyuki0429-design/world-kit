@@ -363,10 +363,12 @@ function renderGyro(vm: Phase6ViewModel): HTMLElement {
       stat('Disagreement', deg(s.medianRotationDisagreementDeg),
         enough ? (agreeing ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
       stat('Comparable frames', enough
-        ? String(s.rotationSamples)
+        ? `${s.rotationSamples} of ${s.rotationComparisons}`
         : `${s.rotationSamples} / ${MIN_JUDGED_FRAMES}`),
       stat('Frames agreeing', pct(s.rotationAgreementRate),
-        s.rotationAgreementRate >= MIN_ROTATION_AGREEMENT_RATE ? 's-AVAILABLE' : ''),
+        s.rotationAgreementRate > 1
+          ? 's-PERMISSION_DENIED'
+          : s.rotationAgreementRate >= MIN_ROTATION_AGREEMENT_RATE ? 's-AVAILABLE' : ''),
       stat('This frame', s.poseFrames > 0 ? deg(s.rotationDeg) : null),
     ]),
     el('p', { class: 'footnote' }, [
@@ -379,6 +381,13 @@ function renderGyro(vm: Phase6ViewModel): HTMLElement {
           'Without the gyroscope there is no instrument independent of the pose solver that can ' +
             'say how far the camera actually turned, so POSE-002 reports PENDING with that ' +
             'reason instead of being judged. This is why Phase 6 cannot pass off the device.',
+    ]),
+    el('p', { class: 'footnote' }, [
+      'Every figure here is over the **retained window** — §56 bounds what a twenty-minute ' +
+        'session may keep — and "comparable frames" is that window beside the total ever ' +
+        'compared. They are shown together because they came apart once: an agreement counter ' +
+        'that kept climbing over a denominator that stopped at 400 reported 232.3% agreeing on ' +
+        'the device, and a rate above 100% is not a rate.',
     ]),
     el('p', { class: 'footnote' }, [
       `Only frames where the gyroscope measured at least ${MIN_COMPARABLE_ROTATION_DEG}° are ` +

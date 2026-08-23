@@ -902,6 +902,29 @@ describe('Phase 6 evidence', () => {
     },
   );
 
+  /**
+   * Bundles whose per-frame agreement rate is known not to be a rate, and why they are kept.
+   *
+   * `PoseSession` bounded what it retained (§56) but counted agreements with an *unbounded*
+   * counter, so once a run passed 400 comparisons the numerator kept climbing over a frozen
+   * denominator. The bundle below reports **232.3 % agreeing**, which is not a percentage of
+   * anything — and POSE-002's "at least 60 % of individual frames agree" criterion passed on it
+   * *without being applied*, because an inflated number clears a floor trivially.
+   *
+   * The bundle is kept rather than deleted, for the reason Phase 1 keeps a FAILED one: the
+   * record of a defect is evidence, and removing it leaves the fix looking like a change with
+   * no cause. What it is exempted from is the one figure the defect touched. Everything else in
+   * that run — 400 retained comparisons, a 4.568° gyroscope rotation against the camera's
+   * 4.388°, a median disagreement of 0.762° against a 3° tolerance — was measured correctly,
+   * and POSE-005's gate (7.999° recovered for an 8° injection, control 0.448°) is untouched.
+   *
+   * **What this list does not do is excuse the criterion.** POSE-002's fourth criterion was not
+   * exercised on that run, and no bundle in this list may be read as having satisfied it.
+   */
+  const RATE_PREDATES_THE_FIX = new Set([
+    'phase6-real-device-PASSED-2026-08-23T03-04-13-558Z.json',
+  ]);
+
   /** POSE-002, the one instrument that exists nowhere but the device. */
   it.runIf(claimsPass.length > 0)('a claimed pass agrees with the gyroscope on a real turn', () => {
     for (const { file, bundle } of claimsPass) {
@@ -911,8 +934,26 @@ describe('Phase 6 evidence', () => {
       // An agreement between two zeros is not an agreement.
       expect(Number(p2?.metrics['medianGyroDeg']), `${file} measured rotation`).toBeGreaterThan(0);
       expect(Number(p2?.metrics['medianVisualDeg']), `${file} recovered rotation`).toBeGreaterThan(0);
-      expect(Number(p2?.metrics['agreementRate']), `${file} agreement rate`)
-        .toBeGreaterThanOrEqual(MIN_ROTATION_AGREEMENT_RATE);
+      // ...and the substance of the comparison: the two instruments have to agree, inside the
+      // tolerance the session derived from what was measured. This is the physics check, and it
+      // is the one the defect above did not touch.
+      const tolerance = Math.max(
+        3.0,
+        0.3 * Number(p2?.metrics['medianGyroDeg']),
+      );
+      expect(Number(p2?.metrics['medianDisagreementDeg']), `${file} median disagreement`)
+        .toBeLessThanOrEqual(tolerance);
+
+      const rate = Number(p2?.metrics['agreementRate']);
+      if (RATE_PREDATES_THE_FIX.has(file)) {
+        // Named, not waved through: assert it *is* the broken shape, so the exemption cannot
+        // quietly outlive the bundle it was written for.
+        expect(rate, `${file} is listed as predating the rate fix`).toBeGreaterThan(1);
+        continue;
+      }
+      // A rate outside 0..1 is not a measurement and may not clear a floor by being large.
+      expect(rate, `${file} agreement rate is a rate`).toBeLessThanOrEqual(1);
+      expect(rate, `${file} agreement rate`).toBeGreaterThanOrEqual(MIN_ROTATION_AGREEMENT_RATE);
     }
   });
 

@@ -14,7 +14,7 @@ omission. The governing
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0–5 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
+**Current state: Phases 0–6 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
 committed, machine-checked evidence. Phase 3 took four device runs and each failure was a
 real defect; the passing run detected 2494 frames, scored **91.1 %** above chance, and saw
 the population fall from a median of 353 features on a textured wall to 64 on a blank one.
@@ -25,8 +25,11 @@ correcting the drawing. It also passed the cross-check that separates a working 
 one that returns its input — 4.741 px against an independently measured 4.000 px. **Phase 5
 passed on the device on 2026-08-23** — 4/4 required and 2/2 advisory, with the run failing on
 GEO-003 and recovering before it passed; RANSAC rejected **90.9 %** of outliers the harness
-injected without telling it, against **6.0 %** of the correspondences it left alone. Phase 6
-(Relative Pose) is unlocked. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+injected without telling it, against **6.0 %** of the correspondences it left alone. **Phase 6
+passed on 2026-08-23**: an 8° camera rotation the harness applied and never disclosed moved the
+recovered pose by **7.999°**, against 0.448° for the control, and the camera's rotation agreed
+with the gyroscope to 0.762°. Phase 7 (IMU Support / Fusion) is unlocked. See
+[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -545,6 +548,27 @@ so a camera that only turned scored zero points in front on every candidate and 
 `NO_POSE` — a pose refused for having no translation, which is the one case where a rotation is
 perfectly recoverable.
 
+### What the device pass does not show
+
+**POSE-002 reported `232.3 % agreeing`** — not a percentage of anything. The session bounded what
+it retained (§56) but counted agreements with an unbounded counter, so past 400 comparisons the
+numerator climbed over a frozen denominator. Its fourth criterion ("at least 60 % of individual
+frames agree, not merely the median") was therefore **not exercised**; its other three were,
+including the substantive one — 0.762° median disagreement against a 3° tolerance, on a
+gyroscope-measured 4.568°. Fixed by construction, with the bundle named in the evidence checks
+so the exemption cannot outlive it.
+
+Two things the device settled that the leg could not. The gyroscope recorded a **path of 20.5°
+for a net of 4.6°** — the operator turned back and forth — so integrating |ω| would have failed a
+correct solver, which is why this integrates the rotation vector. And **±20 % on the focal length
+moves the translation direction by 3.12°** on real optics, against 0.057° on the synthetic feed:
+the rotation survives the guess, the direction does not.
+
+Both amendments made before the run were necessary, and the device proves it: under POSE-003's
+original criterion this run's planar confidence (0.0909) exceeded its non-planar one (0.0773) and
+would have failed, and under POSE-005's original zero tolerance the **control flipped more often
+than the injection did** (15 against 11).
+
 ### POSE-001's spread criterion was withdrawn, with the measurement
 
 Driven over a straight-line translation the real solver reports 100% cheirality, 0 px
@@ -555,8 +579,8 @@ The spread is reported and not judged, and the tests now assert that the constan
 
 ## Next
 
-Phase 6's device run, and then Phase 7 — IMU Support / Fusion (v3 §17, §18), where the
-gyroscope stops being Phase 6's witness and becomes an input.
+Phase 7 — IMU Support / Fusion (v3 §17, §18), where the gyroscope stops being Phase 6's witness
+and becomes an input.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement
