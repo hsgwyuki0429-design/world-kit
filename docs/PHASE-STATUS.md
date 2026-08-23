@@ -1289,11 +1289,29 @@ different day, so it measures code *and* machine conditions together. Two more r
 - old code vs new code, same session → the code, isolated.
 
 Held that way, phases 0–3 and 5–7 sit **at** the noise floor. A field only counts as a candidate
-if each version agrees with *itself* across its runs and the two disagree: **6 out of 771 scalar
-summaries**, on a codebase where the old code disagrees with itself on 25–62 fields per bundle.
-Three of the six were the Phase 4 stress trio above. One — `overlayAlignment.best` — produced a
-*third* value on the next run, which is the probe's own `NOT ARMED` verdict (best/random 1.06×)
-showing up as the argmax of noise.
+if each version agrees with *itself* across its runs and the two disagree: at two samples per
+side that gave **6 of 771 scalar summaries**, on a codebase where the old code disagrees with
+itself on 25–62 fields per bundle.
+
+**Two samples per side is not enough**, and the six are what taught that. A field with a narrow
+spread passes a self-consistency filter by chance. Taking a third sample of each version:
+
+| candidate | old code ×3 | new code ×3 | |
+| --- | --- | --- | --- |
+| `phase4 pipeline.anyStressed` | true, true, true | false, false | **real — the dropped stress step** |
+| `phase4 longestCleanSegment.index` | 2, 2, 2 | 0, 0 | **real — same cause** |
+| `phase4 overlayAlignment.best` | rot90 ×3 | rot180, rot180, flipY, rot90 | noise — 3 values in 4 runs |
+| `phase5 medianDeclinedOutOfReach` | 37, 37, **38** | 38, 38, 38 | noise — ranges overlap |
+| `phase5 medianDeclinedTooClose` | 275, 275, **272.5** | 272, 272, **275** | noise — ranges overlap |
+| `phase7 medianReprojectionPx` | 0.051, 0.051, **0.049** | 0.052, 0.052, **0.051** | noise — ranges overlap |
+
+Every third sample of the four noise rows landed inside the other version's range. The two real
+ones are the same defect, and it is fixed above.
+
+**With the fix in and three samples of each version: 0 of 771 scalar summaries** differ where
+both versions are self-consistent. `overlayAlignment.best` is the probe's own `NOT ARMED` verdict
+(best/random 1.06×) showing up as the argmax of noise — it produced three distinct values across
+four runs of the same code.
 
 Field *counts* are a poor instrument here and were nearly misleading: the movement is dominated
 by list structures — the adaptive controller's decision sequence and `shiftCrossCheck`'s sliding
