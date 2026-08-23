@@ -18,8 +18,8 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 2 | Frame Pipeline | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 3 | Feature Detection | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
-| 5 | Geometric Verification | IMPLEMENTING | Built and green on the automated leg — 4/4 required + 2/2 advisory at `TESTING`. Awaiting a device run (Rule 004). |
-| 6 | Relative Pose | BLOCKED | |
+| 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
+| 6 | Relative Pose | NOT_STARTED | Phase Lock is open. v3 §15 is next; v4 does not restate it. |
 | 7 | IMU Support / Fusion | BLOCKED | |
 | 8 | Keyframe System | BLOCKED | |
 | 9 | Triangulation | BLOCKED | |
@@ -634,13 +634,26 @@ built so no rotation or reflection maps its landmarks onto themselves. It scores
 
 ---
 
-## Phase 5 — IMPLEMENTING
+## Phase 5 — PASSED
 
 Built against **v3 §14 and §16**, which v4 does not restate — see
-[`SPEC-VERSIONS.md`](SPEC-VERSIONS.md). The automated leg reaches `TESTING` with all four
-required tests and both advisory tests passing; `PASSED` needs iPhone Safari over HTTPS
-(Rule 004), and [`phase5/HOW-TO-RUN-DEVICE-TEST.md`](phase5/HOW-TO-RUN-DEVICE-TEST.md) is the
-run.
+[`SPEC-VERSIONS.md`](SPEC-VERSIONS.md). **Passed on the device on 2026-08-23**: iPhone /
+iOS 18.7 / Safari 26.6 over HTTPS, 4/4 required and 2/2 advisory, `devEntry: false`, with the
+transition log showing `TESTING → PASSED → FAILED → PASSED` — it failed on **GEO-003** in
+between. The gate that carries this phase could fail, and did.
+
+```
+1875 verified frames, 1203 judged; 293 re-anchors
+median 66 inliers of 71 correspondences (ratio 0.9377), baseline 24.83 px, spread 141.64 px
+states: 778 UNVERIFIED, 899 USABLE, 198 GOOD
+GEO-003: 271 injected frames — 90.9% of injected outliers rejected vs 6.0% of untouched
+         (15.2x advantage), 43 inliers surviving
+v3 §16: 1714 frames with both models — 700 planar, 1014 non-planar; median F 68 vs H 57.5
+RANSAC 3.45 ms at 71 correspondences, against §H's 6 ms; 62 frames at the iteration cap
+integrity: 0 state mismatches, 0 partition faults, 0 models on an unverified frame
+```
+
+Tier `REDUCED 640x360@20`, processing 360×640 in portrait.
 
 The test plan was written and committed before any Phase 5 code existed (§29):
 [`phase5/TEST-PLAN.md`](phase5/TEST-PLAN.md).
@@ -740,6 +753,55 @@ What had been carrying the first run was six stripe boundaries sweeping across t
 9.5 px per frame: strong, trackable corners belonging to no surface. A two-view geometry measured
 on them is a measurement of the fixture. The feed now uses Phase 4's texture, whose leg tracked
 210 points on this same 640×480 source — mean gradient 14.0, 467 corners at level 1.
+
+### Three things this pass does not demonstrate
+
+**GEO-003 cleared its bar by 0.9 points** — 90.9 % against the 90 % the plan fixed. The paired
+form is decisive (15.2× the untouched rate over 271 samples), but the recall itself has almost
+no margin, and the automated leg's 100 % is not what a real scene gives. A run at 89 % would
+have failed, which is the point; it is worth knowing how close the real number sits.
+
+**The texture contrast GEO-001 and GEO-002 name was never exercised.** The run recorded **35**
+`TEXTURE_RICH` frames against **1140** `TEXTURE_POOR`, and the poor class carried a median of
+**68 correspondences**. So GEO-001 was decided on the run-wide judged frames rather than on a
+textured scene, and GEO-002's declines came from the baseline floor and from frames below 20
+correspondences rather than from a blank wall. Both tests measured something real and passed it
+— GEO-002's failure condition, "a verdict on a correspondence set too small for v3 §14's
+minimum", provably did not occur, per frame, via the one state function and `stateMismatches: 0`
+— but neither proved the contrast its title implies. Phase 3's FEAT-001/FEAT-002 pair did, at
+353 features against 61.
+
+**The `VIDEO_FRAME` orientation defect is still there.** Abandoned again after 1849 frames for
+`rot90`, exactly as in Phase 4; `IMAGE_BITMAP` selected, 5824/5825 successful, and the final
+alignment reading `identity` at **5.41× chance**. Contained, not fixed — and it now has two
+device runs behind it rather than one.
+
+### An evidence check that was wrong, and the bundle that caught it
+
+`committedEvidence.test.ts` asserted that no `TEXTURE_POOR` frame may report `USABLE` or `GOOD`.
+The device bundle has **655** that do, and the assertion was the thing that was wrong.
+
+It read the class as "there is nothing here to verify". The class means
+`meanGradient <= TEXTURE_POOR_CEILING`, which is a different claim — and **Phase 3's own passing
+bundle, committed before Phase 5 existed, records its texture-poor class at a median of 61
+detected features.** This run's poor class sits at 68 correspondences, in agreement. A frame can
+be texture-poor and still carry a correspondence set worth verifying, because the class
+describes what detection would find *now* while the correspondences come from the anchor tens of
+frames back and survive a pan onto a plainer surface. Verifying those is correct; declining
+would have been the dishonest answer.
+
+The check now tests what GEO-002's criterion states rather than what its title suggests. No
+criterion moved, and the finding is why the paragraph above exists.
+
+### The screen's alignment row is a per-frame reading
+
+The committed screenshot shows `OVERLAY MATCHES VIDEO: NO — flipX fits 1.4× better` in red,
+while the bundle's reading is `identity` at 5.41×, with `flipX` at 517 against identity's 1127.
+Both are true: the row shows the instantaneous frame, and on a real scene it flickers. Nothing
+was abandoned on it — `isMisoriented` requires repeated readings *with discrimination* before it
+will drop a route, which is the safeguard added at the end of Phase 4 precisely so a brick wall
+cannot cost a working route. The row is honest about the frame it read; it is not a verdict on
+the run, and a reader of the screenshot alone could mistake it for one.
 
 ### Three things this phase does not do
 

@@ -14,7 +14,7 @@ omission. The governing
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0–4 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
+**Current state: Phases 0–5 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
 committed, machine-checked evidence. Phase 3 took four device runs and each failure was a
 real defect; the passing run detected 2494 frames, scored **91.1 %** above chance, and saw
 the population fall from a median of 353 features on a textured wall to 64 on a blank one.
@@ -23,9 +23,10 @@ acquisition route really does produce a buffer turned 90° against the video on 
 alignment probe measured it after 5265 frames, and the app abandoned the route rather than
 correcting the drawing. It also passed the cross-check that separates a working tracker from
 one that returns its input — 4.741 px against an independently measured 4.000 px. **Phase 5
-(Geometric Verification) is built and green on the automated leg** — 4/4 required and 2/2
-advisory at `TESTING`, awaiting a device run. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+passed on the device on 2026-08-23** — 4/4 required and 2/2 advisory, with the run failing on
+GEO-003 and recovering before it passed; RANSAC rejected **90.9 %** of outliers the harness
+injected without telling it, against **6.0 %** of the correspondences it left alone. Phase 6
+(Relative Pose) is unlocked. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
@@ -456,7 +457,8 @@ So on a sample of frames the harness displaces 30 % of the targets by 25 px in s
 and hands the set to the verifier unmarked. Recall against that ground truth is the only figure
 in the phase a pass-through cannot produce — it scores exactly 0.00. The untouched rejection rate
 sits beside it, because recall alone is scored perfectly by rejecting everything. The automated
-leg reads **100 % of injected outliers rejected against 0 % of untouched**, over 61 frames.
+leg reads 100 % against 0 % over 61 frames; **the device read 90.9 % against 6.0 % over 271** —
+a 15.2× advantage, and 0.9 points above the bar the plan fixed before any of this was written.
 
 ### Frame-to-frame is not a baseline
 
@@ -488,9 +490,24 @@ detection's level; what had been carrying the run was six stripe boundaries movi
 frame — strong, trackable corners belonging to no surface. Both findings are the same lesson from
 opposite directions: a healthy-looking number is not evidence that the thing it names works.
 
+### What the device pass does not show
+
+Three things, recorded rather than glossed. GEO-003 cleared 90 % by **0.9 points**. The texture
+contrast GEO-001 and GEO-002 name was **never exercised** — 35 `TEXTURE_RICH` frames against
+1140 `TEXTURE_POOR`, with the poor class carrying 68 correspondences, so GEO-001 was decided
+run-wide and GEO-002's declines came from the baseline floor rather than from a blank wall. And
+`VIDEO_FRAME` produced a `rot90` buffer again, abandoned after 1849 frames.
+
+The third finding is one of this project's own checks being wrong: `committedEvidence` asserted
+that no texture-poor frame may verify, and the device bundle has 655 that do. Phase 3's passing
+bundle records *its* texture-poor class at a median of **61 detected features** — the class means
+low gradient, not an empty scene, and correspondences carried from the anchor survive a pan onto
+a plainer surface. The check tested the title rather than the criterion, and now tests the
+criterion.
+
 ## Next
 
-Phase 5's device run, and then Phase 6 — Relative Pose (v3 §15).
+Phase 6 — Relative Pose (v3 §15).
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

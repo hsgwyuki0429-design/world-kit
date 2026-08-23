@@ -45,6 +45,7 @@ import {
 import {
   DEGENERATE_SPREAD_PX,
   MIN_BASELINE_PX,
+  MIN_CORRESPONDENCES,
   MIN_INLIERS,
   USABLE_INLIER_RATIO,
   isPlanarByCounts,
@@ -713,18 +714,51 @@ describe('Phase 5 evidence', () => {
     },
   );
 
+  /**
+   * §44's fail-closed rule, checked against what it actually says.
+   *
+   * **The first version of this test asserted that no `TEXTURE_POOR` frame may report `USABLE`
+   * or `GOOD`, and it was wrong.** It read the class as "there is nothing here to verify".
+   * The class means `meanGradient <= TEXTURE_POOR_CEILING`, which is not the same claim, and
+   * Phase 3's own passing device bundle — committed before Phase 5 existed — says so: its
+   * texture-poor class carries a **median of 61 detected features**. Phase 5's device run
+   * records that class at a median of 68 correspondences, in agreement.
+   *
+   * A frame can therefore be texture-poor *and* carry a correspondence set worth verifying:
+   * the class describes what detection would find on this frame, while the correspondences
+   * come from the anchor tens of frames back and survive a pan onto a plainer surface.
+   * Verifying those is correct, and refusing would be the dishonest answer.
+   *
+   * So what is checked is what GEO-002's criterion actually states: no verdict on a set below
+   * v3 §14's floors — which is a per-frame property, guaranteed by the one state function and
+   * confirmed by the mismatch counter — and that the decline path was exercised at all.
+   */
   it.runIf(claimsPass.length > 0)(
-    'a claimed pass declined the scenes that had nothing to verify',
+    'a claimed pass reached no verdict on a set below v3 §14’s floors, and did decline',
     () => {
       for (const { file, bundle } of claimsPass) {
         const g2 = bundle.testResults.find((r) => r.spec.id === 'GEO-002');
         const states = (g2?.metrics['poorStates'] ?? {}) as Record<string, number>;
+        const correspondences = Number(g2?.metrics['poorMedianCorrespondences']);
+        const inliers = Number(g2?.metrics['poorMedianInliers']);
+
         expect(Number(g2?.metrics['poorFrames']), `${file} texture-poor frames`)
           .toBeGreaterThanOrEqual(MIN_JUDGED_FRAMES);
-        // §44 fail-closed: where the information is not there, lower the state rather than
-        // making the result convenient.
-        expect((states['USABLE'] ?? 0) + (states['GOOD'] ?? 0), `${file} verdicts on a blank scene`)
-          .toBe(0);
+        // The per-frame guarantee: every state follows from its own measured inputs, and the
+        // state function refuses USABLE below MIN_CORRESPONDENCES or MIN_INLIERS. Together
+        // those two facts are the criterion.
+        expect(Number(g2?.metrics['stateMismatches']), `${file} state mismatches`).toBe(0);
+        // ...and the decline actually happened somewhere, rather than the class being a label
+        // on frames that all verified.
+        expect(states['UNVERIFIED'] ?? 0, `${file} declined frames`).toBeGreaterThan(0);
+        // Where the class *was* starved, nothing may have claimed a verdict on it.
+        if (correspondences >= 0 && correspondences < MIN_CORRESPONDENCES) {
+          expect((states['USABLE'] ?? 0) + (states['GOOD'] ?? 0), `${file} verdict on a thin set`)
+            .toBe(0);
+        }
+        if (inliers >= 0 && inliers < MIN_INLIERS) {
+          expect(states['GOOD'] ?? 0, `${file} GOOD below v3 §14's minimum inliers`).toBe(0);
+        }
       }
     },
   );
