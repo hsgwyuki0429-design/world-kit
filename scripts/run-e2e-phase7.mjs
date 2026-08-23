@@ -121,7 +121,7 @@ try {
   // screen with six live stages behind it, because that is how Phase 6 passes. Entering cold
   // exercises a sequence no device ever takes, and §H.5 records at length what that cost two
   // Phase 3 device runs. `climbTo` presses the same controls a person presses on each rung.
-  await climbTo(page, 7, (n) => console.log(`[p7] phase ${n} running`));
+  await climbTo(page, 7, { log: (n) => console.log(`[p7] phase ${n} running`) });
 
   // Phase Lock, on the control a person would use. Phase 6 cannot pass on this leg (Rule 004),
   // so the door to Phase 7 must be shut and must say why.

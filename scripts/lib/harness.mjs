@@ -137,8 +137,19 @@ const RUNGS = [
  * it itself, because what it does on arrival — checking the Phase Lock, checking its start
  * button is pressable, logging the handover — is the part that differs and the part that
  * matters.
+ *
+ * `onRung(n, page)` is awaited after rung `n` is running, and exists for the one thing a leg
+ * legitimately does *between* rungs: Phases 3 and 4 both leave Phase 2's injected load switched
+ * on across the handover, so that the leg covers a pipeline arriving in a state the phase under
+ * test may not measure in. The first version of this function had no such hook and silently
+ * dropped that step from the Phase 4 leg — which still exited 0, because the assertion it
+ * feeds ("tracking started with N stress passes still injected") passes vacuously when nothing
+ * was ever injected. It was caught by running the old code and the new code on the same machine
+ * and finding `anyStressed` true three times out of three on one and false three out of three
+ * on the other. A step that only a subset of legs takes belongs to those legs, not to the
+ * ladder, and the hook is how they keep it.
  */
-export async function climbTo(page, target, log = () => {}) {
+export async function climbTo(page, target, { log = () => {}, onRung } = {}) {
   for (let n = 2; n < target; n++) {
     const rung = RUNGS[n];
     if (!rung) continue;
@@ -152,6 +163,7 @@ export async function climbTo(page, target, log = () => {}) {
     }
     await page.waitForFunction(rung.ready, undefined, { timeout: 25_000 });
     log(n);
+    if (onRung) await onRung(n, page);
   }
 }
 

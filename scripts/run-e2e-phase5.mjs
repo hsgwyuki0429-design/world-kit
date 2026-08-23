@@ -165,7 +165,7 @@ try {
   // Take the device's path, all the way: every phase below this one is left running,
   // because that is the state a device arrives in. `climbTo` presses the same controls a
   // person presses on each rung — reaching past them is what §H.5 records at length.
-  await climbTo(page, 5, (n) => console.log(`[p5] phase ${n} running`));
+  await climbTo(page, 5, { log: (n) => console.log(`[p5] phase ${n} running`) });
   // Phase Lock, on the control a person would use. Phase 4 cannot pass on this leg (Rule 004),
   // so the door to Phase 5 must be shut and must say why.
   const gate = await expectLocked(page, 5, 'GO TO GEOMETRIC VERIFICATION');

@@ -1246,6 +1246,60 @@ Three checks, none of which is "the tests still pass":
 3. **Every leg was re-run and its bundle compared field by field** against the committed one:
    verdicts exactly, measurements against run-to-run variance.
 
+### What check 3 found, which the other two could not
+
+**The Phase 4 leg had stopped injecting stress, and it still exited 0.**
+
+The original turned injected load on after starting the pipeline and left it on across both
+handovers, *so the leg covers a pipeline arriving in a state neither Phase 3 nor Phase 4 may
+measure in*. That step sat **between** two rungs of the ladder, and `climbTo` — which models the
+ladder as a list of rungs — had nowhere to put it. The extraction swallowed it.
+
+The leg stayed green, because the assertion it feeds (`tracking started with N stress passes
+still injected`) passes vacuously when nothing was ever injected. A check that cannot fail is not
+a check, and this one had quietly become one.
+
+Nothing in the diff showed it. What showed it was running the old code and the new code **on the
+same machine**, three times each:
+
+| | `anyStressed` | `segments` | `longestCleanSegment.index` |
+| --- | --- | --- | --- |
+| old code, 3 runs | `true`, `true`, `true` | 3, 3, 3 | 2, 2, 2 |
+| new code, 3 runs | `false`, `false`, `false` | 1, 1, 1 | 0, 0, 0 |
+
+`climbTo` now takes an `onRung(n, page)` hook, and the injection lives in the Phase 4 leg that
+wants it rather than in the shared ladder — a step only some legs take belongs to those legs. The
+fixed leg reports `anyStressed=true`, 3 segments, index 2 and `stressPasses=0`, matching the old
+code on every stress figure. The other legs were audited the same way: only Phase 3's had a
+comparable step and it survived; a structural diff of every leg's call sequence shows nothing
+else dropped.
+
+### Why the comparison needed four corners, not two
+
+The first pass compared the committed bundles against a post-refactor run and found 59–217 fields
+moved per bundle. That comparison is **confounded**: the committed bundles were captured on a
+different day, so it measures code *and* machine conditions together. Two more runs settle it:
+
+| | old code | new code |
+| --- | --- | --- |
+| **earlier conditions** | the committed bundles | — |
+| **same session** | run the old code again | two runs |
+
+- new code twice, same session → the noise floor.
+- old code vs new code, same session → the code, isolated.
+
+Held that way, phases 0–3 and 5–7 sit **at** the noise floor. A field only counts as a candidate
+if each version agrees with *itself* across its runs and the two disagree: **6 out of 771 scalar
+summaries**, on a codebase where the old code disagrees with itself on 25–62 fields per bundle.
+Three of the six were the Phase 4 stress trio above. One — `overlayAlignment.best` — produced a
+*third* value on the next run, which is the probe's own `NOT ARMED` verdict (best/random 1.06×)
+showing up as the argmax of noise.
+
+Field *counts* are a poor instrument here and were nearly misleading: the movement is dominated
+by list structures — the adaptive controller's decision sequence and `shiftCrossCheck`'s sliding
+window — where one frame of timing offset renumbers every index. Dropping list indices and
+comparing only scalar summaries is what made the six visible.
+
 An earlier attempt to prove point 1 by comparing the *source* of the extracted functions was
 abandoned: the comparison was matching multi-line chunks rather than tokens, and it reported
 differences that were line wraps. A check that cannot tell a real difference from a reformat is

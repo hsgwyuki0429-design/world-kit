@@ -80,7 +80,7 @@ try {
   // this leg used to, exercises a sequence no device ever takes, and it missed a bug that
   // made START DETECTION a no-op on every real run: the guard saw a running pipeline and
   // returned before the tracking options were ever sent.
-  await climbTo(page, 3, (n) => console.log(`[p3] phase ${n} running`));
+  await climbTo(page, 3, { log: (n) => console.log(`[p3] phase ${n} running`) });
   // Leave Phase 2's injected load on across the transition, so the leg also covers the
   // pipeline arriving in a state Phase 3 must not measure in.
   await page.evaluate(() => window.__SPATIAL_DEBUG__.setStress(true));

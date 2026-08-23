@@ -155,7 +155,17 @@ try {
   // Take the device's path, all the way: every phase below this one is left running,
   // because that is the state a device arrives in. `climbTo` presses the same controls a
   // person presses on each rung — reaching past them is what §H.5 records at length.
-  await climbTo(page, 4, (n) => console.log(`[p4] phase ${n} running`));
+  await climbTo(page, 4, {
+    log: (n) => console.log(`[p4] phase ${n} running`),
+    // Stress stays on across both handovers, so the leg covers a pipeline arriving in a state
+    // neither Phase 3 nor Phase 4 may measure in — and FLOW-006's check that tracking starts
+    // with no stress passes still injected has something to actually clear.
+    onRung: async (n) => {
+      if (n !== 2) return;
+      await page.evaluate(() => window.__SPATIAL_DEBUG__.setStress(true));
+      await page.waitForTimeout(1_000);
+    },
+  });
   // Phase Lock, on the control a person would use. Phase 3 cannot pass on this leg (Rule 004),
   // so the door to Phase 4 must be shut and must say why.
   const gate = await expectLocked(page, 4, 'GO TO TRACKING');

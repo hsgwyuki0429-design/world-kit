@@ -198,7 +198,7 @@ try {
   // Take the device's path, all the way: every phase below this one is left running,
   // because that is the state a device arrives in. `climbTo` presses the same controls a
   // person presses on each rung — reaching past them is what §H.5 records at length.
-  await climbTo(page, 6, (n) => console.log(`[p6] phase ${n} running`));
+  await climbTo(page, 6, { log: (n) => console.log(`[p6] phase ${n} running`) });
   // Phase Lock, on the control a person would use. Phase 5 cannot pass on this leg (Rule 004),
   // so the door to Phase 6 must be shut and must say why.
   const gate = await expectLocked(page, 6, 'GO TO RELATIVE POSE');
