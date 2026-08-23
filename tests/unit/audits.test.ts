@@ -54,6 +54,13 @@ describe('audit-architecture', () => {
     expect(r.out).toContain('geometry');
   });
 
+  it('rejects a fusion filter reading the sensors directly (IMU-005, §H.7)', () => {
+    const r = runAudit('scripts/audit-architecture.mjs', 'tests/fixtures/arch-src');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('ReadsTheSensor');
+    expect(r.out).toContain('fusion');
+  });
+
   it('passes over the real src/ tree', () => {
     const r = runAudit('scripts/audit-architecture.mjs', 'src');
     expect(r.code).toBe(0);
