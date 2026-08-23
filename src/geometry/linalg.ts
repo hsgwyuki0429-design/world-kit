@@ -283,3 +283,158 @@ export function normaliseFrobenius(m: readonly number[]): number[] | null {
   if (!Number.isFinite(norm) || norm < 1e-12) return null;
   return m.map((v) => v / norm);
 }
+
+/**
+ * Determinant of a 3×3, row-major.
+ *
+ * Written out rather than looped: the decompositions below use it to decide the *sign* of a
+ * rotation candidate, and a determinant that is nearly zero there means the caller is holding
+ * something that is not a rotation at all.
+ */
+export function determinant3x3(m: readonly number[]): number {
+  const [a, b, c, d, e, f, g, h, i] = [
+    m[0] ?? 0, m[1] ?? 0, m[2] ?? 0,
+    m[3] ?? 0, m[4] ?? 0, m[5] ?? 0,
+    m[6] ?? 0, m[7] ?? 0, m[8] ?? 0,
+  ];
+  return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+}
+
+export interface Svd3x3 {
+  /** Left singular vectors as a row-major 3×3, columns ordered by descending singular value. */
+  readonly u: number[];
+  /** Singular values, descending. */
+  readonly s: number[];
+  /** Right singular vectors, same column ordering. */
+  readonly v: number[];
+}
+
+/**
+ * Singular value decomposition of a 3×3, built from the Jacobi eigensolver already here.
+ *
+ * `M = U diag(s) Vᵀ`. There is no general SVD in this codebase and there does not need to be:
+ * `V` and `s²` are the eigenpairs of `MᵀM`, which is symmetric and 3×3, and each left vector
+ * follows as `uᵢ = M vᵢ / sᵢ`. Only the columns with a non-negligible singular value can be
+ * recovered that way, so the remaining one is completed as a cross product — which is exactly
+ * the case that matters here, because an Essential matrix is rank 2 by construction.
+ *
+ * The sign convention is fixed so that `det(U)` and `det(V)` are both positive wherever that is
+ * possible without changing `M`: the third columns are flipped **together**, which leaves
+ * `U diag(s) Vᵀ` unchanged when `s₃ = 0` and is what lets the callers below treat `U` and `V`
+ * as rotations. `null` when `M` is too near zero for any of this to mean anything.
+ */
+export function svd3x3(m: readonly number[]): Svd3x3 | null {
+  const mt = transpose3x3(m);
+  const mtm = multiply3x3(mt, m);
+  const { values, vectors } = symmetricEigen(mtm, 3);
+  // `symmetricEigen` returns ascending; the SVD convention is descending.
+  const order = [2, 1, 0];
+  const s: number[] = [];
+  const vCols: number[][] = [];
+  for (const k of order) {
+    const lambda = values[k] ?? 0;
+    s.push(Math.sqrt(Math.max(0, lambda)));
+    vCols.push(vectors[k] ?? [0, 0, 0]);
+  }
+  const scale = s[0] ?? 0;
+  if (!Number.isFinite(scale) || scale <= 1e-12) return null;
+
+  const uCols: (number[] | null)[] = [];
+  for (let k = 0; k < 3; k++) {
+    const vk = vCols[k] ?? [0, 0, 0];
+    // Measured on `M vₖ` itself rather than on `sₖ`, and this distinction is not pedantry — it
+    // was a real defect. `sₖ` is `sqrt` of an eigenvalue of `MᵀM`, and squaring then rooting
+    // puts the numerical zero of a rank-deficient direction somewhere around 1e-8 rather than
+    // at 0. A threshold on `sₖ` therefore lets a null direction through, `M vₖ / sₖ` divides a
+    // vector of magnitude 1e-17 by 1e-8, and the column comes back as zero — leaving `U` with a
+    // zero third column and a determinant of 0.
+    //
+    // Which is exactly what happened: an Essential matrix decomposed into four candidate poses
+    // none of which was the pose the scene was built from, while `U diag(s) Vᵀ` still
+    // reconstructed `M` perfectly, because a column multiplied by a zero singular value cannot
+    // affect the product. The reconstruction test passed throughout.
+    const mv = apply3x3(m, vk);
+    const len = norm3(mv);
+    if (len <= 1e-9 * scale) {
+      uCols.push(null);
+      continue;
+    }
+    uCols.push([(mv[0] ?? 0) / len, (mv[1] ?? 0) / len, (mv[2] ?? 0) / len]);
+  }
+
+  // Complete whichever column the rank deficiency left undetermined. For a rank-2 matrix that
+  // is the third; for anything rank-deficient in two directions there is nothing to recover.
+  const missing = uCols.map((c, i) => (c === null ? i : -1)).filter((i) => i >= 0);
+  if (missing.length > 1) return null;
+  if (missing.length === 1) {
+    const [i] = missing;
+    const others = [0, 1, 2].filter((k) => k !== i).map((k) => uCols[k] as number[]);
+    const [p, q] = others;
+    if (!p || !q) return null;
+    uCols[i as number] = cross(p, q);
+  }
+
+  const u = colsToRowMajor(uCols as number[][]);
+  const v = colsToRowMajor(vCols);
+  const flip = (m: number[], col: number): void => {
+    for (let r = 0; r < 3; r++) m[r * 3 + col] = -(m[r * 3 + col] ?? 0);
+  };
+  if (missing.length === 1) {
+    // Rank-deficient, which is the case every Essential matrix is in. The singular value on that
+    // axis is zero, so the term `sₖ uₖ vₖᵀ` contributes nothing and **either** column's sign can
+    // be flipped alone. That is what lets both `U` and `V` be returned as proper rotations here,
+    // which is what the pose decomposition needs and cannot arrange for itself.
+    const k = missing[0] as number;
+    if (determinant3x3(u) < 0) flip(u, k);
+    if (determinant3x3(v) < 0) flip(v, k);
+  } else if (determinant3x3(u) < 0 && determinant3x3(v) < 0) {
+    // Full rank: flipping one column alone would change the product. Flipping the *pair* never
+    // does — `s₃(−u₃)(−v₃)ᵀ = s₃u₃v₃ᵀ` — so both determinants can still be corrected together,
+    // and when only one is negative `det(M) < 0` and no choice of signs makes both rotations.
+    flip(u, 2);
+    flip(v, 2);
+  }
+  return { u, s, v };
+}
+
+function cross(a: readonly number[], b: readonly number[]): number[] {
+  return [
+    (a[1] ?? 0) * (b[2] ?? 0) - (a[2] ?? 0) * (b[1] ?? 0),
+    (a[2] ?? 0) * (b[0] ?? 0) - (a[0] ?? 0) * (b[2] ?? 0),
+    (a[0] ?? 0) * (b[1] ?? 0) - (a[1] ?? 0) * (b[0] ?? 0),
+  ];
+}
+
+function colsToRowMajor(cols: readonly number[][]): number[] {
+  const out = new Array<number>(9).fill(0);
+  for (let c = 0; c < 3; c++) {
+    const col = cols[c] ?? [0, 0, 0];
+    for (let r = 0; r < 3; r++) out[r * 3 + c] = col[r] ?? 0;
+  }
+  return out;
+}
+
+/** `a · b` for 3-vectors. */
+export function dot3(a: readonly number[], b: readonly number[]): number {
+  return (a[0] ?? 0) * (b[0] ?? 0) + (a[1] ?? 0) * (b[1] ?? 0) + (a[2] ?? 0) * (b[2] ?? 0);
+}
+
+export function norm3(a: readonly number[]): number {
+  return Math.sqrt(dot3(a, a));
+}
+
+/** `null` rather than a division by zero: a direction with no length is not a direction. */
+export function normalise3(a: readonly number[]): number[] | null {
+  const n = norm3(a);
+  if (!Number.isFinite(n) || n <= 1e-12) return null;
+  return [(a[0] ?? 0) / n, (a[1] ?? 0) / n, (a[2] ?? 0) / n];
+}
+
+/** `M v` for a row-major 3×3. */
+export function apply3x3(m: readonly number[], v: readonly number[]): number[] {
+  return [
+    (m[0] ?? 0) * (v[0] ?? 0) + (m[1] ?? 0) * (v[1] ?? 0) + (m[2] ?? 0) * (v[2] ?? 0),
+    (m[3] ?? 0) * (v[0] ?? 0) + (m[4] ?? 0) * (v[1] ?? 0) + (m[5] ?? 0) * (v[2] ?? 0),
+    (m[6] ?? 0) * (v[0] ?? 0) + (m[7] ?? 0) * (v[1] ?? 0) + (m[8] ?? 0) * (v[2] ?? 0),
+  ];
+}

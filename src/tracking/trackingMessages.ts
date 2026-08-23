@@ -40,6 +40,16 @@ export interface TrackingOptions {
   readonly verify: boolean;
   /** Run GEO-003's injected-outlier measurement on this frame. Costs a second RANSAC pass. */
   readonly wantInjection: boolean;
+  /**
+   * Whether to recover the relative pose (Phase 6, v3 §15).
+   *
+   * `false` in Phases 4 and 5. When `true` the worker decomposes whichever model Phase 5
+   * selected on that frame — never a fresh fit, so the pose belongs to the model the screen
+   * showed.
+   */
+  readonly pose: boolean;
+  /** Run POSE-005's injected-rotation measurement. Costs a second fit and a second decomposition. */
+  readonly wantPoseInjection: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -58,6 +68,8 @@ export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   track: false,
   verify: false,
   wantInjection: false,
+  pose: false,
+  wantPoseInjection: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -240,6 +252,105 @@ export interface VerificationReport {
   readonly injection: VerificationInjection | null;
 }
 
+/**
+ * POSE-005's measurement: a rotation the harness applied and never disclosed.
+ *
+ * `recoveredDeg` is how far the pose moved when the camera was turned by `requestedDeg`, and
+ * `controlDeg` is how far it moved when it was not. Both are needed: a stage returning a constant
+ * pose reports 0 for the first, and one returning noise reports a large number for the second.
+ */
+export interface PoseInjection {
+  readonly requestedDeg: number;
+  readonly recoveredDeg: number;
+  readonly controlDeg: number;
+  readonly axis: readonly number[];
+  /** An image-space rotation preserves incidence, so the fit should find the same inliers. */
+  readonly inliersBefore: number;
+  readonly inliersAfter: number;
+  readonly planarBefore: boolean;
+  readonly planarAfter: boolean;
+  /** The same two, for the control — the noise floor of refitting the same data. */
+  readonly controlInliers: number;
+  readonly controlPlanar: boolean;
+  readonly seed: number;
+}
+
+/** v3 §15's matrix, and the flag v3 §15 requires beside it when it could not be measured. */
+export interface IntrinsicsRecord {
+  readonly fx: number;
+  readonly fy: number;
+  readonly cx: number;
+  readonly cy: number;
+  readonly width: number;
+  readonly height: number;
+  /** `INTRINSICS: ESTIMATED`. Safari exposes no focal length, so this is never false. */
+  readonly estimated: boolean;
+  readonly assumedFovDeg: number;
+}
+
+/** One term of v3 §19's confidence, named and valued so the number can be taken apart. */
+export interface ConfidenceTermRecord {
+  readonly name: string;
+  readonly value: number;
+  readonly note: string;
+}
+
+export interface CheiralityRecord {
+  readonly candidate: number;
+  readonly inFront: number;
+  readonly rotationDeg: number;
+}
+
+/** How far the pose moves when the assumed focal length is scaled — see `intrinsics.ts`. */
+export interface PoseSensitivity {
+  readonly focalFactor: number;
+  readonly rotationDeg: number;
+  /** Angle between the translation directions. `-1` when there was no translation to compare. */
+  readonly translationDeg: number;
+}
+
+/** One frame of Phase 6: v3 §15's chain, and the terms v3 §19 asks to be attached to it. */
+export interface PoseReport {
+  readonly frames: number;
+  /** `NO_POSE` / `ROTATION_ONLY` / `POSE`, from the one shared pure function. */
+  readonly state: string;
+  readonly stateReason: string;
+  /** Which model was decomposed — v3 §16 sends a planar scene to the homography. */
+  readonly source: string | null;
+  readonly rotationDeg: number;
+  readonly axis: readonly number[] | null;
+  /** §18: quaternion preferred. Euler angles are not produced at all. */
+  readonly quaternion: readonly number[] | null;
+  /** Unit direction, or `null`. Never a distance — v4 §18 forbids assuming a metre. */
+  readonly translation: readonly number[] | null;
+  readonly scale: string;
+  readonly planeNormal: readonly number[] | null;
+  readonly intrinsics: IntrinsicsRecord | null;
+  /** Every candidate's count, so the choice among them is auditable rather than asserted. */
+  readonly cheirality: readonly CheiralityRecord[];
+  readonly chosen: number;
+  /** Candidates cheirality could not separate — what v3 §16's translation penalty is derived from. */
+  readonly unseparatedCandidates: number;
+  readonly ambiguous: boolean;
+  readonly pointsInFront: number;
+  readonly correspondences: number;
+  readonly reprojectionErrorPx: number;
+  /** What rotation alone leaves unexplained: the parallax a translation would account for. */
+  readonly rotationOnlyResidualPx: number;
+  readonly rotationJumpDeg: number;
+  readonly planar: boolean;
+  readonly confidence: number;
+  readonly rotationConfidence: number;
+  /** v3 §16's "Translation confidenceを低下させる", as a number beside the rotation's. */
+  readonly translationConfidence: number;
+  readonly confidenceTerms: readonly ConfidenceTermRecord[];
+  /** Named omissions — v3 §19's `IMU consistency` is withheld on purpose. */
+  readonly confidenceWithheld: readonly string[];
+  readonly sensitivity: PoseSensitivity | null;
+  readonly poseMs: number;
+  readonly injection: PoseInjection | null;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -293,6 +404,14 @@ export interface TrackingResult {
    * let the screen show an inlier ratio from one frame beside a population from another.
    */
   readonly verification: VerificationReport | null;
+  /**
+   * Phase 6's frame, or `null` when pose recovery is not running.
+   *
+   * On the same message as Phase 5's for the same reason Phase 5's rides with Phase 4's: they
+   * describe one frame. A rotation reported beside an inlier ratio from a different frame would
+   * be two measurements of two moments presented as one pose.
+   */
+  readonly pose: PoseReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

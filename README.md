@@ -14,7 +14,7 @@ omission. The governing
 constraint is that no number is displayed that was not measured, and no phase is declared
 passed on anything but real-device evidence.
 
-**Current state: Phases 0–4 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
+**Current state: Phases 0–5 `PASSED` on iPhone / iOS 18.7 / Safari 26.6 over HTTPS, with
 committed, machine-checked evidence. Phase 3 took four device runs and each failure was a
 real defect; the passing run detected 2494 frames, scored **91.1 %** above chance, and saw
 the population fall from a median of 353 features on a textured wall to 64 on a blank one.
@@ -23,16 +23,17 @@ acquisition route really does produce a buffer turned 90° against the video on 
 alignment probe measured it after 5265 frames, and the app abandoned the route rather than
 correcting the drawing. It also passed the cross-check that separates a working tracker from
 one that returns its input — 4.741 px against an independently measured 4.000 px. **Phase 5
-(Geometric Verification) is built and green on the automated leg** — 4/4 required and 2/2
-advisory at `TESTING`, awaiting a device run. See
-[`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+passed on the device on 2026-08-23** — 4/4 required and 2/2 advisory, with the run failing on
+GEO-003 and recovering before it passed; RANSAC rejected **90.9 %** of outliers the harness
+injected without telling it, against **6.0 %** of the correspondences it left alone. Phase 6
+(Relative Pose) is unlocked. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
 npm test          # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
-npm run test:e2e  # automated DESKTOP_DEV legs for Phases 0-5, with evidence and screenshots
+npm run test:e2e  # automated DESKTOP_DEV legs for Phases 0-6, with evidence and screenshots
 npm run dev       # HTTPS dev server (required for camera and motion on a phone)
 ```
 
@@ -212,6 +213,9 @@ docs/
   phase5/TEST-PLAN.md            GEO-001..006, written before the code
   phase5/HOW-TO-RUN-DEVICE-TEST.md
   phase5/evidence/
+  phase6/TEST-PLAN.md            POSE-001..007, written before the code
+  phase6/HOW-TO-RUN-DEVICE-TEST.md
+  phase6/evidence/
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock)
   capture/       CapabilityDetector, MotionCapabilityProbe, RotationRateMonitor,
@@ -219,14 +223,16 @@ src/
   debug/         Logger, EvidenceRecorder, OverlayAlignmentProbe
   pipeline/      tiers, pyramid maths, AdaptiveController, PipelineMetrics,
                  WorkerFramePipeline
-  geometry/      linalg (Jacobi eigen), twoView (F and H), ransac, verify —
+  geometry/      linalg (Jacobi eigen + SVD), twoView (F and H), ransac, verify,
+                 rotation, intrinsics, pose (E/H decomposition, cheirality) —
                  pure array arithmetic; may import nothing but core (audited)
   tracking/      trackingWorker (preprocessing + detection + flow + verification),
                  FeatureDetector, FeaturePopulation, LucasKanade, SceneShift,
                  FlowTracker, FlowStage, FlowSession, trackingState,
-                 VerificationStage, VerificationSession, types and messages
-  testkit/       Phase0Tests..Phase5Tests
-  ui/            Phase0Screen..Phase5Screen, PreviewVideo, styles
+                 VerificationStage, VerificationSession, PoseStage, PoseSession,
+                 poseConfidence, gyroRotation, types and messages
+  testkit/       Phase0Tests..Phase6Tests
+  ui/            Phase0Screen..Phase6Screen, PreviewVideo, styles
   mapping/ world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e*
 ```
@@ -456,7 +462,8 @@ So on a sample of frames the harness displaces 30 % of the targets by 25 px in s
 and hands the set to the verifier unmarked. Recall against that ground truth is the only figure
 in the phase a pass-through cannot produce — it scores exactly 0.00. The untouched rejection rate
 sits beside it, because recall alone is scored perfectly by rejecting everything. The automated
-leg reads **100 % of injected outliers rejected against 0 % of untouched**, over 61 frames.
+leg reads 100 % against 0 % over 61 frames; **the device read 90.9 % against 6.0 % over 271** —
+a 15.2× advantage, and 0.9 points above the bar the plan fixed before any of this was written.
 
 ### Frame-to-frame is not a baseline
 
@@ -488,9 +495,68 @@ detection's level; what had been carrying the run was six stripe boundaries movi
 frame — strong, trackable corners belonging to no surface. Both findings are the same lesson from
 opposite directions: a healthy-looking number is not evidence that the thing it names works.
 
+### What the device pass does not show
+
+Three things, recorded rather than glossed. GEO-003 cleared 90 % by **0.9 points**. The texture
+contrast GEO-001 and GEO-002 name was **never exercised** — 35 `TEXTURE_RICH` frames against
+1140 `TEXTURE_POOR`, with the poor class carrying 68 correspondences, so GEO-001 was decided
+run-wide and GEO-002's declines came from the baseline floor rather than from a blank wall. And
+`VIDEO_FRAME` produced a `rot90` buffer again, abandoned after 1849 frames.
+
+The third finding is one of this project's own checks being wrong: `committedEvidence` asserted
+that no texture-poor frame may verify, and the device bundle has 655 that do. Phase 3's passing
+bundle records *its* texture-poor class at a median of **61 detected features** — the class means
+low gradient, not an empty scene, and correspondences carried from the anchor survive a pan onto
+a plainer surface. The check tested the title rather than the criterion, and now tests the
+criterion.
+
+## What Phase 6 does
+
+Phase 6 — Relative Pose (**v3 §15, §16, §19, §67**, which v4 compresses into a two-line §18) —
+recovers the camera's rotation and the *direction* it moved in, by decomposing whichever model
+Phase 5 verified. No distance: `LOCAL_UNITS`, always, and ‖t‖ is 1 because it was normalised.
+Green on the automated leg at `TESTING`; `PASSED` needs the device.
+
+### The first phase where the automated leg is short of an instrument
+
+Rule 004 already meant a desktop bundle could not pass. Here one of the two things the phase is
+scored against — **the gyroscope** — does not exist on headless Chromium, so POSE-002 cannot be
+decided anywhere but the device. Rule 004 expressed as a measurement rather than as a policy.
+
+### The number that carries it
+
+Applying `K·Rⱼ·K⁻¹` to the second view is *exactly* the camera having turned by `Rⱼ`. The
+harness does that with a known 8°, hands the set over unmarked, re-runs the whole chain, and
+checks the recovered rotation moved by that much. **A stage returning the same pose on every
+frame scores 0.00°** — while having a valid rotation matrix, a unit translation, a small
+reprojection error and a *perfect* temporal stability. v3 §67's pass condition names exactly
+that: Poseが計算結果により変化. The leg reads **8.000° against 0.003° for the control**.
+
+### Two defects the unit tests found before any leg ran
+
+`svd3x3` returned a **zero third column** — `s₃` is the square root of an eigenvalue of `MᵀM`, so
+the numerical zero of a null direction lands near 1e-8, and `M v₃ / s₃` divided 1e-17 by 1e-8.
+The Essential decomposition then had no translation axis: one scene recovered exactly, the same
+scene turned by 4° came back 60° wrong. `U diag(s) Vᵀ` reconstructed the matrix perfectly
+throughout, so the reconstruction test could not have caught it.
+
+And **cheirality was asked before the question it presupposes**: triangulation needs a baseline,
+so a camera that only turned scored zero points in front on every candidate and was reported
+`NO_POSE` — a pose refused for having no translation, which is the one case where a rotation is
+perfectly recoverable.
+
+### POSE-001's spread criterion was withdrawn, with the measurement
+
+Driven over a straight-line translation the real solver reports 100% cheirality, 0 px
+reprojection and a direction spread of **exactly 0°** — because the camera moved in a straight
+line. There is no threshold separating that from a fixed vector; they are the same measurement.
+The spread is reported and not judged, and the tests now assert that the constant-pose stage
+**passes POSE-001** and fails POSE-005 alone.
+
 ## Next
 
-Phase 5's device run, and then Phase 6 — Relative Pose (v3 §15).
+Phase 6's device run, and then Phase 7 — IMU Support / Fusion (v3 §17, §18), where the
+gyroscope stops being Phase 6's witness and becomes an input.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

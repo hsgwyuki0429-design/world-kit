@@ -153,12 +153,13 @@ describe('implemented phases', () => {
     expect(isPhaseImplemented(3)).toBe(true);
     expect(isPhaseImplemented(4)).toBe(true);
     expect(isPhaseImplemented(5)).toBe(true);
-    // Phase 6 (Relative Pose) has not been written. This assertion is the tripwire that makes
-    // someone update the set deliberately rather than letting the UI offer a screen that does
-    // not exist — it has fired for Phases 2, 3, 4 and 5 in turn, each time on the phase whose
+    expect(isPhaseImplemented(6)).toBe(true);
+    // Phase 7 (IMU Support / Fusion) has not been written. This assertion is the tripwire that
+    // makes someone update the set deliberately rather than letting the UI offer a screen that
+    // does not exist — it has fired for Phases 2 through 6 in turn, each time on the phase whose
     // screen was about to be added.
-    expect(isPhaseImplemented(6)).toBe(false);
-    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(isPhaseImplemented(7)).toBe(false);
+    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 });
 

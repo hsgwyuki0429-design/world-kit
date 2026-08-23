@@ -134,8 +134,13 @@ v4 compresses all five into three short sections (§18, §19). What v3 stated an
   on a planar scene produces a degenerate pose that looks fine. Phase 6 implements it.
 - **§18 EKF** — the fused state (position, velocity, orientation, gyroBias, accelBias) and
   "Quaternion優先, Euler角だけで長時間Pose管理しない".
-- **§19 Pose Confidence** — the eight inputs confidence may be derived from, and 不確実なPoseを
-  強制的に高confidenceにしない.
+- **§19 Pose Confidence** — **seven** candidate inputs, quoted here because Phase 6 implements
+  six of them and has to be able to say which one it left out: `inlier ratio`,
+  `reprojection error`, `tracked feature count`, `feature distribution`, `IMU consistency`,
+  `temporal stability`, `model consistency`. Plus the prohibition 不確実なPoseは強制的に高
+  confidenceにしない. (An earlier revision of this file said "eight"; v3 §19 lists seven.)
+  Phase 6 withholds `IMU consistency` on purpose — it is the instrument POSE-002 scores the
+  phase with, and a confidence that consumed it could not then be checked against it.
 
 ### v3 §20 — Keyframe conditions
 
