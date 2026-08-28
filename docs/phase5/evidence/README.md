@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | `phase5-real-device-PASSED-2026-08-23T01-09-36-993Z.json` | `REAL_DEVICE` | **Yes** — 4/4 required, 2/2 advisory |
 | `phase5-real-device-PASSED-2026-08-23T01-09-36-993Z.jpg` | `REAL_DEVICE` | The screen from that run |
+| `phase5-real-device-FAILED-2026-08-28T13-29-58-564Z.json` | `REAL_DEVICE` | No — GEO-002 and GEO-003, and both instruments were wrong. See below |
 | `phase5-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004) |
 | `phase5-desktop-chromium.png` | `DESKTOP_DEV` | No — the screen at the end of that run |
 
@@ -138,3 +139,54 @@ mean gradient 14.0, 467 corners.
 Both of these are the same lesson from opposite directions: a number that looks healthy is not
 evidence that the thing it names is working, and the only way to tell is an instrument that
 cannot see what it is scoring.
+
+## The 2026-08-28 run, which failed two records the verifier had satisfied
+
+Kept because it corrected both instruments, and because neither defect was reachable from the
+automated leg — the leg's synthetic feed offers 144 correspondences a frame, and every one of
+these findings is about what happens when a real room offers far fewer.
+
+### GEO-002 — a median asked a question about every frame
+
+Reported: *24 texture-poor frame(s) reported USABLE or GOOD on a median of 14 correspondences,
+below the 20 needed.* They had not. 570 texture-poor frames, 59 judgeable, **546 UNVERIFIED**
+— and they were UNVERIFIED *because* they were under the threshold, which is exactly the
+behaviour GEO-002 exists to confirm and exactly what pulled the class median to 14. The 23
+USABLE and 1 GOOD each had their own counts, above the floor.
+
+Two things in the same bundle prove it independently: `stateMismatches: 0`, so every state
+agreed with the counts beside it; and `deriveVerificationState` returns UNVERIFIED
+unconditionally below 20 correspondences or 30 inliers, so those verdicts could not have been
+what the reason claimed. The criterion said *every frame* from the day it was written; the
+check compared an average. §H.7, one phase before the section that names it.
+
+### GEO-003 — an injection floor that made criterion 4 unmeetable
+
+Reported: median recall **0.871** against 0.90 — while rejecting the injected outliers at
+**12.4×** the rate of untouched ones. A verifier that fails to discriminate does not score 12×.
+
+Criterion 1 admitted any frame with `MIN_CORRESPONDENCES` — 20. Criterion 4 requires the
+surviving inlier count to still reach 30. Displacing 30 % of a set of `n` leaves at most
+`n − round(0.3n)` untouched, which does not reach 30 until **n = 43**. Between 20 and 43 the
+record was asking for something arithmetic forbids, and the samples show the cost:
+
+| correspondences | recall | surviving inliers |
+| --- | --- | --- |
+| 51 | **1.000** | 36 |
+| 42 | 0.923 | 26 |
+| 36 | 0.727 | 25 |
+| 31 | 0.778 | 20 |
+| 31 | 0.667 | 19 |
+
+On 31 correspondences with 9 displaced, drawing eight untouched points for the eight-point
+minimal sample has probability (22/31)⁸ ≈ **0.06** — RANSAC spends its iteration budget hunting
+a clean subset a larger set would hand it at once. A fact about sample size, not about the
+verifier. The floor is computed in the code from `MIN_INLIERS` and `OUTLIER_INJECTION_FRACTION`
+now; the 0.90 is untouched.
+
+### The 2026-08-23 pass stands under both corrections
+
+Its texture-poor median was 68 correspondences, so the median check never fired and the
+per-frame count is 0 either way. Its injections ran on sets of 59 at a recall of 1.00, above
+the new floor, and excluding smaller sets can only raise a median recall that was already 90.9 %.
+Both changes move the verdict in one direction only, and not this one.

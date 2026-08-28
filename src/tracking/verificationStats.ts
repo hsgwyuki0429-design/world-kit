@@ -26,6 +26,16 @@ export interface VerificationClassStats {
   readonly unverified: number;
   readonly usable: number;
   readonly good: number;
+  /**
+   * Frames of this class that reached a verdict on evidence too thin for one — fewer than
+   * `MIN_CORRESPONDENCES` correspondences or fewer than `MIN_INLIERS` inliers, and a state
+   * other than `UNVERIFIED`. GEO-002's criterion is *every frame*, so it is counted per frame:
+   * a median over the class cannot answer it, and the device run of 2026-08-28 failed the
+   * phase because it was asked to (§H.7).
+   */
+  readonly verdictOnThinEvidence: number;
+  /** ...and of those, the ones that reported `GOOD`. */
+  readonly goodOnThinEvidence: number;
 }
 
 export const EMPTY_VERIFICATION_CLASS: VerificationClassStats = {
@@ -39,6 +49,8 @@ export const EMPTY_VERIFICATION_CLASS: VerificationClassStats = {
   unverified: 0,
   usable: 0,
   good: 0,
+  verdictOnThinEvidence: 0,
+  goodOnThinEvidence: 0,
 };
 
 /** One GEO-003 measurement, kept for the evidence. */

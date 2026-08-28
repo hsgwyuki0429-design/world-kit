@@ -829,6 +829,40 @@ will drop a route, which is the safeguard added at the end of Phase 4 precisely 
 cannot cost a working route. The row is honest about the frame it read; it is not a verdict on
 the run, and a reader of the screenshot alone could mistake it for one.
 
+### 2026-08-28: a second device run failed two records, and both instruments were wrong
+
+`docs/phase5/evidence/phase5-real-device-FAILED-2026-08-28T13-29-58-564Z.json`. Neither defect
+was reachable from the automated leg, whose synthetic feed offers 144 correspondences a frame;
+both are about what a real room offers when it offers little.
+
+**GEO-002 — a median cannot answer a question about every frame.** Reported: *24 texture-poor
+frame(s) reported USABLE or GOOD on a median of 14 correspondences.* They had not. Of 570
+texture-poor frames, **546 were UNVERIFIED — because they were under the threshold**, which is
+the behaviour the record exists to confirm, and which is what dragged the class median to 14.
+The bundle disproves the reason twice over: `stateMismatches: 0`, and
+`deriveVerificationState` returns UNVERIFIED unconditionally below 20 correspondences or 30
+inliers, so those verdicts could not have been what the reason said. The criterion has said
+*every one of those frames* since before any Phase 5 code existed; the check compared an
+average. §H.7, a phase earlier than the section that names it. Counted per frame now.
+
+**GEO-003 — an injection floor that made its own criterion 4 unmeetable.** Reported: median
+recall **0.871** against 0.90 — while rejecting the injected outliers at **12.4×** the rate of
+untouched ones, which is not a verifier failing to discriminate. Criterion 1 admitted any frame
+with 20 correspondences; criterion 4 requires the surviving inliers to still reach 30; and
+displacing 30 % of `n` leaves at most `n − round(0.3n)` untouched, which does not reach 30 until
+**n = 43**. Between 20 and 43 the record asked for what arithmetic forbids, and that is exactly
+where the recall fell — 1.000 at 51 correspondences, 0.923 at 42, then 0.727, 0.778, 0.667 at 36
+and 31. On 31 with 9 displaced, drawing eight untouched points for the minimal sample has
+probability (22/31)⁸ ≈ 0.06, so RANSAC spends its budget hunting a clean subset. The floor is
+computed from `MIN_INLIERS` and `OUTLIER_INJECTION_FRACTION` now, with the same rounding the
+injection uses. **The 0.90 is untouched**, and so are criteria 3, 4 and 5.
+
+**The 2026-08-23 pass stands under both corrections**, and checkably: its texture-poor median
+was 68 correspondences so the per-frame count is 0 either way, and its injections ran on sets of
+59 at a recall of 1.00 — excluding smaller sets can only raise a median that was already 90.9 %.
+Both changes move a verdict in one direction, and not this one. A device run under the corrected
+instruments would confirm it and is worth taking.
+
 ### Three things this phase does not do
 
 - **No pose.** `Pose candidate` is the last step of v3 §14's chain and belongs to §15, which is

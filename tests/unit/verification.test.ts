@@ -36,7 +36,11 @@ import {
 import { GeometricModel } from '../../src/geometry/twoView';
 import type { Correspondence } from '../../src/geometry/twoView';
 import { VerificationSession } from '../../src/tracking/VerificationSession';
-import { runPhase5Tests } from '../../src/testkit/Phase5Tests';
+import { runPhase5Tests, MIN_OUTLIER_RECALL } from '../../src/testkit/Phase5Tests';
+import {
+  MIN_INJECTABLE_CORRESPONDENCES,
+  OUTLIER_INJECTION_FRACTION,
+} from '../../src/tracking/VerificationStage';
 import type { TrackingResult, VerificationReport } from '../../src/tracking/trackingMessages';
 import type { VerificationStats } from '../../src/tracking/verificationStats';
 
@@ -209,6 +213,7 @@ function withInjection(
   return {
     ...report,
     injection: {
+      correspondences: n,
       injected: chosen.size,
       clean: cleanCount,
       injectedRejected,
@@ -568,6 +573,92 @@ describe('a scene with too few correspondences', () => {
     });
     expect(outcome.stats.texturePoor.usable + outcome.stats.texturePoor.good).toBe(0);
     expect(verdictOf(outcome.results, 'GEO-002')).toBe(Verdict.PASS);
+  });
+});
+
+describe('a texture-poor stretch that is mostly declined — the device case', () => {
+  /*
+   * The device run of 2026-08-28 failed GEO-002 on this, and every verdict in it was sound.
+   *
+   * It saw 570 texture-poor frames, 59 of them judgeable, with a **median of 14
+   * correspondences** and 23 USABLE plus 1 GOOD. GEO-002 reported "24 texture-poor frame(s)
+   * reported USABLE or GOOD on a median of 14 correspondences".
+   *
+   * They did not. The median is over the whole class, and 546 of those frames were UNVERIFIED
+   * precisely *because* they were under the threshold — which is the behaviour GEO-002 exists
+   * to confirm, and it is what dragged the median down. `stateMismatches` was 0, so every
+   * state agreed with its own inputs, and `deriveVerificationState` cannot return USABLE below
+   * 20 correspondences or 30 inliers at all. The criterion says **every frame**; the check
+   * compared an average. §H.7.
+   */
+  const session = new VerificationSession();
+  for (let i = 0; i < 60; i++) {
+    // Four frames in five are genuinely too thin, and the verifier declines them. One in five
+    // has plenty. The class median lands below the threshold; not one verdict is unearned.
+    const count = i % 5 === 0 ? 90 : 12;
+    const pts = scene({ seed: 0x2000 + i, count });
+    session.record(frameFor(reportFor(pts, 0xbc0 + i), SceneTexture.POOR), i * 33);
+  }
+  const stats = session.stats(true);
+  const results = runPhase5Tests({
+    cameraState: CameraState.LIVE,
+    pipelineEverStarted: true,
+    verificationEverRan: true,
+    stats,
+  });
+
+  it('reproduces the device: a class median under the threshold, every verdict earned', () => {
+    expect(stats.texturePoor.medianCorrespondences).toBeLessThan(MIN_CORRESPONDENCES);
+    expect(stats.texturePoor.usable + stats.texturePoor.good).toBeGreaterThan(0);
+    expect(stats.texturePoor.unverified).toBeGreaterThan(stats.texturePoor.usable);
+    expect(stats.stateMismatches).toBe(0);
+  });
+
+  it('counts no frame as having reached a verdict on thin evidence, because none did', () => {
+    expect(stats.texturePoor.verdictOnThinEvidence).toBe(0);
+    expect(stats.texturePoor.goodOnThinEvidence).toBe(0);
+  });
+
+  it('passes GEO-002 — the declining is the behaviour, not the defect', () => {
+    expect(verdictOf(results, 'GEO-002')).toBe(Verdict.PASS);
+  });
+});
+
+describe('GEO-003’s injection floor', () => {
+  /*
+   * Also from the 2026-08-28 device run, which failed GEO-003 at a median recall of 0.871
+   * against the 0.9 required — while rejecting the injected outliers **12.4x** more often than
+   * the untouched ones. The verifier was discriminating; the sets it was asked to do it on were
+   * too small for the question.
+   */
+  it('is the smallest set on which GEO-003’s own criteria can all hold at once', () => {
+    const survivable = (n: number): number => n - Math.max(1, Math.round(n * OUTLIER_INJECTION_FRACTION));
+    // At the floor the corrupted frame can still reach v3 §14's minimum; one point below it
+    // cannot, however perfectly RANSAC performs — so a criterion asking for both is unmeetable.
+    expect(survivable(MIN_INJECTABLE_CORRESPONDENCES)).toBeGreaterThanOrEqual(MIN_INLIERS);
+    expect(survivable(MIN_INJECTABLE_CORRESPONDENCES - 1)).toBeLessThan(MIN_INLIERS);
+    // And it is above the gate the injection used to run on, which is the defect.
+    expect(MIN_INJECTABLE_CORRESPONDENCES).toBeGreaterThan(MIN_CORRESPONDENCES);
+  });
+
+  it('is where the recall actually collapses, measured on the real verifier', () => {
+    const medianRecallAt = (count: number): number => {
+      const out: number[] = [];
+      for (let i = 0; i < 21; i++) {
+        const pts = scene({ seed: 0x7000 + i, count });
+        const r = withInjection(reportFor(pts, 0x900 + i), pts, 0x5500 + i, reportFor);
+        if (r.injection && r.injection.injectedRecall >= 0) out.push(r.injection.injectedRecall);
+      }
+      out.sort((a, b) => a - b);
+      return out[Math.floor(out.length / 2)] ?? -1;
+    };
+    // Above the floor the real verifier clears the criterion comfortably.
+    expect(medianRecallAt(MIN_INJECTABLE_CORRESPONDENCES + 20)).toBeGreaterThanOrEqual(
+      MIN_OUTLIER_RECALL,
+    );
+    // Below it, on the sets the old gate admitted, it does not — and that is a fact about
+    // eight-point RANSAC on a small contaminated set, not about this verifier.
+    expect(medianRecallAt(MIN_CORRESPONDENCES + 11)).toBeLessThan(MIN_OUTLIER_RECALL);
   });
 });
 
