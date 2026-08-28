@@ -50,6 +50,15 @@ export interface TrackingOptions {
   readonly pose: boolean;
   /** Run POSE-005's injected-rotation measurement. Costs a second fit and a second decomposition. */
   readonly wantPoseInjection: boolean;
+  /**
+   * Whether to keep keyframes (Phase 8, v3 §20).
+   *
+   * `false` in Phases 4–7. When `true` the worker also maintains the keyframe store, which is a
+   * **second** long-lived structure beside Phase 5's verification anchor rather than a
+   * replacement for it — Phases 5 and 6 passed on the device with that anchor and editing a
+   * passed phase is not a fix. See `docs/phase8/TEST-PLAN.md`.
+   */
+  readonly keyframes: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -70,6 +79,7 @@ export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   wantInjection: false,
   pose: false,
   wantPoseInjection: false,
+  keyframes: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -454,6 +464,124 @@ export interface FusionReport {
   readonly fusionMs: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Phase 8 — keyframe system                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** One of v3 §20's conditions, as it crosses the boundary. */
+export interface KeyframeConditionRecord {
+  readonly name: string;
+  readonly value: number;
+  readonly threshold: number;
+  readonly unit: string;
+  /** `MEASURED` / `UNMEASURED` / `UNAVAILABLE`. An `UNMEASURED` condition never fires. */
+  readonly state: string;
+  readonly fired: boolean;
+  readonly note: string;
+}
+
+/**
+ * The decision's inputs, carried verbatim beside its answer.
+ *
+ * Rule 002, for the fifth phase running: `KeyframeSession` calls the same `decideKeyframe` on
+ * this and compares. A selector that inserted on a timer and labelled the record `ROTATION`
+ * would satisfy every count in Phase 8 and be caught here — which only works if the inputs
+ * travel with the answer rather than being summarised into it.
+ */
+export interface KeyframeDecisionRecord {
+  readonly at: number;
+  readonly observations: number;
+  readonly hasPrevious: boolean;
+  readonly sinceLastMs: number;
+  readonly rotationDeg: number;
+  readonly displacementPx: number;
+  readonly inlierRatio: number;
+  readonly previousInlierRatio: number;
+  readonly trackingState: string;
+  readonly previousTrackingState: string;
+}
+
+/** A stored keyframe, summarised for the boundary — the observations stay in the worker. */
+export interface KeyframeRecord {
+  readonly id: number;
+  readonly at: number;
+  readonly frameIndex: number;
+  readonly reason: string;
+  readonly observations: number;
+  readonly intrinsics: IntrinsicsRecord;
+  readonly rotationFromPreviousDeg: number;
+  readonly displacementFromPreviousPx: number;
+  readonly translationDirectionDeg: number;
+  readonly droppedIncrements: number;
+  readonly inlierRatio: number;
+  readonly trackedFeatures: number;
+  readonly trackingState: string;
+  readonly poseConfidence: number;
+  /** Fraction of this keyframe's observations still being tracked. Never a function of age. */
+  readonly survivingFraction: number;
+  readonly stale: boolean;
+}
+
+export interface KeyframeEvictionRecord {
+  readonly keyframeId: number;
+  readonly reason: string;
+  readonly detail: string;
+  readonly survivingFraction: number;
+  /** Median pairwise separation of the set this policy kept, px... */
+  readonly retainedSeparationPx: number;
+  /** ...and of the set dropping the oldest would have kept. KEY-003's counterfactual. */
+  readonly oldestFirstSeparationPx: number;
+}
+
+/**
+ * One frame of Phase 8: what was decided, from what, and what the store holds now.
+ *
+ * `metronomeInserted` is the twin's answer on the same frame. On a moving camera the two
+ * selectors agree often enough to look alike; on a camera that is not moving they do not, and
+ * KEY-002 is exactly that difference.
+ */
+export interface KeyframeReport {
+  readonly frames: number;
+  readonly decisions: number;
+  readonly inserted: boolean;
+  /** `FIRST` / `ROTATION` / `DISPLACEMENT` / `QUALITY` / `HEARTBEAT`, or a refusal. */
+  readonly reason: string;
+  readonly detail: string;
+  readonly conditions: readonly KeyframeConditionRecord[];
+  readonly input: KeyframeDecisionRecord;
+  /** Features in this view, and how many of them the last usable keyframe also holds. */
+  readonly observations: number;
+  readonly sharedWithLast: number;
+  /** Which keyframe this decision was measured against. `-1` where there is none. */
+  readonly partnerKeyframeId: number;
+  /**
+   * Whether that partner is stale — KEY-006's second criterion, as a value rather than a promise.
+   *
+   * The stage takes the newest **usable** keyframe rather than the newest, so this should be
+   * `false` whenever a partner exists. It is reported so that "a stale keyframe is not used as
+   * the comparison partner" is something the evidence says rather than something the code claims.
+   */
+  readonly partnerStale: boolean;
+  /** Observation ids that repeated within one keyframe. Must be 0 — the ids are run-unique. */
+  readonly duplicateObservationIds: number;
+  /** Phase 4's own independent classification of this frame's motion — KEY-002's instrument. */
+  readonly frameMotion: string;
+  readonly keyframes: number;
+  readonly totalInserted: number;
+  readonly totalEvictions: number;
+  readonly evicted: KeyframeEvictionRecord | null;
+  readonly staleKeyframes: number;
+  /** Increments dropped across a Phase 5 re-anchor since the last keyframe — a named gap. */
+  readonly droppedIncrements: number;
+  readonly reAnchorsSinceKeyframe: number;
+  /** v4 §18, carried as a value a later phase has to remove deliberately. */
+  readonly scale: string;
+  readonly metronomeInserted: boolean;
+  readonly metronomeKeyframes: number;
+  readonly recent: readonly KeyframeRecord[];
+  readonly keyframeMs: number;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -515,6 +643,14 @@ export interface TrackingResult {
    * be two measurements of two moments presented as one pose.
    */
   readonly pose: PoseReport | null;
+  /**
+   * Phase 8's frame, or `null` when the keyframe store is not running.
+   *
+   * On the same message as Phases 4, 5 and 6's, for the reason each of those rides with the one
+   * before it: they describe one frame. A keyframe decision reported beside a pose from a
+   * different frame would be a decision about a view nobody took.
+   */
+  readonly keyframe: KeyframeReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

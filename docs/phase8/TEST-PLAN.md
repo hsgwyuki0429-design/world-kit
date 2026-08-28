@@ -134,12 +134,30 @@ each keyframe's observations by feature id — the ids `FlowTracker` assigns are
 life of the run — and measures the median displacement of the ids the two views share. That is a
 net displacement between exactly the two views in question, and it needs no anchor.
 
-**Why the rotation is accumulated rather than read.** Phase 6's rotation is measured from Phase
+**Why the rotation is assembled rather than read.** Phase 6's rotation is measured from Phase
 5's anchor, and across a re-anchor two such rotations have different origins and their difference
-means nothing — the same problem `FusionStage` documents for its visual increments, and it is
-solved the same way: per-frame increments composed into a rotation since the last keyframe, and
-the increment spanning a re-anchor **dropped** rather than differenced. Dropped increments are
-counted and reported, because a run that dropped many has a rotation figure that understates.
+means nothing — the same problem `FusionStage` documents for its visual increments. So the total
+is assembled **per anchor epoch**: within one epoch it is `conj(q_at_keyframe) · q_now`, one
+composition however many frames have passed, and the epochs are chained by one composition each
+at the re-anchor. What crossing a re-anchor loses is one *frame's* rotation, and those are counted
+and reported, because a run that dropped many has a rotation figure that understates.
+
+> **Amendment, 2026-08-28 — recorded before the device leg ran, with the measurement that forced
+> it.** The paragraph above first said *per-frame increments composed into a rotation since the
+> last keyframe*, copying `FusionStage`. **That is wrong over this phase's interval**, and the
+> automated leg found it: composing noisy increments is a random walk, and on the leg's lateral
+> pan — where the true rotation is zero throughout — the accumulated angle reached v3 §20's 10°
+> and fired `ROTATION` **seven times while Phase 4's own scene-shift search was reporting that
+> the image was not moving at all**. It failed KEY-002 for the right reason.
+>
+> Phase 7 composes over one second and is unaffected. Phase 8 composes over up to five, and the
+> difference is the length of the interval rather than the correctness of the arithmetic. The
+> per-epoch assembly above composes once per re-anchor instead of once per frame; the same leg
+> now fires `ROTATION` none, and KEY-002's static ratio came to 12.75×.
+>
+> **No criterion changed.** KEY-002's second criterion said no geometric insertion on a still
+> camera before the measurement and says it after. What changed is the implementation it was
+> measuring, which is the outcome a test plan written first is for.
 
 ---
 

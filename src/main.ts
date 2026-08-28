@@ -31,6 +31,7 @@ import { runPhase4Tests, PHASE4_SPECS } from './testkit/Phase4Tests';
 import { runPhase5Tests, PHASE5_SPECS } from './testkit/Phase5Tests';
 import { runPhase6Tests, PHASE6_SPECS } from './testkit/Phase6Tests';
 import { runPhase7Tests, PHASE7_SPECS } from './testkit/Phase7Tests';
+import { runPhase8Tests, PHASE8_SPECS } from './testkit/Phase8Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
 import { VerificationSession } from './tracking/VerificationSession';
@@ -45,8 +46,10 @@ import { renderPhase4Screen } from './ui/Phase4Screen';
 import { renderPhase5Screen } from './ui/Phase5Screen';
 import { renderPhase6Screen } from './ui/Phase6Screen';
 import { renderPhase7Screen } from './ui/Phase7Screen';
+import { renderPhase8Screen } from './ui/Phase8Screen';
 import { FusionStage } from './tracking/FusionStage';
 import { FusionSession } from './tracking/FusionSession';
+import { KeyframeSession } from './tracking/KeyframeSession';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -80,6 +83,7 @@ const PHASE5 = 5;
 const PHASE6 = 6;
 const PHASE7 = 7;
 const PHASE8 = 8;
+const PHASE9 = 9;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -103,9 +107,12 @@ const PHASE5_TICK_MS = 500;
 const PHASE6_TICK_MS = 500;
 /** Same reasoning as every screen before it: re-render for a human, not for every frame. */
 const PHASE7_TICK_MS = 500;
+/** ...and for the KEYFRAME SYSTEM screen. */
+const PHASE8_TICK_MS = 500;
 
 type Screen =
-  | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7';
+  | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7'
+  | 'phase8';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -239,6 +246,24 @@ class Phase0App {
    */
   private readonly fusionStage = new FusionStage(Date.now());
   private readonly fusion = new FusionSession();
+  /**
+   * Phase 8's own "am I running", for the sixth time and for the same reason (§H.5).
+   *
+   * Seven stages are live when the KEYFRAME SYSTEM screen opens — camera, pipeline, detector,
+   * tracker, verifier, pose, fusion — because that is how Phase 7 passes. A predicate assembled
+   * from any of them says "keeping" before the store has been started.
+   */
+  private keyframesRequested = false;
+  private keyframesEverRan = false;
+  private phase8Results: TestResult[] = [];
+  private phase8Bundle: EvidenceBundle | null = null;
+  private phase8DevEntry = false;
+  /**
+   * The accumulator. The store itself lives in the worker, beside the population it observes —
+   * a keyframe is a set of feature positions, and shipping them to the main thread to decide
+   * about them would put a structured clone of the population on every frame's message.
+   */
+  private readonly keyframes = new KeyframeSession();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
   private alignment: AlignmentReading | null = null;
@@ -516,6 +541,37 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase8') {
+      const p = this.pipeline.getStats();
+      renderPhase8Screen(
+        this.root,
+        {
+          phase8: this.registry.get(PHASE8),
+          phase9: this.registry.get(PHASE9),
+          canEnterPhase9: this.registry.canEnter(PHASE9),
+          phase9Implemented: isPhaseImplemented(PHASE9),
+          phase9BlockedReason: this.registry.blockedReason(PHASE9),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          // The one predicate, read by the control, the tests and the evidence alike (§H.5).
+          running: this.isKeepingKeyframes(),
+          stats: this.keyframes.stats(this.isKeepingKeyframes()),
+          sourceWidth: p.sourceWidth,
+          sourceHeight: p.sourceHeight,
+          results: this.phase8Results,
+        },
+        {
+          onStart: () => void this.onStartPhase8(),
+          onStop: () => this.onStopPhase8('user stopped the keyframe store'),
+          onBack: () => this.leavePhase8(),
+          onEnterPhase9: () => this.enterPhase9(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase8Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase8Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase7') {
       renderPhase7Screen(
         this.root,
@@ -1248,6 +1304,9 @@ class Phase0App {
       this.fusionStage.notePose(result.pose, result.verification?.reAnchored ?? false, now);
       this.fusion.record(this.fusionStage.report(now, result.pose), now);
     }
+    // Phase 8's decision is taken in the worker, where the population is. What arrives here is
+    // the decision and the inputs it was taken from, so the session can re-derive it.
+    if (result.keyframe) this.keyframes.record(result.keyframe);
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -1997,15 +2056,232 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 8 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase8(): boolean {
-    logger.warn(PHASE8, 'App', 'refused entry to Phase 8', {
-      reason: isPhaseImplemented(PHASE8)
-        ? this.registry.blockedReason(PHASE8)
-        : 'Phase 8 has not been written in this build',
+  /* ---------------------------------------------------------------------- */
+  /* Phase 8 — Keyframe System                                               */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Whether the keyframe store is actually running.
+   *
+   * §H.5 for the sixth time, and from one predicate: the store asked for AND a pipeline running
+   * to serve it. Seven stages are already live when this screen opens, so a predicate assembled
+   * from any of them says "keeping" before the store has been started, and the control built
+   * from it cannot be pressed.
+   */
+  private isKeepingKeyframes(): boolean {
+    return this.keyframesRequested && this.pipeline.isRunning();
+  }
+
+  /**
+   * What the tracking stage is asked to do while Phase 8 is running.
+   *
+   * `keyframes: true` on top of Phase 6's whole configuration, unchanged — including the two
+   * injections, which keep running because Phase 8's decisions are taken from the pose and the
+   * verification those injections are measuring. Turning them off here would change the numbers
+   * Phase 8 is deciding on relative to the ones Phases 5 and 6 passed with.
+   */
+  private keyframeOptions(): TrackingOptions {
+    return { ...this.poseOptions(), keyframes: true };
+  }
+
+  /** Enter the KEYFRAME SYSTEM screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase8(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE8)) {
+      logger.warn(PHASE8, 'App', 'refused entry to Phase 8', {
+        reason: 'Phase 8 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE8)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE8, 'App', 'refused entry to Phase 8', {
+          reason: this.registry.blockedReason(PHASE8),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase8DevEntry = true;
+      logger.warn(PHASE8, 'App', 'Phase 8 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    // Phase 7's tick refreshes the tracking options twice a second; left running it would keep
+    // clearing `keyframes` from under Phase 8.
+    this.stopPhase7Ticking();
+    this.screen = 'phase8';
+    if (this.registry.get(PHASE8).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE8, PhaseState.IMPLEMENTING, 'KEYFRAME SYSTEM screen opened');
+    }
+    this.evaluatePhase8();
+    this.render();
+    return true;
+  }
+
+  /**
+   * MUST be reached from the click handler: the camera needs the user gesture.
+   *
+   * The camera is normally already open — this screen is reached from Phase 7's, which cannot
+   * pass without it. The IMU is left exactly as Phase 7 arranged it: Phase 8 consumes no
+   * sensor, and re-requesting the motion permission here would be a second prompt for nothing.
+   */
+  private async onStartPhase8(): Promise<void> {
+    if (this.cameraOpening || this.keyframesRequested) return;
+
+    this.keyframes.reset();
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE8, 'CameraSource', `the keyframe store could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and the store does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase8();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE8, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and the store still starts; if no frames arrive the tests ' +
+            'stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      logger.info(PHASE8, 'App', 'adopted the running Phase 7 stack', {
+        note: 'the camera, worker, population, anchor, pose options and filter stay as they ' +
+          'are. Phase 8 decides which of the views Phase 6 recovers are worth keeping and ' +
+          'changes nothing about how they are recovered',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.keyframeOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.keyframesRequested = true;
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.keyframesEverRan = true;
+      this.startPhase8Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase8();
+    this.render();
+  }
+
+  private onStopPhase8(reason: string): void {
+    this.stopPhase8Ticking();
+    this.keyframesRequested = false;
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.fusionRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase8();
+    this.render();
+  }
+
+  private leavePhase8(): void {
+    this.onStopPhase8('left the KEYFRAME SYSTEM screen');
+    this.screen = 'phase7';
+    this.render();
+  }
+
+  /** Phase 9 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase9(): boolean {
+    logger.warn(PHASE9, 'App', 'refused entry to Phase 9', {
+      reason: isPhaseImplemented(PHASE9)
+        ? this.registry.blockedReason(PHASE9)
+        : 'Phase 9 has not been written in this build',
     });
     return false;
   }
+
+  private startPhase8Ticking(): void {
+    this.startTicking(PHASE8, PHASE8_TICK_MS, () => {
+      this.pipeline.setTrackingOptions(this.keyframeOptions());
+      this.probeAlignment();
+      this.evaluatePhase8();
+      this.render();
+    });
+  }
+
+  private stopPhase8Ticking(): void {
+    this.stopTicking(PHASE8);
+  }
+
+  private evaluatePhase8(): void {
+    this.phase8Results = runPhase8Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      keyframesEverRan: this.keyframesEverRan,
+      stats: this.keyframes.stats(this.isKeepingKeyframes()),
+    });
+
+    this.applyPhase(PHASE8, this.phase8Results, (verdict, reason) =>
+      this.buildPhase8Evidence(verdict, reason),
+    );
+  }
+
+  private buildPhase8Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE8,
+      phaseName: PHASE_NAMES[PHASE8] ?? 'Keyframe System',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase8Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phases 4, 5, 6 and 7 travel in the Phase 8 bundle because Phase 8's inputs are their
+        // outputs: a keyframe decision means nothing without the pose it was taken on and the
+        // verified model that pose was decomposed from.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        pose: this.pose.describe(),
+        fusion: this.fusion.describe(),
+        keyframes: this.keyframes.describe(),
+        devEntry: this.phase8DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase8Bundle = this.keepBundle(PHASE8, built);
+  }
+
 
   private startPhase7Ticking(): void {
     this.startTicking(PHASE7, PHASE7_TICK_MS, () => {
@@ -2709,6 +2985,16 @@ class Phase0App {
       getPhase7Evidence: () => this.phase7Bundle,
       getPhase7EvidenceJson: () => (this.phase7Bundle ? serialiseEvidence(this.phase7Bundle) : null),
       getPhase7State: () => this.registry.get(PHASE7),
+
+      phase8Specs: PHASE8_SPECS,
+      enterPhase8: (devOverride = false) => this.enterPhase8(devOverride),
+      leavePhase8: () => this.leavePhase8(),
+      /** Read-only, as for Phases 4–7: the leg presses `#start-keyframes` in the DOM. */
+      getKeyframeStats: () => this.keyframes.stats(this.isKeepingKeyframes()),
+      getPhase8Results: () => this.phase8Results,
+      getPhase8Evidence: () => this.phase8Bundle,
+      getPhase8EvidenceJson: () => (this.phase8Bundle ? serialiseEvidence(this.phase8Bundle) : null),
+      getPhase8State: () => this.registry.get(PHASE8),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

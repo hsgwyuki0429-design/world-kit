@@ -42,9 +42,19 @@ const FORBIDDEN = {
     from: ['game', 'renderer', 'ui', 'world'],
     why: 'tracking feeds mapping; a back-edge from world or the UI would invert the pipeline.',
   },
+  // Phase 8 tightens this one. §83 had `mapping` forbidden only from its consumers, on the
+  // grounds that it writes to `world`. That is still true and is not enough: the keyframe
+  // selector, the triangulator and the landmark map are the stages Phases 8, 9 and 10 are
+  // scored against, and each is scored against something the harness makes and does not
+  // disclose — a metronome running on the same stream, a synthetic pair with known depths,
+  // observations displaced by a known amount. A module able to reach `tracking` could read the
+  // population it is deciding about; one able to reach `testkit` could read the answer. So it
+  // takes numbers and returns structures, exactly as `geometry` and `fusion` do.
   mapping: {
-    from: ['game', 'renderer', 'ui'],
-    why: 'mapping writes to world; it must not read from its consumers.',
+    from: ['game', 'renderer', 'ui', 'world', 'capture', 'pipeline', 'tracking', 'debug', 'testkit'],
+    why: 'the keyframe selector, the triangulator and the landmark map are the stages Phases ' +
+      '8, 9 and 10 test. Reaching the tracker, the camera or the test kit would let one of ' +
+      'them see the ground truth it is being scored against (§H.7, KEY-002, TRI-004, MAP-005).',
   },
   // Phase 5 adds this one, and it is the strictest rule in the table on purpose. The two-view
   // solvers are the stage under test in Phase 5, and GEO-003 scores them against outliers the

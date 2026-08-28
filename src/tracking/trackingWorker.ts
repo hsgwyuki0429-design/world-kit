@@ -34,6 +34,7 @@ import { GRID_CELLS, featureStateFor } from './featureTypes';
 import { FlowStage } from './FlowStage';
 import { VerificationStage } from './VerificationStage';
 import { PoseStage } from './PoseStage';
+import { KeyframeStage } from './KeyframeStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -86,6 +87,15 @@ const flowStage = new FlowStage(detector, refillDetector);
 const verificationStage = new VerificationStage();
 /** Phase 6. Decomposes the model Phase 5 selected on this frame, never a fresh fit of its own. */
 const poseStage = new PoseStage();
+/**
+ * Phase 8. Keeps the keyframe store beside Phase 5's anchor rather than in place of it.
+ *
+ * The anchor is what Phases 5 and 6 passed on the device with, and editing a passed phase is not
+ * a fix. The two structures answer different questions: the anchor is one slot re-taken on
+ * displacement so that *this frame* has a two-view partner, and the store is thirty views chosen
+ * on v3 §20's conditions so that the *room* has a set of viewpoints.
+ */
+const keyframeStage = new KeyframeStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -306,6 +316,7 @@ function runTracking(
       flowStage.reset();
       verificationStage.reset();
       poseStage.reset();
+      keyframeStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -321,6 +332,7 @@ function runTracking(
     flowStage.reset();
     verificationStage.reset();
     poseStage.reset();
+    keyframeStage.reset();
     flowActive = false;
   }
 
@@ -414,6 +426,7 @@ function runTracking(
     flowAge: null,
     verification: null,
     pose: null,
+    keyframe: null,
   };
 }
 
@@ -460,7 +473,22 @@ function runFlow(
     trackedFeatures: result.flow?.tracked ?? 0,
     wantInjection: options.wantPoseInjection,
   });
-  return { ...result, verification: outcome.report, pose };
+  if (!options.keyframes) return { ...result, verification: outcome.report, pose };
+
+  // Phase 8 decides on the same frame, from the same three reports the screen shows. A decision
+  // taken from one frame's pose beside another frame's population would be a decision about a
+  // view nobody took.
+  const keyframe = keyframeStage.process({
+    at: performance.now(),
+    frameIndex: flowStage.getTracker().getFrameIndex(),
+    tracker: flowStage.getTracker(),
+    width: p.levels[0]?.width ?? 0,
+    height: p.levels[0]?.height ?? 0,
+    pose,
+    verification: outcome.report,
+    flow: result.flow,
+  });
+  return { ...result, verification: outcome.report, pose, keyframe };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

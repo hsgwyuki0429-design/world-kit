@@ -128,6 +128,10 @@ const RUNGS = [
     ready: () => window.__SPATIAL_DEBUG__.getVerificationStats().verifiedFrames > 3 },
   { enter: 'enterPhase6', start: { dom: '#start-pose' },
     ready: () => window.__SPATIAL_DEBUG__.getPoseStats().poseFrames > 0 },
+  { enter: 'enterPhase7', start: { dom: '#start-fusion' },
+    ready: () => window.__SPATIAL_DEBUG__.getFusionStats().fusionFrames > 0 },
+  { enter: 'enterPhase8', start: { dom: '#start-keyframes' },
+    ready: () => window.__SPATIAL_DEBUG__.getKeyframeStats().decisions > 0 },
 ];
 
 /**

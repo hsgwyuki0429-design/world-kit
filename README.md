@@ -244,11 +244,14 @@ src/
                  FlowTracker, FlowStage, FlowSession, trackingState,
                  VerificationStage, VerificationSession, PoseStage, PoseSession,
                  poseConfidence, gyroRotation, FusionStage, FusionSession,
-                 fusionConfidence, types and messages
-  testkit/       Phase0Tests..Phase7Tests, runTests (the shape all eight share)
-  ui/            Phase0Screen..Phase7Screen, dom (el/card/stat/formatters),
+                 fusionConfidence, KeyframeStage, KeyframeSession, types and messages
+  mapping/       keyframes (v3 §20's selector, the bounded store and the metronome it is
+                 scored against) — same rule as geometry and fusion: numbers in,
+                 structures out, may import nothing but core and geometry (audited)
+  testkit/       Phase0Tests..Phase8Tests, runTests (the shape all nine share)
+  ui/            Phase0Screen..Phase8Screen, dom (el/card/stat/formatters),
                  phaseSections (the tests/evidence/navigation cards), PreviewVideo, styles
-  mapping/ world/ renderer/ game/   empty — later phases
+  world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e*,
                  lib/ (the leg harness: serve, launch, the phase ladder, the Y4M feed)
 ```
@@ -624,9 +627,62 @@ no visual updates at all, a true (0.4, −0.9, 0.2) °/s came back as (0.400, �
 injected twin's difference as 2.9996 °/s on the injected axis. The criteria did not change; what
 changed is the reasoning printed beside them, recorded in place with the measurement (§29).
 
+## What Phase 8 does
+
+Phase 8 — Keyframe System (**v3 §20**, which v4 §20 compresses into two lines and no conditions)
+— decides which views are worth keeping, keeps at most thirty of them, and lets go of the ones
+that have stopped describing anything.
+
+v3 §20 gives four conditions, a minimum interval and a maximum. **Phase 8 implements three of the
+four and refuses the second**, because *relative translation ≥ 0.10 local unit* is a **magnitude**
+and Phase 6 recovers a unit direction with `SCALE: LOCAL_UNITS`. It is carried in every decision
+record as `UNMEASURED` with the missing scale named — a value a later phase has to remove
+deliberately, exactly as Phase 7 carries `POSITION: UNAVAILABLE` — and the refusal carries a
+number: the angle the translation *direction* moved, which is measurable. What fires in its place
+is v3 §20's own third condition, the median displacement of the features the two views share.
+
+The anti-fake gate is **KEY-002**, and it is needed because a **metronome** passes almost
+everything else in the phase: its intervals are legal, its store stays bounded, its keyframes
+carry observations and intrinsics, and on a moving camera its views are as well separated as
+anyone's — because on a moving camera *any* schedule produces separated views. So a metronome runs
+inside the app beside the real selector, on the same frames, firing as often as the real one is
+allowed to, and the measurement is the difference between the two counts **over the frames where
+the camera is not moving**.
+
+Whether the camera is moving is not decided by Phase 8. It is Phase 4's own scene-shift search —
+an exhaustive integer search that shares no code with the tracker and never sees the feature list
+— reporting `STATIC` below 1 px of image motion. A phase that classified its own test conditions
+would be marking its own paper.
+
+### The leg decides the whole required suite, which is new
+
+Phase 7's leg was the first to decide one required record. Phase 8's decides all six, because the
+instruments are a still segment and a metronome and the harness can produce both: the feed holds
+for seven seconds in the middle of a pan. On the committed run the selector kept **4** views over
+319 static decisions, all of them the five-second heartbeat, where a metronome would have kept
+**51** — 12.75×. Rule 004 is untouched and means what it always meant.
+
+### Three defects the leg found before any device saw the code
+
+**A re-derivation that rounds its inputs is checking the formatter.** `sinceLastMs` was rounded to
+a tenth of a millisecond on its way into the record, `499.99999999999955` became `500`, and Rule
+002's re-derivation then disagreed with the stage on every decision that landed on v3 §20's
+minimum interval — 30 of them in a 32-second fixture.
+
+**Composing a per-frame increment over five seconds is a random walk.** The rotation since the last
+keyframe was first accumulated the way `FusionStage` accumulates its visual increments. Phase 7
+composes over one second and is unaffected; Phase 8 composes over up to five, and on the leg's
+lateral pan — true rotation zero throughout — the accumulated angle reached 10° and fired
+`ROTATION` **seven times while the image was not moving**. It is now assembled per anchor epoch,
+one composition per re-anchor rather than per frame.
+
+**And a cost that measured the fixture.** The eviction record carries the retained set's spread
+beside the counterfactual, and the first version built one observation index per pair — 435 of
+them — putting the mean at 1.67 ms against this phase's own 1.0 ms ceiling. §H.8, again.
+
 ## Next
 
-Phase 8 — Keyframe System (v3 §20), once Phase 7 has a device run behind it.
+Phase 9 — Triangulation (v4 §21), once Phase 8 has a device run behind it.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

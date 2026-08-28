@@ -21,7 +21,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
 | 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
-| 8 | Keyframe System | BLOCKED | |
+| 8 | Keyframe System | TESTING | Built. The automated leg **decides all six required records** — the instruments are a still segment and a metronome, and the harness makes both. Awaiting the device run. |
 | 9 | Triangulation | BLOCKED | |
 | 10 | Landmark Map | BLOCKED | |
 | 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
@@ -1177,6 +1177,112 @@ as zeros for the matching reason: a phone on a table reports a real `[0, 0, 0]` 
   gave: the state is computed in `FlowStage` from what Phase 4 measures, and plumbing a later
   phase's quantity into a passed phase's state machine is a change to Phase 4. `goodBlockedBy`
   continues to name what is missing.
+
+## Phase 8 — TESTING
+
+Built. `docs/phase8/TEST-PLAN.md` was committed before any Phase 8 code existed (§29), and the
+automated leg is green: `docs/phase8/evidence/phase8-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands. `docs/phase8/HOW-TO-RUN-DEVICE-TEST.md` is that run,
+and the one thing it asks of the person holding the phone is unusual: **stand still for ten
+seconds**.
+
+### The first leg in this project to decide a phase's whole required suite
+
+Phase 7's leg decided one required record, because v3 §68's pass condition was about an absence
+headless Chromium is permanently in. Phase 8's decides all six, for a different reason: the two
+instruments this phase is scored against are **a camera that is not moving** and **a metronome**,
+and the harness can produce both. The feed holds still for seven seconds in the middle of a pan;
+the metronome runs inside the app, on the same frames, beside the real selector.
+
+Rule 004 is untouched, and it is not a formality here. The leg's "still" is a synthetic frame
+repeated exactly, and a hand-held phone is not still — Phase 4's search will often call it `SLOW`.
+The leg's population runs to several hundred points; the device's ran to **41** in a dim room
+(§H.8). Both change what the store holds and how fast it goes stale.
+
+### Two of v3 §20's six numbers, and one refusal with a measurement behind it
+
+| v3 §20 | Phase 8 | |
+| --- | --- | --- |
+| rotation ≥ 10° | implemented | assembled per anchor epoch — see below |
+| translation ≥ 0.10 local unit | **refused** | it is a magnitude; Phase 6 gives a unit direction |
+| median displacement ≥ 30 px | implemented | over the features the two views **share**, by id |
+| tracking quality changed | implemented | §33's state, or v3 §14's own usable→GOOD band |
+| minimum interval 0.5 s | implemented | |
+| maximum interval 5 s | implemented | the heartbeat a still camera still owes the store |
+
+The refusal is Phase 7's shape one phase along: `TRANSLATION: UNMEASURED` is carried as a
+**value** in every decision record rather than as an absent field, so a later phase that acquires
+a scale has to remove it deliberately. And it carries a number — the angle the translation
+*direction* moved, which *is* measurable — because a refusal with a number behind it is a finding
+and a refusal with a citation behind it is an assertion.
+
+### The instrument, and what a metronome scores on everything else
+
+| | this selector | a metronome |
+| --- | --- | --- |
+| v3 §20's intervals | held | held |
+| the 30-keyframe bound | held | held |
+| observations and intrinsics per keyframe | carried | carried |
+| keyframes on a **moving** camera | well separated | well separated |
+| keyframes over 319 **static** decisions | **4**, all heartbeats | **51** |
+
+12.75× on the committed run. Everything above that last row is satisfied by a program that reads
+a clock and nothing else.
+
+### Three defects the leg found before any device saw the code
+
+**A re-derivation that rounds its inputs is checking the formatter.** KEY-001's second criterion
+re-derives every decision from the inputs recorded beside it — the Rule 002 check Phases 4–7 all
+carry. The first version rounded `sinceLastMs` to a tenth of a millisecond on its way into the
+record, `499.99999999999955` became `500`, and the re-derivation then disagreed with the stage on
+**every decision that landed on v3 §20's minimum interval**: 30 of them in a 32-second unit
+fixture. The recorded inputs are now the decision's inputs to the bit.
+
+**Composing a per-frame increment over five seconds is a random walk.** The rotation since the
+last keyframe was first accumulated the way `FusionStage` accumulates its visual increments,
+`conj(q_prev) · q_cur` every frame. Phase 7 composes over one second and is unaffected; Phase 8
+composes over up to five, and on the leg's lateral pan — where the true rotation is zero
+throughout — the accumulated angle reached v3 §20's 10° and fired `ROTATION` **seven times while
+Phase 4's own scene-shift search was reporting that the image was not moving at all.** It failed
+KEY-002 for exactly the right reason. The rotation is now assembled per anchor epoch: one
+composition however many frames have passed, and one more at each re-anchor. The same leg fires it
+none, and the amendment is recorded in place in the plan (§29).
+
+**And a cost that measured the fixture rather than the platform.** Every eviction records the
+retained set's median pairwise separation beside what dropping the oldest would have given — the
+counterfactual KEY-003's fifth criterion reads. The first version built one observation index per
+pair, 435 of them over a several-hundred-point population, and the mean keyframe cost came to
+1.67 ms against this phase's own 1.0 ms ceiling. Indexing each keyframe once brings it inside.
+§H.8, for the second time.
+
+### What the store does when it is full, and why not the oldest
+
+The bound is §H.1's 30. When it is full, what goes is a **stale** keyframe if there is one —
+fewer than a quarter of its observations still tracked, which is v4 §20's *古い情報* made
+measurable and is deliberately not a function of age — and otherwise the **most redundant
+viewpoint**, the one whose nearest neighbour is nearest. Never the oldest: dropping the oldest
+turns a store that describes the room into one that describes the last fifteen seconds, which is
+the failure §56's bound would otherwise cause rather than prevent.
+
+That policy also went through a correction. It first scored a candidate by the sum of its two
+neighbour gaps — the gap its removal would leave — which on a camera panning in one direction is
+the same number for every interior keyframe, because the separations add along the path. Its only
+real effect was to favour the endpoints, whose missing side counted as a zero. The nearest
+neighbour decides now, the merged gap breaks ties, and an unmeasurable side is `Infinity` rather
+than `0`: two keyframes sharing no features are not in the same place, they are not comparable.
+
+### Four things this phase does not do
+
+- **No relocalisation.** v3 §21 is a later phase; a keyframe store is one of its inputs.
+- **No keyframe imagery.** §H.1 budgets 30 downscaled grayscale frames at ≈16 MB for a relocaliser
+  that does not exist yet. Phases 8, 9 and 10 need the observations and the pose; storing pixels
+  nothing reads would be carrying data no test can check. Recorded so the phase that needs them
+  adds them deliberately.
+- **No bundle adjustment.** §27 puts it every ≥ 10 keyframes and it belongs to the phase that has
+  a map to adjust.
+- **No change to Phase 5's anchor.** It is a documented one-slot stand-in for this phase and it is
+  what Phases 5 and 6 passed on the device with. The store is a second structure beside it.
 
 ---
 
