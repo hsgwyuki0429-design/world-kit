@@ -139,8 +139,14 @@ net displacement between exactly the two views in question, and it needs no anch
 means nothing — the same problem `FusionStage` documents for its visual increments. So the total
 is assembled **per anchor epoch**: within one epoch it is `conj(q_at_keyframe) · q_now`, one
 composition however many frames have passed, and the epochs are chained by one composition each
-at the re-anchor. What crossing a re-anchor loses is one *frame's* rotation, and those are counted
-and reported, because a run that dropped many has a rotation figure that understates.
+at the re-anchor. What crossing a re-anchor loses is the turn between the last view of the old
+epoch and the first of the new, which no report measures; those are counted and reported, because
+a run that dropped many has a rotation figure that understates. On a **still** camera that gap is
+most of the epoch — the anchor is re-taken from the current frame, the two views collapse to no
+baseline, and Phase 6 recovers nothing until something moves — so the chaining is done on frames
+with no pose as well as on frames with one, and a pose Phase 6 flags `ambiguous` is declined
+rather than accumulated. Both of those are amendments; both are recorded under KEY-002, with the
+measurements that forced them.
 
 > **Amendment, 2026-08-28 — recorded before the device leg ran, with the measurement that forced
 > it.** The paragraph above first said *per-frame increments composed into a rotation since the
@@ -174,6 +180,9 @@ and reported, because a run that dropped many has a rotation figure that underst
 | `sinceLastMs` | for the minimum and maximum interval |
 | `keyframes` | the store's size, its evictions, and each eviction's reason |
 | `staleKeyframes` | keyframes whose observations no longer reach `STALE_SURVIVAL_FRACTION` |
+| `intervalStatic` | whether *every* frame since the last keyframe was still — KEY-002's subject |
+| `poseState`, `poseAmbiguous`, `poseRotationConfidence`, `poseUnseparatedCandidates` | what Phase 6 said about the pose this decision was taken beside |
+| `droppedIncrements`, `ambiguousPosesDeclined` | rotation the accumulator could not take: lost across a re-anchor, and refused because Phase 6 flagged it |
 | `metronome` | what a fixed-interval selector would have inserted from the same stream |
 
 ---
@@ -206,14 +215,83 @@ v4 §20's *有効な視点*, tested from the side that separates a selector from
   metronome firing at `MIN_KEYFRAME_INTERVAL_MS` inserts one every half second.
 - **Pass criteria:** all of —
   1. ≥ `MIN_JUDGED_DECISIONS` decisions were taken while the scene was static;
-  2. **no** insertion during that segment carried a geometric reason;
+  2. **no** insertion fired on a geometric condition over an interval in which nothing moved;
   3. the metronome twin inserted at least **5×** as many keyframes over the same decisions —
      which is what `MAX_KEYFRAME_INTERVAL_MS / MIN_KEYFRAME_INTERVAL_MS = 10` allows, halved so
      the criterion is met by a selector that is right rather than by one that is lucky;
   4. the two selectors saw the same inputs, and the record says so by carrying both counts.
-- **Failure condition:** a keyframe inserted on a still camera for a geometric reason; or a
-  count equal to the metronome's, which is a metronome.
+- **Failure condition:** a keyframe inserted for a geometric reason when nothing moved between it
+  and the previous one; or a count equal to the metronome's, which is a metronome.
 - **Excluded if:** the run contains no static segment. Reported `PENDING` with that reason.
+
+> **Amendment, 2026-08-28 — narrowed, with the measurement that forced it and before any device
+> leg ran.** Criterion 2 first read *no insertion **during that segment** carried a geometric
+> reason*, counted per frame. That is too literal, and the automated leg found it: on one run in
+> five it failed with **two `ROTATION` insertions on frames Phase 4 classified `STATIC`**.
+>
+> They were correct insertions. A geometric condition is accumulated over the **interval** since
+> the last keyframe, not measured on the frame it fires on — a view 30 px from the last keyframe
+> is 30 px from it whether or not the image happens to be still at the instant v3 §20's minimum
+> interval elapses, and a rotation that accumulated while the camera turned does not un-accumulate
+> when it stops. Firing at that boundary is the selector doing its job.
+>
+> What cannot honestly happen is a geometric condition firing when **nothing moved between the two
+> views at all**, and that is what the criterion asks now. The record carries both counts, so the
+> boundary insertions stay visible rather than being defined away: on the failing run, 2 landed on
+> a still frame and 0 had a still interval behind them.
+>
+> This does not weaken what KEY-002 is for. A metronome inserting through a sustained still
+> segment is caught by it exactly as before — `tests/unit/keyframes.test.ts` drives one and it
+> still fails this record — and criterion 3's ratio is untouched.
+>
+> **It also leaves a residual**, which the amendment below measures. Narrowing the criterion did
+> not make the leg green, and the cause was not what this paragraph first guessed.
+
+> **Second amendment, 2026-08-28 — the residual, measured. The criterion did not change; the
+> stage did.** With criterion 2 narrowed to the interval, the automated leg still failed about two
+> runs in six — now with `ROTATION` firing over intervals in which **nothing moved at all**, which
+> is precisely what this record exists to forbid. The paragraph above guessed the residual was
+> accumulated noise. Guessing is not what this project does about a failing test, so the record was
+> given the pose context beside each violation and the leg was run until it failed again:
+>
+> ```
+> [p8] still-interval violation: ROTATION on 18.2051° / 0 px after 529 ms, 231 shared,
+>      0 dropped increment(s) across 0 re-anchor(s); pose POSE, ambiguous true,
+>      rotationConfidence 0.5693, 2 unseparated candidate(s)
+> ```
+>
+> 18.2051° accumulated over 529 ms, on a lateral pan where the true rotation is zero, with the
+> image still and 231 features shared between the two views. **No re-anchor was crossed**, so
+> nothing was dropped and no epoch was chained — neither of the two amendments above is the
+> explanation. And **every** violation, on every failing run, carried `ambiguous: true` with two
+> unseparated candidates.
+>
+> That flag is Phase 6 saying it could not tell. On a static image the correspondences stop
+> changing, cheirality stops separating the essential matrix's four decompositions, and the
+> recovered rotation **alternates between two of them** — here about 18° apart, which is v3
+> §20's 10° threshold crossed twice over by an artefact rather than by a camera. Phase 6 reports
+> the pose it picked *and* flags the ambiguity in the same message; Phase 8 was reading the first
+> field and ignoring the second.
+>
+> **The fix is in the stage, not in this plan.** `KeyframeStage.advanceRotation` now declines a
+> pose flagged `ambiguous`: the accumulator holds at its last settled value, which is what
+> "nothing new is known" looks like, and `ambiguousPosesDeclined` travels in every record so a
+> reader can see how much of a run was declined rather than measured. This is v4 §25 —
+> 低Confidenceの情報は、ゲーム生成やCollisionで重要度を下げるか使用禁止にする — applied one layer
+> earlier than §25 names it: a confidence the layer below publishes is only worth publishing if
+> the layer above acts on it.
+>
+> Six consecutive legs then passed, where the same leg had been failing about two in six. The
+> committed evidence carries the numbers: 377 static decisions, 128 of them over intervals in which
+> nothing moved, **0** geometric insertions over those intervals, 73 poses declined, and a
+> metronome ratio of 13×.
+>
+> **This is the criterion holding, not the criterion being loosened to fit.** Criterion 2 is
+> unchanged from the amendment above, and it is what caught this: a stage that accumulates a
+> rotation the layer below refused to stand behind fails KEY-002, which is the right verdict.
+> Declining is not free either, and the record says so — an interval spent entirely in ambiguity
+> accumulates no rotation, so a real turn taken during one is under-reported by that much, and
+> `ambiguousPosesDeclined` is what makes that visible instead of silent.
 
 ### KEY-003 — Bounded, and able to let go · REQUIRED
 

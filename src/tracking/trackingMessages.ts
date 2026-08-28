@@ -597,6 +597,21 @@ export interface KeyframeReport {
   readonly duplicateObservationIds: number;
   /** Phase 4's own independent classification of this frame's motion — KEY-002's instrument. */
   readonly frameMotion: string;
+  /**
+   * Whether **every** decision since the last keyframe reported `STATIC`.
+   *
+   * KEY-002 is about a camera that is not moving, and the quantity a geometric condition fires on
+   * is accumulated over the *interval*, not measured on the frame. A view 30 px from the last
+   * keyframe is 30 px from it whether or not the image happens to be still at the instant the
+   * minimum interval elapses — so a per-frame classification cannot say whether a condition was
+   * honestly met. This can: nothing moved between these two views.
+   */
+  readonly intervalStatic: boolean;
+  /** Phase 6's own verdict on the pose this decision's rotation was accumulated from. */
+  readonly poseState: string;
+  readonly poseAmbiguous: boolean;
+  readonly poseRotationConfidence: number;
+  readonly poseUnseparatedCandidates: number;
   readonly keyframes: number;
   readonly totalInserted: number;
   readonly totalEvictions: number;
@@ -604,6 +619,14 @@ export interface KeyframeReport {
   readonly staleKeyframes: number;
   /** Increments dropped across a Phase 5 re-anchor since the last keyframe — a named gap. */
   readonly droppedIncrements: number;
+  /**
+   * Poses declined because Phase 6 marked them `ambiguous` — a second named gap.
+   *
+   * Cheirality did not separate the decomposition's candidates, so the pose Phase 6 reported is
+   * one of two it could not choose between. On a static image the recovered rotation alternates
+   * between them; accumulating that is how a pure lateral pan reports having rotated 18°.
+   */
+  readonly ambiguousPosesDeclined: number;
   readonly reAnchorsSinceKeyframe: number;
   /** v4 §18, carried as a value a later phase has to remove deliberately. */
   readonly scale: string;

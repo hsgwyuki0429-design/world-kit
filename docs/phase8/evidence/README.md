@@ -22,13 +22,16 @@ From the committed run:
 
 | | |
 | --- | --- |
-| Decisions | 609 over a 60 s hold |
-| Keyframes | 55 inserted — 38 `DISPLACEMENT`, 8 `QUALITY`, 4 `HEARTBEAT`, 5 `FIRST` |
-| Store | 30 / 30 at its fullest, 25 evictions, **25 of 25** at least as well spread as dropping the oldest |
-| Static segment | 319 decisions; the selector kept **4** (all heartbeats), a metronome would have kept **51** — **12.75×** |
+| Decisions | 738 over a 60 s hold |
+| Keyframes | 54 inserted — 35 `DISPLACEMENT`, 10 `QUALITY`, 4 `HEARTBEAT`, 5 `FIRST` |
+| Store | 30 / 30 at its fullest, 24 evictions, **24 of 24** at least as well spread as dropping the oldest |
+| Static segment | 377 decisions; the selector kept **4** (all heartbeats), a metronome would have kept **52** — **13×** |
+| Still intervals | 128 decisions whose *whole* interval was still; **0** geometric insertions over them |
+| Rotation | 0 increments dropped across re-anchors; **73** poses declined for `ambiguous` |
 | Integrity | 0 decisions that do not follow from their own inputs, 0 inside the minimum interval, 0 past the maximum |
-| Keyframes | median 107 observations shared with the previous one, 0 intrinsics mismatches, 0 below the observation floor |
-| Translation | `UNMEASURED`, fired 0 times; the direction it *can* measure moved 1.0° |
+| Keyframes | median 110 observations shared with the previous one, 0 intrinsics mismatches, 0 below the observation floor |
+| Translation | `UNMEASURED`, fired 0 times; the direction it *can* measure moved 0.25° over 400 samples |
+| Cost | 0.818 ms mean over 400 decisions, against this phase's own 1.0 ms ceiling |
 
 **What the device will not reproduce, and why the run is still needed.** The leg's "still" is a
 synthetic frame repeated exactly; a hand-held phone is not still, and Phase 4's search will often
@@ -36,7 +39,7 @@ call it `SLOW`. The leg's population runs to several hundred points; the device'
 dim room (§H.8). Both change what the store holds and how quickly it goes stale. Rule 004 is not
 a formality here.
 
-## Two defects this leg found, before any device saw them
+## Four defects this leg found, before any device saw them
 
 **A re-derivation that rounds its inputs is checking the formatter.** KEY-001's second criterion
 re-derives every decision from the inputs recorded beside it. The first version rounded
@@ -53,6 +56,35 @@ throughout, the accumulated angle reached v3 §20's 10° and fired `ROTATION` **
 the image was not moving at all**. It is now assembled per anchor epoch — one composition however
 many frames have passed, and one more at each re-anchor — and the same leg fires it none.
 `docs/phase8/TEST-PLAN.md` records the amendment beside the criterion it affects.
+
+**A rotation Phase 6 had already refused to stand behind.** Per-epoch assembly did not finish the
+job: the leg still failed KEY-002 about two runs in six, with `ROTATION` firing over intervals in
+which nothing moved at all. Two further findings account for that, both measured. The re-anchor
+was being handled *inside* the branch that requires a pose, so a re-anchor landing on a pose-less
+frame left `epochBaseQ` in the old anchor's frame while the next pose arrived in the new one — and
+a still camera is exactly when that happens, because the anchor is re-taken from the current
+frame, the two views collapse to no baseline, and Phase 6 recovers nothing until something moves.
+The chaining is unconditional now.
+
+That was not the whole of it. The record was given the pose context beside each violation and the
+leg run until it failed again:
+
+```
+[p8] still-interval violation: ROTATION on 18.2051° / 0 px after 529 ms, 231 shared,
+     0 dropped increment(s) across 0 re-anchor(s); pose POSE, ambiguous true,
+     rotationConfidence 0.5693, 2 unseparated candidate(s)
+```
+
+No re-anchor crossed, nothing dropped, 231 features shared, and `ambiguous true` on **every**
+violation of **every** failing run. On a static image the correspondences stop changing, cheirality
+stops separating the essential matrix's four decompositions, and the recovered rotation alternates
+between two of them — about 18° apart, so v3 §20's 10° is crossed twice over by an artefact.
+Phase 6 was reporting the pose it chose *and* saying it could not tell; Phase 8 was reading the
+first and ignoring the second. It now declines an `ambiguous` pose: the accumulator holds at its
+last settled value and `ambiguousPosesDeclined` — 73 on this run — travels in every record,
+because an interval spent entirely in ambiguity under-reports a real turn and that must be visible
+rather than silent. Six consecutive legs green afterwards. v4 §25, one layer earlier than §25
+names it.
 
 **And a cost that measured the fixture rather than the platform.** The eviction record carries the
 retained set's median pairwise separation beside the counterfactual, and the first version built

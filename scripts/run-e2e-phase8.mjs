@@ -174,6 +174,15 @@ try {
       `${JSON.stringify(s.staticInsertionsByReason)}), metronome ` +
       `${s.staticMetronomeInsertions} — ${s.staticRatio}x`,
   );
+  for (const v of s.stillIntervalViolations) {
+    console.log(
+      `[p8] still-interval violation: ${v.reason} on ${v.rotationDeg}° / ${v.displacementPx} px ` +
+        `after ${v.sinceLastMs} ms, ${v.sharedWithLast} shared, ${v.droppedIncrements} dropped ` +
+        `increment(s) across ${v.reAnchors} re-anchor(s); pose ${v.poseState}, ambiguous ` +
+        `${v.poseAmbiguous}, rotationConfidence ${v.poseRotationConfidence}, ` +
+        `${v.poseUnseparatedCandidates} unseparated candidate(s)`,
+    );
+  }
   console.log(
     `[p8] store: ${s.keyframes}/${s.maxStoreSize} held, ${s.evictions} eviction(s), ` +
       `${s.evictionsCoverageKept} at least as well spread as dropping the oldest, ` +
@@ -187,7 +196,8 @@ try {
   console.log(
     `[p8] keyframes: median ${s.medianSharedWithLast} observation(s) shared, ` +
       `${s.intrinsicsMismatches} intrinsics mismatch(es), ${s.observationFloorViolations} below ` +
-      `the floor, ${s.staleEver} stale at the most`,
+      `the floor, ${s.staleEver} stale at the most, ${s.ambiguousPosesDeclined} ambiguous pose(s) ` +
+      'declined',
   );
   console.log(
     `[p8] translation: ${s.translationCondition ? s.translationCondition.state : 'ABSENT'}, ` +

@@ -24,10 +24,13 @@
  * second and is unaffected; Phase 8 composes over up to five, and the difference is the length
  * of the interval rather than the correctness of the arithmetic.
  *
- * What is still lost is one *frame's* rotation per re-anchor — the turn between the last view of
- * the old epoch and the first of the new, which no report measures. `droppedIncrements` counts
- * those, because a run that dropped several has a rotation figure that understates by that much
- * and the reader has to be able to see it.
+ * What is still lost is the turn between the last view of the old epoch and the first of the new,
+ * which no report measures. `droppedIncrements` counts those, because a run that dropped several
+ * has a rotation figure that understates by that much and the reader has to be able to see it.
+ * On a **still** camera that gap is nearly the whole epoch — the anchor is re-taken from the
+ * current frame, the two views collapse to no baseline, and Phase 6 recovers nothing until
+ * something moves — which is correct, and is why the re-anchor is handled on frames with no pose
+ * as well as on frames with one.
  *
  * **Displacement since the last keyframe.** Not Phase 5's `baselinePx`, which is measured from
  * the anchor — a different view. Each keyframe keeps its observations by `FlowTracker` id, and
@@ -57,6 +60,7 @@ import {
   decideKeyframe,
 } from '../mapping/keyframes';
 import type { Keyframe, KeyframeDecisionInput, KeyframeObservation } from '../mapping/keyframes';
+import { FrameMotion } from './SceneShift';
 import type { FlowTracker } from './FlowTracker';
 import type {
   KeyframeDecisionRecord,
@@ -111,6 +115,10 @@ export class KeyframeStage {
   /** The translation direction of the last keyframe, in that keyframe's anchor frame. */
   private lastKeyframeTranslation: readonly number[] | null = null;
   private staleEver = 0;
+  /** Whether every decision since the last keyframe saw a still image — KEY-002's subject. */
+  private intervalStatic = true;
+  /** Poses declined because Phase 6 could not separate the decomposition's candidates. */
+  private ambiguousPosesDeclined = 0;
   /** Observation ids that repeated inside one keyframe. `FlowTracker`'s ids are run-unique, so
    * this is a check on that invariant rather than an expected condition — KEY-004. */
   private duplicateIds = 0;
@@ -129,6 +137,8 @@ export class KeyframeStage {
     this.reAnchorsSinceKeyframe = 0;
     this.lastKeyframeTranslation = null;
     this.staleEver = 0;
+    this.intervalStatic = true;
+    this.ambiguousPosesDeclined = 0;
     this.duplicateIds = 0;
   }
 
@@ -169,6 +179,9 @@ export class KeyframeStage {
       previousTrackingState: partner?.trackingState ?? '',
     };
     const decision = decideKeyframe(decisionInput);
+    // Recorded **before** the insertion resets it, so the flag describes the interval the
+    // decision was taken over rather than the empty one that follows it.
+    const intervalStatic = this.intervalStatic && input.flow?.frameMotion === FrameMotion.STATIC;
 
     let evicted: KeyframeReport['evicted'] = null;
     if (decision.insert) {
@@ -186,8 +199,12 @@ export class KeyframeStage {
         this.droppedIncrements = 0;
         this.reAnchorsSinceKeyframe = 0;
         this.lastKeyframeTranslation = input.pose?.translation ? [...input.pose.translation] : null;
+        this.intervalStatic = true;
+        this.ambiguousPosesDeclined = 0;
       }
     }
+
+    if (input.flow?.frameMotion !== FrameMotion.STATIC) this.intervalStatic = false;
 
     const metronomeInserted = this.metronome.note(input.at);
     const stale = this.store.staleCount();
@@ -213,12 +230,18 @@ export class KeyframeStage {
       partnerStale: partner ? this.store.isStale(partner.id) : false,
       duplicateObservationIds: this.duplicateIds,
       frameMotion: input.flow?.frameMotion ?? 'INDETERMINATE',
+      intervalStatic,
+      poseState: input.pose?.state ?? 'NO_POSE',
+      poseAmbiguous: input.pose?.ambiguous ?? false,
+      poseRotationConfidence: input.pose?.rotationConfidence ?? -1,
+      poseUnseparatedCandidates: input.pose?.unseparatedCandidates ?? 0,
       keyframes: this.store.size(),
       totalInserted: this.inserted,
       totalEvictions: this.store.totalEvictions(),
       evicted,
       staleKeyframes: stale,
       droppedIncrements: this.droppedIncrements,
+      ambiguousPosesDeclined: this.ambiguousPosesDeclined,
       reAnchorsSinceKeyframe: this.reAnchorsSinceKeyframe,
       scale: SCALE_LOCAL_UNITS,
       metronomeInserted,
@@ -242,22 +265,58 @@ export class KeyframeStage {
    * counts.
    */
   private advanceRotation(input: KeyframeStageInput): void {
-    const reAnchored = input.verification?.reAnchored ?? false;
-    if (reAnchored) this.reAnchorsSinceKeyframe++;
+    // The re-anchor is handled **before** the pose, and unconditionally.
+    //
+    // The first version returned early on a frame Phase 6 recovered nothing from, which skipped
+    // this — so a re-anchor landing on a pose-less frame left `epochBaseQ` holding a rotation
+    // measured from the *old* anchor while the next pose to arrive was measured from the new
+    // one. Their difference is not a rotation of the camera, and it is large.
+    //
+    // That is not a rare alignment: it is what a **still** camera produces. The anchor is
+    // re-taken from the current frame, the two views collapse to no baseline, Phase 5 reports
+    // UNVERIFIED and Phase 6 reports NO_POSE for as long as nothing moves. The automated leg
+    // caught it as `ROTATION` firing on a pure lateral pan over intervals in which nothing moved
+    // at all — 4 of them in a sixty-second run, on one run in five.
+    if (input.verification?.reAnchored ?? false) {
+      this.reAnchorsSinceKeyframe++;
+      if (this.epochBaseQ && this.lastPoseQ) {
+        this.carried = normalise(
+          multiply(this.carried, multiply(conjugate(this.epochBaseQ), this.lastPoseQ)),
+        );
+        this.droppedIncrements++;
+      }
+      // Both are cleared, so the next pose to arrive — whenever it arrives — establishes the new
+      // epoch's base in the frame it was actually measured in.
+      this.epochBaseQ = null;
+      this.lastPoseQ = null;
+    }
 
     const q = input.pose?.quaternion;
     if (!q || q.length !== 4) return;
-    const cur = normalise([q[0] ?? 1, q[1] ?? 0, q[2] ?? 0, q[3] ?? 0]);
 
-    if (reAnchored && this.epochBaseQ && this.lastPoseQ) {
-      this.carried = normalise(
-        multiply(this.carried, multiply(conjugate(this.epochBaseQ), this.lastPoseQ)),
-      );
-      this.droppedIncrements++;
-      this.epochBaseQ = cur;
-    } else if (!this.epochBaseQ) {
-      this.epochBaseQ = cur;
+    // **A pose Phase 6 could not settle is not a rotation to accumulate.**
+    //
+    // `ambiguous` means cheirality did not separate the decomposition's candidates — Phase 6
+    // reports the pose it chose *and says it could not tell*. On a static image that is not a
+    // rare condition: the correspondences stop changing, the configuration stops separating the
+    // candidates, and the recovered rotation **alternates** between two of them. The leg measured
+    // the alternation at 18° and this stage was faithfully accumulating it into `ROTATION` on a
+    // pure lateral pan where the true rotation is zero — four insertions in one sixty-second run,
+    // on two runs in six.
+    //
+    // Every one of those violations carried `ambiguous: true` with two unseparated candidates.
+    // The phase below had already said so; this one was not listening. v4 §25: 低Confidenceの
+    // 情報は、ゲーム生成やCollisionで重要度を下げるか使用禁止にする.
+    //
+    // Declined rather than corrected: the accumulator holds at its last settled value, which is
+    // what "nothing new is known" looks like, and the count travels in every record.
+    if (input.pose?.ambiguous === true) {
+      this.ambiguousPosesDeclined++;
+      return;
     }
+
+    const cur = normalise([q[0] ?? 1, q[1] ?? 0, q[2] ?? 0, q[3] ?? 0]);
+    if (!this.epochBaseQ) this.epochBaseQ = cur;
     this.lastPoseQ = cur;
     this.hasRotation = true;
   }

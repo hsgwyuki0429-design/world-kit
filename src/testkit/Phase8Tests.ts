@@ -174,12 +174,12 @@ const KEY_002: Phase8Test = {
       'the selector inserts nothing but the maximum-interval heartbeat, while a metronome ' +
       'firing at the minimum interval keeps inserting',
     passCriteria:
-      `>= ${MIN_JUDGED_DECISIONS} decisions while STATIC; no insertion during them on a ` +
-      `geometric condition; and the metronome twin ahead by at least ` +
+      `>= ${MIN_JUDGED_DECISIONS} decisions while STATIC; no insertion on a geometric condition ` +
+      'over an interval in which nothing moved; and the metronome twin ahead by at least ' +
       `${MIN_STATIC_METRONOME_RATIO}x over the same decisions`,
     failureCondition:
-      'a keyframe inserted on a still camera for a geometric reason; or a count equal to the ' +
-      'metronome’s, which is a metronome',
+      'a keyframe inserted for a geometric reason when nothing moved between it and the ' +
+      'previous one; or a count equal to the metronome’s, which is a metronome',
   },
   evaluate: (ctx) => {
     const s = ctx.stats;
@@ -187,6 +187,9 @@ const KEY_002: Phase8Test = {
       staticDecisions: s.staticDecisions,
       staticSelectorInsertions: s.staticSelectorInsertions,
       staticGeometricInsertions: s.staticGeometricInsertions,
+      stillIntervalGeometricInsertions: s.stillIntervalGeometricInsertions,
+      stillIntervalDecisions: s.stillIntervalDecisions,
+      stillIntervalViolations: s.stillIntervalViolations as unknown as JsonValue,
       staticMetronomeInsertions: s.staticMetronomeInsertions,
       staticRatio: s.staticRatio,
       metronomeKeyframes: s.metronomeKeyframes,
@@ -207,10 +210,11 @@ const KEY_002: Phase8Test = {
     }
 
     const problems: string[] = [];
-    if (s.staticGeometricInsertions > 0) {
+    if (s.stillIntervalGeometricInsertions > 0) {
       problems.push(
-        `${s.staticGeometricInsertions} keyframe(s) fired on rotation, displacement or quality ` +
-          'while the image was not moving — none of those conditions can be met by a still camera',
+        `${s.stillIntervalGeometricInsertions} keyframe(s) fired on rotation, displacement or ` +
+          'quality over an interval in which nothing moved at all — none of those conditions can ' +
+          'be met between two views of a camera that did not move',
       );
     }
     if (s.staticMetronomeInsertions < MIN_STATIC_METRONOME_RATIO * s.staticSelectorInsertions) {
@@ -225,8 +229,10 @@ const KEY_002: Phase8Test = {
       verdict: problems.length === 0 ? Verdict.PASS : Verdict.FAIL,
       observed:
         `over ${s.staticDecisions} static decisions the selector inserted ` +
-        `${s.staticSelectorInsertions} (${s.staticGeometricInsertions} geometric) and the ` +
-        `metronome ${s.staticMetronomeInsertions} — ${s.staticRatio}x`,
+        `${s.staticSelectorInsertions} and the metronome ${s.staticMetronomeInsertions} — ` +
+        `${s.staticRatio}x; ${s.staticGeometricInsertions} of them fired on a geometric ` +
+        `condition, ${s.stillIntervalGeometricInsertions} of those over an interval in which ` +
+        'nothing moved',
       reason:
         problems.length === 0
           ? 'on a camera that is not moving the two selectors part company, which is the one ' +
@@ -491,6 +497,7 @@ const KEY_006: Phase8Test = {
       medianSurvivingFraction: s.medianSurvivingFraction,
       threshold: STALE_SURVIVAL_FRACTION,
       droppedIncrements: s.droppedIncrements,
+      ambiguousPosesDeclined: s.ambiguousPosesDeclined,
     };
     const pending = notRunning(ctx, metrics);
     if (pending) return pending;

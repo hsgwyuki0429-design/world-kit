@@ -15,6 +15,21 @@ import type {
   KeyframeRecord,
 } from './trackingMessages';
 
+/** One insertion that fired on the geometry over an interval in which nothing moved. */
+export interface KeyframeViolationRecord {
+  readonly reason: string;
+  readonly rotationDeg: number;
+  readonly displacementPx: number;
+  readonly sinceLastMs: number;
+  readonly sharedWithLast: number;
+  readonly droppedIncrements: number;
+  readonly reAnchors: number;
+  readonly poseState: string;
+  readonly poseAmbiguous: boolean;
+  readonly poseRotationConfidence: number;
+  readonly poseUnseparatedCandidates: number;
+}
+
 export interface KeyframeStats {
   readonly running: boolean;
   readonly decisions: number;
@@ -56,8 +71,25 @@ export interface KeyframeStats {
   /** Decisions taken while Phase 4's independent search reported `STATIC`. */
   readonly staticDecisions: number;
   readonly staticSelectorInsertions: number;
-  /** ...of which fired on rotation, displacement or quality. */
+  /** ...of which fired on rotation, displacement or quality, on a frame classified `STATIC`. */
   readonly staticGeometricInsertions: number;
+  /**
+   * ...and of **those**, the ones where the whole interval since the previous keyframe was still.
+   *
+   * The figure KEY-002 judges. A geometric condition is accumulated over an interval, so one that
+   * fires on the first still frame after a movement was honestly met — by the movement. One that
+   * fires when nothing moved between the two views was not.
+   */
+  readonly stillIntervalGeometricInsertions: number;
+  readonly stillIntervalDecisions: number;
+  /**
+   * The violating decisions themselves, with the numbers they were taken on.
+   *
+   * A count says a criterion failed; these say *what the selector thought it had measured* when
+   * it did. Kept because the first two attempts at this defect were fixed from a hypothesis, and
+   * neither hypothesis was right.
+   */
+  readonly stillIntervalViolations: readonly KeyframeViolationRecord[];
   /** ...broken down, because which condition fired on a still camera is the whole question. */
   readonly staticInsertionsByReason: Record<string, number>;
   readonly staticMetronomeInsertions: number;
@@ -99,6 +131,8 @@ export interface KeyframeStats {
   readonly survivalSamples: number;
   readonly medianSurvivingFraction: number;
   readonly droppedIncrements: number;
+  /** Poses declined because Phase 6 could not separate the decomposition's candidates. */
+  readonly ambiguousPosesDeclined: number;
 
   /* ---- KEY-007 ---- */
   readonly meanKeyframeMs: number;

@@ -1225,12 +1225,12 @@ and a refusal with a citation behind it is an assertion.
 | the 30-keyframe bound | held | held |
 | observations and intrinsics per keyframe | carried | carried |
 | keyframes on a **moving** camera | well separated | well separated |
-| keyframes over 319 **static** decisions | **4**, all heartbeats | **51** |
+| keyframes over 377 **static** decisions | **4**, all heartbeats | **52** |
 
-12.75× on the committed run. Everything above that last row is satisfied by a program that reads
-a clock and nothing else.
+13× on the committed run. Everything above that last row is satisfied by a program that reads a
+clock and nothing else.
 
-### Three defects the leg found before any device saw the code
+### Four defects the leg found before any device saw the code
 
 **A re-derivation that rounds its inputs is checking the formatter.** KEY-001's second criterion
 re-derives every decision from the inputs recorded beside it — the Rule 002 check Phases 4–7 all
@@ -1248,6 +1248,35 @@ Phase 4's own scene-shift search was reporting that the image was not moving at 
 KEY-002 for exactly the right reason. The rotation is now assembled per anchor epoch: one
 composition however many frames have passed, and one more at each re-anchor. The same leg fires it
 none, and the amendment is recorded in place in the plan (§29).
+
+**A rotation the layer below had refused to stand behind.** The per-epoch assembly above took
+`ROTATION` on a still camera from every run down to about two in six, and left the rest. Two
+further findings, both measured rather than guessed, account for those. First, the re-anchor was
+handled *inside* the branch that needs a pose, so a re-anchor landing on a pose-less frame left
+`epochBaseQ` holding a rotation measured from the **old** anchor while the next pose to arrive was
+measured from the new one — and on a still camera that is not a rare alignment but the normal
+case, because the anchor is re-taken from the current frame, the two views collapse to no baseline
+and Phase 6 recovers nothing until something moves. The chaining is now unconditional.
+
+Second, and the actual cause: the leg was made to print the pose beside each violation, and every
+one of them read `ambiguous true ... 2 unseparated candidate(s)` —
+
+```
+[p8] still-interval violation: ROTATION on 18.2051° / 0 px after 529 ms, 231 shared,
+     0 dropped increment(s) across 0 re-anchor(s); pose POSE, ambiguous true,
+     rotationConfidence 0.5693, 2 unseparated candidate(s)
+```
+
+On a static image the correspondences stop changing, cheirality stops separating the essential
+matrix's four decompositions, and the recovered rotation **alternates between two of them** —
+about 18° apart here, so v3 §20's 10° is crossed twice over by an artefact rather than by a
+camera. Phase 6 had been reporting the pose it chose *and* saying it could not tell; Phase 8 was
+reading the first field and ignoring the second. It now declines an `ambiguous` pose outright —
+the accumulator holds at its last settled value, and `ambiguousPosesDeclined` (73 on the committed
+run) travels in every record, because an interval spent entirely in ambiguity under-reports a real
+turn and that has to be visible rather than silent. v4 §25 one layer earlier than §25 names it: a
+confidence the layer below publishes is only worth publishing if the layer above acts on it. Six
+consecutive legs green after the change, from about two in six failing.
 
 **And a cost that measured the fixture rather than the platform.** Every eviction records the
 retained set's median pairwise separation beside what dropping the oldest would have given — the

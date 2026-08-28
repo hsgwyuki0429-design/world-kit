@@ -190,8 +190,8 @@ function renderMetronome(vm: Phase8ViewModel): HTMLElement {
       stat('A metronome would have', String(s.staticMetronomeInsertions)),
       stat('Ratio', s.staticRatio < 0 ? null : `${s.staticRatio}×`, enough ? (ahead ? OK : BAD) : ''),
       stat('...of a needed', `${MIN_STATIC_METRONOME_RATIO}×`),
-      stat('Geometric, while static', String(s.staticGeometricInsertions),
-        s.staticGeometricInsertions > 0 ? BAD : OK),
+      stat('Geometric, nothing moved at all', String(s.stillIntervalGeometricInsertions),
+        s.stillIntervalGeometricInsertions > 0 ? BAD : OK),
     ]),
     el('p', { class: 'footnote' }, [
       `A second selector runs on the same frames and fires every ${MIN_KEYFRAME_INTERVAL_MS} ms — ` +
@@ -204,6 +204,15 @@ function renderMetronome(vm: Phase8ViewModel): HTMLElement {
         'scene-shift search — an exhaustive integer search that shares no code with the tracker ' +
         'and never sees the feature list — reporting `STATIC` below 1 px of image motion. A ' +
         'phase that classified its own test conditions would be marking its own paper.',
+    ]),
+    el('p', { class: 'footnote' }, [
+      'What is counted against the selector is a geometric insertion over an interval in which ' +
+        '**nothing moved** — not one that merely lands on a still frame. A condition is ' +
+        'accumulated over the interval since the last keyframe: a view 30 px from it is 30 px ' +
+        'from it whether or not the image happens to be still at the instant the minimum ' +
+        'interval elapses. ' +
+        `${s.staticGeometricInsertions} insertion(s) landed on a still frame, of which ` +
+        `${s.stillIntervalGeometricInsertions} had nothing moving behind them.`,
     ]),
     el('p', { class: 'footnote' }, [
       `The current frame reads ${s.frameMotion || '—'}.`,

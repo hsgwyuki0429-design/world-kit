@@ -430,7 +430,7 @@ describe('KeyframeStage over a run', () => {
 
   it('inserts nothing but the heartbeat while the camera is still', () => {
     expect(stats.staticDecisions).toBeGreaterThan(15);
-    expect(stats.staticGeometricInsertions).toBe(0);
+    expect(stats.stillIntervalGeometricInsertions).toBe(0);
     expect(stats.staticSelectorInsertions).toBeGreaterThan(0);
   });
 

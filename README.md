@@ -663,10 +663,10 @@ would be marking its own paper.
 Phase 7's leg was the first to decide one required record. Phase 8's decides all six, because the
 instruments are a still segment and a metronome and the harness can produce both: the feed holds
 for seven seconds in the middle of a pan. On the committed run the selector kept **4** views over
-319 static decisions, all of them the five-second heartbeat, where a metronome would have kept
-**51** — 12.75×. Rule 004 is untouched and means what it always meant.
+377 static decisions, all of them the five-second heartbeat, where a metronome would have kept
+**52** — 13×. Rule 004 is untouched and means what it always meant.
 
-### Three defects the leg found before any device saw the code
+### Four defects the leg found before any device saw the code
 
 **A re-derivation that rounds its inputs is checking the formatter.** `sinceLastMs` was rounded to
 a tenth of a millisecond on its way into the record, `499.99999999999955` became `500`, and Rule
@@ -679,6 +679,18 @@ composes over one second and is unaffected; Phase 8 composes over up to five, an
 lateral pan — true rotation zero throughout — the accumulated angle reached 10° and fired
 `ROTATION` **seven times while the image was not moving**. It is now assembled per anchor epoch,
 one composition per re-anchor rather than per frame.
+
+**A rotation the layer below had already refused to stand behind.** Per-epoch assembly took
+`ROTATION` on a still camera from every run down to about two runs in six, and the rest had a
+different cause. The leg was made to print Phase 6's pose beside each violation, and every one of
+them read `ambiguous true` with `2 unseparated candidate(s)`: on a static image the
+correspondences stop changing, cheirality stops separating the essential matrix's four
+decompositions, and the recovered rotation **alternates between two of them** — about 18° apart,
+so 10° is crossed twice over by an artefact rather than by a camera. Phase 6 had been saying it
+could not tell; Phase 8 was reading the pose and ignoring the flag. It now declines an `ambiguous`
+pose, holds the accumulator at its last settled value, and carries `ambiguousPosesDeclined` (73 on
+the committed run) so an under-reported turn is visible rather than silent. Six consecutive legs
+green afterwards. This is v4 §25 applied one layer earlier than §25 names it.
 
 **And a cost that measured the fixture.** The eviction record carries the retained set's spread
 beside the counterfactual, and the first version built one observation index per pair — 435 of

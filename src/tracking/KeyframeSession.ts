@@ -30,7 +30,7 @@ import {
   decideKeyframe,
 } from '../mapping/keyframes';
 import { FrameMotion } from './SceneShift';
-import type { KeyframeStats } from './keyframeStats';
+import type { KeyframeStats, KeyframeViolationRecord } from './keyframeStats';
 import type {
   KeyframeConditionRecord,
   KeyframeEvictionRecord,
@@ -65,6 +65,9 @@ export class KeyframeSession {
   private staticDecisions = 0;
   private staticSelectorInsertions = 0;
   private staticGeometricInsertions = 0;
+  private stillIntervalGeometricInsertions = 0;
+  private stillIntervalDecisions = 0;
+  private readonly stillIntervalViolations: KeyframeViolationRecord[] = [];
   private readonly staticByReason = new Map<string, number>();
   private staticMetronomeInsertions = 0;
 
@@ -86,6 +89,7 @@ export class KeyframeSession {
   private staleEver = 0;
   private stalePartnerUsed = 0;
   private droppedIncrements = 0;
+  private ambiguousPosesDeclined = 0;
 
   private rateOutOfRange = 0;
   private eulerEmitted = 0;
@@ -114,6 +118,9 @@ export class KeyframeSession {
     this.staticDecisions = 0;
     this.staticSelectorInsertions = 0;
     this.staticGeometricInsertions = 0;
+    this.stillIntervalGeometricInsertions = 0;
+    this.stillIntervalDecisions = 0;
+    this.stillIntervalViolations.length = 0;
     this.staticByReason.clear();
     this.staticMetronomeInsertions = 0;
     this.maxStoreSize = 0;
@@ -131,6 +138,7 @@ export class KeyframeSession {
     this.staleEver = 0;
     this.stalePartnerUsed = 0;
     this.droppedIncrements = 0;
+    this.ambiguousPosesDeclined = 0;
     this.rateOutOfRange = 0;
     this.eulerEmitted = 0;
     this.sizeMismatches = 0;
@@ -167,10 +175,32 @@ export class KeyframeSession {
     /* ---- KEY-002: the static segment, classified by Phase 4's instrument ---- */
     if (r.frameMotion === FrameMotion.STATIC) {
       this.staticDecisions++;
+      if (r.intervalStatic) this.stillIntervalDecisions++;
       if (r.inserted) {
         this.staticSelectorInsertions++;
         this.staticByReason.set(r.reason, (this.staticByReason.get(r.reason) ?? 0) + 1);
-        if (GEOMETRIC.includes(r.reason)) this.staticGeometricInsertions++;
+        if (GEOMETRIC.includes(r.reason)) {
+          this.staticGeometricInsertions++;
+          // The one that is a violation: nothing moved between this view and the previous
+          // keyframe, so no geometric condition can honestly have been met over that interval.
+          if (r.intervalStatic) {
+            this.stillIntervalGeometricInsertions++;
+            this.stillIntervalViolations.push({
+              reason: r.reason,
+              rotationDeg: r.input.rotationDeg,
+              displacementPx: r.input.displacementPx,
+              sinceLastMs: Math.round(r.input.sinceLastMs),
+              sharedWithLast: r.sharedWithLast,
+              droppedIncrements: r.droppedIncrements,
+              reAnchors: r.reAnchorsSinceKeyframe,
+              poseState: r.poseState,
+              poseAmbiguous: r.poseAmbiguous,
+              poseRotationConfidence: r.poseRotationConfidence,
+              poseUnseparatedCandidates: r.poseUnseparatedCandidates,
+            });
+            trim(this.stillIntervalViolations, 16);
+          }
+        }
       }
       if (r.metronomeInserted) this.staticMetronomeInsertions++;
     }
@@ -224,6 +254,7 @@ export class KeyframeSession {
     if (r.staleKeyframes > this.staleEver) this.staleEver = r.staleKeyframes;
     if (r.partnerStale) this.stalePartnerUsed++;
     this.droppedIncrements = r.droppedIncrements;
+    this.ambiguousPosesDeclined = Math.max(this.ambiguousPosesDeclined, r.ambiguousPosesDeclined);
     for (const kf of r.recent) {
       if (kf.survivingFraction < 0) continue;
       this.survivals.push(kf.survivingFraction);
@@ -297,6 +328,9 @@ export class KeyframeSession {
       staticDecisions: this.staticDecisions,
       staticSelectorInsertions: this.staticSelectorInsertions,
       staticGeometricInsertions: this.staticGeometricInsertions,
+      stillIntervalGeometricInsertions: this.stillIntervalGeometricInsertions,
+      stillIntervalDecisions: this.stillIntervalDecisions,
+      stillIntervalViolations: [...this.stillIntervalViolations],
       staticInsertionsByReason: Object.fromEntries(this.staticByReason),
       staticMetronomeInsertions: this.staticMetronomeInsertions,
       staticRatio:
@@ -330,6 +364,7 @@ export class KeyframeSession {
       survivalSamples: this.survivals.length,
       medianSurvivingFraction: round(median(this.survivals), 4),
       droppedIncrements: this.droppedIncrements,
+      ambiguousPosesDeclined: this.ambiguousPosesDeclined,
 
       meanKeyframeMs:
         this.costs.length > 0
