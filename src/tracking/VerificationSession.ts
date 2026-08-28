@@ -23,6 +23,7 @@ import { SceneTexture } from './featureTypes';
 import {
   MIN_BASELINE_PX,
   MIN_CORRESPONDENCES,
+  MIN_INLIERS,
   isPlanarByCounts,
   VerificationState,
   deriveVerificationState,
@@ -47,12 +48,14 @@ interface ClassAccumulator {
   unverified: number;
   usable: number;
   good: number;
+  verdictOnThinEvidence: number;
+  goodOnThinEvidence: number;
 }
 
 function newClass(): ClassAccumulator {
   return {
     frames: 0, judged: 0, correspondences: [], inliers: [], ratio: [], baseline: [], spread: [],
-    unverified: 0, usable: 0, good: 0,
+    unverified: 0, usable: 0, good: 0, verdictOnThinEvidence: 0, goodOnThinEvidence: 0,
   };
 }
 
@@ -196,6 +199,16 @@ export class VerificationSession {
     if (v.state === VerificationState.GOOD) acc.good++;
     else if (v.state === VerificationState.USABLE) acc.usable++;
     else acc.unverified++;
+    // GEO-002's criterion, counted on the frame it is about. `deriveVerificationState` cannot
+    // return a verdict on this evidence, so a non-zero count here is either that function being
+    // bypassed or the state arriving from somewhere else — which is what the criterion means.
+    if (
+      v.state !== VerificationState.UNVERIFIED &&
+      (v.correspondences < MIN_CORRESPONDENCES || v.inliers < MIN_INLIERS)
+    ) {
+      acc.verdictOnThinEvidence++;
+      if (v.state === VerificationState.GOOD) acc.goodOnThinEvidence++;
+    }
     this.byTexture.set(texture, acc);
 
     if (v.injection) {
@@ -229,6 +242,8 @@ export class VerificationSession {
       unverified: acc.unverified,
       usable: acc.usable,
       good: acc.good,
+      verdictOnThinEvidence: acc.verdictOnThinEvidence,
+      goodOnThinEvidence: acc.goodOnThinEvidence,
     };
   }
 

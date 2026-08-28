@@ -191,6 +191,8 @@ const GEO_002: Phase5Test = {
       poorMedianCorrespondences: poor.medianCorrespondences,
       poorMedianInliers: poor.medianInliers,
       poorStates: { UNVERIFIED: poor.unverified, USABLE: poor.usable, GOOD: poor.good },
+      verdictOnThinEvidence: poor.verdictOnThinEvidence,
+      goodOnThinEvidence: poor.goodOnThinEvidence,
       stateMismatches: s.stateMismatches,
       textureRich: s.textureRich as unknown as JsonValue,
     };
@@ -211,19 +213,27 @@ const GEO_002: Phase5Test = {
 
     const problems: string[] = [];
     // The whole point of the test: a thin correspondence set must not produce a verdict.
-    if (poor.medianCorrespondences >= 0 && poor.medianCorrespondences < MIN_CORRESPONDENCES) {
-      if (poor.usable + poor.good > 0) {
-        problems.push(
-          `${poor.usable + poor.good} texture-poor frame(s) reported USABLE or GOOD on a median ` +
-            `of ${poor.medianCorrespondences} correspondences, below the ` +
-            `${MIN_CORRESPONDENCES} needed to fit anything worth checking`,
-        );
-      }
-    }
-    if (poor.medianInliers >= 0 && poor.medianInliers < MIN_INLIERS && poor.good > 0) {
+    //
+    // Counted **per frame**, because that is what the criterion says. The first version compared
+    // the class's *median* correspondence count against the threshold and then blamed whichever
+    // frames had reported USABLE — two different statements, and the device run of 2026-08-28
+    // failed on the difference. It saw 59 judgeable texture-poor frames with a median of 14
+    // correspondences, 23 USABLE and 1 GOOD, and reported the 24 as verdicts on 14
+    // correspondences. They were nothing of the kind: 546 of those frames were UNVERIFIED
+    // precisely because they were under the threshold, which is what dragged the median down,
+    // and `stateMismatches` was 0 — every state agreed with its own inputs. §H.7: an invariant
+    // that averages cannot verify a geometry.
+    if (poor.verdictOnThinEvidence > 0) {
       problems.push(
-        `${poor.good} texture-poor frame(s) reported GOOD on a median of ${poor.medianInliers} ` +
-          `inliers, below v3 §14's minimum of ${MIN_INLIERS}`,
+        `${poor.verdictOnThinEvidence} texture-poor frame(s) reported USABLE or GOOD with fewer ` +
+          `than ${MIN_CORRESPONDENCES} correspondences or fewer than ${MIN_INLIERS} inliers — ` +
+          'a verdict on a set too small to fit anything worth checking',
+      );
+    }
+    if (poor.goodOnThinEvidence > 0) {
+      problems.push(
+        `${poor.goodOnThinEvidence} of them reported GOOD, below v3 §14's minimum of ` +
+          `${MIN_INLIERS} inliers`,
       );
     }
     if (s.stateMismatches > 0) {
@@ -237,7 +247,8 @@ const GEO_002: Phase5Test = {
       observed:
         `${poor.frames} texture-poor frames, ${poor.judged} judgeable: median ` +
         `${poor.medianCorrespondences} correspondences, ${poor.medianInliers} inliers; ` +
-        `${poor.unverified} UNVERIFIED, ${poor.usable} USABLE, ${poor.good} GOOD`,
+        `${poor.unverified} UNVERIFIED, ${poor.usable} USABLE, ${poor.good} GOOD; ` +
+        `${poor.verdictOnThinEvidence} verdict(s) on evidence too thin for one`,
       reason:
         problems.length === 0
           ? 'where the scene did not supply enough correspondences, the phase reported that ' +

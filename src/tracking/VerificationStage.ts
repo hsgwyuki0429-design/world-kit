@@ -29,7 +29,7 @@
  */
 
 import { Rng } from '../core/Rng';
-import { verifyCorrespondences, MIN_CORRESPONDENCES } from '../geometry/verify';
+import { verifyCorrespondences, MIN_CORRESPONDENCES, MIN_INLIERS } from '../geometry/verify';
 import type { VerificationResult } from '../geometry/verify';
 import { medianBaseline } from '../geometry/verify';
 import type { Correspondence } from '../geometry/twoView';
@@ -80,6 +80,34 @@ export const OUTLIER_INJECTION_PX = 25.0;
 
 /** How often the corrupted copy is verified. It costs a second RANSAC pass. */
 export const INJECTION_SAMPLE_EVERY = 6;
+
+/**
+ * The smallest correspondence set worth injecting into — **derived, not chosen**.
+ *
+ * GEO-003 asks three things of one corrupted frame at once: that the injected outliers be
+ * rejected, that the untouched ones survive, and that *the surviving inlier count still reach*
+ * `MIN_INLIERS`. Displacing `OUTLIER_INJECTION_FRACTION` of a set of `n` leaves at most
+ * `n - round(n · fraction)` untouched points, so below the `n` where that reaches `MIN_INLIERS`
+ * the third criterion cannot be met **however well RANSAC performs** — the points simply are
+ * not there. At the constants in this file that floor is 43.
+ *
+ * The device run of 2026-08-28 found this by failing on it. The injection ran wherever there
+ * were `MIN_CORRESPONDENCES` — 20 — and on the sets between 20 and 43 the recall fell to
+ * 0.67–0.78 while the corrupted frame came back `UNVERIFIED` every time. On a set of 31 with 9
+ * displaced, drawing eight untouched points for the minimal sample has probability
+ * (22/31)^8 ≈ 0.06, so RANSAC spends its whole iteration budget looking for a clean subset
+ * that a larger set would hand it immediately. Both facts are about the size of the sample, not
+ * about the verifier, and neither is what GEO-003 exists to measure.
+ *
+ * Computed with the same rounding `measureInjection` uses, so changing either constant moves
+ * this floor with it rather than leaving it stale.
+ */
+export const MIN_INJECTABLE_CORRESPONDENCES = ((): number => {
+  for (let n = MIN_CORRESPONDENCES; n < 1000; n++) {
+    if (n - Math.max(1, Math.round(n * OUTLIER_INJECTION_FRACTION)) >= MIN_INLIERS) return n;
+  }
+  return MIN_CORRESPONDENCES;
+})();
 
 export class VerificationStage {
   private frames = 0;
@@ -137,7 +165,7 @@ export class VerificationStage {
     // 3. GEO-003, on a sample of frames. The injection is built here — outside the verifier,
     //    which never learns which correspondences were touched.
     let injection: VerificationInjection | null = null;
-    if (wantInjection && correspondences.length >= MIN_CORRESPONDENCES) {
+    if (wantInjection && correspondences.length >= MIN_INJECTABLE_CORRESPONDENCES) {
       injection = this.measureInjection(correspondences);
     }
 
@@ -209,6 +237,7 @@ export class VerificationStage {
     const cleanCount = n - chosen.size;
 
     return {
+      correspondences: n,
       injected: chosen.size,
       clean: cleanCount,
       injectedRejected,

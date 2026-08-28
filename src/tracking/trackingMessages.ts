@@ -246,6 +246,8 @@ export interface TrackingFlow {
  * its input cannot produce, because returning its input scores exactly 0.
  */
 export interface VerificationInjection {
+  /** The size of the set the injection was built from — GEO-003's recall depends on it. */
+  readonly correspondences: number;
   readonly injected: number;
   readonly clean: number;
   readonly injectedRejected: number;

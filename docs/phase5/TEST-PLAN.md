@@ -245,6 +245,30 @@ v3 §66's second test.
   for v3 §14's minimum. §44's fail-closed rule in the v4 direction says the same thing: when
   the information is not there, lower the state rather than making the result convenient.
 
+> **Amendment, 2026-08-28 — the implementation, not the criteria. Found by a device run that
+> failed on it.** Criteria 2 and 3 say *every one of those frames*, and they said so before any
+> Phase 5 code existed. The implementation compared the texture-poor class's **median**
+> correspondence count against the threshold and, if it was below, blamed however many frames
+> had reported `USABLE` or `GOOD`.
+>
+> Those are different statements, and the device found the gap. It saw 570 texture-poor frames,
+> 59 of them judgeable, a median of **14** correspondences, and 23 `USABLE` + 1 `GOOD`. The
+> reported failure was *24 texture-poor frame(s) reported USABLE or GOOD on a median of 14
+> correspondences*. They had done nothing of the kind. **546 of those frames were `UNVERIFIED`
+> precisely because they were under the threshold** — which is the behaviour this record exists
+> to confirm — and that is what pulled the median down. `stateMismatches` was **0**, and
+> `deriveVerificationState` returns `UNVERIFIED` unconditionally below 20 correspondences or 30
+> inliers, so the 24 verdicts were structurally incapable of being what the reason said.
+>
+> The count is per frame now: a frame violates this record when its state is not `UNVERIFIED`
+> **and** its own correspondences or inliers are under the floor. §H.7 — an invariant that
+> averages cannot verify a geometry — one phase earlier than the section that names it.
+>
+> Nothing is weakened. `tests/unit/verification.test.ts` still drives a stage that reports
+> `USABLE` regardless of its inputs and it still fails this record; a new fixture replays the
+> device's shape — four frames in five genuinely too thin and declined, one in five verified —
+> and shows `FAIL` under the median and `PASS` under the count.
+
 ### GEO-003 — Outlier-heavy scene · REQUIRED
 
 v3 §66's third test, v3 §66's PASS condition verbatim — *RANSACでOutlierが除外される* — and this
@@ -256,7 +280,8 @@ phase's anti-fake gate.
   the set with no marking.
 - **Expected:** RANSAC rejects the corrupted correspondences and keeps the rest.
 - **Pass criteria:** all of —
-  1. ≥ 15 frames with injection applied and ≥ `MIN_CORRESPONDENCES` correspondences;
+  1. ≥ 15 frames with injection applied and ≥ `MIN_INJECTABLE_CORRESPONDENCES` correspondences
+     — the floor below which criterion 4 cannot be met at all; see the amendment below;
   2. **≥ 0.90 of the injected outliers land in the outlier set** (recall against ground truth
      the verifier never saw);
   3. ≤ 0.30 of the untouched correspondences are rejected — the model is not simply rejecting
@@ -270,6 +295,43 @@ phase's anti-fake gate.
 - **Why the injection is seeded:** §59 bans `Math.random` in `src/`, and a corruption that
   cannot be reproduced cannot be re-examined when the run is questioned. The seed is recorded
   in the evidence with the frame it applied to.
+
+> **Amendment, 2026-08-28 — criterion 1's floor, derived from criterion 4. Found by the same
+> device run.** Criterion 1 named `MIN_CORRESPONDENCES` — 20 — as the set size worth injecting
+> into. **Criterion 4 makes that unmeetable.** Displacing 30 % of a set of `n` leaves at most
+> `n − round(0.3n)` untouched points, so the surviving inlier count cannot reach v3 §14's 30
+> until `n` is **43**, however perfectly RANSAC performs. Between 20 and 43 this record was
+> asking for something arithmetic forbids.
+>
+> The device measured what that costs. Median recall **0.871** against the 0.90 required — while
+> rejecting the injected outliers at **12.4×** the rate of the untouched ones, which is not a
+> verifier that fails to discriminate. The per-frame samples show where it went:
+>
+> | correspondences | injected | recall | surviving inliers | state after injection |
+> | --- | --- | --- | --- | --- |
+> | 51 | 15 | **1.000** | 36 | UNVERIFIED |
+> | 42 | 13 | 0.923 | 26 | UNVERIFIED |
+> | 36 | 11 | 0.727 | 25 | UNVERIFIED |
+> | 31 | 9 | 0.778 | 20 | UNVERIFIED |
+> | 31 | 9 | 0.667 | 19 | UNVERIFIED |
+>
+> The recall tracks the size of the set, and it breaks at about the floor above. It is not
+> mysterious: on 31 correspondences with 9 displaced, drawing eight untouched points for the
+> eight-point minimal sample has probability (22/31)⁸ ≈ **0.06**, so RANSAC spends its whole
+> iteration budget hunting a clean subset that a larger set hands it at once. That is a fact
+> about sample size, not about this verifier, and it is not what v3 §66's condition asks.
+>
+> Criterion 1's floor is now `MIN_INJECTABLE_CORRESPONDENCES`, **computed in the code from
+> `MIN_INLIERS` and `OUTLIER_INJECTION_FRACTION` with the same rounding the injection uses**, so
+> changing either constant moves it rather than leaving it stale. Criterion 2's 0.90 is
+> untouched, and so are 3, 4 and 5. What changed is that the injection now runs only where all
+> five can hold at once.
+>
+> `tests/unit/verification.test.ts` measures the relationship on the real verifier rather than
+> asserting it: median recall above the floor clears 0.90, and at 31 correspondences it does
+> not. The automated leg never saw any of this — its synthetic feed offers 144 correspondences a
+> frame, so it was never near the floor. That is the device's contribution, and it is the second
+> time in this project that a leg passed a record the device could not.
 
 ### GEO-004 — Planar scene handling · REQUIRED
 
