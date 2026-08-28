@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | `phase4-real-device-PASSED-2026-08-22T14-47-06-539Z.json` | `REAL_DEVICE` | **Yes** — 5/5 required, 2/2 advisory |
 | `phase4-real-device-PASSED-2026-08-22T14-47-06-539Z.jpg` | `REAL_DEVICE` | The screen from that run |
+| `phase4-real-device-FAILED-2026-08-28T12-55-51-029Z.json` | `REAL_DEVICE` | No — FLOW-005, and the instrument was wrong. See below |
 | `phase4-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004) |
 | `phase4-desktop-chromium.png` | `DESKTOP_DEV` | No — the screen at the end of that run |
 
@@ -17,6 +18,34 @@ hand-edited `"overallVerdict": "PASSED"` is caught by disagreeing with the resul
 summarises.
 
 Regenerate the desktop bundle with `npm run test:e2e:phase4`.
+
+## The 2026-08-28 run, which failed a test the tracker had passed
+
+Kept because it is the measurement that corrected FLOW-005's accounting, and because the shape
+of it is worth recognising again: **every criterion the record states was met, and the record
+said `FAIL`.**
+
+The lens was covered for **229 frames**. `msToLost: 0` — the state went `LOST` on the first dark
+frame. `survivedWithGoodFb: 0` — nothing claimed to have tracked across the dark. And the
+tracker was tracking again 207 ms after the image came back. The reported reason was *the state
+did not leave `LOST` after an occlusion of 229 frames ended*.
+
+Two things were true at once, and on a phone both usually are. The first frame back was still
+`LOST`, because 229 dark frames leave nothing to track and detection needs a few frames to
+refill. And one frame later the classifier reported `OCCLUDED` again — correctly: *a wholesale
+change no shift explains* is what this phase means by occlusion, and a finger lifting off the
+glass is exactly that.
+
+The session held **one** pending recovery. Ending that one-frame episode overwrote it, so the
+229-frame episode could never be credited, and its recovery was filed against the flicker —
+which is the `recoveredAfterMs: 207` sitting on a one-frame episode in this bundle. Recovery is
+now recorded per episode, each from the end of its own darkness. `docs/phase4/TEST-PLAN.md`
+A7 records the amendment; `tests/unit/flowTracker.test.ts` replays the sequence and shows the
+verdict flipping on the accounting alone, with the flicker-free run passing either way.
+
+**The 2026-08-22 pass is untouched.** Its three episodes were already `recovered: true` — its
+occlusions were followed by clear frames and it recovered in 35–42 ms — and the new accounting
+only ever credits more episodes, never fewer.
 
 ## The device run of 2026-08-22, and what it settled
 

@@ -91,6 +91,13 @@ export interface OcclusionEpisode {
   readonly survivedWithGoodFb: number;
   /** Whether the state left `LOST` after the episode ended. */
   readonly recovered: boolean;
+  /**
+   * Milliseconds from the end of **this** episode's darkness to the first frame that was not
+   * `LOST`. `-1` while that has not happened. The interval may contain further occluded frames —
+   * a finger lifting off the lens reads as one, since a wholesale change no shift explains is
+   * exactly what uncovering looks like — so the figure is an upper bound on how long the tracker
+   * took, never an under-report.
+   */
   readonly recoveredAfterMs: number;
 }
 

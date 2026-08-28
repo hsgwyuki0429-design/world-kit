@@ -480,6 +480,32 @@ The number that carries the phase is **4.741 against 4.000**: what the tracker s
 did, beside what an integer SAD translation search — sharing no code with the solver, never
 reading the feature list, keeping its own copy of the previous frame — says the image did.
 
+### 2026-08-28: a second device run failed FLOW-005, and the instrument was at fault
+
+`docs/phase4/evidence/phase4-real-device-FAILED-2026-08-28T12-55-51-029Z.json`. The lens was
+covered for **229 frames**; the state went `LOST` on the first of them, nothing claimed a
+§13-acceptable round trip through the dark, and the tracker was tracking again 207 ms after the
+image came back. Every criterion FLOW-005 states was met. It reported `FAIL`, with *the state
+did not leave `LOST` after an occlusion of 229 frames ended*.
+
+Two facts held at once, and on a phone both usually do. The first frame back was still `LOST` —
+229 dark frames leave nothing to track, and detection needs a few frames to refill. One frame
+later the classifier said `OCCLUDED` again, correctly: *a wholesale change no shift explains* is
+what this phase means by occlusion, and a finger coming off the glass is exactly that. The
+session held **one** pending recovery, so ending that one-frame episode overwrote it — the
+229-frame episode could never be credited, and its recovery was filed against the flicker.
+The same slot held an index into a list capped at 40 and trimmed with `shift()`, which would
+have credited the wrong episode in a longer run.
+
+Recovery is recorded per episode now, each measured from the end of its own darkness, and still
+only ever on a frame that is not occluded. `tests/unit/flowTracker.test.ts` replays the sequence
+and shows FLOW-005 flipping on the accounting alone, while the same run without the flicker
+passes either way. Amendment A7 in the plan.
+
+**The 2026-08-22 pass stands.** Its three episodes were already recorded `recovered: true`, and
+the new accounting only ever credits more episodes, never fewer. The phase is not re-opened by
+this; a device run under the corrected instrument would confirm it, and is worth doing.
+
 **It was not passed by assertion.** The transition log records the phase moving
 `FAILED → PASSED → FAILED → PASSED` as the operator worked through the conditions: FLOW-001 and
 FLOW-005 failed first, then FLOW-002 failed once more after that, and the pass came only when

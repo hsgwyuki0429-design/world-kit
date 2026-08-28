@@ -363,6 +363,50 @@ window cannot cover is not a trackable feature, and `FlowTracker.merge` now decl
 margin is read from the solver's own configuration, so a change to §12's window cannot leave
 it stale.
 
+### A7. One pending recovery is not enough to record two occlusions
+
+**Amendment, 2026-08-28 — a defect in the instrument, found by a device run that failed on it.
+No criterion changed.**
+
+The device covered the lens for **229 frames** and uncovered it. The state went `LOST` on the
+first dark frame, no track claimed a §13-acceptable round trip through the dark, and the
+tracker was tracking again 207 ms after the image came back — criteria 1 through 4, all met.
+FLOW-005 reported `FAIL`, with *the state did not leave `LOST` after an occlusion of 229 frames
+ended*.
+
+Two facts had to hold at once, and on a phone both do:
+
+1. **The first frame back is still `LOST`.** 229 dark frames leave nothing to track, and
+   detection needs a few frames to refill. The 2026-08-22 run recovered in 35–42 ms because
+   its occlusions were shorter; this one took four or five frames.
+2. **Uncovering a lens measures as an occlusion.** One frame after the image returned, the
+   classifier reported `OCCLUDED` again. That is not a misclassification — *a wholesale change
+   no shift explains* is the definition this phase uses, and a finger lifting off the glass is
+   precisely that.
+
+The session held **one** slot for a pending recovery. Ending the one-frame episode overwrote
+it, so the 229-frame episode — the only one long enough for FLOW-005 to judge — could never be
+credited afterwards, and the recovery that did arrive was filed against the flicker, which is
+where the bundle's `recoveredAfterMs: 207` sits. The same slot held an **index** into a list
+capped at 40 and trimmed with `shift()`, so a run with more than forty episodes would have
+credited the wrong one.
+
+Recovery is now recorded per episode, each measured from the end of **its own** darkness, and
+every outstanding episode is credited on the first frame that is not `LOST`. The check is still
+reached only on a frame that is not occluded: a state leaving `LOST` while the lens is still
+covered would be the fake criterion 3 exists to catch, not a recovery.
+
+**What this does not do is weaken the record.** An episode that never recovers is still a
+`FAIL`, and `tests/unit/flowTracker.test.ts` replays this exact sequence — twenty dark frames,
+one frame back to an empty population, one flicker, then the image for good — and shows
+FLOW-005 reaching `FAIL` under the old accounting and `PASS` under the new, while the same run
+*without* the flicker passes under both. The flicker is a fact about the lens; FLOW-005 judges
+the tracker.
+
+The 2026-08-22 evidence that passed this phase is unaffected. All three of its episodes were
+already recorded `recovered: true`, and the new accounting only ever credits more episodes,
+never fewer.
+
 ---
 
 ## What the automated leg turned out to be able to decide

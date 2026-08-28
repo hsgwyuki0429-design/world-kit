@@ -19,6 +19,13 @@ import { FrameMotion, MIN_SHIFT_CONFIDENCE, shiftAgreementTolerance } from './Sc
 import type { FeatureRecordSample, TrackingFlow, TrackingResult } from './trackingMessages';
 import { EMPTY_CLASS } from './flowStats';
 import type { FlowStats, MotionClassStats, OcclusionEpisode, ShiftCrossCheck } from './flowStats';
+
+/**
+ * The session's own mutable twin of `OcclusionEpisode`. Recovery is not known when the episode
+ * ends — it is known when the state next leaves `LOST`, which is a later frame — so the record
+ * is written twice. What leaves the session in `FlowStats` is a copy, and readonly.
+ */
+type OcclusionRecord = { -readonly [K in keyof OcclusionEpisode]: OcclusionEpisode[K] };
 import { MAX_SAMPLES, median, round, trim } from '../core/stats';
 
 /**
@@ -76,7 +83,7 @@ export class FlowSession {
   private readonly declinedTooClose: number[] = [];
   private readonly declinedOutOfReach: number[] = [];
   private readonly stateFrames = new Map<string, number>();
-  private readonly occlusions: OcclusionEpisode[] = [];
+  private readonly occlusions: OcclusionRecord[] = [];
 
   /** Rotating vs translating flow-field spreads, kept apart for FLOW-003's comparison. */
   private readonly spreadRotating: number[] = [];
@@ -103,7 +110,19 @@ export class FlowSession {
   private occlusionFrames = 0;
   private occlusionLostAt = -1;
   private occlusionSurvivedWithGoodFb = 0;
-  private pendingRecovery: { episode: number; startedAt: number } | null = null;
+  /**
+   * Episodes whose darkness has ended and which have not yet seen the state leave `LOST`.
+   *
+   * A **list**, and the entries hold the episode itself rather than its index. The first version
+   * held one slot and one index, and the device found both defects in the same run: the lens was
+   * uncovered after 229 dark frames, the first frame back was still `LOST` — it could not be
+   * anything else, the population was gone — and the frame after that measured `OCCLUDED` again
+   * as the finger lifted. Ending that one-frame episode overwrote the slot, so the 229-frame
+   * episode could never be credited, and the recovery that arrived 207 ms later was filed
+   * against the flicker. The index would have gone wrong too, in a longer run: `occlusions` is
+   * capped at 40 and `shift()` moves every index below it.
+   */
+  private pendingRecoveries: { readonly episode: OcclusionRecord; readonly endedAt: number }[] = [];
 
   /* Gyroscope (FLOW-003) */
   private rotationSamples: RotationSample[] = [];
@@ -192,7 +211,7 @@ export class FlowSession {
     this.occlusionFrames = 0;
     this.occlusionLostAt = -1;
     this.occlusionSurvivedWithGoodFb = 0;
-    this.pendingRecovery = null;
+    this.pendingRecoveries.length = 0;
   }
 
   /** Fold one frame's Phase 4 result into the run. `now` is the main thread's clock. */
@@ -355,7 +374,7 @@ export class FlowSession {
     }
 
     if (this.occlusionStartedAt >= 0) {
-      const episode: OcclusionEpisode = {
+      const episode: OcclusionRecord = {
         startedAt: this.occlusionStartedAt,
         frames: this.occlusionFrames,
         msToLost: this.occlusionLostAt >= 0 ? this.occlusionLostAt - this.occlusionStartedAt : -1,
@@ -365,21 +384,23 @@ export class FlowSession {
       };
       this.occlusions.push(episode);
       while (this.occlusions.length > 40) this.occlusions.shift();
-      this.pendingRecovery = { episode: this.occlusions.length - 1, startedAt: now };
+      this.pendingRecoveries.push({ episode, endedAt: now });
+      // Bounded by the same 40 the report is: an episode dropped from `occlusions` is no longer
+      // reported, so keeping its pending entry buys nothing. The entry holds the episode object,
+      // so a drop here cannot corrupt another episode's recovery the way an index could.
+      while (this.pendingRecoveries.length > 40) this.pendingRecoveries.shift();
       this.occlusionStartedAt = -1;
     }
 
-    if (this.pendingRecovery && f.state !== TrackingState.LOST) {
-      const idx = this.pendingRecovery.episode;
-      const e = this.occlusions[idx];
-      if (e) {
-        this.occlusions[idx] = {
-          ...e,
-          recovered: true,
-          recoveredAfterMs: now - this.pendingRecovery.startedAt,
-        };
+    // Every outstanding episode is credited, each from the end of **its own** darkness. Reached
+    // only on a frame that is not occluded — a state that left `LOST` while the lens was still
+    // covered would be the fake this record exists to catch, not a recovery.
+    if (this.pendingRecoveries.length > 0 && f.state !== TrackingState.LOST) {
+      for (const pending of this.pendingRecoveries) {
+        pending.episode.recovered = true;
+        pending.episode.recoveredAfterMs = now - pending.endedAt;
       }
-      this.pendingRecovery = null;
+      this.pendingRecoveries.length = 0;
     }
   }
 
@@ -476,7 +497,7 @@ export class FlowSession {
       rotatingSurvival: round(median(this.rotatingSurvival), 4),
       rotatingFbErrorPx: round(median(this.rotatingFbError)),
 
-      occlusions: [...this.occlusions],
+      occlusions: this.occlusions.map((e) => ({ ...e })),
 
       meanFlowMs:
         this.flowCosts.length > 0
