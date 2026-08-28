@@ -156,12 +156,13 @@ describe('implemented phases', () => {
     expect(isPhaseImplemented(6)).toBe(true);
     expect(isPhaseImplemented(7)).toBe(true);
     expect(isPhaseImplemented(8)).toBe(true);
-    // Phase 9 (Triangulation) has not been written. This assertion is the tripwire that
+    expect(isPhaseImplemented(9)).toBe(true);
+    // Phase 10 (Landmark Map) has not been written. This assertion is the tripwire that
     // makes someone update the set deliberately rather than letting the UI offer a screen that
-    // does not exist — it has fired for Phases 2 through 8 in turn, each time on the phase whose
+    // does not exist — it has fired for Phases 2 through 9 in turn, each time on the phase whose
     // screen was about to be added.
-    expect(isPhaseImplemented(9)).toBe(false);
-    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(isPhaseImplemented(10)).toBe(false);
+    expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 });
 

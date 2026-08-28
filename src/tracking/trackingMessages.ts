@@ -59,6 +59,26 @@ export interface TrackingOptions {
    * passed phase is not a fix. See `docs/phase8/TEST-PLAN.md`.
    */
   readonly keyframes: boolean;
+  /**
+   * Whether to triangulate each new keyframe against the one before it (Phase 9, v4 §21).
+   *
+   * `false` in Phases 4–8. When `true` the worker fits a pose for the **pair** — a different two
+   * views from Phase 5's anchor pair, for which no model exists — and triangulates its verified
+   * subset. Off the frame cadence by construction: it runs on keyframe inserts only, which is
+   * where §27 puts mapping work.
+   */
+  readonly triangulate: boolean;
+  /**
+   * Whether Phase 9's two injections run at all.
+   *
+   * **Which batches they run on is the stage's to decide, not this option's**, and that is a
+   * correction the leg forced: a batch happens when Phase 8 inserts a keyframe, which only the
+   * worker knows about, so a flag sampled on the main thread's option cadence lands on whatever
+   * fraction of batches the two rates happen to intersect on. Measured at **64 % of batches**
+   * where the plan says *on a sampled schedule*, and each injection costs a full extra fit and
+   * solve. The stage samples on its own batch index instead.
+   */
+  readonly wantInjections: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -80,6 +100,8 @@ export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   pose: false,
   wantPoseInjection: false,
   keyframes: false,
+  triangulate: false,
+  wantInjections: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -582,6 +604,103 @@ export interface KeyframeReport {
   readonly keyframeMs: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Phase 9 — triangulation                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** One triangulated point, as a sample crossing the boundary. */
+export interface TriangulatedPointRecord {
+  readonly id: number;
+  /** First view's camera frame, in units of that pair's baseline. Never a distance. */
+  readonly position: readonly number[];
+  readonly depth: number;
+  readonly parallaxDeg: number;
+  readonly depthUncertainty: number;
+  readonly reprojectionPx: number;
+}
+
+/**
+ * TRI-004's measurement: depths the harness chose and did not disclose.
+ *
+ * `controlRelativeError` is what the best possible **constant** depth would have scored on the
+ * same set — the number fake 1 produces. Reported beside the measurement so the tolerance is not
+ * what separates the two.
+ */
+export interface DepthInjectionRecord {
+  readonly points: number;
+  readonly accepted: number;
+  readonly medianRelativeError: number;
+  readonly controlRelativeError: number;
+  /** Spearman rank correlation between the chosen depths and the recovered ones. */
+  readonly rankCorrelation: number;
+  readonly medianTrueDepth: number;
+  readonly medianRecoveredDepth: number;
+  readonly recoveredRotationDeg: number;
+  readonly requestedRotationDeg: number;
+  readonly seed: number;
+}
+
+/**
+ * TRI-003's measurement: a camera that turned and did not move.
+ *
+ * `cleanAccepted` is the same batch's untouched pair, because a refusal without it is satisfied
+ * by a stage that refuses everything.
+ */
+export interface RotationInjectionRecord {
+  readonly requestedDeg: number;
+  readonly correspondences: number;
+  /** Points accepted from a pure rotation. Must be 0 — there is no tolerance on this. */
+  readonly accepted: number;
+  readonly cleanAccepted: number;
+  /** `NO_POSE` / `ROTATION_ONLY` / `POSE` — which of the two ways the refusal happened. */
+  readonly poseState: string;
+  readonly lowParallaxRefusals: number;
+  readonly seed: number;
+}
+
+/** One batch of Phase 9: one keyframe pair, or the frames in between. */
+export interface TriangulationReport {
+  readonly frames: number;
+  readonly batches: number;
+  /** `TRIANGULATED` / `REFUSED` / `IDLE`. */
+  readonly state: string;
+  readonly stateReason: string;
+  /** The two keyframe ids this batch related. `null` on an idle frame. */
+  readonly keyframePair: readonly number[] | null;
+  readonly correspondences: number;
+  readonly inliers: number;
+  readonly inlierRatio: number;
+  readonly candidates: number;
+  readonly accepted: number;
+  readonly refusals: Record<string, number>;
+  readonly medianParallaxDeg: number;
+  readonly medianAcceptedParallaxDeg: number;
+  /** The worst accepted point on each gate, so a gate that let one through is visible exactly. */
+  readonly minAcceptedParallaxDeg: number;
+  readonly maxAcceptedReprojectionPx: number;
+  readonly minAcceptedDepth: number;
+  readonly medianDepth: number;
+  readonly medianDepthUncertainty: number;
+  readonly medianReprojectionPx: number;
+  /** The pair fit's rotation... */
+  readonly rotationDeg: number;
+  /** ...and Phase 6's own, accumulated between the same two keyframes. TRI-006 compares them. */
+  readonly keyframeRotationDeg: number;
+  readonly rotationDisagreementDeg: number;
+  readonly model: string | null;
+  readonly planar: boolean;
+  readonly poseState: string;
+  /** v4 §18. The depths are in units of this pair's baseline, which is 1 by construction. */
+  readonly scale: string;
+  readonly baselineUnits: number;
+  readonly baselineNote: string;
+  readonly samples: readonly TriangulatedPointRecord[];
+  readonly depthInjection: DepthInjectionRecord | null;
+  readonly rotationInjection: RotationInjectionRecord | null;
+  /** What this batch cost, ms. `-1` on an idle frame. */
+  readonly triangulationMs: number;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -651,6 +770,15 @@ export interface TrackingResult {
    * different frame would be a decision about a view nobody took.
    */
   readonly keyframe: KeyframeReport | null;
+  /**
+   * Phase 9's frame, or `null` when triangulation is not running.
+   *
+   * Carried on every frame rather than only on the frames that batch, with `state: IDLE` in
+   * between: the screen and the session need the cumulative counters, and a message that
+   * appeared only on keyframe inserts would leave the screen frozen at the last batch with no
+   * way to tell that from a stage that had stopped.
+   */
+  readonly triangulation: TriangulationReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

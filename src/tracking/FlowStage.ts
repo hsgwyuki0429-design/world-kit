@@ -307,6 +307,7 @@ export class FlowStage {
       verification: null,
       pose: null,
       keyframe: null,
+      triangulation: null,
     };
   }
 

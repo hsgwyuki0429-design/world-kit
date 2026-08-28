@@ -139,6 +139,7 @@ function frameFor(v: VerificationReport, pose: PoseReport, reAnchored: boolean):
     verification: { ...v, reAnchored },
     pose,
     keyframe: null,
+    triangulation: null,
   };
 }
 

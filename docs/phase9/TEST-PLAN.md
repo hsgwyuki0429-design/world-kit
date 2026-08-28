@@ -110,6 +110,16 @@ construction: `K R K⁻¹` applied to the second view *is* the camera having add
 replaced by a rotation of the first, so the pair has **no translation at all** — which is the
 condition TRI-003 is about.
 
+> **Amendment, 2026-08-28 — an implementation correction, recorded before the device leg ran.**
+> "On a sampled schedule" was implemented the way Phases 5 and 6 implement it: a flag set by the
+> composition root on its own option cadence. **That is the wrong cadence for this phase.** Those
+> phases sample *frames offered to the worker*; this phase's unit of work is a **batch**, which
+> happens when Phase 8 inserts a keyframe, and the main thread does not know when that is. The
+> leg measured an injection on **64 % of batches**, each costing a full extra fit and solve, which
+> put the mean batch cost at 20.9 ms. The stage samples on its own batch index now — one batch in
+> six for each injection, never the same one — and the same leg measures 15.4 ms. No criterion
+> changed; the schedule the plan already asked for is now the schedule that runs.
+
 **`TRIANGULATION_BUDGET_MS` = 8.0 per keyframe insert, and it is not a per-frame line.** §H's
 table allocates ≤ 6 ms to *RANSAC + pose recovery* per frame and puts mapping off the tracking
 cadence explicitly: *triangulation on keyframe insert only*. Phase 8's leg inserted about one

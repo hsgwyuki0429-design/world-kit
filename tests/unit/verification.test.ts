@@ -258,6 +258,7 @@ function frameFor(report: VerificationReport, texture: SceneTexture): TrackingRe
     verification: report,
     pose: null,
     keyframe: null,
+    triangulation: null,
   };
 }
 

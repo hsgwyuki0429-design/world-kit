@@ -32,6 +32,7 @@ import { runPhase5Tests, PHASE5_SPECS } from './testkit/Phase5Tests';
 import { runPhase6Tests, PHASE6_SPECS } from './testkit/Phase6Tests';
 import { runPhase7Tests, PHASE7_SPECS } from './testkit/Phase7Tests';
 import { runPhase8Tests, PHASE8_SPECS } from './testkit/Phase8Tests';
+import { runPhase9Tests, PHASE9_SPECS } from './testkit/Phase9Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
 import { VerificationSession } from './tracking/VerificationSession';
@@ -47,9 +48,11 @@ import { renderPhase5Screen } from './ui/Phase5Screen';
 import { renderPhase6Screen } from './ui/Phase6Screen';
 import { renderPhase7Screen } from './ui/Phase7Screen';
 import { renderPhase8Screen } from './ui/Phase8Screen';
+import { renderPhase9Screen } from './ui/Phase9Screen';
 import { FusionStage } from './tracking/FusionStage';
 import { FusionSession } from './tracking/FusionSession';
 import { KeyframeSession } from './tracking/KeyframeSession';
+import { TriangulationSession } from './tracking/TriangulationSession';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -84,6 +87,7 @@ const PHASE6 = 6;
 const PHASE7 = 7;
 const PHASE8 = 8;
 const PHASE9 = 9;
+const PHASE10 = 10;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -109,10 +113,12 @@ const PHASE6_TICK_MS = 500;
 const PHASE7_TICK_MS = 500;
 /** ...and for the KEYFRAME SYSTEM screen. */
 const PHASE8_TICK_MS = 500;
+/** ...and for the TRIANGULATION screen. */
+const PHASE9_TICK_MS = 500;
 
 type Screen =
   | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7'
-  | 'phase8';
+  | 'phase8' | 'phase9';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -264,6 +270,20 @@ class Phase0App {
    * about them would put a structured clone of the population on every frame's message.
    */
   private readonly keyframes = new KeyframeSession();
+  /**
+   * Phase 9's own "am I running", for the seventh time and for the same reason (§H.5).
+   *
+   * Eight stages are live when the TRIANGULATION screen opens, the keyframe store among them,
+   * because that is how Phase 8 passes.
+   */
+  private triangulationRequested = false;
+  private triangulationEverRan = false;
+  private phase9Results: TestResult[] = [];
+  private phase9Bundle: EvidenceBundle | null = null;
+  private phase9DevEntry = false;
+  /** Counts frames offered while triangulating, so the two injections are sampled, not constant. */
+  private triangulationFrames = 0;
+  private readonly triangulation = new TriangulationSession();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
   private alignment: AlignmentReading | null = null;
@@ -541,6 +561,36 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase9') {
+      const p = this.pipeline.getStats();
+      renderPhase9Screen(
+        this.root,
+        {
+          phase9: this.registry.get(PHASE9),
+          phase10: this.registry.get(PHASE10),
+          canEnterPhase10: this.registry.canEnter(PHASE10),
+          phase10Implemented: isPhaseImplemented(PHASE10),
+          phase10BlockedReason: this.registry.blockedReason(PHASE10),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          running: this.isTriangulating(),
+          stats: this.triangulation.stats(this.isTriangulating()),
+          sourceWidth: p.sourceWidth,
+          sourceHeight: p.sourceHeight,
+          results: this.phase9Results,
+        },
+        {
+          onStart: () => void this.onStartPhase9(),
+          onStop: () => this.onStopPhase9('user stopped triangulation'),
+          onBack: () => this.leavePhase9(),
+          onEnterPhase10: () => this.enterPhase10(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase9Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase9Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase8') {
       const p = this.pipeline.getStats();
       renderPhase8Screen(
@@ -1306,7 +1356,14 @@ class Phase0App {
     }
     // Phase 8's decision is taken in the worker, where the population is. What arrives here is
     // the decision and the inputs it was taken from, so the session can re-derive it.
-    if (result.keyframe) this.keyframes.record(result.keyframe);
+    if (result.keyframe) {
+      this.keyframes.record(result.keyframe);
+      // The sparsity figure Phase 9 reports is points *per keyframe*, and the keyframe count is
+      // Phase 8's. Told rather than inferred, so the two phases cannot come to disagree about
+      // how many keyframes a run inserted.
+      if (result.keyframe.inserted) this.triangulation.noteKeyframeInserted();
+    }
+    if (result.triangulation) this.triangulation.record(result.triangulation);
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -2215,15 +2272,223 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 9 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase9(): boolean {
-    logger.warn(PHASE9, 'App', 'refused entry to Phase 9', {
-      reason: isPhaseImplemented(PHASE9)
-        ? this.registry.blockedReason(PHASE9)
-        : 'Phase 9 has not been written in this build',
+  /* ---------------------------------------------------------------------- */
+  /* Phase 9 — Triangulation                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  /** §H.5 for the seventh time, and from one predicate. */
+  private isTriangulating(): boolean {
+    return this.triangulationRequested && this.pipeline.isRunning();
+  }
+
+  /**
+   * What the tracking stage is asked to do while Phase 9 is running.
+   *
+   * Phase 8's whole configuration plus `triangulate` and the injections switched on. **Which
+   * batches they land on is not decided here**, unlike Phases 5 and 6, and the difference is not
+   * a style choice: those phases sample on frames offered to the worker, and this phase's unit
+   * of work is a *batch*, which happens when Phase 8 inserts a keyframe. The main thread does
+   * not know when that is. Sampling here landed an injection on 64 % of batches where the plan
+   * says *on a sampled schedule*, and each one costs a full extra fit and solve.
+   */
+  private triangulationOptions(): TrackingOptions {
+    this.triangulationFrames++;
+    return { ...this.keyframeOptions(), triangulate: true, wantInjections: true };
+  }
+
+  /** Enter the TRIANGULATION screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase9(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE9)) {
+      logger.warn(PHASE9, 'App', 'refused entry to Phase 9', {
+        reason: 'Phase 9 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE9)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE9, 'App', 'refused entry to Phase 9', {
+          reason: this.registry.blockedReason(PHASE9),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase9DevEntry = true;
+      logger.warn(PHASE9, 'App', 'Phase 9 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    this.stopPhase8Ticking();
+    this.screen = 'phase9';
+    if (this.registry.get(PHASE9).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE9, PhaseState.IMPLEMENTING, 'TRIANGULATION screen opened');
+    }
+    this.evaluatePhase9();
+    this.render();
+    return true;
+  }
+
+  /** MUST be reached from the click handler: the camera needs the user gesture. */
+  private async onStartPhase9(): Promise<void> {
+    if (this.cameraOpening || this.triangulationRequested) return;
+
+    this.triangulation.reset();
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE9, 'CameraSource', `triangulation could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and triangulation does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase9();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE9, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and triangulation still starts; if no frames arrive the ' +
+            'tests stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      logger.info(PHASE9, 'App', 'adopted the running Phase 8 keyframe store', {
+        note: 'the store keeps choosing views on v3 §20’s conditions and Phase 9 relates each ' +
+          'new one to the one before it. Changing the selection here would mean triangulating ' +
+          'pairs Phase 8 never chose',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.triangulationOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.triangulationRequested = true;
+      this.keyframesRequested = true;
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.keyframesEverRan = true;
+      this.triangulationEverRan = true;
+      this.startPhase9Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase9();
+    this.render();
+  }
+
+  private onStopPhase9(reason: string): void {
+    this.stopPhase9Ticking();
+    this.triangulationRequested = false;
+    this.keyframesRequested = false;
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.fusionRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase9();
+    this.render();
+  }
+
+  private leavePhase9(): void {
+    this.onStopPhase9('left the TRIANGULATION screen');
+    this.screen = 'phase8';
+    this.render();
+  }
+
+  /** Phase 10 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase10(): boolean {
+    logger.warn(PHASE10, 'App', 'refused entry to Phase 10', {
+      reason: isPhaseImplemented(PHASE10)
+        ? this.registry.blockedReason(PHASE10)
+        : 'Phase 10 has not been written in this build',
     });
     return false;
   }
+
+  private startPhase9Ticking(): void {
+    this.startTicking(PHASE9, PHASE9_TICK_MS, () => {
+      this.pipeline.setTrackingOptions(this.triangulationOptions());
+      this.probeAlignment();
+      this.evaluatePhase9();
+      this.render();
+    });
+  }
+
+  private stopPhase9Ticking(): void {
+    this.stopTicking(PHASE9);
+  }
+
+  private evaluatePhase9(): void {
+    this.phase9Results = runPhase9Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      triangulationEverRan: this.triangulationEverRan,
+      stats: this.triangulation.stats(this.isTriangulating()),
+    });
+
+    this.applyPhase(PHASE9, this.phase9Results, (verdict, reason) =>
+      this.buildPhase9Evidence(verdict, reason),
+    );
+  }
+
+  private buildPhase9Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE9,
+      phaseName: PHASE_NAMES[PHASE9] ?? 'Triangulation',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase9Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phases 4–8 travel in the Phase 9 bundle because Phase 9's input is their output: a
+        // depth means nothing without the pair it came from, the pose that related the pair, and
+        // the correspondences that pose was recovered from.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        pose: this.pose.describe(),
+        keyframes: this.keyframes.describe(),
+        triangulation: this.triangulation.describe(),
+        devEntry: this.phase9DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase9Bundle = this.keepBundle(PHASE9, built);
+  }
+
 
   private startPhase8Ticking(): void {
     this.startTicking(PHASE8, PHASE8_TICK_MS, () => {
@@ -2995,6 +3260,16 @@ class Phase0App {
       getPhase8Evidence: () => this.phase8Bundle,
       getPhase8EvidenceJson: () => (this.phase8Bundle ? serialiseEvidence(this.phase8Bundle) : null),
       getPhase8State: () => this.registry.get(PHASE8),
+
+      phase9Specs: PHASE9_SPECS,
+      enterPhase9: (devOverride = false) => this.enterPhase9(devOverride),
+      leavePhase9: () => this.leavePhase9(),
+      /** Read-only, as for Phases 4–8: the leg presses `#start-triangulation` in the DOM. */
+      getTriangulationStats: () => this.triangulation.stats(this.isTriangulating()),
+      getPhase9Results: () => this.phase9Results,
+      getPhase9Evidence: () => this.phase9Bundle,
+      getPhase9EvidenceJson: () => (this.phase9Bundle ? serialiseEvidence(this.phase9Bundle) : null),
+      getPhase9State: () => this.registry.get(PHASE9),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

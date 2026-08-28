@@ -244,12 +244,14 @@ src/
                  FlowTracker, FlowStage, FlowSession, trackingState,
                  VerificationStage, VerificationSession, PoseStage, PoseSession,
                  poseConfidence, gyroRotation, FusionStage, FusionSession,
-                 fusionConfidence, KeyframeStage, KeyframeSession, types and messages
+                 fusionConfidence, KeyframeStage, KeyframeSession,
+                 TriangulationStage, TriangulationSession, types and messages
   mapping/       keyframes (v3 §20's selector, the bounded store and the metronome it is
-                 scored against) — same rule as geometry and fusion: numbers in,
-                 structures out, may import nothing but core and geometry (audited)
-  testkit/       Phase0Tests..Phase8Tests, runTests (the shape all nine share)
-  ui/            Phase0Screen..Phase8Screen, dom (el/card/stat/formatters),
+                 scored against), triangulation (the parallax gate and the solve) —
+                 same rule as geometry and fusion: numbers in, structures out,
+                 may import nothing but core and geometry (audited)
+  testkit/       Phase0Tests..Phase9Tests, runTests (the shape all ten share)
+  ui/            Phase0Screen..Phase9Screen, dom (el/card/stat/formatters),
                  phaseSections (the tests/evidence/navigation cards), PreviewVideo, styles
   world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e*,
@@ -680,9 +682,49 @@ one composition per re-anchor rather than per frame.
 beside the counterfactual, and the first version built one observation index per pair — 435 of
 them — putting the mean at 1.67 ms against this phase's own 1.0 ms ceiling. §H.8, again.
 
+## What Phase 9 does
+
+Phase 9 — Triangulation (**v4 §21**, on v3 §15 and §16's geometry) — recovers the first
+three-dimensional quantity in this project: where a point **is**, not merely where it appears.
+Two keyframes, related by the features they share, and a depth for every point whose two viewing
+rays meet at enough of an angle to determine one.
+
+**The floor is an angle, and it is derived.** A triangulated depth's relative uncertainty is
+`σ_Z/Z ≈ σ_θ/θ`; §13's 1.5 px correspondence band over the assumed `f ≈ 967 px` is 0.089° of
+angular noise, and asking for a depth good to a tenth of itself gives 0.89°. One degree. A
+percentile of whatever the frame contained could not express *there is not enough parallax here* —
+§H.6, which Phase 3's corner floor is the reason for.
+
+**Two gates, because two different fakes produce a full set of plausible points.** A triangulator
+returning one constant depth puts every point in front of both cameras, reports a small
+reprojection error, and adds up perfectly; a solver that solves anything solvable produces a full
+set from a camera that turned and never moved, which is what a phone does when someone stands
+still and turns.
+
+- **TRI-004** synthesises a pair from depths the stage picked and never disclosed. Measured error
+  **0**; the best possible constant depth scores **0.237**, printed beside it so the tolerance is
+  not what separates them.
+- **TRI-003** replaces the pair's second view with `K R K⁻¹` applied to its first — a real
+  rotation and no baseline at all. **0 points from 16 injections**, and the pose came back
+  `ROTATION_ONLY` 16 times out of 16.
+
+`tests/unit/triangulation.test.ts` drives the real stage with a constant-depth solver and it fails
+**TRI-004 and nothing else** — while reporting a *better* reprojection error than the real one.
+
+**The pose for the pair is a fresh fit, and it has a witness.** No model exists for a keyframe
+pair, so one is fitted with Phase 5's verifier and Phase 6's decomposition, unmodified. TRI-006
+then compares it against the rotation Phase 6 measured by an entirely different route — per-frame
+poses against a moving anchor, composed by Phase 8 across anchor epochs. The fit says 0.036°, the
+chain disagrees by 0.066°, tolerance 3°.
+
+**And no distance.** Every depth is in units of that pair's own baseline, which is 1 by
+construction. Two batches' depths are two different units and no record pools them; the number
+behind that refusal is the batch-to-batch spread of the median depth, **0.87 on one scene with one
+camera**. Phase 10 is where the pairs come into one frame.
+
 ## Next
 
-Phase 9 — Triangulation (v4 §21), once Phase 8 has a device run behind it.
+Phase 10 — Landmark Map (v4 §22), once Phase 9 has a device run behind it.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

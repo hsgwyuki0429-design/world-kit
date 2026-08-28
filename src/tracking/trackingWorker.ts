@@ -35,6 +35,7 @@ import { FlowStage } from './FlowStage';
 import { VerificationStage } from './VerificationStage';
 import { PoseStage } from './PoseStage';
 import { KeyframeStage } from './KeyframeStage';
+import { TriangulationStage } from './TriangulationStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -96,6 +97,15 @@ const poseStage = new PoseStage();
  * on v3 §20's conditions so that the *room* has a set of viewpoints.
  */
 const keyframeStage = new KeyframeStage();
+/**
+ * Phase 9. Runs on keyframe inserts only, which is where §27 puts mapping work.
+ *
+ * In the tracking worker rather than in a second one, and that is a decision deferred to a
+ * measurement rather than taken from §B.2's diagram: the cost per insert and the amortised
+ * per-frame figure are both on the record, and a mapping worker is what the numbers should buy
+ * if they turn out to need it.
+ */
+const triangulationStage = new TriangulationStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -317,6 +327,7 @@ function runTracking(
       verificationStage.reset();
       poseStage.reset();
       keyframeStage.reset();
+      triangulationStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -333,6 +344,7 @@ function runTracking(
     verificationStage.reset();
     poseStage.reset();
     keyframeStage.reset();
+    triangulationStage.reset();
     flowActive = false;
   }
 
@@ -427,6 +439,7 @@ function runTracking(
     verification: null,
     pose: null,
     keyframe: null,
+    triangulation: null,
   };
 }
 
@@ -488,7 +501,17 @@ function runFlow(
     verification: outcome.report,
     flow: result.flow,
   });
-  return { ...result, verification: outcome.report, pose, keyframe };
+  if (!options.triangulate) return { ...result, verification: outcome.report, pose, keyframe };
+
+  // Phase 9 relates the keyframe Phase 8 has just inserted to the one before it. On every other
+  // frame it reports IDLE and carries its counters forward, so the screen can tell "no pair this
+  // frame" from "the stage has stopped".
+  const triangulation = triangulationStage.process({
+    keyframes: keyframeStage.keyframes(),
+    inserted: keyframe.inserted,
+    wantInjections: options.wantInjections,
+  });
+  return { ...result, verification: outcome.report, pose, keyframe, triangulation };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

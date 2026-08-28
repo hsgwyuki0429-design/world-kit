@@ -22,7 +22,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
 | 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
 | 8 | Keyframe System | TESTING | Built. The automated leg **decides all six required records** — the instruments are a still segment and a metronome, and the harness makes both. Awaiting the device run. |
-| 9 | Triangulation | BLOCKED | |
+| 9 | Triangulation | TESTING | Built. The automated leg **decides all seven required records** — both gates are injections the harness builds. Awaiting the device run. |
 | 10 | Landmark Map | BLOCKED | |
 | 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
 | 12 | Spatial World | BLOCKED | |
@@ -1283,6 +1283,109 @@ than `0`: two keyframes sharing no features are not in the same place, they are 
   a map to adjust.
 - **No change to Phase 5's anchor.** It is a documented one-slot stand-in for this phase and it is
   what Phases 5 and 6 passed on the device with. The store is a second structure beside it.
+
+## Phase 9 — TESTING
+
+Built. `docs/phase9/TEST-PLAN.md` was committed before any Phase 9 code existed (§29), and the
+automated leg is green: `docs/phase9/evidence/phase9-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands. `docs/phase9/HOW-TO-RUN-DEVICE-TEST.md` is that run,
+and what it asks for is a scene with **depth** in it and room to walk sideways — a wall is a
+plane, and turning on the spot is exactly what this phase refuses to triangulate from.
+
+### The first three-dimensional quantity in the project, and two refusals around it
+
+A batch is two **keyframes** — the one Phase 8 has just inserted, against the one before it —
+related by the observations they share, matched by the tracker's feature id rather than by
+proximity. That last part is what makes a triangulated point recognisable to Phase 10.
+
+| | |
+| --- | --- |
+| below `MIN_PARALLAX_DEG` = 1.0° | **refused**, per point |
+| from a camera that only turned | **refused**, whole batch |
+| behind either camera | refused |
+| beyond v3 §33's 2.0 px reprojection | refused |
+
+**The floor is derived, not chosen.** A triangulated depth's relative uncertainty is `σ_Z/Z ≈
+σ_θ/θ`; §13's 1.5 px correspondence band over the assumed `f ≈ 967 px` is 0.089° of angular noise,
+and asking for a depth good to a tenth of itself gives 0.89°. A floor in the units of the physical
+quantity rather than a percentile of whatever the frame contained — §H.6, and Phase 3's corner
+floor is why that rule exists.
+
+### The pose for the pair is a fresh fit, and it has a witness
+
+Phase 6's rule is that it decomposes the model Phase 5 selected *on that frame*, never a fresh
+fit. Phase 9's pair is a **different pair of views** and no model exists for it, so one is fitted —
+by the same `verifyCorrespondences` Phase 5 uses, decomposed by the same `recoverPose` Phase 6
+uses, neither modified.
+
+What that buys is TRI-006. Phase 6 already measured the rotation between these two keyframes by an
+entirely different route — per-frame poses against Phase 5's moving anchor, composed by Phase 8
+across anchor epochs — and the two are compared at Phase 6's own tolerance. On the leg: the fit
+says 0.036°, the chain disagrees by 0.066°, tolerance 3°, 90 of 94 batches inside it. A fresh fit
+with a witness is a measurement; a fresh fit without one is a second answer.
+
+### Two gates, because two different fakes produce a full set of plausible points
+
+| | this triangulator | a constant depth | a solver that solves anything solvable |
+| --- | --- | --- | --- |
+| points in front of both cameras | yes | yes | yes |
+| reprojection inside 2 px | 0.036 px median | **0.05, self-reported** | yes |
+| counts that add up | yes | yes | yes |
+| **TRI-004** — depths the harness chose | **0** error | **0.237** — the control exactly | ok |
+| **TRI-003** — a camera that only turned | **0** points | 0 points | **a full set** |
+
+`tests/unit/triangulation.test.ts` drives the real stage with the constant-depth solver — the real
+batching, the real fit, the real injections — and it fails **TRI-004 and nothing else**, while
+reporting a *better* reprojection error than the real triangulator. That is the difference between
+a statistic a stage computes about itself and a measurement against something it cannot see.
+
+### What the leg measured
+
+95 batches over 60 s: 88 triangulated, 8,011 points, median 87.5 per batch. Worst accepted
+parallax 1.20° against the 1.0° floor; median depth uncertainty 0.053 against the 0.10 it was
+derived to buy. 16 pure-rotation injections, **0 points from all of them**, and the pose came back
+`ROTATION_ONLY` 16 times out of 16 — the refusal is attributed rather than assumed.
+
+### The refusal to pool depths, with the number behind it
+
+Every depth is in units of **that pair's own baseline**, which is `1` by construction. Two batches'
+depths are two different units, and no record aggregates them. The number behind that refusal is
+on the screen: the **batch-to-batch spread of the median depth is 0.87** on one scene with one
+camera. The median depth moves by 87 % of itself between pairs, not because the room changed.
+
+Phase 10 is where the pairs are brought into one frame by the landmarks they share.
+
+### Two corrections the measurements forced
+
+**"On a sampled schedule" was sampled on the wrong cadence.** The injections were requested by a
+flag the composition root sets on its own option cadence — how Phases 5 and 6 do it, and those
+phases sample *frames*. This phase's unit of work is a **batch**, which happens when Phase 8
+inserts a keyframe, and the main thread does not know when that is. The leg measured an injection
+on **64 % of batches** at 20.9 ms each; the stage samples on its own batch index now, one in six
+for each, and the same leg measures 15.4 ms.
+
+**A noiseless fixture cannot exercise TRI-006.** The unit fixture built its keyframes by exact
+projection, so both routes agreed to the last decimal and the *not identically zero* criterion
+fired on the fixture rather than on a defect. A fifth of §13's band is added to every observation
+now, which is what a well-tracked point actually looks like.
+
+### The cost, and the worker §B.2 has been planning since before Phase 0
+
+15.4 ms per batch on the leg's machine against a ceiling this phase set for itself at 8.0, and
+**3.0 ms amortised over every frame**. TRI-008 is advisory and excluded from the leg's gate for
+the reason every cost record is (§H.4). §B.2 has had a mapping worker in the diagram since before
+Phase 0 and it is not built; the argument for building it should be a measurement, and the
+amortised figure is that measurement. The device's own is the one that decides it.
+
+### Four things this phase does not do
+
+- **No shared scale between batches.** See above. It is what a monocular camera gives.
+- **No bundle adjustment.** §27 puts it every ≥ 10 keyframes, and it belongs to the phase that
+  holds a map to adjust.
+- **No surfaces, no meshing, no completeness.** v4 §21 asks for *Sparse Spatial Information* and
+  §16 forbids treating what cannot be observed as geometry.
+- **§33's `GOOD` stays unreachable**, for the sixth phase running and for the reason Phase 6 gave.
 
 ---
 
