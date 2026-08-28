@@ -410,7 +410,11 @@ describe('a stage that returns the same pose on every frame', () => {
   });
 });
 
-describe('POSE-002 — against the gyroscope', () => {
+// Each of these drives 45 frames through the real solver and the real stage, and on a loaded
+// shared CPU one of them measured 4756 ms against vitest's 5000 ms default — passing, but close
+// enough to fail on timing alone, which it did once. The budget is stated rather than inherited.
+// This is what the suite costs; nothing here is skipped or shortened to fit.
+describe('POSE-002 — against the gyroscope', { timeout: 30_000 }, () => {
   it('agrees when the camera really turned by what the gyroscope says', () => {
     const out = run(realSolver(), { gyro: true, rotationPerFrame: 0.6, frames: 45 });
     expect(out.stats.gyroAvailable).toBe(true);

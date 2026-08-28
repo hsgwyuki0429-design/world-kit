@@ -370,6 +370,105 @@ describe('a covered lens', () => {
   });
 });
 
+describe('a lens uncovered, and covered again before the tracker is back', () => {
+  /*
+   * The device run of 2026-08-28 failed FLOW-005 on this, and the tracker was not at fault.
+   *
+   * The lens was covered for 229 frames. The state went LOST on the first of them, nothing
+   * claimed a round trip through the dark, and 207 ms after the image came back the tracker
+   * was tracking again — every one of FLOW-005's criteria met. The record said the state had
+   * never left LOST, and the phase failed.
+   *
+   * Two things had to be true at once. The first frame back was still LOST: after 229 dark
+   * frames the population is gone, and on the device it took four or five frames to refill.
+   * The frame after *that* measured OCCLUDED again as the finger lifted — not a
+   * misclassification, since a wholesale change no shift explains is exactly what uncovering
+   * a lens looks like. The session held **one** pending recovery, so ending the one-frame
+   * episode overwrote it: the 229-frame episode, the only one long enough for FLOW-005 to
+   * judge, could never be credited again, and the recovery was filed against the flicker.
+   *
+   * The sequence is replayed into the session rather than produced by the scene, because the
+   * synthetic scene cannot hold the first condition — its detector refills the whole
+   * population on the first clear frame, so the state leaves LOST immediately and there is no
+   * frame for the flicker to land on. The results below are the stage's own, with one field
+   * overridden where the device differed: `state`, on the frame that came back to an empty
+   * population.
+   */
+  const source = run(
+    (i) => ({ dx: i >= 20 && i < 40 ? 0 : SHIFT_PER_FRAME, dy: 0, dark: i >= 20 && i < 40 }),
+    undefined,
+    60,
+  );
+  const darkFrame = source.frames.find(
+    (f) => f.flow?.frameMotion === FrameMotion.OCCLUDED && f.flow?.state === TrackingState.LOST,
+  );
+  const clearFrame = source.frames.find(
+    (f) => f.flow?.frameMotion !== FrameMotion.OCCLUDED && f.flow?.state === TrackingState.TRACKING,
+  );
+
+  function replay(withFlicker: boolean): FlowStats {
+    const session = new FlowSession();
+    const dark = darkFrame as TrackingResult;
+    const clear = clearFrame as TrackingResult;
+    // The same frame the stage produced, with the state the device was in: back from the dark
+    // with nothing left to track.
+    const clearButLost: TrackingResult = {
+      ...clear,
+      flow: { ...(clear.flow as NonNullable<TrackingResult['flow']>), state: TrackingState.LOST },
+    };
+    const sequence: TrackingResult[] = [
+      ...Array.from({ length: 20 }, () => dark),
+      clearButLost,
+      ...(withFlicker ? [dark] : []),
+      ...Array.from({ length: 8 }, () => clear),
+    ];
+    sequence.forEach((r, i) => session.record(r, i * 33));
+    return session.stats(true);
+  }
+
+  const withFlicker = replay(true);
+  const withoutFlicker = replay(false);
+
+  it('reproduces the device: a judged episode, then a one-frame episode behind it', () => {
+    expect(darkFrame).toBeDefined();
+    expect(clearFrame).toBeDefined();
+    const judged = withFlicker.occlusions.filter((e) => e.frames >= 10);
+    expect(judged.length).toBe(1);
+    expect(judged[0]?.frames).toBe(20);
+    expect(withFlicker.occlusions.length).toBe(2);
+    expect(withFlicker.occlusions[1]?.frames).toBe(1);
+  });
+
+  it('credits the long episode with the recovery, not the flicker that followed it', () => {
+    const long = withFlicker.occlusions[0];
+    expect(long?.msToLost).toBe(0);
+    expect(long?.survivedWithGoodFb).toBe(0);
+    expect(long?.recovered).toBe(true);
+    // Measured from the end of its own darkness, so it spans the flicker rather than
+    // restarting at it — an upper bound on how long the tracker took, never an under-report.
+    expect(long?.recoveredAfterMs).toBeGreaterThan(0);
+    // And the flicker is credited too, from its own end. Neither steals the other's.
+    expect(withFlicker.occlusions[1]?.recovered).toBe(true);
+    expect(withFlicker.occlusions[1]?.recoveredAfterMs).toBeLessThan(
+      long?.recoveredAfterMs ?? Infinity,
+    );
+  });
+
+  it('passes FLOW-005, and reaches the same verdict as the run without the flicker', () => {
+    const verdict = (stats: FlowStats) =>
+      runPhase4Tests({
+        cameraState: CameraState.LIVE,
+        pipelineEverStarted: true,
+        trackingEverRan: true,
+        stats,
+      }).find((r) => r.spec.id === 'FLOW-005')?.verdict;
+    // The flicker is a fact about the lens, not about the tracker, and FLOW-005 judges the
+    // tracker. A single dark frame behind the recovery must not change the verdict.
+    expect(verdict(withoutFlicker)).toBe(Verdict.PASS);
+    expect(verdict(withFlicker)).toBe(Verdict.PASS);
+  });
+});
+
 describe('the tracker itself', () => {
   it('drops a point that failed to track rather than returning it where it was', () => {
     const tracker = new FlowTracker();
