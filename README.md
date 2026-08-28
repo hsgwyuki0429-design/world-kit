@@ -245,13 +245,15 @@ src/
                  VerificationStage, VerificationSession, PoseStage, PoseSession,
                  poseConfidence, gyroRotation, FusionStage, FusionSession,
                  fusionConfidence, KeyframeStage, KeyframeSession,
-                 TriangulationStage, TriangulationSession, types and messages
+                 TriangulationStage, TriangulationSession, LandmarkStage,
+                 LandmarkSession, types and messages
   mapping/       keyframes (v3 §20's selector, the bounded store and the metronome it is
-                 scored against), triangulation (the parallax gate and the solve) —
-                 same rule as geometry and fusion: numbers in, structures out,
-                 may import nothing but core and geometry (audited)
-  testkit/       Phase0Tests..Phase9Tests, runTests (the shape all ten share)
-  ui/            Phase0Screen..Phase9Screen, dom (el/card/stat/formatters),
+                 scored against), triangulation (the parallax gate and the solve),
+                 landmarks (the map, the similarity that registers a batch into it,
+                 and the gate) — same rule as geometry and fusion: numbers in,
+                 structures out, may import nothing but core and geometry (audited)
+  testkit/       Phase0Tests..Phase10Tests, runTests (the shape all eleven share)
+  ui/            Phase0Screen..Phase10Screen, dom (el/card/stat/formatters),
                  phaseSections (the tests/evidence/navigation cards), PreviewVideo, styles
   world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e*,
@@ -722,9 +724,49 @@ construction. Two batches' depths are two different units and no record pools th
 behind that refusal is the batch-to-batch spread of the median depth, **0.87 on one scene with one
 camera**. Phase 10 is where the pairs come into one frame.
 
+## What Phase 10 does
+
+Phase 10 — Landmark Map (**v4 §22**, with §56's bound and §34's origin) — brings Phase 9's batches
+into **one frame**.
+
+Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline; its leg
+measured the median depth moving by **87 % of itself** between consecutive batches on a scene that
+never changed. The landmarks two batches share fix the ratio between their scales, recovered as the
+scale term of a similarity fitted in closed form — **1.387** on the committed run, at a residual of
+0.0005 of a depth. That is a ratio between two quantities nobody has measured, and it is what makes
+ninety separate answers one map. The world has a consistent unit and no known one.
+
+**Two gates, and one of them corrected the plan.**
+
+- **MAP-002** — a landmark's position, as the map held it *before* this batch, projected into the
+  keyframe the batch has just added, and compared against where the tracker saw it: **0.111 px**
+  median, none exactly zero, from landmarks with a median of three observations at the moment they
+  were asked.
+- **MAP-005** — GEO-003's shape one layer up: a known subset of the incoming positions displaced
+  perpendicular to their viewing rays by 5 % of their depth, which moves the projection by 24 px
+  whatever the depth. Recall **1.00**, with a false-cull **excess over the batch's own baseline**
+  of **0**.
+
+`tests/unit/landmarks.test.ts` drives the real stage with the position rule replaced by one that
+keeps only the newest observation, and it fails **MAP-006 and nothing else** — *not* MAP-002, which
+the plan predicted. A map with no memory still predicts, from the previous batch; what it cannot do
+is settle. The two records catch different fakes and the fixture is what established which.
+
+**Five corrections the measurements forced**, each recorded beside the criterion it affects: a gate
+that was not looking at what the injection corrupts (recall 0.17); the same comparison in world
+units refusing 71 % of untouched points, because a triangulated position's dominant error is radial
+and invisible; the same lesson applied to the registration's trimming making it *worse*, because a
+similarity's scale is a depth quantity; an absolute false-cull ceiling that measured the scene
+rather than the gate; and a sparsity figure that read **338 %** — the same shape as Phase 6's
+232.3 % agreement rate, and the reason every rate here is checked against `0..1`.
+
+**Confidence has four measured terms and none of them is a clock**: observation count, parallax,
+prediction agreement, viewpoint spread, combined as the minimum. `audit-fake-data.mjs` enforces the
+absence of the alternative mechanically.
+
 ## Next
 
-Phase 10 — Landmark Map (v4 §22), once Phase 9 has a device run behind it.
+Phase 11 — Surface Understanding (v4 §23), once Phase 10 has a device run behind it.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

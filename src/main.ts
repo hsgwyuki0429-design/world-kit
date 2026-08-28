@@ -33,6 +33,7 @@ import { runPhase6Tests, PHASE6_SPECS } from './testkit/Phase6Tests';
 import { runPhase7Tests, PHASE7_SPECS } from './testkit/Phase7Tests';
 import { runPhase8Tests, PHASE8_SPECS } from './testkit/Phase8Tests';
 import { runPhase9Tests, PHASE9_SPECS } from './testkit/Phase9Tests';
+import { runPhase10Tests, PHASE10_SPECS } from './testkit/Phase10Tests';
 import { FeaturePopulation } from './tracking/FeaturePopulation';
 import { FlowSession } from './tracking/FlowSession';
 import { VerificationSession } from './tracking/VerificationSession';
@@ -49,10 +50,12 @@ import { renderPhase6Screen } from './ui/Phase6Screen';
 import { renderPhase7Screen } from './ui/Phase7Screen';
 import { renderPhase8Screen } from './ui/Phase8Screen';
 import { renderPhase9Screen } from './ui/Phase9Screen';
+import { renderPhase10Screen } from './ui/Phase10Screen';
 import { FusionStage } from './tracking/FusionStage';
 import { FusionSession } from './tracking/FusionSession';
 import { KeyframeSession } from './tracking/KeyframeSession';
 import { TriangulationSession } from './tracking/TriangulationSession';
+import { LandmarkSession } from './tracking/LandmarkSession';
 import { WorkerFramePipeline } from './pipeline/WorkerFramePipeline';
 import { renderPhase1Screen } from './ui/Phase1Screen';
 import { renderPhase2Screen } from './ui/Phase2Screen';
@@ -88,6 +91,7 @@ const PHASE7 = 7;
 const PHASE8 = 8;
 const PHASE9 = 9;
 const PHASE10 = 10;
+const PHASE11 = 11;
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -115,10 +119,12 @@ const PHASE7_TICK_MS = 500;
 const PHASE8_TICK_MS = 500;
 /** ...and for the TRIANGULATION screen. */
 const PHASE9_TICK_MS = 500;
+/** ...and for the LANDMARK MAP screen. */
+const PHASE10_TICK_MS = 500;
 
 type Screen =
   | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7'
-  | 'phase8' | 'phase9';
+  | 'phase8' | 'phase9' | 'phase10';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -284,6 +290,18 @@ class Phase0App {
   /** Counts frames offered while triangulating, so the two injections are sampled, not constant. */
   private triangulationFrames = 0;
   private readonly triangulation = new TriangulationSession();
+  /**
+   * Phase 10's own "am I running", for the eighth time and for the same reason (§H.5).
+   *
+   * Nine stages are live when the LANDMARK MAP screen opens, the triangulator among them,
+   * because that is how Phase 9 passes.
+   */
+  private landmarksRequested = false;
+  private landmarksEverRan = false;
+  private phase10Results: TestResult[] = [];
+  private phase10Bundle: EvidenceBundle | null = null;
+  private phase10DevEntry = false;
+  private readonly landmarkMap = new LandmarkSession();
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
   private alignment: AlignmentReading | null = null;
@@ -561,6 +579,36 @@ class Phase0App {
   }
 
   private render(): void {
+    if (this.screen === 'phase10') {
+      const p = this.pipeline.getStats();
+      renderPhase10Screen(
+        this.root,
+        {
+          phase10: this.registry.get(PHASE10),
+          phase11: this.registry.get(PHASE11),
+          canEnterPhase11: this.registry.canEnter(PHASE11),
+          phase11Implemented: isPhaseImplemented(PHASE11),
+          phase11BlockedReason: this.registry.blockedReason(PHASE11),
+          cameraState: this.camera.getState(),
+          trackLive: this.camera.isLive(),
+          opening: this.cameraOpening,
+          running: this.isMapping(),
+          stats: this.landmarkMap.stats(this.isMapping()),
+          sourceWidth: p.sourceWidth,
+          sourceHeight: p.sourceHeight,
+          results: this.phase10Results,
+        },
+        {
+          onStart: () => void this.onStartPhase10(),
+          onStop: () => this.onStopPhase10('user stopped the landmark map'),
+          onBack: () => this.leavePhase10(),
+          onEnterPhase11: () => this.enterPhase11(),
+          onDownloadEvidence: () => this.onDownloadEvidence(this.phase10Bundle),
+          onCopyEvidence: () => void this.onCopyEvidence(this.phase10Bundle),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase9') {
       const p = this.pipeline.getStats();
       renderPhase9Screen(
@@ -1364,6 +1412,13 @@ class Phase0App {
       if (result.keyframe.inserted) this.triangulation.noteKeyframeInserted();
     }
     if (result.triangulation) this.triangulation.record(result.triangulation);
+    if (result.landmarks) {
+      // MAP-007's sparsity is a *share* of what the tracker was following, and that denominator
+      // is Phase 4's. Told rather than inferred, so the rate is a statement about the room
+      // rather than one the map makes about itself.
+      if (result.flow) this.landmarkMap.noteTrackedPopulation(result.flow.total);
+      this.landmarkMap.record(result.landmarks);
+    }
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
       this.lastOverlayWidth = result.detectWidth * 2 ** result.detectLevel;
@@ -2422,15 +2477,223 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 10 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase10(): boolean {
-    logger.warn(PHASE10, 'App', 'refused entry to Phase 10', {
-      reason: isPhaseImplemented(PHASE10)
-        ? this.registry.blockedReason(PHASE10)
-        : 'Phase 10 has not been written in this build',
+  /* ---------------------------------------------------------------------- */
+  /* Phase 10 — Landmark Map                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  /** §H.5 for the eighth time, and from one predicate. */
+  private isMapping(): boolean {
+    return this.landmarksRequested && this.pipeline.isRunning();
+  }
+
+  /**
+   * What the tracking stage is asked to do while Phase 10 is running.
+   *
+   * Phase 9's whole configuration plus `landmarks`. The injections stay on: Phase 9's two
+   * measure the triangulator this map is fed by, and switching them off here would leave the map
+   * being judged on a pipeline nobody was checking underneath it.
+   */
+  private landmarkOptions(): TrackingOptions {
+    return { ...this.triangulationOptions(), landmarks: true };
+  }
+
+  /** Enter the LANDMARK MAP screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase10(devOverride = false): boolean {
+    if (!isPhaseImplemented(PHASE10)) {
+      logger.warn(PHASE10, 'App', 'refused entry to Phase 10', {
+        reason: 'Phase 10 has not been written in this build',
+      });
+      return false;
+    }
+    if (!this.registry.canEnter(PHASE10)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(PHASE10, 'App', 'refused entry to Phase 10', {
+          reason: this.registry.blockedReason(PHASE10),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.phase10DevEntry = true;
+      logger.warn(PHASE10, 'App', 'Phase 10 opened through the desktop development override', {
+        note: 'this path is unreachable on a real device and the resulting bundle is ' +
+          'DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    this.stopPhase9Ticking();
+    this.screen = 'phase10';
+    if (this.registry.get(PHASE10).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(PHASE10, PhaseState.IMPLEMENTING, 'LANDMARK MAP screen opened');
+    }
+    this.evaluatePhase10();
+    this.render();
+    return true;
+  }
+
+  /** MUST be reached from the click handler: the camera needs the user gesture. */
+  private async onStartPhase10(): Promise<void> {
+    if (this.cameraOpening || this.landmarksRequested) return;
+
+    this.landmarkMap.reset();
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          PHASE10, 'CameraSource', `the landmark map could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and the map does not start',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.evaluatePhase10();
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(
+          PHASE10, 'CameraPreview', 'video.play() was rejected',
+          'the stream stays attached and the map still starts; if no frames arrive the tests ' +
+            'stay PENDING rather than the stall being hidden',
+          err,
+        );
+      }
+    }
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      logger.info(PHASE10, 'App', 'adopted the running Phase 9 triangulator', {
+        note: 'the pairs Phase 8 chooses and Phase 9 triangulates stay as they are. Phase 10 ' +
+          'brings each batch into one frame by the landmarks it shares with the map, and ' +
+          'changes nothing about how the batches are made',
+      });
+    }
+
+    this.pipeline.setTrackingOptions(this.landmarkOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.landmarksRequested = true;
+      this.triangulationRequested = true;
+      this.keyframesRequested = true;
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.keyframesEverRan = true;
+      this.triangulationEverRan = true;
+      this.landmarksEverRan = true;
+      this.startPhase10Ticking();
+    } else {
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluatePhase10();
+    this.render();
+  }
+
+  private onStopPhase10(reason: string): void {
+    this.stopPhase10Ticking();
+    this.landmarksRequested = false;
+    this.triangulationRequested = false;
+    this.keyframesRequested = false;
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.fusionRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluatePhase10();
+    this.render();
+  }
+
+  private leavePhase10(): void {
+    this.onStopPhase10('left the LANDMARK MAP screen');
+    this.screen = 'phase9';
+    this.render();
+  }
+
+  /** Phase 11 does not exist yet; the control says so and this refuses rather than pretending. */
+  private enterPhase11(): boolean {
+    logger.warn(PHASE11, 'App', 'refused entry to Phase 11', {
+      reason: isPhaseImplemented(PHASE11)
+        ? this.registry.blockedReason(PHASE11)
+        : 'Phase 11 has not been written in this build',
     });
     return false;
   }
+
+  private startPhase10Ticking(): void {
+    this.startTicking(PHASE10, PHASE10_TICK_MS, () => {
+      this.pipeline.setTrackingOptions(this.landmarkOptions());
+      this.probeAlignment();
+      this.evaluatePhase10();
+      this.render();
+    });
+  }
+
+  private stopPhase10Ticking(): void {
+    this.stopTicking(PHASE10);
+  }
+
+  private evaluatePhase10(): void {
+    this.phase10Results = runPhase10Tests({
+      cameraState: this.camera.getState(),
+      pipelineEverStarted: this.pipelineEverStarted,
+      landmarksEverRan: this.landmarksEverRan,
+      stats: this.landmarkMap.stats(this.isMapping()),
+    });
+
+    this.applyPhase(PHASE10, this.phase10Results, (verdict, reason) =>
+      this.buildPhase10Evidence(verdict, reason),
+    );
+  }
+
+  private buildPhase10Evidence(verdict: PhaseState, reason: string): void {
+    if (!this.matrix || !this.device) return;
+    const built = buildEvidenceBundle({
+      phase: PHASE10,
+      phaseName: PHASE_NAMES[PHASE10] ?? 'Landmark Map',
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: this.phase10Results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        // Phases 4–9 travel in the Phase 10 bundle because Phase 10's input is their output: a
+        // landmark means nothing without the batches it was registered from, the pairs those
+        // batches related, and the correspondences underneath them.
+        flow: this.flow.describe(),
+        verification: this.verification.describe(),
+        pose: this.pose.describe(),
+        keyframes: this.keyframes.describe(),
+        triangulation: this.triangulation.describe(),
+        landmarks: this.landmarkMap.describe(),
+        devEntry: this.phase10DevEntry,
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.phase10Bundle = this.keepBundle(PHASE10, built);
+  }
+
 
   private startPhase9Ticking(): void {
     this.startTicking(PHASE9, PHASE9_TICK_MS, () => {
@@ -3270,6 +3533,17 @@ class Phase0App {
       getPhase9Evidence: () => this.phase9Bundle,
       getPhase9EvidenceJson: () => (this.phase9Bundle ? serialiseEvidence(this.phase9Bundle) : null),
       getPhase9State: () => this.registry.get(PHASE9),
+
+      phase10Specs: PHASE10_SPECS,
+      enterPhase10: (devOverride = false) => this.enterPhase10(devOverride),
+      leavePhase10: () => this.leavePhase10(),
+      /** Read-only, as for Phases 4–9: the leg presses `#start-landmarks` in the DOM. */
+      getLandmarkStats: () => this.landmarkMap.stats(this.isMapping()),
+      getPhase10Results: () => this.phase10Results,
+      getPhase10Evidence: () => this.phase10Bundle,
+      getPhase10EvidenceJson: () =>
+        this.phase10Bundle ? serialiseEvidence(this.phase10Bundle) : null,
+      getPhase10State: () => this.registry.get(PHASE10),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),

@@ -308,6 +308,7 @@ export class FlowStage {
       pose: null,
       keyframe: null,
       triangulation: null,
+      landmarks: null,
     };
   }
 

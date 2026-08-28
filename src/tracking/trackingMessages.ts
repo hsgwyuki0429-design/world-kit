@@ -79,6 +79,14 @@ export interface TrackingOptions {
    * solve. The stage samples on its own batch index instead.
    */
   readonly wantInjections: boolean;
+  /**
+   * Whether to maintain the landmark map (Phase 10, v4 §22).
+   *
+   * `false` in Phases 4–9. When `true` the worker brings each Phase 9 batch into one frame by
+   * the landmarks it shares with the map, which is the only mechanism a monocular camera has for
+   * relating two pairs' baselines to each other.
+   */
+  readonly landmarks: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -102,6 +110,7 @@ export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   keyframes: false,
   triangulate: false,
   wantInjections: false,
+  landmarks: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -701,6 +710,104 @@ export interface TriangulationReport {
   readonly triangulationMs: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Phase 10 — landmark map                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** One landmark, as a sample crossing the boundary. */
+export interface LandmarkRecord {
+  readonly id: number;
+  /** In the world frame — the first registered keyframe's, in its batch's baseline units. */
+  readonly position: readonly number[];
+  readonly observations: number;
+  readonly keyframes: number;
+  readonly maxParallaxDeg: number;
+  readonly meanPredictionPx: number;
+  readonly predictions: number;
+  readonly lastMoveRelative: number;
+  readonly confidence: number;
+  readonly state: string;
+}
+
+export interface LandmarkCullRecord {
+  readonly id: number;
+  readonly reason: string;
+  readonly detail: string;
+}
+
+/**
+ * MAP-005's measurement: positions the harness displaced and did not disclose.
+ *
+ * `cleanRejectionRate` is beside `recall` for GEO-003's reason: recall alone is scored perfectly
+ * by a map that rejects everything, and the false-cull rate alone by one that rejects nothing.
+ */
+export interface LandmarkInjectionRecord {
+  readonly injected: number;
+  readonly clean: number;
+  readonly injectedRejected: number;
+  readonly cleanRejected: number;
+  readonly recall: number;
+  readonly cleanRejectionRate: number;
+  /**
+   * ...and the rate the gate refuses those same untouched points on the **uncorrupted** batch.
+   *
+   * The baseline. An absolute ceiling on `cleanRejectionRate` measures how noisy the scene is;
+   * the *excess* over this measures whether the injection made the gate suspicious of the
+   * innocent, which is what MAP-005's companion figure is for.
+   */
+  readonly baselineRejectionRate: number;
+  /** How far the displacement moved each point's projection, px — an outlier by construction. */
+  readonly displacementPx: number;
+  readonly fraction: number;
+  readonly seed: number;
+}
+
+/** One batch of Phase 10, or the frames in between. */
+export interface LandmarkReport {
+  readonly frames: number;
+  readonly batches: number;
+  /** `REGISTERED` / `UNREGISTERED` / `EPOCH_RESTART` / `IDLE`. */
+  readonly state: string;
+  readonly stateReason: string;
+  readonly keyframePair: readonly number[] | null;
+  readonly points: number;
+  readonly shared: number;
+  readonly admitted: number;
+  readonly merged: number;
+  readonly rejected: number;
+  /** The ratio the registration recovered between this batch's baseline and the world's. */
+  readonly registrationScale: number;
+  readonly registrationResidual: number;
+  readonly registrationUsed: number;
+  readonly registrationOutliers: number;
+  /* ---- MAP-002 ---- */
+  readonly heldOut: number;
+  readonly medianHeldOutPx: number;
+  readonly maxHeldOutPx: number;
+  readonly zeroHeldOut: number;
+  readonly medianObservationsAtPrediction: number;
+  /* ---- the map ---- */
+  readonly landmarks: number;
+  readonly confirmed: number;
+  readonly culled: readonly LandmarkCullRecord[];
+  readonly epoch: number;
+  readonly epochRestarted: boolean;
+  readonly medianConfidence: number;
+  readonly medianMoveRelative: number;
+  /** Median relative move at exactly two observations, and at five or more — MAP-006. */
+  readonly moveAtTwo: number;
+  readonly moveAtFive: number;
+  readonly moveAtTwoSamples: number;
+  readonly moveAtFiveSamples: number;
+  /** v4 §22: this is not a model, and the record says so as a value. */
+  readonly scale: string;
+  readonly modelClaim: string;
+  readonly landmarksPerKeyframe: number;
+  readonly samples: readonly LandmarkRecord[];
+  readonly injection: LandmarkInjectionRecord | null;
+  readonly landmarkMs: number;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -779,6 +886,14 @@ export interface TrackingResult {
    * way to tell that from a stage that had stopped.
    */
   readonly triangulation: TriangulationReport | null;
+  /**
+   * Phase 10's frame, or `null` when the map is not running.
+   *
+   * Carried on every frame with `state: IDLE` in between, as Phase 9's is and for the same
+   * reason: the screen needs the cumulative state, and a message that appeared only on batches
+   * would leave it unable to tell "no batch this frame" from "the map has stopped".
+   */
+  readonly landmarks: LandmarkReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

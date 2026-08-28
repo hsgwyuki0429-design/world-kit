@@ -36,6 +36,7 @@ import { VerificationStage } from './VerificationStage';
 import { PoseStage } from './PoseStage';
 import { KeyframeStage } from './KeyframeStage';
 import { TriangulationStage } from './TriangulationStage';
+import { LandmarkStage } from './LandmarkStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -106,6 +107,13 @@ const keyframeStage = new KeyframeStage();
  * if they turn out to need it.
  */
 const triangulationStage = new TriangulationStage();
+/**
+ * Phase 10. Brings Phase 9's batches into one frame by the landmarks they share.
+ *
+ * In the same worker for the same reason Phase 9 is: it consumes the full point set, which the
+ * report deliberately does not carry across the boundary, and it runs on keyframe inserts only.
+ */
+const landmarkStage = new LandmarkStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -328,6 +336,7 @@ function runTracking(
       poseStage.reset();
       keyframeStage.reset();
       triangulationStage.reset();
+      landmarkStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -345,6 +354,7 @@ function runTracking(
     poseStage.reset();
     keyframeStage.reset();
     triangulationStage.reset();
+    landmarkStage.reset();
     flowActive = false;
   }
 
@@ -440,6 +450,7 @@ function runTracking(
     pose: null,
     keyframe: null,
     triangulation: null,
+    landmarks: null,
   };
 }
 
@@ -511,7 +522,19 @@ function runFlow(
     inserted: keyframe.inserted,
     wantInjections: options.wantInjections,
   });
-  return { ...result, verification: outcome.report, pose, keyframe, triangulation };
+  if (!options.landmarks) {
+    return { ...result, verification: outcome.report, pose, keyframe, triangulation };
+  }
+
+  // Phase 10 consumes the **full** batch, which the Phase 9 report deliberately does not carry
+  // across the boundary — six sampled points is what a screen needs and every point is what a map
+  // needs. `getBatch` is the same division `VerificationStage` makes between its report and its
+  // outcome.
+  const landmarks = landmarkStage.process({
+    batch: triangulationStage.getBatch(),
+    wantInjection: options.wantInjections,
+  });
+  return { ...result, verification: outcome.report, pose, keyframe, triangulation, landmarks };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

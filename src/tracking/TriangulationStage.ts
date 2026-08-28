@@ -60,6 +60,7 @@ import type {
   TriangulationOutcome,
 } from '../mapping/triangulation';
 import type { Keyframe, KeyframeObservation } from '../mapping/keyframes';
+import type { LandmarkBatch, LandmarkPoint } from '../mapping/landmarks';
 import type {
   DepthInjectionRecord,
   RotationInjectionRecord,
@@ -119,6 +120,16 @@ export class TriangulationStage {
   private readonly seedRng: Rng;
   private readonly solve: TriangulateFn;
   private last: TriangulationReport | null = null;
+  /**
+   * The full batch, for the phase that consumes it.
+   *
+   * The report carries six sampled points because the boundary does not need eight thousand of
+   * them; Phase 10 runs in the same worker and needs every one, with the pixel each was observed
+   * at in the second view. The same division `VerificationStage` makes between its report and its
+   * `VerificationOutcome`, and for the same reason: what crosses the seam and what the next stage
+   * consumes are different quantities.
+   */
+  private batch: LandmarkBatch | null = null;
 
   /**
    * `solve` exists for the fixture, and it is the same arrangement `FlowTracker` takes its solver
@@ -137,10 +148,12 @@ export class TriangulationStage {
     this.batches = 0;
     this.seedRng.reset();
     this.last = null;
+    this.batch = null;
   }
 
   process(input: TriangulationStageInput): TriangulationReport {
     this.frames++;
+    this.batch = null;
     if (!input.inserted) return this.idle();
 
     const t0 = performance.now();
@@ -229,6 +242,25 @@ export class TriangulationStage {
     // TRI-006's witness, taken from the keyframe itself: Phase 6 measured this same rotation by
     // an entirely different route — per-frame poses against Phase 5's moving anchor, composed by
     // Phase 8 across anchor epochs — and Phase 8 stored it when it inserted `b`.
+    this.batch = {
+      keyframeA: a.id,
+      keyframeB: b.id,
+      intrinsics: k,
+      rotation: pose.rotation,
+      translation: pose.translation,
+      points: outcome.points.map((p): LandmarkPoint => {
+        const o = observations.find((x) => x.id === p.id);
+        return {
+          id: p.id,
+          position: p.position,
+          depth: p.depth,
+          parallaxDeg: p.parallaxDeg,
+          observedX: o?.bx ?? -1,
+          observedY: o?.by ?? -1,
+        };
+      }),
+    };
+
     const rotationDeg = pose.rotationDeg;
     const keyframeRotationDeg = b.rotationFromPreviousDeg;
     const disagreement =
@@ -281,6 +313,11 @@ export class TriangulationStage {
 
   getLast(): TriangulationReport | null {
     return this.last;
+  }
+
+  /** The batch this frame produced, or `null` on a frame that produced none. */
+  getBatch(): LandmarkBatch | null {
+    return this.batch;
   }
 
   /* ---------------------------------------------------------------------- */

@@ -23,7 +23,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
 | 8 | Keyframe System | TESTING | Built. The automated leg **decides all six required records** — the instruments are a still segment and a metronome, and the harness makes both. Awaiting the device run. |
 | 9 | Triangulation | TESTING | Built. The automated leg **decides all seven required records** — both gates are injections the harness builds. Awaiting the device run. |
-| 10 | Landmark Map | BLOCKED | |
+| 10 | Landmark Map | TESTING | Built. The automated leg **decides all seven required records** — the instruments are the map's own memory and an injection the harness builds. Awaiting the device run. |
 | 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
 | 12 | Spatial World | BLOCKED | |
 | 13 | Spatial Game Viewer | BLOCKED | v4 — renamed from World Viewer |
@@ -1386,6 +1386,100 @@ amortised figure is that measurement. The device's own is the one that decides i
 - **No surfaces, no meshing, no completeness.** v4 §21 asks for *Sparse Spatial Information* and
   §16 forbids treating what cannot be observed as geometry.
 - **§33's `GOOD` stays unreachable**, for the sixth phase running and for the reason Phase 6 gave.
+
+## Phase 10 — TESTING
+
+Built. `docs/phase10/TEST-PLAN.md` was committed before any Phase 10 code existed (§29), and the
+automated leg is green: `docs/phase10/evidence/phase10-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands. `docs/phase10/HOW-TO-RUN-DEVICE-TEST.md` is that run,
+and what it asks for is unusual again: **walk back the way you came**. This phase is about a point
+being recognised the second and the fifth time it is seen.
+
+### What this phase is for, in one number
+
+Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline. Its leg
+measured the median depth moving by **87 % of itself** between consecutive batches on a scene that
+never changed — not because the room moved, but because the unit did.
+
+Phase 10's registration recovers the ratio between those units, as the scale term of a similarity
+fitted in closed form over the landmarks two batches share. On the leg it came to **1.387** at a
+residual of 0.0005 of a depth: the batch's baseline was 39 % longer than the world's unit. That is
+a ratio between two quantities nobody has measured, and it is what makes ninety separate answers
+one map. §34 fixes the origin at the initial camera pose and §A.3.1 records why it cannot be
+anything else: `absolute` is `false` here and the compass reported ±24.5°.
+
+### Two gates, and the fixture that corrected the plan about one of them
+
+| | this map | one that keeps only the newest observation |
+| --- | --- | --- |
+| registers every batch | yes | yes |
+| counts add up, bound holds | yes | yes |
+| **MAP-002** — held-out prediction | 0.111 px | *also fine* — it predicts from the previous batch |
+| **MAP-006** — convergence | 0.00048 → 0.00011 | **flat**: nothing is being averaged |
+| **MAP-005** — injected corruption | recall 1.00, excess 0 | (unchanged) |
+
+`tests/unit/landmarks.test.ts` drives the real stage with the position rule replaced, and it fails
+**MAP-006 and nothing else**. The test plan's first fake claimed MAP-002 would catch it; **it does
+not**, and the fixture is what showed that. MAP-002 catches a map with no position at all — one
+that "predicts" by handing back the observation, which its fourth criterion refuses. MAP-006
+catches a map that re-guesses. Both are needed, and they catch different things.
+
+### Five corrections the measurements forced
+
+All five are recorded in the plan beside the criteria they affect.
+
+1. **The gate was not looking at what the injection corrupts.** Only the held-out prediction
+   check existed — the map's position against the *observation* — and MAP-005 displaces what the
+   batch *offers*. Recall **0.17** against a floor of 0.90.
+2. **That comparison belongs in the image.** In world units it refused **71 %** of untouched
+   points, because the dominant error in a triangulated position is radial and a half-percent
+   depth error is 2.4 px of world displacement the camera cannot see.
+3. **…and the registration's trimming does not.** The same lesson applied to the fit made it
+   worse — clean rejections 0–12 % → 15–22 % — because a similarity's *scale* is a depth quantity.
+   Same numbers, opposite conclusions.
+4. **`MAX_CLEAN_CULL_RATE` measured the scene rather than the gate.** This gate refuses the tail
+   of two estimates' disagreement whether or not anything was injected: 3–20 % on *uncorrupted*
+   batches. The criterion is the **excess** over that baseline now, which is a stricter question —
+   an absolute ceiling is passed by any sufficiently quiet scene.
+5. **A rate that is not one, and an epoch that was not founded.** The sparsity read **338 %** of
+   the tracked population, because the map remembers what has left the frame — the same shape as
+   Phase 6's 232.3 % agreement rate, and the range check now catches the class. And a restart on a
+   batch with no points reported `EPOCH_RESTART` with no registration behind it, which MAP-003
+   caught as *a batch ingested without a registration*.
+
+### What the leg measured
+
+96 batches over 60 s: 86 registered, 1,542 landmarks of §56's 5,000, **1,098 confirmed**, 4 culled
+— all for disagreeing rather than for age. Held-out prediction **0.111 px** median from landmarks
+with a median of 3 observations at the moment they were asked; **none** exactly zero. Injection
+recall **1.00** with a false-cull excess of **0**. Convergence 0.00048 of a depth at two
+observations and 0.00011 at five.
+
+### Confidence has four terms and none of them is a clock
+
+Observation count, the parallax that determined the point, how well its predictions land, and how
+many viewpoints have seen it — combined as the **minimum**, the arrangement Phases 6 and 7 use.
+`scripts/audit-fake-data.mjs` bans a confidence computed from `Date.now`, `elapsed` or `age`, and
+enforces it mechanically. A landmark seen for a long time is not thereby a good landmark.
+
+### Three things this phase does not do
+
+- **No bundle adjustment.** §27 puts it every ≥ 10 keyframes. The map here is a running mean per
+  landmark and a chain of similarities between batches; a joint refinement is a different thing
+  and is not on Prototype v1's path to a ball game.
+- **No loop closure, no relocalisation.** v3 §21 is a later phase. Two visits to the same corner
+  produce two sets of landmarks, and the run reports how many epochs it had rather than
+  pretending they were one.
+- **No surfaces and no completeness.** v4 §22's own line, carried as a value: everything between
+  the landmarks is unobserved. Phase 11 is where surfaces begin, from these.
+
+### The cost, and §B.2's worker, twice over
+
+1.49 ms per batch and **0.23 ms amortised over every frame**, against a self-set 4.0 ms ceiling.
+With Phase 9's 3.0 ms amortised, that is what a second thread would be buying. §B.2 has had a
+mapping worker in the diagram since before Phase 0; the argument for building it should be a
+measurement, and these are the two to watch when the device produces its own.
 
 ---
 

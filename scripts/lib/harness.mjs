@@ -134,6 +134,8 @@ const RUNGS = [
     ready: () => window.__SPATIAL_DEBUG__.getKeyframeStats().decisions > 0 },
   { enter: 'enterPhase9', start: { dom: '#start-triangulation' },
     ready: () => window.__SPATIAL_DEBUG__.getTriangulationStats().frames > 0 },
+  { enter: 'enterPhase10', start: { dom: '#start-landmarks' },
+    ready: () => window.__SPATIAL_DEBUG__.getLandmarkStats().frames > 0 },
 ];
 
 /**
