@@ -91,7 +91,7 @@ walk sideways.
 **The depth injection's error reads `0`.** That is correct and expected. The injected pair is
 synthesised exactly — the harness picks the depths and projects them — so a linear solve on it is
 exact to numerical precision. The number to read beside it is the **control**: what the best
-possible constant depth would have scored on the same set. On the automated leg that is 0.237.
+possible constant depth would have scored on the same set. On the automated leg that is 0.234.
 
 ---
 

@@ -117,7 +117,7 @@ condition TRI-003 is about.
 > happens when Phase 8 inserts a keyframe, and the main thread does not know when that is. The
 > leg measured an injection on **64 % of batches**, each costing a full extra fit and solve, which
 > put the mean batch cost at 20.9 ms. The stage samples on its own batch index now — one batch in
-> six for each injection, never the same one — and the same leg measures 15.4 ms. No criterion
+> six for each injection, never the same one — and the same leg measures 11.7 ms. No criterion
 > changed; the schedule the plan already asked for is now the schedule that runs.
 
 **`TRIANGULATION_BUDGET_MS` = 8.0 per keyframe insert, and it is not a per-frame line.** §H's

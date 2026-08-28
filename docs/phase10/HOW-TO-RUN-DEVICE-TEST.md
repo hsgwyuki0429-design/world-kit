@@ -18,7 +18,7 @@ What to have ready:
 ## What this phase is about
 
 Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline. On the
-automated leg the median depth moved by 87 % of itself between consecutive batches on a scene that
+automated leg the median depth moved by 96 % of itself between consecutive batches on a scene that
 never changed — not because the room moved, but because the unit did.
 
 This is where that stops being true. The landmarks two batches share fix the ratio between their

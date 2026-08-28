@@ -716,7 +716,7 @@ set from a camera that turned and never moved, which is what a phone does when s
 still and turns.
 
 - **TRI-004** synthesises a pair from depths the stage picked and never disclosed. Measured error
-  **0**; the best possible constant depth scores **0.237**, printed beside it so the tolerance is
+  **0**; the best possible constant depth scores **0.234**, printed beside it so the tolerance is
   not what separates them.
 - **TRI-003** replaces the pair's second view with `K R K⁻¹` applied to its first — a real
   rotation and no baseline at all. **0 points from 16 injections**, and the pose came back
@@ -728,12 +728,12 @@ still and turns.
 **The pose for the pair is a fresh fit, and it has a witness.** No model exists for a keyframe
 pair, so one is fitted with Phase 5's verifier and Phase 6's decomposition, unmodified. TRI-006
 then compares it against the rotation Phase 6 measured by an entirely different route — per-frame
-poses against a moving anchor, composed by Phase 8 across anchor epochs. The fit says 0.036°, the
-chain disagrees by 0.066°, tolerance 3°.
+poses against a moving anchor, composed by Phase 8 across anchor epochs. The fit says 0.047°, the
+chain disagrees by 0.048°, tolerance 3°.
 
 **And no distance.** Every depth is in units of that pair's own baseline, which is 1 by
 construction. Two batches' depths are two different units and no record pools them; the number
-behind that refusal is the batch-to-batch spread of the median depth, **0.87 on one scene with one
+behind that refusal is the batch-to-batch spread of the median depth, **0.96 on one scene with one
 camera**. Phase 10 is where the pairs come into one frame.
 
 ## What Phase 10 does
@@ -742,16 +742,16 @@ Phase 10 — Landmark Map (**v4 §22**, with §56's bound and §34's origin) —
 into **one frame**.
 
 Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline; its leg
-measured the median depth moving by **87 % of itself** between consecutive batches on a scene that
+measured the median depth moving by **96 % of itself** between consecutive batches on a scene that
 never changed. The landmarks two batches share fix the ratio between their scales, recovered as the
-scale term of a similarity fitted in closed form — **1.387** on the committed run, at a residual of
-0.0005 of a depth. That is a ratio between two quantities nobody has measured, and it is what makes
+scale term of a similarity fitted in closed form — **1.208** on the committed run, at a residual of
+0.0004 of a depth. That is a ratio between two quantities nobody has measured, and it is what makes
 ninety separate answers one map. The world has a consistent unit and no known one.
 
 **Two gates, and one of them corrected the plan.**
 
 - **MAP-002** — a landmark's position, as the map held it *before* this batch, projected into the
-  keyframe the batch has just added, and compared against where the tracker saw it: **0.111 px**
+  keyframe the batch has just added, and compared against where the tracker saw it: **0.106 px**
   median, none exactly zero, from landmarks with a median of three observations at the moment they
   were asked.
 - **MAP-005** — GEO-003's shape one layer up: a known subset of the incoming positions displaced

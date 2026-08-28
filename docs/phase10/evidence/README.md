@@ -13,17 +13,17 @@ From the committed run:
 
 | | |
 | --- | --- |
-| Batches | 96 over a 60 s hold — 86 registered, 10 not (`RESIDUAL` 3, `TOO_FEW_SHARED` 4, `NO_POINTS` 3) |
-| Map | 1,542 landmarks of §56's 5,000; **1,098 confirmed**; 4 culled, all for disagreeing |
-| **MAP-002** | held-out prediction **0.111 px** median, 4.01 px worst, over 84 batches; **0** exactly zero; the landmarks had a median of **3** observations when they were asked |
-| **MAP-005** | recall **1.00**; **0 %** of untouched points refused against a **0 %** baseline on the same batches uncorrupted — excess **0** |
-| Registration | median scale **1.387**, residual **0.0005** of a depth (worst 0.024), 809 outliers trimmed |
+| Batches | 96 over a 60 s hold — 86 registered, 10 not (`NO_POINTS` 4, `TOO_FEW_SHARED` 4, `RESIDUAL` 2) |
+| Map | 1,615 landmarks of §56's 5,000; **1,077 confirmed**; 7 culled, all for disagreeing |
+| **MAP-002** | held-out prediction **0.106 px** median, 3.85 px worst, over 84 batches; **0** exactly zero; the landmarks had a median of **3** observations when they were asked |
+| **MAP-005** | recall **1.00**; **1.9 %** of untouched points refused against a **1.9 %** baseline on the same batches uncorrupted — excess **0** |
+| Registration | median scale **1.208**, residual **0.0004** of a depth (worst 0.023), 910 outliers trimmed |
 | Epochs | 2, with 1 restart |
-| Convergence | **0.00048** of a depth at two observations, **0.00011** at five or more |
-| Sparsity | 16.1 landmarks per keyframe, 7.1 per tracked feature, 71 % of the map confirmed |
-| Cost | 1.49 ms per batch, 0.23 ms amortised over every frame |
+| Convergence | **0.00044** of a depth at two observations, **0.00008** at five or more |
+| Sparsity | 16.8 landmarks per keyframe, 7.5 per tracked feature, 67 % of the map confirmed |
+| Cost | 1.46 ms per batch, 0.23 ms amortised over every frame |
 
-**The scale is the number this phase exists for.** 1.387 means the batch's baseline was 39 %
+**The scale is the number this phase exists for.** 1.208 means the batch's baseline was 21 %
 longer than the world's unit — which is a ratio between two things nobody has measured, and is
 what makes ninety separate answers one map. It is not a metre and the record never calls it one.
 
@@ -82,7 +82,7 @@ registration*, which is exactly what it was.
 
 ## The cost, and §B.2's worker
 
-1.49 ms per batch and **0.23 ms amortised over every frame**, against a ceiling this phase set for
-itself at 4.0. Together with Phase 9's 3.0 ms amortised, that is what a second thread would be
+1.46 ms per batch and **0.23 ms amortised over every frame**, against a ceiling this phase set for
+itself at 4.0. Together with Phase 9's 1.8 ms amortised, that is what a second thread would be
 buying, and §B.2 has had a mapping worker in the diagram since before Phase 0. The device's own
 figures are the ones that should decide it.

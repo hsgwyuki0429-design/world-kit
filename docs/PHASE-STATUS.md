@@ -1351,7 +1351,7 @@ uses, neither modified.
 What that buys is TRI-006. Phase 6 already measured the rotation between these two keyframes by an
 entirely different route — per-frame poses against Phase 5's moving anchor, composed by Phase 8
 across anchor epochs — and the two are compared at Phase 6's own tolerance. On the leg: the fit
-says 0.036°, the chain disagrees by 0.066°, tolerance 3°, 90 of 94 batches inside it. A fresh fit
+says 0.047°, the chain disagrees by 0.048°, tolerance 3°, 74 of 74 batches inside it. A fresh fit
 with a witness is a measurement; a fresh fit without one is a second answer.
 
 ### Two gates, because two different fakes produce a full set of plausible points
@@ -1359,9 +1359,9 @@ with a witness is a measurement; a fresh fit without one is a second answer.
 | | this triangulator | a constant depth | a solver that solves anything solvable |
 | --- | --- | --- | --- |
 | points in front of both cameras | yes | yes | yes |
-| reprojection inside 2 px | 0.036 px median | **0.05, self-reported** | yes |
+| reprojection inside 2 px | 0.033 px median | **0.05, self-reported** | yes |
 | counts that add up | yes | yes | yes |
-| **TRI-004** — depths the harness chose | **0** error | **0.237** — the control exactly | ok |
+| **TRI-004** — depths the harness chose | **0** error | **0.234** — the control exactly | ok |
 | **TRI-003** — a camera that only turned | **0** points | 0 points | **a full set** |
 
 `tests/unit/triangulation.test.ts` drives the real stage with the constant-depth solver — the real
@@ -1371,8 +1371,8 @@ a statistic a stage computes about itself and a measurement against something it
 
 ### What the leg measured
 
-95 batches over 60 s: 88 triangulated, 8,011 points, median 87.5 per batch. Worst accepted
-parallax 1.20° against the 1.0° floor; median depth uncertainty 0.053 against the 0.10 it was
+97 batches over 60 s: 95 triangulated, 9,267 points, median 92 per batch. Worst accepted
+parallax 1.001° against the 1.0° floor; median depth uncertainty 0.053 against the 0.10 it was
 derived to buy. 16 pure-rotation injections, **0 points from all of them**, and the pose came back
 `ROTATION_ONLY` 16 times out of 16 — the refusal is attributed rather than assumed.
 
@@ -1380,8 +1380,8 @@ derived to buy. 16 pure-rotation injections, **0 points from all of them**, and 
 
 Every depth is in units of **that pair's own baseline**, which is `1` by construction. Two batches'
 depths are two different units, and no record aggregates them. The number behind that refusal is
-on the screen: the **batch-to-batch spread of the median depth is 0.87** on one scene with one
-camera. The median depth moves by 87 % of itself between pairs, not because the room changed.
+on the screen: the **batch-to-batch spread of the median depth is 0.96** on one scene with one
+camera. The median depth moves by 96 % of itself between pairs, not because the room changed.
 
 Phase 10 is where the pairs are brought into one frame by the landmarks they share.
 
@@ -1392,7 +1392,7 @@ flag the composition root sets on its own option cadence — how Phases 5 and 6 
 phases sample *frames*. This phase's unit of work is a **batch**, which happens when Phase 8
 inserts a keyframe, and the main thread does not know when that is. The leg measured an injection
 on **64 % of batches** at 20.9 ms each; the stage samples on its own batch index now, one in six
-for each, and the same leg measures 15.4 ms.
+for each, and the same leg measures 11.7 ms.
 
 **A noiseless fixture cannot exercise TRI-006.** The unit fixture built its keyframes by exact
 projection, so both routes agreed to the last decimal and the *not identically zero* criterion
@@ -1401,8 +1401,8 @@ now, which is what a well-tracked point actually looks like.
 
 ### The cost, and the worker §B.2 has been planning since before Phase 0
 
-15.4 ms per batch on the leg's machine against a ceiling this phase set for itself at 8.0, and
-**3.0 ms amortised over every frame**. TRI-008 is advisory and excluded from the leg's gate for
+11.7 ms per batch on the leg's machine against a ceiling this phase set for itself at 8.0, and
+**1.8 ms amortised over every frame**. TRI-008 is advisory and excluded from the leg's gate for
 the reason every cost record is (§H.4). §B.2 has had a mapping worker in the diagram since before
 Phase 0 and it is not built; the argument for building it should be a measurement, and the
 amortised figure is that measurement. The device's own is the one that decides it.
@@ -1428,11 +1428,11 @@ being recognised the second and the fifth time it is seen.
 ### What this phase is for, in one number
 
 Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline. Its leg
-measured the median depth moving by **87 % of itself** between consecutive batches on a scene that
+measured the median depth moving by **96 % of itself** between consecutive batches on a scene that
 never changed — not because the room moved, but because the unit did.
 
 Phase 10's registration recovers the ratio between those units, as the scale term of a similarity
-fitted in closed form over the landmarks two batches share. On the leg it came to **1.387** at a
+fitted in closed form over the landmarks two batches share. On the leg it came to **1.208** at a
 residual of 0.0005 of a depth: the batch's baseline was 39 % longer than the world's unit. That is
 a ratio between two quantities nobody has measured, and it is what makes ninety separate answers
 one map. §34 fixes the origin at the initial camera pose and §A.3.1 records why it cannot be
@@ -1444,8 +1444,8 @@ anything else: `absolute` is `false` here and the compass reported ±24.5°.
 | --- | --- | --- |
 | registers every batch | yes | yes |
 | counts add up, bound holds | yes | yes |
-| **MAP-002** — held-out prediction | 0.111 px | *also fine* — it predicts from the previous batch |
-| **MAP-006** — convergence | 0.00048 → 0.00011 | **flat**: nothing is being averaged |
+| **MAP-002** — held-out prediction | 0.106 px | *also fine* — it predicts from the previous batch |
+| **MAP-006** — convergence | 0.00044 → 0.00008 | **flat**: nothing is being averaged |
 | **MAP-005** — injected corruption | recall 1.00, excess 0 | (unchanged) |
 
 `tests/unit/landmarks.test.ts` drives the real stage with the position rule replaced, and it fails
@@ -1479,11 +1479,11 @@ All five are recorded in the plan beside the criteria they affect.
 
 ### What the leg measured
 
-96 batches over 60 s: 86 registered, 1,542 landmarks of §56's 5,000, **1,098 confirmed**, 4 culled
-— all for disagreeing rather than for age. Held-out prediction **0.111 px** median from landmarks
+96 batches over 60 s: 86 registered, 1,615 landmarks of §56's 5,000, **1,077 confirmed**, 7 culled
+— all for disagreeing rather than for age. Held-out prediction **0.106 px** median from landmarks
 with a median of 3 observations at the moment they were asked; **none** exactly zero. Injection
-recall **1.00** with a false-cull excess of **0**. Convergence 0.00048 of a depth at two
-observations and 0.00011 at five.
+recall **1.00** with a false-cull excess of **0**. Convergence 0.00044 of a depth at two
+observations and 0.00008 at five.
 
 ### Confidence has four terms and none of them is a clock
 
@@ -1505,8 +1505,8 @@ enforces it mechanically. A landmark seen for a long time is not thereby a good 
 
 ### The cost, and §B.2's worker, twice over
 
-1.49 ms per batch and **0.23 ms amortised over every frame**, against a self-set 4.0 ms ceiling.
-With Phase 9's 3.0 ms amortised, that is what a second thread would be buying. §B.2 has had a
+1.46 ms per batch and **0.23 ms amortised over every frame**, against a self-set 4.0 ms ceiling.
+With Phase 9's 1.8 ms amortised, that is what a second thread would be buying. §B.2 has had a
 mapping worker in the diagram since before Phase 0; the argument for building it should be a
 measurement, and these are the two to watch when the device produces its own.
 
