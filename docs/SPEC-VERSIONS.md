@@ -164,6 +164,37 @@ rotation ≥ 10°, **or** relative translation ≥ 0.10 local unit, **or** media
 displacement ≥ 30 px, **or** a significant change in tracking quality; minimum interval 0.5 s,
 maximum 5 s.
 
+### v3 §20's keyframe conditions, as Phase 8 implemented them
+
+Listed above; what Phase 8 measured is that **one of the four cannot be evaluated at all**.
+*Relative translation ≥ 0.10 local unit* is a magnitude, and Phase 6 recovers a unit direction with
+`SCALE: LOCAL_UNITS`. It is carried in every decision record as `UNMEASURED` with the missing scale
+named — the shape Phase 7 established for `POSITION: UNAVAILABLE` — and v3 §20's own third
+condition, the median displacement of the features two views share, is what fires in its place.
+The refusal carries a number: the angle the translation *direction* moved, which is measurable.
+
+*A significant change in tracking quality* has no number in v3 either. Phase 8 fixed 0.15, which is
+the width of v3 §14's own usable→GOOD band: a change that size moves the frame from one of the
+spec's quality classes to the other.
+
+### v4 §21 and §22 — Phases 9 and 10, where v3 stated nothing at all
+
+v3's roadmap named Triangulation and Landmark Map; it fixed no thresholds for either. Everything
+those phases turn on is therefore derived from numbers this project already had, and each
+derivation is recorded in the phase's test plan:
+
+- **`MIN_PARALLAX_DEG` = 1.0** from `σ_Z/Z ≈ σ_θ/θ`, with `σ_θ` being §13's 1.5 px over the assumed
+  focal length and a target of a depth good to a tenth of itself.
+- **`MAX_TRIANGULATION_REPROJECTION_PX` and `MAX_LANDMARK_REPROJECTION_PX` = 2.0** are **v3 §33's**
+  GOOD condition, reused rather than re-derived.
+- **`MAX_DISAGREEMENT_PX` = 4.0** is twice that, because the gate compares two estimates that each
+  carry their own error — §13's two-band shape, reused.
+- **`MAX_REGISTRATION_RESIDUAL` = 0.05** is half Phase 9's depth-uncertainty limit.
+- **`MAX_KEYFRAMES` = 30** and **`MAX_LANDMARKS` = 5000** are §56's and §H.1's, fixed before Phase 0.
+- **`INJECTION_RECALL_FLOOR` = 0.90** is **GEO-003's**, reused. Its companion was not: an absolute
+  false-cull ceiling measured how quiet the scene was, so MAP-005 judges the *excess* over what the
+  same gate refuses on the uncorrupted batch.
+
 ### v3 §68 — Phase 7's pass condition
 
 v4 §19 gives Phase 7 two lines and no pass condition. v3 §68 gives one, and it is unusual among

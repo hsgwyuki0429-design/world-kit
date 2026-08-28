@@ -21,9 +21,9 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
 | 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
-| 8 | Keyframe System | BLOCKED | |
-| 9 | Triangulation | BLOCKED | |
-| 10 | Landmark Map | BLOCKED | |
+| 8 | Keyframe System | TESTING | Built. The automated leg **decides all six required records** — the instruments are a still segment and a metronome, and the harness makes both. Awaiting the device run. |
+| 9 | Triangulation | TESTING | Built. The automated leg **decides all seven required records** — both gates are injections the harness builds. Awaiting the device run. |
+| 10 | Landmark Map | TESTING | Built. The automated leg **decides all seven required records** — the instruments are the map's own memory and an injection the harness builds. Awaiting the device run. |
 | 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
 | 12 | Spatial World | BLOCKED | |
 | 13 | Spatial Game Viewer | BLOCKED | v4 — renamed from World Viewer |
@@ -1177,6 +1177,338 @@ as zeros for the matching reason: a phone on a table reports a real `[0, 0, 0]` 
   gave: the state is computed in `FlowStage` from what Phase 4 measures, and plumbing a later
   phase's quantity into a passed phase's state machine is a change to Phase 4. `goodBlockedBy`
   continues to name what is missing.
+
+## Phase 8 — TESTING
+
+Built. `docs/phase8/TEST-PLAN.md` was committed before any Phase 8 code existed (§29), and the
+automated leg is green: `docs/phase8/evidence/phase8-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands. `docs/phase8/HOW-TO-RUN-DEVICE-TEST.md` is that run,
+and the one thing it asks of the person holding the phone is unusual: **stand still for ten
+seconds**.
+
+### The first leg in this project to decide a phase's whole required suite
+
+Phase 7's leg decided one required record, because v3 §68's pass condition was about an absence
+headless Chromium is permanently in. Phase 8's decides all six, for a different reason: the two
+instruments this phase is scored against are **a camera that is not moving** and **a metronome**,
+and the harness can produce both. The feed holds still for seven seconds in the middle of a pan;
+the metronome runs inside the app, on the same frames, beside the real selector.
+
+Rule 004 is untouched, and it is not a formality here. The leg's "still" is a synthetic frame
+repeated exactly, and a hand-held phone is not still — Phase 4's search will often call it `SLOW`.
+The leg's population runs to several hundred points; the device's ran to **41** in a dim room
+(§H.8). Both change what the store holds and how fast it goes stale.
+
+### Two of v3 §20's six numbers, and one refusal with a measurement behind it
+
+| v3 §20 | Phase 8 | |
+| --- | --- | --- |
+| rotation ≥ 10° | implemented | assembled per anchor epoch — see below |
+| translation ≥ 0.10 local unit | **refused** | it is a magnitude; Phase 6 gives a unit direction |
+| median displacement ≥ 30 px | implemented | over the features the two views **share**, by id |
+| tracking quality changed | implemented | §33's state, or v3 §14's own usable→GOOD band |
+| minimum interval 0.5 s | implemented | |
+| maximum interval 5 s | implemented | the heartbeat a still camera still owes the store |
+
+The refusal is Phase 7's shape one phase along: `TRANSLATION: UNMEASURED` is carried as a
+**value** in every decision record rather than as an absent field, so a later phase that acquires
+a scale has to remove it deliberately. And it carries a number — the angle the translation
+*direction* moved, which *is* measurable — because a refusal with a number behind it is a finding
+and a refusal with a citation behind it is an assertion.
+
+### The instrument, and what a metronome scores on everything else
+
+| | this selector | a metronome |
+| --- | --- | --- |
+| v3 §20's intervals | held | held |
+| the 30-keyframe bound | held | held |
+| observations and intrinsics per keyframe | carried | carried |
+| keyframes on a **moving** camera | well separated | well separated |
+| keyframes over 377 **static** decisions | **4**, all heartbeats | **52** |
+
+13× on the committed run. Everything above that last row is satisfied by a program that reads a
+clock and nothing else.
+
+### Four defects the leg found before any device saw the code
+
+**A re-derivation that rounds its inputs is checking the formatter.** KEY-001's second criterion
+re-derives every decision from the inputs recorded beside it — the Rule 002 check Phases 4–7 all
+carry. The first version rounded `sinceLastMs` to a tenth of a millisecond on its way into the
+record, `499.99999999999955` became `500`, and the re-derivation then disagreed with the stage on
+**every decision that landed on v3 §20's minimum interval**: 30 of them in a 32-second unit
+fixture. The recorded inputs are now the decision's inputs to the bit.
+
+**Composing a per-frame increment over five seconds is a random walk.** The rotation since the
+last keyframe was first accumulated the way `FusionStage` accumulates its visual increments,
+`conj(q_prev) · q_cur` every frame. Phase 7 composes over one second and is unaffected; Phase 8
+composes over up to five, and on the leg's lateral pan — where the true rotation is zero
+throughout — the accumulated angle reached v3 §20's 10° and fired `ROTATION` **seven times while
+Phase 4's own scene-shift search was reporting that the image was not moving at all.** It failed
+KEY-002 for exactly the right reason. The rotation is now assembled per anchor epoch: one
+composition however many frames have passed, and one more at each re-anchor. The same leg fires it
+none, and the amendment is recorded in place in the plan (§29).
+
+**A rotation the layer below had refused to stand behind.** The per-epoch assembly above took
+`ROTATION` on a still camera from every run down to about two in six, and left the rest. Two
+further findings, both measured rather than guessed, account for those. First, the re-anchor was
+handled *inside* the branch that needs a pose, so a re-anchor landing on a pose-less frame left
+`epochBaseQ` holding a rotation measured from the **old** anchor while the next pose to arrive was
+measured from the new one — and on a still camera that is not a rare alignment but the normal
+case, because the anchor is re-taken from the current frame, the two views collapse to no baseline
+and Phase 6 recovers nothing until something moves. The chaining is now unconditional.
+
+Second, and the actual cause: the leg was made to print the pose beside each violation, and every
+one of them read `ambiguous true ... 2 unseparated candidate(s)` —
+
+```
+[p8] still-interval violation: ROTATION on 18.2051° / 0 px after 529 ms, 231 shared,
+     0 dropped increment(s) across 0 re-anchor(s); pose POSE, ambiguous true,
+     rotationConfidence 0.5693, 2 unseparated candidate(s)
+```
+
+On a static image the correspondences stop changing, cheirality stops separating the essential
+matrix's four decompositions, and the recovered rotation **alternates between two of them** —
+about 18° apart here, so v3 §20's 10° is crossed twice over by an artefact rather than by a
+camera. Phase 6 had been reporting the pose it chose *and* saying it could not tell; Phase 8 was
+reading the first field and ignoring the second. It now declines an `ambiguous` pose outright —
+the accumulator holds at its last settled value, and `ambiguousPosesDeclined` (73 on the committed
+run) travels in every record, because an interval spent entirely in ambiguity under-reports a real
+turn and that has to be visible rather than silent. v4 §25 one layer earlier than §25 names it: a
+confidence the layer below publishes is only worth publishing if the layer above acts on it. Six
+consecutive legs green after the change, from about two in six failing.
+
+**And a cost that measured the fixture rather than the platform.** Every eviction records the
+retained set's median pairwise separation beside what dropping the oldest would have given — the
+counterfactual KEY-003's fifth criterion reads. The first version built one observation index per
+pair, 435 of them over a several-hundred-point population, and the mean keyframe cost came to
+1.67 ms against this phase's own 1.0 ms ceiling. Indexing each keyframe once brings it inside.
+§H.8, for the second time.
+
+### What the store does when it is full, and why not the oldest
+
+The bound is §H.1's 30. When it is full, what goes is a **stale** keyframe if there is one —
+fewer than a quarter of its observations still tracked, which is v4 §20's *古い情報* made
+measurable and is deliberately not a function of age — and otherwise the **most redundant
+viewpoint**, the one whose nearest neighbour is nearest. Never the oldest: dropping the oldest
+turns a store that describes the room into one that describes the last fifteen seconds, which is
+the failure §56's bound would otherwise cause rather than prevent.
+
+That policy also went through a correction. It first scored a candidate by the sum of its two
+neighbour gaps — the gap its removal would leave — which on a camera panning in one direction is
+the same number for every interior keyframe, because the separations add along the path. Its only
+real effect was to favour the endpoints, whose missing side counted as a zero. The nearest
+neighbour decides now, the merged gap breaks ties, and an unmeasurable side is `Infinity` rather
+than `0`: two keyframes sharing no features are not in the same place, they are not comparable.
+
+### Four things this phase does not do
+
+- **No relocalisation.** v3 §21 is a later phase; a keyframe store is one of its inputs.
+- **No keyframe imagery.** §H.1 budgets 30 downscaled grayscale frames at ≈16 MB for a relocaliser
+  that does not exist yet. Phases 8, 9 and 10 need the observations and the pose; storing pixels
+  nothing reads would be carrying data no test can check. Recorded so the phase that needs them
+  adds them deliberately.
+- **No bundle adjustment.** §27 puts it every ≥ 10 keyframes and it belongs to the phase that has
+  a map to adjust.
+- **No change to Phase 5's anchor.** It is a documented one-slot stand-in for this phase and it is
+  what Phases 5 and 6 passed on the device with. The store is a second structure beside it.
+
+## Phase 9 — TESTING
+
+Built. `docs/phase9/TEST-PLAN.md` was committed before any Phase 9 code existed (§29), and the
+automated leg is green: `docs/phase9/evidence/phase9-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands. `docs/phase9/HOW-TO-RUN-DEVICE-TEST.md` is that run,
+and what it asks for is a scene with **depth** in it and room to walk sideways — a wall is a
+plane, and turning on the spot is exactly what this phase refuses to triangulate from.
+
+### The first three-dimensional quantity in the project, and two refusals around it
+
+A batch is two **keyframes** — the one Phase 8 has just inserted, against the one before it —
+related by the observations they share, matched by the tracker's feature id rather than by
+proximity. That last part is what makes a triangulated point recognisable to Phase 10.
+
+| | |
+| --- | --- |
+| below `MIN_PARALLAX_DEG` = 1.0° | **refused**, per point |
+| from a camera that only turned | **refused**, whole batch |
+| behind either camera | refused |
+| beyond v3 §33's 2.0 px reprojection | refused |
+
+**The floor is derived, not chosen.** A triangulated depth's relative uncertainty is `σ_Z/Z ≈
+σ_θ/θ`; §13's 1.5 px correspondence band over the assumed `f ≈ 967 px` is 0.089° of angular noise,
+and asking for a depth good to a tenth of itself gives 0.89°. A floor in the units of the physical
+quantity rather than a percentile of whatever the frame contained — §H.6, and Phase 3's corner
+floor is why that rule exists.
+
+### The pose for the pair is a fresh fit, and it has a witness
+
+Phase 6's rule is that it decomposes the model Phase 5 selected *on that frame*, never a fresh
+fit. Phase 9's pair is a **different pair of views** and no model exists for it, so one is fitted —
+by the same `verifyCorrespondences` Phase 5 uses, decomposed by the same `recoverPose` Phase 6
+uses, neither modified.
+
+What that buys is TRI-006. Phase 6 already measured the rotation between these two keyframes by an
+entirely different route — per-frame poses against Phase 5's moving anchor, composed by Phase 8
+across anchor epochs — and the two are compared at Phase 6's own tolerance. On the leg: the fit
+says 0.047°, the chain disagrees by 0.048°, tolerance 3°, 74 of 74 batches inside it. A fresh fit
+with a witness is a measurement; a fresh fit without one is a second answer.
+
+### Two gates, because two different fakes produce a full set of plausible points
+
+| | this triangulator | a constant depth | a solver that solves anything solvable |
+| --- | --- | --- | --- |
+| points in front of both cameras | yes | yes | yes |
+| reprojection inside 2 px | 0.033 px median | **0.05, self-reported** | yes |
+| counts that add up | yes | yes | yes |
+| **TRI-004** — depths the harness chose | **0** error | **0.234** — the control exactly | ok |
+| **TRI-003** — a camera that only turned | **0** points | 0 points | **a full set** |
+
+`tests/unit/triangulation.test.ts` drives the real stage with the constant-depth solver — the real
+batching, the real fit, the real injections — and it fails **TRI-004 and nothing else**, while
+reporting a *better* reprojection error than the real triangulator. That is the difference between
+a statistic a stage computes about itself and a measurement against something it cannot see.
+
+### What the leg measured
+
+97 batches over 60 s: 95 triangulated, 9,267 points, median 92 per batch. Worst accepted
+parallax 1.001° against the 1.0° floor; median depth uncertainty 0.053 against the 0.10 it was
+derived to buy. 16 pure-rotation injections, **0 points from all of them**, and the pose came back
+`ROTATION_ONLY` 16 times out of 16 — the refusal is attributed rather than assumed.
+
+### The refusal to pool depths, with the number behind it
+
+Every depth is in units of **that pair's own baseline**, which is `1` by construction. Two batches'
+depths are two different units, and no record aggregates them. The number behind that refusal is
+on the screen: the **batch-to-batch spread of the median depth is 0.96** on one scene with one
+camera. The median depth moves by 96 % of itself between pairs, not because the room changed.
+
+Phase 10 is where the pairs are brought into one frame by the landmarks they share.
+
+### Two corrections the measurements forced
+
+**"On a sampled schedule" was sampled on the wrong cadence.** The injections were requested by a
+flag the composition root sets on its own option cadence — how Phases 5 and 6 do it, and those
+phases sample *frames*. This phase's unit of work is a **batch**, which happens when Phase 8
+inserts a keyframe, and the main thread does not know when that is. The leg measured an injection
+on **64 % of batches** at 20.9 ms each; the stage samples on its own batch index now, one in six
+for each, and the same leg measures 11.7 ms.
+
+**A noiseless fixture cannot exercise TRI-006.** The unit fixture built its keyframes by exact
+projection, so both routes agreed to the last decimal and the *not identically zero* criterion
+fired on the fixture rather than on a defect. A fifth of §13's band is added to every observation
+now, which is what a well-tracked point actually looks like.
+
+### The cost, and the worker §B.2 has been planning since before Phase 0
+
+11.7 ms per batch on the leg's machine against a ceiling this phase set for itself at 8.0, and
+**1.8 ms amortised over every frame**. TRI-008 is advisory and excluded from the leg's gate for
+the reason every cost record is (§H.4). §B.2 has had a mapping worker in the diagram since before
+Phase 0 and it is not built; the argument for building it should be a measurement, and the
+amortised figure is that measurement. The device's own is the one that decides it.
+
+### Four things this phase does not do
+
+- **No shared scale between batches.** See above. It is what a monocular camera gives.
+- **No bundle adjustment.** §27 puts it every ≥ 10 keyframes, and it belongs to the phase that
+  holds a map to adjust.
+- **No surfaces, no meshing, no completeness.** v4 §21 asks for *Sparse Spatial Information* and
+  §16 forbids treating what cannot be observed as geometry.
+- **§33's `GOOD` stays unreachable**, for the sixth phase running and for the reason Phase 6 gave.
+
+## Phase 10 — TESTING
+
+Built. `docs/phase10/TEST-PLAN.md` was committed before any Phase 10 code existed (§29), and the
+automated leg is green: `docs/phase10/evidence/phase10-desktop-chromium.json`.
+
+**No device bundle yet.** Rule 004 stands. `docs/phase10/HOW-TO-RUN-DEVICE-TEST.md` is that run,
+and what it asks for is unusual again: **walk back the way you came**. This phase is about a point
+being recognised the second and the fifth time it is seen.
+
+### What this phase is for, in one number
+
+Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline. Its leg
+measured the median depth moving by **96 % of itself** between consecutive batches on a scene that
+never changed — not because the room moved, but because the unit did.
+
+Phase 10's registration recovers the ratio between those units, as the scale term of a similarity
+fitted in closed form over the landmarks two batches share. On the leg it came to **1.208** at a
+residual of 0.0005 of a depth: the batch's baseline was 39 % longer than the world's unit. That is
+a ratio between two quantities nobody has measured, and it is what makes ninety separate answers
+one map. §34 fixes the origin at the initial camera pose and §A.3.1 records why it cannot be
+anything else: `absolute` is `false` here and the compass reported ±24.5°.
+
+### Two gates, and the fixture that corrected the plan about one of them
+
+| | this map | one that keeps only the newest observation |
+| --- | --- | --- |
+| registers every batch | yes | yes |
+| counts add up, bound holds | yes | yes |
+| **MAP-002** — held-out prediction | 0.106 px | *also fine* — it predicts from the previous batch |
+| **MAP-006** — convergence | 0.00044 → 0.00008 | **flat**: nothing is being averaged |
+| **MAP-005** — injected corruption | recall 1.00, excess 0 | (unchanged) |
+
+`tests/unit/landmarks.test.ts` drives the real stage with the position rule replaced, and it fails
+**MAP-006 and nothing else**. The test plan's first fake claimed MAP-002 would catch it; **it does
+not**, and the fixture is what showed that. MAP-002 catches a map with no position at all — one
+that "predicts" by handing back the observation, which its fourth criterion refuses. MAP-006
+catches a map that re-guesses. Both are needed, and they catch different things.
+
+### Five corrections the measurements forced
+
+All five are recorded in the plan beside the criteria they affect.
+
+1. **The gate was not looking at what the injection corrupts.** Only the held-out prediction
+   check existed — the map's position against the *observation* — and MAP-005 displaces what the
+   batch *offers*. Recall **0.17** against a floor of 0.90.
+2. **That comparison belongs in the image.** In world units it refused **71 %** of untouched
+   points, because the dominant error in a triangulated position is radial and a half-percent
+   depth error is 2.4 px of world displacement the camera cannot see.
+3. **…and the registration's trimming does not.** The same lesson applied to the fit made it
+   worse — clean rejections 0–12 % → 15–22 % — because a similarity's *scale* is a depth quantity.
+   Same numbers, opposite conclusions.
+4. **`MAX_CLEAN_CULL_RATE` measured the scene rather than the gate.** This gate refuses the tail
+   of two estimates' disagreement whether or not anything was injected: 3–20 % on *uncorrupted*
+   batches. The criterion is the **excess** over that baseline now, which is a stricter question —
+   an absolute ceiling is passed by any sufficiently quiet scene.
+5. **A rate that is not one, and an epoch that was not founded.** The sparsity read **338 %** of
+   the tracked population, because the map remembers what has left the frame — the same shape as
+   Phase 6's 232.3 % agreement rate, and the range check now catches the class. And a restart on a
+   batch with no points reported `EPOCH_RESTART` with no registration behind it, which MAP-003
+   caught as *a batch ingested without a registration*.
+
+### What the leg measured
+
+96 batches over 60 s: 86 registered, 1,615 landmarks of §56's 5,000, **1,077 confirmed**, 7 culled
+— all for disagreeing rather than for age. Held-out prediction **0.106 px** median from landmarks
+with a median of 3 observations at the moment they were asked; **none** exactly zero. Injection
+recall **1.00** with a false-cull excess of **0**. Convergence 0.00044 of a depth at two
+observations and 0.00008 at five.
+
+### Confidence has four terms and none of them is a clock
+
+Observation count, the parallax that determined the point, how well its predictions land, and how
+many viewpoints have seen it — combined as the **minimum**, the arrangement Phases 6 and 7 use.
+`scripts/audit-fake-data.mjs` bans a confidence computed from `Date.now`, `elapsed` or `age`, and
+enforces it mechanically. A landmark seen for a long time is not thereby a good landmark.
+
+### Three things this phase does not do
+
+- **No bundle adjustment.** §27 puts it every ≥ 10 keyframes. The map here is a running mean per
+  landmark and a chain of similarities between batches; a joint refinement is a different thing
+  and is not on Prototype v1's path to a ball game.
+- **No loop closure, no relocalisation.** v3 §21 is a later phase. Two visits to the same corner
+  produce two sets of landmarks, and the run reports how many epochs it had rather than
+  pretending they were one.
+- **No surfaces and no completeness.** v4 §22's own line, carried as a value: everything between
+  the landmarks is unobserved. Phase 11 is where surfaces begin, from these.
+
+### The cost, and §B.2's worker, twice over
+
+1.46 ms per batch and **0.23 ms amortised over every frame**, against a self-set 4.0 ms ceiling.
+With Phase 9's 1.8 ms amortised, that is what a second thread would be buying. §B.2 has had a
+mapping worker in the diagram since before Phase 0; the argument for building it should be a
+measurement, and these are the two to watch when the device produces its own.
 
 ---
 

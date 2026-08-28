@@ -1,0 +1,4648 @@
+{
+  "schemaVersion": 1,
+  "leg": "DESKTOP_DEV",
+  "phase": 8,
+  "phaseName": "Keyframe System",
+  "createdAt": "2026-08-28T11:51:10.422Z",
+  "appVersion": "0.1.0",
+  "origin": "http://localhost:40205",
+  "secureContext": true,
+  "device": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+    "platformHint": "Linux x86_64",
+    "osGuess": "Linux",
+    "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+    "isLikelyIOS": false,
+    "maxTouchPoints": 1,
+    "screenWidth": 430,
+    "screenHeight": 932,
+    "viewportWidth": 430,
+    "viewportHeight": 932,
+    "devicePixelRatio": 2,
+    "hardwareConcurrency": 4,
+    "languages": [
+      "en-US"
+    ],
+    "timezone": "UTC"
+  },
+  "capabilityMatrix": {
+    "records": [
+      {
+        "id": "platform.secureContext",
+        "group": "platform",
+        "label": "Secure context (HTTPS)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "secure context over http://localhost:40205",
+        "data": {
+          "isSecureContext": true,
+          "protocol": "http:",
+          "host": "localhost:40205",
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787917806845
+      },
+      {
+        "id": "platform.iosSafariGuess",
+        "group": "platform",
+        "label": "iOS/Safari (UA guess)",
+        "state": "UNAVAILABLE",
+        "method": "INFERENCE",
+        "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
+        "data": {
+          "osGuess": "Linux",
+          "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+          "maxTouchPoints": 1
+        },
+        "durationMs": 0,
+        "timestamp": 1787917806845
+      },
+      {
+        "id": "camera.getUserMedia",
+        "group": "camera",
+        "label": "getUserMedia",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getUserMedia is present in a secure context. Not invoked in Phase 0 — opening the camera is Phase 1 (CAM-001), and probing it here would trigger a permission prompt",
+        "data": {
+          "hasMediaDevices": true,
+          "hasGetUserMedia": true,
+          "secureContext": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787917806846
+      },
+      {
+        "id": "camera.enumerateDevices",
+        "group": "camera",
+        "label": "Video input devices",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "1 videoinput device(s) enumerated",
+        "data": {
+          "videoInputCount": 1,
+          "audioInputCount": 3,
+          "totalDevices": 7,
+          "labelsHidden": false,
+          "deviceIdsHidden": false
+        },
+        "durationMs": 53.7,
+        "timestamp": 1787917806899
+      },
+      {
+        "id": "camera.supportedConstraints",
+        "group": "camera",
+        "label": "Media constraints",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
+        "data": {
+          "supportedCount": 36,
+          "facingMode": true,
+          "width": true,
+          "height": true,
+          "frameRate": true,
+          "aspectRatio": true,
+          "deviceId": true,
+          "missing": []
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787917806899
+      },
+      {
+        "id": "camera.trackControl",
+        "group": "camera",
+        "label": "Track capability control",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getCapabilities / getSettings / applyConstraints all present — Phase 2 can negotiate resolution and frame rate at runtime",
+        "data": {
+          "getCapabilities": true,
+          "getSettings": true,
+          "applyConstraints": true
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787917806900
+      },
+      {
+        "id": "compute.webassembly",
+        "group": "compute",
+        "label": "WebAssembly (executed)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "compiled and executed a real 41-byte module: add(2,3) === 5",
+        "data": {
+          "moduleBytes": 41,
+          "addResult": 5,
+          "hasInstantiateStreaming": true,
+          "hasMemory": true
+        },
+        "durationMs": 0.6,
+        "timestamp": 1787917806900
+      },
+      {
+        "id": "compute.worker",
+        "group": "compute",
+        "label": "Web Worker round-trip",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "blob worker round-trip succeeded in 7.5 ms",
+        "data": {
+          "roundTripMs": 7.5,
+          "tokenMatched": true
+        },
+        "durationMs": 9,
+        "timestamp": 1787917806909
+      },
+      {
+        "id": "compute.offscreenCanvas",
+        "group": "compute",
+        "label": "OffscreenCanvas",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "drew and read back an exact pixel [10,20,30,255] from an OffscreenCanvas",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.8,
+        "timestamp": 1787917806910
+      },
+      {
+        "id": "compute.transferControlToOffscreen",
+        "group": "compute",
+        "label": "Canvas -> Offscreen transfer",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferControlToOffscreen returned a live OffscreenCanvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787917806910
+      },
+      {
+        "id": "compute.offscreenInWorker",
+        "group": "compute",
+        "label": "OffscreenCanvas inside worker",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferred an OffscreenCanvas into a worker, drew there and read back the exact pixel",
+        "data": {
+          "ok": true,
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 8,
+        "timestamp": 1787917806918
+      },
+      {
+        "id": "compute.sharedArrayBuffer",
+        "group": "compute",
+        "label": "SharedArrayBuffer",
+        "state": "UNAVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "SharedArrayBuffer is absent — requires COOP+COEP headers, which static hosting such as GitHub Pages cannot set. WASM threads must not be assumed.",
+        "data": {
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787917806919
+      },
+      {
+        "id": "graphics.webgl2",
+        "group": "graphics",
+        "label": "WebGL2",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebGL2 context created on ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "data": {
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "rendererMasked": false,
+          "maxTextureSize": 8192,
+          "maxViewportDims": [
+            8192,
+            8192
+          ],
+          "colorBufferFloat": true,
+          "textureFloatLinear": true,
+          "extensionCount": 29
+        },
+        "durationMs": 13.7,
+        "timestamp": 1787917806932
+      },
+      {
+        "id": "graphics.webgpu",
+        "group": "graphics",
+        "label": "WebGPU",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+        "data": {
+          "hasNavigatorGpu": true,
+          "adapter": null
+        },
+        "durationMs": 2.2,
+        "timestamp": 1787917806934
+      },
+      {
+        "id": "graphics.createImageBitmap",
+        "group": "graphics",
+        "label": "createImageBitmap",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "created a real 4x4 ImageBitmap from a canvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 1.6,
+        "timestamp": 1787917806936
+      },
+      {
+        "id": "graphics.canvas2dReadback",
+        "group": "graphics",
+        "label": "Canvas 2D readback",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "main-thread canvas readback is byte-exact [10,20,30,255]",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.3,
+        "timestamp": 1787917806936
+      },
+      {
+        "id": "media.imageCapture",
+        "group": "media",
+        "label": "ImageCapture",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "ImageCapture is present",
+        "data": {},
+        "durationMs": 0,
+        "timestamp": 1787917806936
+      },
+      {
+        "id": "media.webcodecs",
+        "group": "media",
+        "label": "WebCodecs VideoFrame",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "VideoFrame is present — Phase 2 can pull frames without a canvas round-trip",
+        "data": {
+          "VideoFrame": true,
+          "VideoDecoder": true,
+          "VideoEncoder": true
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787917806937
+      },
+      {
+        "id": "media.videoFrameCallback",
+        "group": "media",
+        "label": "requestVideoFrameCallback",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "requestVideoFrameCallback is present — frame scheduling can be driven by real decoded frames rather than by rAF guessing",
+        "data": {
+          "playsInline": true
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787917806937
+      },
+      {
+        "id": "storage.estimate",
+        "group": "storage",
+        "label": "Storage quota",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "storage quota reported by the platform: 848.6 MB (used 0.0 B)",
+        "data": {
+          "quotaBytes": 889799892,
+          "usageBytes": 0
+        },
+        "durationMs": 2.2,
+        "timestamp": 1787917806939
+      },
+      {
+        "id": "storage.localStorage",
+        "group": "storage",
+        "label": "localStorage",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "wrote, read and removed a real localStorage key",
+        "data": {},
+        "durationMs": 0.9,
+        "timestamp": 1787917806940
+      },
+      {
+        "id": "storage.indexedDB",
+        "group": "storage",
+        "label": "IndexedDB",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
+        "data": {},
+        "durationMs": 2.3,
+        "timestamp": 1787917806942
+      },
+      {
+        "id": "storage.performanceMemory",
+        "group": "storage",
+        "label": "JS heap metrics",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "performance.memory is present; heap numbers in the debug HUD will be real",
+        "data": {
+          "deviceMemory": 8
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787917806942
+      },
+      {
+        "id": "spatial.webxr",
+        "group": "spatial",
+        "label": "WebXR",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebXR present; immersive-ar=false, immersive-vr=false",
+        "data": {
+          "hasNavigatorXr": true,
+          "immersiveAR": false,
+          "immersiveVR": false
+        },
+        "durationMs": 6.5,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "spatial.nativeBridge",
+        "group": "spatial",
+        "label": "Native app bridge",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no window.webkit.messageHandlers bridge — the page is not hosted by a native app, so no native iOS framework can be reached from JavaScript",
+        "data": {
+          "handlerNames": []
+        },
+        "durationMs": 0,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "spatial.cameraDepth",
+        "group": "spatial",
+        "label": "Camera depth",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no depth-related media constraint and no WebXR depth-sensing route (webxr=false) — DEPTH: UNAVAILABLE. Any depth used later must be labelled MONOCULAR ESTIMATE and never presented as native depth (§44)",
+        "data": {
+          "depthConstraintKeys": [],
+          "webxrAvailable": false
+        },
+        "durationMs": 0.2,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "spatial.arkit",
+        "group": "spatial",
+        "label": "Native ARKit",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "ARKit has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. ARKit: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0.1,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "spatial.roomplan",
+        "group": "spatial",
+        "label": "RoomPlan",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "RoomPlan has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. RoomPlan: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "spatial.metricScale",
+        "group": "spatial",
+        "label": "Metric scale",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "A monocular camera provides no absolute scale (§18, §90). No depth sensor, WebXR session or native bridge is reachable to supply one, so the world will be built in LOCAL UNITS and SCALE stays UNKNOWN until something actually measures it.",
+        "data": {
+          "scaleStatus": "UNKNOWN",
+          "units": "LOCAL_UNITS"
+        },
+        "durationMs": 0,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "motion.deviceMotion",
+        "group": "motion",
+        "label": "DeviceMotion",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceMotionEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "data": {
+          "requiresPermission": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787917806949
+      },
+      {
+        "id": "motion.deviceOrientation",
+        "group": "motion",
+        "label": "DeviceOrientation",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceOrientationEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "data": {
+          "requiresPermission": false
+        },
+        "durationMs": 0,
+        "timestamp": 1787917806949
+      }
+    ],
+    "startedAt": 1787917806812,
+    "completedAt": 1787917806949,
+    "totalDurationMs": 103.8
+  },
+  "testResults": [
+    {
+      "spec": {
+        "id": "KEY-001",
+        "title": "Selection on v3 §20’s conditions",
+        "required": true,
+        "input": "a run where the camera moves, with the whole Phase 4–7 stack live beneath it",
+        "expected": "keyframes inserted when one of v3 §20’s conditions is met and not otherwise",
+        "passCriteria": ">= 15 decisions judged; every insertion's recorded reason re-derivable from the inputs recorded beside it; no insertion inside 500 ms of the previous one; no gap longer than 5000 ms; and at least one insertion on a geometric condition",
+        "failureCondition": "an insertion whose reason its own numbers do not support; or a run in which every insertion is the maximum-interval heartbeat, which is a metronome wearing this phase’s labels"
+      },
+      "verdict": "PASS",
+      "observed": "54 keyframe(s) over 738 decisions — {\"FIRST\":5,\"TOO_SOON\":277,\"DISPLACEMENT\":35,\"NO_CONDITION\":407,\"HEARTBEAT\":4,\"QUALITY\":10}; 45 on a geometric condition, longest gap 5066.7 ms",
+      "reason": "every insertion’s reason re-derives from its own inputs, both of v3 §20’s intervals held, and the store was fed by the geometry rather than by the clock",
+      "metrics": {
+        "decisions": 738,
+        "totalInserted": 54,
+        "insertionsByReason": {
+          "FIRST": 5,
+          "TOO_SOON": 277,
+          "DISPLACEMENT": 35,
+          "NO_CONDITION": 407,
+          "HEARTBEAT": 4,
+          "QUALITY": 10
+        },
+        "geometricInsertions": 45,
+        "heartbeatInsertions": 4,
+        "reasonMismatches": 0,
+        "minIntervalViolations": 0,
+        "maxIntervalGaps": 0,
+        "longestGapMs": 5066.7
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-002",
+        "title": "The stationary case",
+        "required": true,
+        "input": "a segment during which Phase 4’s independent scene-shift search reported STATIC — the image is not moving",
+        "expected": "the selector inserts nothing but the maximum-interval heartbeat, while a metronome firing at the minimum interval keeps inserting",
+        "passCriteria": ">= 15 decisions while STATIC; no insertion on a geometric condition over an interval in which nothing moved; and the metronome twin ahead by at least 5x over the same decisions",
+        "failureCondition": "a keyframe inserted for a geometric reason when nothing moved between it and the previous one; or a count equal to the metronome’s, which is a metronome"
+      },
+      "verdict": "PASS",
+      "observed": "over 377 static decisions the selector inserted 4 and the metronome 52 — 13x; 0 of them fired on a geometric condition, 0 of those over an interval in which nothing moved",
+      "reason": "on a camera that is not moving the two selectors part company, which is the one thing a schedule cannot imitate: they saw the same frames and disagreed about which of them were worth keeping",
+      "metrics": {
+        "staticDecisions": 377,
+        "staticSelectorInsertions": 4,
+        "staticGeometricInsertions": 0,
+        "stillIntervalGeometricInsertions": 0,
+        "stillIntervalDecisions": 128,
+        "stillIntervalViolations": [],
+        "staticMetronomeInsertions": 52,
+        "staticRatio": 13,
+        "metronomeKeyframes": 111,
+        "totalInserted": 54
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-003",
+        "title": "Bounded, and able to let go",
+        "required": true,
+        "input": "a run long enough to fill the store",
+        "expected": "at most 30 keyframes, with every eviction naming what went and why",
+        "passCriteria": "the store never exceeded 30; every eviction carries a reason; the comparison partner is never the one evicted; an eviction occurred or the run reports the store never filled; and eviction preserved viewpoint coverage at least as well as dropping the oldest would have, on the majority of evictions",
+        "failureCondition": "a store above the bound; an eviction with no reason; or the current keyframe evicted, which would leave the selector comparing against a view it had discarded"
+      },
+      "verdict": "PASS",
+      "observed": "30/30 at its fullest, 24 eviction(s), 24 of them at least as well spread as dropping the oldest",
+      "reason": "the bound held, every eviction said what went and why, and what went was the most redundant viewpoint rather than simply the oldest — which is the difference between a store that describes the room and one that describes the last few seconds",
+      "metrics": {
+        "keyframes": 30,
+        "maxStoreSize": 30,
+        "bound": 30,
+        "evictions": 24,
+        "storeOverflows": 0,
+        "evictionsWithoutReason": 0,
+        "evictedNewest": 0,
+        "evictionsCoverageKept": 24,
+        "recentEvictions": [
+          {
+            "keyframeId": 1,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 111.243,
+            "oldestFirstSeparationPx": 111.243
+          },
+          {
+            "keyframeId": 2,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 111.244,
+            "oldestFirstSeparationPx": 111.244
+          },
+          {
+            "keyframeId": 3,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 112.311,
+            "oldestFirstSeparationPx": 112.311
+          },
+          {
+            "keyframeId": 4,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.224,
+            "oldestFirstSeparationPx": 114.224
+          },
+          {
+            "keyframeId": 5,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 115.217,
+            "oldestFirstSeparationPx": 115.217
+          },
+          {
+            "keyframeId": 6,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 115.217,
+            "oldestFirstSeparationPx": 115.217
+          },
+          {
+            "keyframeId": 7,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 116.012,
+            "oldestFirstSeparationPx": 116.012
+          },
+          {
+            "keyframeId": 8,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 115.221,
+            "oldestFirstSeparationPx": 115.221
+          },
+          {
+            "keyframeId": 9,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.027,
+            "oldestFirstSeparationPx": 114.027
+          },
+          {
+            "keyframeId": 10,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.027,
+            "oldestFirstSeparationPx": 114.027
+          },
+          {
+            "keyframeId": 11,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.224,
+            "oldestFirstSeparationPx": 114.224
+          },
+          {
+            "keyframeId": 12,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.421,
+            "oldestFirstSeparationPx": 114.421
+          },
+          {
+            "keyframeId": 13,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.421,
+            "oldestFirstSeparationPx": 114.421
+          },
+          {
+            "keyframeId": 14,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.224,
+            "oldestFirstSeparationPx": 114.224
+          },
+          {
+            "keyframeId": 15,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.027,
+            "oldestFirstSeparationPx": 114.027
+          },
+          {
+            "keyframeId": 16,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 113.43,
+            "oldestFirstSeparationPx": 113.43
+          },
+          {
+            "keyframeId": 17,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 112.834,
+            "oldestFirstSeparationPx": 112.834
+          },
+          {
+            "keyframeId": 18,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 112.834,
+            "oldestFirstSeparationPx": 112.834
+          },
+          {
+            "keyframeId": 19,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 113.409,
+            "oldestFirstSeparationPx": 113.409
+          },
+          {
+            "keyframeId": 20,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 113.984,
+            "oldestFirstSeparationPx": 113.984
+          },
+          {
+            "keyframeId": 21,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 113.409,
+            "oldestFirstSeparationPx": 113.409
+          },
+          {
+            "keyframeId": 22,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 113.984,
+            "oldestFirstSeparationPx": 113.984
+          },
+          {
+            "keyframeId": 23,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 113.984,
+            "oldestFirstSeparationPx": 113.984
+          },
+          {
+            "keyframeId": 24,
+            "reason": "STALE",
+            "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+            "survivingFraction": 0,
+            "retainedSeparationPx": 114.027,
+            "oldestFirstSeparationPx": 114.027
+          }
+        ]
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-004",
+        "title": "What travels with a keyframe",
+        "required": true,
+        "input": "the keyframes the run inserted",
+        "expected": "observations with stable ids, and each keyframe’s own intrinsics (§H.0)",
+        "passCriteria": "every keyframe carries >= 20 observations with unique ids; every keyframe’s K re-derives from the frame geometry it recorded; consecutive keyframes share enough observations to form a pair, or the record says why not; and SCALE: LOCAL_UNITS throughout",
+        "failureCondition": "a keyframe with no observations, or one whose intrinsics belong to a different frame geometry than the one it was taken at"
+      },
+      "verdict": "PASS",
+      "observed": "54 keyframe(s); median 110 observation(s) shared with the previous one (0 decision(s) below the floor of 20); 0 intrinsics mismatch(es)",
+      "reason": "each keyframe carries the observations Phase 9 will pair and the K it was taken under, re-derived from its own recorded geometry rather than borrowed from the current frame",
+      "metrics": {
+        "observationFloor": 20,
+        "observationFloorViolations": 0,
+        "duplicateObservationIds": 0,
+        "intrinsicsMismatches": 0,
+        "medianSharedWithLast": 110,
+        "sharedBelowFloor": 0,
+        "scale": "LOCAL_UNITS",
+        "scaleViolations": 0,
+        "recent": [
+          {
+            "id": 51,
+            "at": 54288.5,
+            "frameIndex": 627,
+            "reason": "DISPLACEMENT",
+            "observations": 223,
+            "intrinsics": {
+              "fx": 362.6,
+              "fy": 362.6,
+              "cx": 240,
+              "cy": 180,
+              "width": 480,
+              "height": 360,
+              "estimated": true,
+              "assumedFovDeg": 67
+            },
+            "rotationFromPreviousDeg": 0,
+            "displacementFromPreviousPx": 30.1975,
+            "translationDirectionDeg": -1,
+            "droppedIncrements": 0,
+            "inlierRatio": 0.9216,
+            "trackedFeatures": 154,
+            "trackingState": "TRACKING",
+            "poseConfidence": 0.3364,
+            "survivingFraction": 0.2646,
+            "stale": false
+          },
+          {
+            "id": 52,
+            "at": 54983.6,
+            "frameIndex": 635,
+            "reason": "DISPLACEMENT",
+            "observations": 217,
+            "intrinsics": {
+              "fx": 362.6,
+              "fy": 362.6,
+              "cx": 240,
+              "cy": 180,
+              "width": 480,
+              "height": 360,
+              "estimated": true,
+              "assumedFovDeg": 67
+            },
+            "rotationFromPreviousDeg": 0,
+            "displacementFromPreviousPx": 33.3717,
+            "translationDirectionDeg": 0.6878,
+            "droppedIncrements": 0,
+            "inlierRatio": 1,
+            "trackedFeatures": 147,
+            "trackingState": "TRACKING",
+            "poseConfidence": 0.3045,
+            "survivingFraction": 0.3502,
+            "stale": false
+          },
+          {
+            "id": 53,
+            "at": 55644.5,
+            "frameIndex": 642,
+            "reason": "DISPLACEMENT",
+            "observations": 220,
+            "intrinsics": {
+              "fx": 362.6,
+              "fy": 362.6,
+              "cx": 240,
+              "cy": 180,
+              "width": 480,
+              "height": 360,
+              "estimated": true,
+              "assumedFovDeg": 67
+            },
+            "rotationFromPreviousDeg": 0,
+            "displacementFromPreviousPx": 31.7843,
+            "translationDirectionDeg": 0.1605,
+            "droppedIncrements": 0,
+            "inlierRatio": 0.9836,
+            "trackedFeatures": 165,
+            "trackingState": "TRACKING",
+            "poseConfidence": 0.3864,
+            "survivingFraction": 0.4682,
+            "stale": false
+          },
+          {
+            "id": 54,
+            "at": 60666.5,
+            "frameIndex": 715,
+            "reason": "HEARTBEAT",
+            "observations": 238,
+            "intrinsics": {
+              "fx": 362.6,
+              "fy": 362.6,
+              "cx": 240,
+              "cy": 180,
+              "width": 480,
+              "height": 360,
+              "estimated": true,
+              "assumedFovDeg": 67
+            },
+            "rotationFromPreviousDeg": 0,
+            "displacementFromPreviousPx": 22.2498,
+            "translationDirectionDeg": 0.175,
+            "droppedIncrements": 0,
+            "inlierRatio": 0.9583,
+            "trackedFeatures": 238,
+            "trackingState": "TRACKING",
+            "poseConfidence": 0.5,
+            "survivingFraction": 0.7353,
+            "stale": false
+          }
+        ]
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-005",
+        "title": "The condition this phase refuses",
+        "required": true,
+        "input": "every decision record",
+        "expected": "v3 §20's 0.1 local-unit translation condition carried as a value marked UNMEASURED, with the missing scale named and a number beside it",
+        "passCriteria": "the translation condition appears in every decision with its threshold and the state UNMEASURED; no insertion cites it; the angle the translation direction moved is measured and reported; and SCALE: LOCAL_UNITS throughout",
+        "failureCondition": "a decision that fired on a translation magnitude — there is no such magnitude in this build, so any is fabricated"
+      },
+      "verdict": "PASS",
+      "observed": "TRANSLATION carried as UNMEASURED against v3 §20's 0.1 local unit; it fired 0 time(s); the direction moved 0.25° over 400 sample(s)",
+      "reason": "the condition is present as a value rather than absent as a field, it never fires, and the refusal carries a number: the direction is measurable and its magnitude is the quantity that does not exist",
+      "metrics": {
+        "condition": {
+          "name": "TRANSLATION",
+          "value": -1,
+          "threshold": 0.1,
+          "unit": "local unit",
+          "state": "UNMEASURED",
+          "fired": false,
+          "note": "v3 §20 asks for a translation **magnitude**. Phase 6 recovers a unit direction with SCALE: LOCAL_UNITS, because v3 §15 and v4 §18 forbid a monocular camera claiming a distance — so there is no such magnitude in this build and this condition never fires. DISPLACEMENT below is the same quantity in the units the platform can produce"
+        },
+        "threshold": 0.1,
+        "translationFired": 0,
+        "translationDirectionSamples": 400,
+        "medianTranslationDirectionDeg": 0.251,
+        "scale": "LOCAL_UNITS",
+        "scaleViolations": 0
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-006",
+        "title": "Staleness",
+        "required": true,
+        "input": "the store, over a run in which features are lost and replaced",
+        "expected": "a keyframe that has stopped describing anything the current frame can be related to is marked stale and is not used as the comparison partner",
+        "passCriteria": "the surviving-observation fraction is measured for every retained keyframe; a keyframe below 0.25 is not used as the partner; and either at least one keyframe went stale or the run reports that none did",
+        "failureCondition": "a stale keyframe used as the comparison partner; or a keyframe retired for being old rather than for having stopped describing anything"
+      },
+      "verdict": "PASS",
+      "observed": "26 of 30 keyframe(s) stale now, 29 at the most; median surviving fraction 35.9% over 400 sample(s)",
+      "reason": "staleness is measured from surviving observations and from nothing else — v4 §20 forbids using old information blindly, and it does not say that old information is bad: a keyframe whose points are all still visible is as useful as when it was taken",
+      "metrics": {
+        "staleKeyframes": 26,
+        "staleEver": 29,
+        "stalePartnerUsed": 0,
+        "survivalSamples": 400,
+        "medianSurvivingFraction": 0.3594,
+        "threshold": 0.25,
+        "droppedIncrements": 0,
+        "ambiguousPosesDeclined": 73
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-007",
+        "title": "Keyframe cost",
+        "required": false,
+        "input": "the per-decision cost of the keyframe stage",
+        "expected": "mean upkeep <= 1 ms",
+        "passCriteria": "mean keyframe cost <= 1 ms over >= 10 decisions",
+        "failureCondition": "over budget"
+      },
+      "verdict": "PASS",
+      "observed": "0.8183 ms mean over 400 decisions",
+      "reason": "inside the 1 ms this phase set for itself — §H names no line for keyframe upkeep, so whatever it costs is spent from margin that does not exist on paper",
+      "metrics": {
+        "meanKeyframeMs": 0.8183,
+        "budgetMs": 1,
+        "costSamples": 400
+      },
+      "timestamp": 1787917870418
+    },
+    {
+      "spec": {
+        "id": "KEY-008",
+        "title": "Metadata honesty",
+        "required": false,
+        "input": "every record this phase emits",
+        "expected": "rates in 0..1, no Euler angles, a store that agrees with itself",
+        "passCriteria": "every rate in 0..1; no Euler triple anywhere (§18); the reported store size agrees with the records it carries; and every decision re-derives from its own inputs",
+        "failureCondition": "any of the above unmet"
+      },
+      "verdict": "PASS",
+      "observed": "0 rate(s) out of range, 0 Euler triple(s), 0 size mismatch(es), 0 decision mismatch(es)",
+      "reason": "the records describe themselves",
+      "metrics": {
+        "rateOutOfRange": 0,
+        "eulerEmitted": 0,
+        "sizeMismatches": 0,
+        "reasonMismatches": 0,
+        "scaleViolations": 0
+      },
+      "timestamp": 1787917870418
+    }
+  ],
+  "overallVerdict": "TESTING",
+  "overallReason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED",
+  "stateTransitions": [
+    {
+      "timestamp": 1787917806794,
+      "subject": "phase[0] Environment / Capability",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "capability detection starting"
+    },
+    {
+      "timestamp": 1787917806955,
+      "subject": "phase[0] Environment / Capability",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917806979,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917808098,
+      "subject": "phase[3] Feature Detection",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917808448,
+      "subject": "phase[4] Optical Flow Tracking",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917809266,
+      "subject": "phase[5] Geometric Verification",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917809885,
+      "subject": "phase[6] Relative Pose",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917810199,
+      "subject": "phase[7] IMU Support / Fusion",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917810372,
+      "subject": "phase[8] Keyframe System",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: KEY-001, KEY-002, KEY-003, KEY-004, KEY-005, KEY-006 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917810920,
+      "subject": "phase[8] Keyframe System",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: KEY-001, KEY-002 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917812920,
+      "subject": "phase[8] Keyframe System",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: KEY-002 — not yet evaluable"
+    },
+    {
+      "timestamp": 1787917813920,
+      "subject": "phase[8] Keyframe System",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    }
+  ],
+  "errorLog": [],
+  "fullLog": [
+    {
+      "timestamp": 1787917806808,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "Phase 0 starting",
+      "data": {
+        "appVersion": "0.1.0",
+        "leg": "DESKTOP_DEV",
+        "origin": "http://localhost:40205"
+      }
+    },
+    {
+      "timestamp": 1787917806949,
+      "level": "INFO",
+      "phase": 0,
+      "source": "CapabilityDetector",
+      "message": "capability detection complete",
+      "data": {
+        "records": 31,
+        "totalProbeMs": 103.8
+      }
+    },
+    {
+      "timestamp": 1787917806960,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "phase 0: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917806977,
+      "level": "WARN",
+      "phase": 2,
+      "source": "App",
+      "message": "Phase 2 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917806979,
+      "level": "INFO",
+      "phase": 2,
+      "source": "App",
+      "message": "phase 2: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917807039,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "pipeline started",
+      "data": {
+        "startTier": "BASIC 960x540@30",
+        "routeOrder": [
+          "VIDEO_FRAME",
+          "IMAGE_BITMAP",
+          "MAIN_CANVAS"
+        ]
+      }
+    },
+    {
+      "timestamp": 1787917807068,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FrameWorker",
+      "message": "preprocessing worker ready",
+      "data": {
+        "hasDocument": false,
+        "isWorkerGlobalScope": true,
+        "canvas2dAvailable": true
+      }
+    },
+    {
+      "timestamp": 1787917807217,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "acquisition route VIDEO_FRAME selected",
+      "data": {
+        "successes": 5,
+        "meanAcquireMs": 0.1
+      }
+    },
+    {
+      "timestamp": 1787917807616,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 5.2 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 5.2,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787917808097,
+      "level": "WARN",
+      "phase": 3,
+      "source": "App",
+      "message": "Phase 3 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917808098,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "phase 3: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917808190,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "adopted the running Phase 2 pipeline",
+      "data": {
+        "note": "the camera and worker stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1787917808447,
+      "level": "WARN",
+      "phase": 4,
+      "source": "App",
+      "message": "Phase 4 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917808448,
+      "level": "INFO",
+      "phase": 4,
+      "source": "App",
+      "message": "phase 4: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917808517,
+      "level": "INFO",
+      "phase": 4,
+      "source": "App",
+      "message": "adopted the running Phase 3 pipeline",
+      "data": {
+        "note": "the camera, worker and detected population stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1787917808520,
+      "level": "INFO",
+      "phase": 4,
+      "source": "RotationRateMonitor",
+      "message": "gyroscope: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet"
+      }
+    },
+    {
+      "timestamp": 1787917809265,
+      "level": "WARN",
+      "phase": 5,
+      "source": "App",
+      "message": "Phase 5 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917809266,
+      "level": "INFO",
+      "phase": 5,
+      "source": "App",
+      "message": "phase 5: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917809315,
+      "level": "INFO",
+      "phase": 5,
+      "source": "App",
+      "message": "adopted the running Phase 4 tracker",
+      "data": {
+        "note": "the camera, worker and tracked population stay as they are; only the tracking options change. Phase 5 verifies the population Phase 4 passed with, not a new one"
+      }
+    },
+    {
+      "timestamp": 1787917809884,
+      "level": "WARN",
+      "phase": 6,
+      "source": "App",
+      "message": "Phase 6 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917809885,
+      "level": "INFO",
+      "phase": 6,
+      "source": "App",
+      "message": "phase 6: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917809949,
+      "level": "INFO",
+      "phase": 6,
+      "source": "App",
+      "message": "adopted the running Phase 5 verifier",
+      "data": {
+        "note": "the camera, worker, population and verification anchor stay as they are; only the tracking options change. Phase 6 decomposes the model Phase 5 selected"
+      }
+    },
+    {
+      "timestamp": 1787917809954,
+      "level": "INFO",
+      "phase": 6,
+      "source": "RotationRateMonitor",
+      "message": "gyroscope: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "why": "POSE-002 compares the recovered rotation against this and nothing else reads it"
+      }
+    },
+    {
+      "timestamp": 1787917810198,
+      "level": "WARN",
+      "phase": 7,
+      "source": "App",
+      "message": "Phase 7 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917810199,
+      "level": "INFO",
+      "phase": 7,
+      "source": "App",
+      "message": "phase 7: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917810248,
+      "level": "INFO",
+      "phase": 7,
+      "source": "App",
+      "message": "adopted the running Phase 6 pose recovery",
+      "data": {
+        "note": "the camera, worker, population, anchor and pose options stay as they are. Phase 7 fuses the poses Phase 6 recovers and changes nothing about how they are recovered — editing the solver here would mean fusing a pose Phase 6 never passed with"
+      }
+    },
+    {
+      "timestamp": 1787917810253,
+      "level": "INFO",
+      "phase": 7,
+      "source": "RotationRateMonitor",
+      "message": "motion sensors: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "why": "IMU-002 is decided on what actually arrives, and v3 §68 asks for the run to continue when nothing does"
+      }
+    },
+    {
+      "timestamp": 1787917810371,
+      "level": "WARN",
+      "phase": 8,
+      "source": "App",
+      "message": "Phase 8 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1787917810372,
+      "level": "INFO",
+      "phase": 8,
+      "source": "App",
+      "message": "phase 8: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: KEY-001, KEY-002, KEY-003, KEY-004, KEY-005, KEY-006 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1787917810415,
+      "level": "INFO",
+      "phase": 8,
+      "source": "App",
+      "message": "adopted the running Phase 7 stack",
+      "data": {
+        "note": "the camera, worker, population, anchor, pose options and filter stay as they are. Phase 8 decides which of the views Phase 6 recovers are worth keeping and changes nothing about how they are recovered"
+      }
+    },
+    {
+      "timestamp": 1787917811722,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "median worker latency 117.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
+        "medianWorkerMs": 117.1,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787917815770,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@30 -> BASIC 960x540@20",
+      "data": {
+        "reason": "median worker latency 85.5 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
+        "medianWorkerMs": 85.5,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787917819788,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
+      "data": {
+        "reason": "median worker latency 98 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)",
+        "medianWorkerMs": 98,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1787917823845,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: REDUCED 640x360@20 -> REDUCED 640x360@15",
+      "data": {
+        "reason": "median worker latency 75.3 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)",
+        "medianWorkerMs": 75.3,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    }
+  ],
+  "legDetermination": {
+    "signals": {
+      "uaSuggestsIOS": false,
+      "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
+      "maxTouchPoints": 1,
+      "protocol": "http:",
+      "hostname": "localhost",
+      "isLocalHost": true,
+      "navigatorWebdriver": true,
+      "hardwareConcurrency": 4,
+      "devicePixelRatio": 2,
+      "screen": "430x932",
+      "failedChecks": [
+        "UA does not look like iOS/iPadOS",
+        "protocol is http:, not https:",
+        "host is local, so this is not a device reaching a real origin",
+        "navigator.webdriver is true (automated browser)"
+      ]
+    },
+    "explanation": "Classified as DESKTOP_DEV because: UA does not look like iOS/iPadOS; protocol is http:, not https:; host is local, so this is not a device reaching a real origin; navigator.webdriver is true (automated browser). Rule 004 means this run cannot pass a phase, only catch regressions."
+  },
+  "phaseContext": {
+    "camera": {
+      "state": "LIVE",
+      "live": true,
+      "trackReadyState": "live",
+      "rungUsed": 2,
+      "attempts": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
+          "ok": false,
+          "errorName": "OverconstrainedError",
+          "durationMs": 6
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal",
+          "ok": true,
+          "durationMs": 6
+        }
+      ],
+      "requestedLadder": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal"
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal"
+        },
+        {
+          "rung": 3,
+          "label": "rear camera (preferred), any resolution"
+        },
+        {
+          "rung": 4,
+          "label": "any camera, any resolution"
+        }
+      ],
+      "achievedSettings": {
+        "width": 640,
+        "height": 480,
+        "frameRate": 30,
+        "facingMode": "unreported",
+        "deviceId": "e915e92dd29cab3fb8125380042690a6cae988b64394a2a5d7c8ec98a1cbaf01",
+        "label": "/home/user/world-kit/node_modules/.cache/keyframe-motion.y4m",
+        "aspectRatio": 1.333
+      },
+      "openDurationMs": 11,
+      "failure": null
+    },
+    "pipeline": {
+      "running": true,
+      "startedAt": 295.09999999962747,
+      "uptimeMs": 63379,
+      "route": "VIDEO_FRAME",
+      "routeLocked": true,
+      "routeProbes": [
+        {
+          "route": "VIDEO_FRAME",
+          "ok": true,
+          "attempts": 796,
+          "successes": 795,
+          "meanAcquireMs": 0.036,
+          "error": null,
+          "note": "selected"
+        },
+        {
+          "route": "IMAGE_BITMAP",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        },
+        {
+          "route": "MAIN_CANVAS",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        }
+      ],
+      "workerStarted": true,
+      "workerScope": {
+        "hasDocument": false,
+        "hasWindow": false,
+        "isWorkerGlobalScope": true,
+        "hasOffscreenCanvas": true,
+        "canvas2dAvailable": true,
+        "hardwareConcurrency": 4
+      },
+      "workerErrors": [],
+      "callbacks": 1899,
+      "admitted": 796,
+      "completed": 795,
+      "pacedOut": 243,
+      "backpressured": 860,
+      "lost": 0,
+      "acquireFailures": 0,
+      "deliveredFps": 14.66,
+      "sourceFps": 29.63,
+      "sessionDeliveredFps": 12.54,
+      "maxResultGapMs": 198.8,
+      "uiCostMs": {
+        "count": 796,
+        "mean": 0.08,
+        "p50": 0.1,
+        "p95": 0.2,
+        "min": 0,
+        "max": 1.1
+      },
+      "acquireMs": {
+        "count": 796,
+        "mean": 0.04,
+        "p50": 0,
+        "p95": 0.1,
+        "min": 0,
+        "max": 0.2
+      },
+      "workerMs": {
+        "count": 795,
+        "mean": 61.23,
+        "p50": 60.2,
+        "p95": 99.7,
+        "min": 3.7,
+        "max": 170.4
+      },
+      "roundTripMs": {
+        "count": 795,
+        "mean": 61.97,
+        "p50": 60.7,
+        "p95": 100.9,
+        "min": 3.9,
+        "max": 170.9
+      },
+      "tierStep": 4,
+      "tierLabel": "REDUCED 640x360@15",
+      "targetFps": 15,
+      "procWidth": 480,
+      "procHeight": 360,
+      "decisions": [
+        {
+          "at": 871.1999999992549,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 5.2,
+          "budgetMs": 33.33,
+          "deliveredFps": 31.52,
+          "windowSize": 15,
+          "reason": "median worker latency 5.2 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 4978,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 117.1,
+          "budgetMs": 33.33,
+          "deliveredFps": 15.66,
+          "windowSize": 15,
+          "reason": "median worker latency 117.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+        },
+        {
+          "at": 9026.099999999627,
+          "direction": "DOWN",
+          "fromStep": 1,
+          "toStep": 2,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "BASIC 960x540@20",
+          "fromTargetFps": 30,
+          "toTargetFps": 20,
+          "medianWorkerMs": 85.5,
+          "budgetMs": 33.33,
+          "deliveredFps": 11.49,
+          "windowSize": 15,
+          "reason": "median worker latency 85.5 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+        },
+        {
+          "at": 13043.5,
+          "direction": "DOWN",
+          "fromStep": 2,
+          "toStep": 3,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "REDUCED 640x360@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 98,
+          "budgetMs": 50,
+          "deliveredFps": 8.89,
+          "windowSize": 15,
+          "reason": "median worker latency 98 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+        },
+        {
+          "at": 17100.89999999944,
+          "direction": "DOWN",
+          "fromStep": 3,
+          "toStep": 4,
+          "fromLabel": "REDUCED 640x360@20",
+          "toLabel": "REDUCED 640x360@15",
+          "fromTargetFps": 20,
+          "toTargetFps": 15,
+          "medianWorkerMs": 75.3,
+          "budgetMs": 50,
+          "deliveredFps": 10.65,
+          "windowSize": 15,
+          "reason": "median worker latency 75.3 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+        }
+      ],
+      "spontaneousDegrade": true,
+      "maxDecisionsPer10s": 3,
+      "sourceSizesObserved": [
+        "640x480"
+      ],
+      "processedSizesObserved": [
+        "640x480",
+        "480x360"
+      ],
+      "sourceWidth": 640,
+      "sourceHeight": 480,
+      "maxAspectError": 0,
+      "overBudgetFrames": 0,
+      "upscaledFrames": 0,
+      "framesAfterSourceChange": 0,
+      "procMatchedAfterSourceChange": null,
+      "tierUsage": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "frames": 49,
+          "sizes": [
+            "640x480"
+          ]
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "frames": 54,
+          "sizes": [
+            "640x480"
+          ]
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "frames": 38,
+          "sizes": [
+            "640x480"
+          ]
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "frames": 49,
+          "sizes": [
+            "480x360"
+          ]
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "frames": 605,
+          "sizes": [
+            "480x360"
+          ]
+        }
+      ],
+      "decisionOutcomes": [
+        {
+          "decisionIndex": 0,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 5.2,
+          "afterMedianWorkerMs": 4.1,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 1,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 117.1,
+          "afterMedianWorkerMs": 94.6,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 2,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 85.5,
+          "afterMedianWorkerMs": 84.9,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 3,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 98,
+          "afterMedianWorkerMs": 65.8,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 4,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 75.3,
+          "afterMedianWorkerMs": 68.9,
+          "samples": 15
+        }
+      ],
+      "pyramidLevels": [
+        {
+          "width": 480,
+          "height": 360,
+          "bytes": 172800
+        },
+        {
+          "width": 240,
+          "height": 180,
+          "bytes": 43200
+        },
+        {
+          "width": 120,
+          "height": 90,
+          "bytes": 10800
+        }
+      ],
+      "pyramidConsistent": true,
+      "pyramidProblems": [],
+      "meanLuma": 132.25,
+      "topMadMax": 52.373,
+      "topMadMedian": 0,
+      "topMadSamples": 600,
+      "stripMadMax": 58.12,
+      "stripMadMedian": 35.505,
+      "stripMadSamples": 452,
+      "distinctChecksums": 309,
+      "crossCheck": {
+        "count": 61,
+        "unmatched": 0,
+        "medianAbsDifference": 1.119,
+        "maxAbsDifference": 1.667,
+        "sceneStdDev": 0.179,
+        "sceneRange": 0.847,
+        "costMs": {
+          "count": 61,
+          "mean": 2.48,
+          "p50": 1.9,
+          "p95": 4.1,
+          "min": 1.3,
+          "max": 4.5
+        }
+      },
+      "stressPasses": 0,
+      "stressIntervals": [],
+      "anyStressed": false,
+      "segments": [
+        {
+          "index": 0,
+          "stressed": false,
+          "startedAt": 295.1,
+          "endedAt": null,
+          "observedMs": 63267.6,
+          "results": 795,
+          "meanFps": 12.55,
+          "maxGapMs": 198.8,
+          "wasHidden": false,
+          "endReason": "open at 63674.3"
+        }
+      ],
+      "longestCleanSegment": {
+        "index": 0,
+        "stressed": false,
+        "startedAt": 295.1,
+        "endedAt": null,
+        "observedMs": 63267.6,
+        "results": 795,
+        "meanFps": 12.55,
+        "maxGapMs": 198.8,
+        "wasHidden": false,
+        "endReason": "open at 63674.3"
+      },
+      "wasEverHidden": false,
+      "hiddenCount": 0,
+      "recentFrames": [
+        {
+          "frameId": 756,
+          "at": 60909,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 48.5,
+          "roundTripMs": 49,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 757,
+          "at": 60984,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 57.3,
+          "roundTripMs": 57.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 758,
+          "at": 61040,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 46.8,
+          "roundTripMs": 47.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 759,
+          "at": 61111,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 50.3,
+          "roundTripMs": 50.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 760,
+          "at": 61182,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 49,
+          "roundTripMs": 55.4,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 761,
+          "at": 61248,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 49.8,
+          "roundTripMs": 50.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 762,
+          "at": 61309,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 48.3,
+          "roundTripMs": 48.7,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 763,
+          "at": 61385,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 51.9,
+          "roundTripMs": 52.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 764,
+          "at": 61441,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 47.2,
+          "roundTripMs": 47.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 765,
+          "at": 61507,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 46.5,
+          "roundTripMs": 46.7,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 766,
+          "at": 61577,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 49.8,
+          "roundTripMs": 50.3,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 767,
+          "at": 61641,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 47.6,
+          "roundTripMs": 47.9,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 768,
+          "at": 61711,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 50.7,
+          "roundTripMs": 51.1,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 769,
+          "at": 61772,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 45.1,
+          "roundTripMs": 45.3,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 770,
+          "at": 61840,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 46.4,
+          "roundTripMs": 46.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 771,
+          "at": 61939,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 78.9,
+          "roundTripMs": 79.3,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 772,
+          "at": 62007,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 46.3,
+          "roundTripMs": 46.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 773,
+          "at": 62073,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 45.8,
+          "roundTripMs": 46.1,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 774,
+          "at": 62147,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 49.2,
+          "roundTripMs": 49.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 775,
+          "at": 62210,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 45.5,
+          "roundTripMs": 45.9,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 776,
+          "at": 62276,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 48.9,
+          "roundTripMs": 49.4,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 777,
+          "at": 62340,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 46.9,
+          "roundTripMs": 47.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 778,
+          "at": 62415,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 48.9,
+          "roundTripMs": 49.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 779,
+          "at": 62471,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 44.4,
+          "roundTripMs": 44.8,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 780,
+          "at": 62541,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 47.4,
+          "roundTripMs": 47.7,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 781,
+          "at": 62615,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 50.2,
+          "roundTripMs": 50.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 782,
+          "at": 62682,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 46.7,
+          "roundTripMs": 55.1,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 783,
+          "at": 62751,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 53,
+          "roundTripMs": 53.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 784,
+          "at": 62811,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 50.9,
+          "roundTripMs": 51.2,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 785,
+          "at": 62876,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 49.3,
+          "roundTripMs": 49.6,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 786,
+          "at": 62947,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 53.1,
+          "roundTripMs": 53.5,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 787,
+          "at": 63011,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 51,
+          "roundTripMs": 51.3,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 788,
+          "at": 63077,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 49.7,
+          "roundTripMs": 50.5,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 789,
+          "at": 63151,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 53.7,
+          "roundTripMs": 53.9,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 790,
+          "at": 63211,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 50.6,
+          "roundTripMs": 50.9,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 791,
+          "at": 63276,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 48.9,
+          "roundTripMs": 49.3,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 792,
+          "at": 63339,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 45.6,
+          "roundTripMs": 45.9,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 793,
+          "at": 63405,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 44.6,
+          "roundTripMs": 45.1,
+          "meanLuma": 132.26,
+          "checksum": 4290868608,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 794,
+          "at": 63485,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 54.3,
+          "roundTripMs": 54.8,
+          "meanLuma": 132.33,
+          "checksum": 237602678,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 795,
+          "at": 63622,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 70.4,
+          "roundTripMs": 70.9,
+          "meanLuma": 132.25,
+          "checksum": 403760764,
+          "stressPasses": 0
+        }
+      ],
+      "controller": {
+        "config": {
+          "windowSize": 15,
+          "downThreshold": 0.9,
+          "upThreshold": 0.5,
+          "deliveredFpsFloorRatio": 0.75,
+          "deliveredFpsBlameRatio": 0.5,
+          "upWindowsRequired": 3,
+          "cooldownMs": 4000,
+          "upAfterDownCooldownMs": 8000
+        },
+        "ladder": [
+          {
+            "step": 0,
+            "label": "HIGH 1280x720@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 1,
+            "label": "BASIC 960x540@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 2,
+            "label": "BASIC 960x540@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 3,
+            "label": "REDUCED 640x360@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 4,
+            "label": "REDUCED 640x360@15",
+            "budgetMs": 50
+          }
+        ],
+        "startStep": 1,
+        "floorStep": 4,
+        "currentStep": 4,
+        "currentTier": "REDUCED 640x360@15",
+        "deepestStep": 4,
+        "windowFill": 15,
+        "decisions": [
+          {
+            "at": 871.1999999992549,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 5.2,
+            "budgetMs": 33.33,
+            "deliveredFps": 31.52,
+            "windowSize": 15,
+            "reason": "median worker latency 5.2 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 4978,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 117.1,
+            "budgetMs": 33.33,
+            "deliveredFps": 15.66,
+            "windowSize": 15,
+            "reason": "median worker latency 117.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+          },
+          {
+            "at": 9026.099999999627,
+            "direction": "DOWN",
+            "fromStep": 1,
+            "toStep": 2,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "BASIC 960x540@20",
+            "fromTargetFps": 30,
+            "toTargetFps": 20,
+            "medianWorkerMs": 85.5,
+            "budgetMs": 33.33,
+            "deliveredFps": 11.49,
+            "windowSize": 15,
+            "reason": "median worker latency 85.5 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          },
+          {
+            "at": 13043.5,
+            "direction": "DOWN",
+            "fromStep": 2,
+            "toStep": 3,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "REDUCED 640x360@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 98,
+            "budgetMs": 50,
+            "deliveredFps": 8.89,
+            "windowSize": 15,
+            "reason": "median worker latency 98 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+          },
+          {
+            "at": 17100.89999999944,
+            "direction": "DOWN",
+            "fromStep": 3,
+            "toStep": 4,
+            "fromLabel": "REDUCED 640x360@20",
+            "toLabel": "REDUCED 640x360@15",
+            "fromTargetFps": 20,
+            "toTargetFps": 15,
+            "medianWorkerMs": 75.3,
+            "budgetMs": 50,
+            "deliveredFps": 10.65,
+            "windowSize": 15,
+            "reason": "median worker latency 75.3 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+          }
+        ],
+        "note": "Every decision carries the median worker latency and the budget it was compared against. The controller reads no clock of its own — only the timestamps on the samples it is given (§59)."
+      },
+      "segmentLog": {
+        "segments": [
+          {
+            "index": 0,
+            "stressed": false,
+            "startedAt": 295.1,
+            "endedAt": null,
+            "observedMs": 63267.6,
+            "results": 795,
+            "meanFps": 12.55,
+            "maxGapMs": 198.8,
+            "wasHidden": false,
+            "endReason": "open at 63674.3"
+          }
+        ],
+        "droppedSegments": 0,
+        "longestCleanMs": 63267.6,
+        "note": "The timeline is cut wherever load injection was switched on or off. FRAME-001 reads the longest unstressed segment; stressed segments are measured and reported but never counted toward continuity."
+      },
+      "crossCheckDetail": {
+        "count": 61,
+        "unmatched": 0,
+        "medianAbsDifference": 1.119,
+        "maxAbsDifference": 1.667,
+        "sceneStdDev": 0.179,
+        "sceneRange": 0.847,
+        "costMs": {
+          "count": 61,
+          "mean": 2.48,
+          "p50": 1.9,
+          "p95": 4.1,
+          "min": 1.3,
+          "max": 4.5
+        },
+        "recentSamples": [
+          {
+            "frameId": 477,
+            "at": 39698.199999999255,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.3999999994412065
+          },
+          {
+            "frameId": 492,
+            "at": 40698.299999999814,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.7000000001862645
+          },
+          {
+            "frameId": 507,
+            "at": 41698.299999999814,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.3999999994412065
+          },
+          {
+            "frameId": 523,
+            "at": 42760.09999999963,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 3.900000000372529
+          },
+          {
+            "frameId": 538,
+            "at": 43760.09999999963,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 4
+          },
+          {
+            "frameId": 553,
+            "at": 44764.799999999814,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 4
+          },
+          {
+            "frameId": 568,
+            "at": 45764.89999999944,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 4.2999999998137355
+          },
+          {
+            "frameId": 582,
+            "at": 46798,
+            "mainMeanLuma": 131.304,
+            "workerMeanLuma": 132.459,
+            "absDifference": 1.154943576388888,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 592,
+            "at": 47826.59999999963,
+            "mainMeanLuma": 130.63,
+            "workerMeanLuma": 131.821,
+            "absDifference": 1.191141493055568,
+            "costMs": 3.7000000001862645
+          },
+          {
+            "frameId": 603,
+            "at": 48897.89999999944,
+            "mainMeanLuma": 131.433,
+            "workerMeanLuma": 132.527,
+            "absDifference": 1.0946686921296305,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 614,
+            "at": 49926.5,
+            "mainMeanLuma": 130.728,
+            "workerMeanLuma": 131.881,
+            "absDifference": 1.1533984374999875,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 625,
+            "at": 50993.199999999255,
+            "mainMeanLuma": 131.161,
+            "workerMeanLuma": 132.359,
+            "absDifference": 1.1971469907407197,
+            "costMs": 4.2000000001862645
+          },
+          {
+            "frameId": 637,
+            "at": 52059.799999999814,
+            "mainMeanLuma": 131.13,
+            "workerMeanLuma": 132.302,
+            "absDifference": 1.1713946759259102,
+            "costMs": 4.1000000005587935
+          },
+          {
+            "frameId": 650,
+            "at": 53097.699999999255,
+            "mainMeanLuma": 131.119,
+            "workerMeanLuma": 132.224,
+            "absDifference": 1.1048828125000227,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 664,
+            "at": 54126.59999999963,
+            "mainMeanLuma": 130.994,
+            "workerMeanLuma": 132.166,
+            "absDifference": 1.1713266782407175,
+            "costMs": 3.7999999998137355
+          },
+          {
+            "frameId": 676,
+            "at": 55131.09999999963,
+            "mainMeanLuma": 131.061,
+            "workerMeanLuma": 132.18,
+            "absDifference": 1.1188252314814804,
+            "costMs": 4.5
+          },
+          {
+            "frameId": 687,
+            "at": 56159.59999999963,
+            "mainMeanLuma": 131.087,
+            "workerMeanLuma": 132.213,
+            "absDifference": 1.1267968749999966,
+            "costMs": 1.6000000005587935
+          },
+          {
+            "frameId": 701,
+            "at": 57164.299999999814,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 717,
+            "at": 58226.59999999963,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.599999999627471
+          },
+          {
+            "frameId": 732,
+            "at": 59260,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.7999999998137355
+          },
+          {
+            "frameId": 748,
+            "at": 60326.5,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.3999999994412065
+          },
+          {
+            "frameId": 763,
+            "at": 61330.699999999255,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 778,
+            "at": 62364.09999999963,
+            "mainMeanLuma": 131.15,
+            "workerMeanLuma": 132.256,
+            "absDifference": 1.1060734953703673,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 794,
+            "at": 63426.299999999814,
+            "mainMeanLuma": 131.22,
+            "workerMeanLuma": 132.327,
+            "absDifference": 1.1069314236111154,
+            "costMs": 3.7000000001862645
+          }
+        ],
+        "note": "Each pair is one video frame measured twice: on the main thread with an independent 64x48 readback, and in the worker on the pixels the pipeline actually delivered. The readback costs what §H.1 measured, which is why it runs at 1 Hz and is excluded from the pipeline UI cost in FRAME-005."
+      },
+      "ladder": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "pixelBudget": 921600,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "pixelBudget": 518400,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "pixelBudget": 518400,
+          "budgetMs": 50
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        }
+      ],
+      "routeOrder": [
+        "VIDEO_FRAME",
+        "IMAGE_BITMAP",
+        "MAIN_CANVAS"
+      ],
+      "constants": {
+        "pacingResyncIntervals": 2,
+        "pacingToleranceMs": 2,
+        "routeLockSuccesses": 5,
+        "pendingTimeoutMs": 3000,
+        "stripIntervalMs": 100,
+        "crossCheckIntervalMs": 1000,
+        "stressTargetBudgetMultiple": 6,
+        "pyramidLevels": 3,
+        "stripSize": "64x48"
+      },
+      "note": "Frames declined by rate pacing (pacedOut) are the scheduler working as designed and are not drops. Frames declined because the worker was busy (backpressured) are deliberate too. Only `lost` counts frames that were handed over and never came back, and only that is held against FRAME-001."
+    },
+    "flow": {
+      "flowFrames": 753,
+      "trackedFrames": 751,
+      "population": {
+        "tracked": 183,
+        "redetected": 47,
+        "total": 230,
+        "cumulativeTracked": 162279,
+        "cumulativeRedetected": 24222,
+        "maxTrackLength": 167
+      },
+      "byMotion": {
+        "STATIC": {
+          "frames": 377,
+          "framesSeen": 377,
+          "medianSurvival": 1,
+          "medianDisplacementPx": 0,
+          "medianFbErrorPx": 0,
+          "medianTracked": 232,
+          "medianCellSpread": 0,
+          "medianRejectFraction": 0,
+          "lostFrames": 0,
+          "degradedFrames": 0
+        },
+        "SLOW": {
+          "frames": 360,
+          "framesSeen": 360,
+          "medianSurvival": 0.7347,
+          "medianDisplacementPx": 4.772,
+          "medianFbErrorPx": 0.01,
+          "medianTracked": 171,
+          "medianCellSpread": 9.563,
+          "medianRejectFraction": 0.2038,
+          "lostFrames": 0,
+          "degradedFrames": 0
+        },
+        "FAST": {
+          "frames": 14,
+          "framesSeen": 14,
+          "medianSurvival": 0.571,
+          "medianDisplacementPx": 10.595,
+          "medianFbErrorPx": 0,
+          "medianTracked": 170,
+          "medianCellSpread": 12.742,
+          "medianRejectFraction": 0.3599,
+          "lostFrames": 0,
+          "degradedFrames": 3
+        },
+        "OCCLUDED": {
+          "frames": 0,
+          "framesSeen": 0,
+          "medianSurvival": -1,
+          "medianDisplacementPx": -1,
+          "medianFbErrorPx": -1,
+          "medianTracked": -1,
+          "medianCellSpread": -1,
+          "medianRejectFraction": -1,
+          "lostFrames": 0,
+          "degradedFrames": 0
+        },
+        "INDETERMINATE": 2
+      },
+      "forwardBackward": {
+        "acceptable": 157549,
+        "reduced": 4730,
+        "rejected": 16386,
+        "medianPx": 0
+      },
+      "shiftCrossCheck": {
+        "samples": 400,
+        "medianDisagreementPx": 0,
+        "medianMeasuredShiftPx": 0,
+        "medianTrackedDisplacementPx": 0,
+        "agreementRate": 0.9825,
+        "recent": [
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 0,
+            "sceneShiftPx": 0,
+            "disagreementPx": 0,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 95.462,
+            "trackedCount": 238,
+            "sceneDx0": 0,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.181,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.819,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.861,
+            "trackedCount": 189,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.181,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.819,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.881,
+            "trackedCount": 183,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          }
+        ]
+      },
+      "rotation": {
+        "gyroAvailable": false,
+        "gyroReason": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "rotatingFrames": 0,
+        "medianRotationDeg": -1,
+        "medianSpreadRotating": -1,
+        "medianSpreadTranslating": -1,
+        "windowMs": 1000,
+        "rotatingDeg": 5
+      },
+      "occlusions": [],
+      "state": {
+        "current": "TRACKING",
+        "reason": "183 of 230 points carried from the previous frame. GOOD is not claimed: inlierRatio — §14 geometric verification (Phase 5) has not been written; reprojectionError — §15 pose (Phase 6) has not been written; features 230 < 300",
+        "goodBlockedBy": [
+          "inlierRatio — §14 geometric verification (Phase 5) has not been written",
+          "reprojectionError — §15 pose (Phase 6) has not been written",
+          "features 230 < 300"
+        ],
+        "frames": {
+          "READY": 1,
+          "TRACKING": 748,
+          "DEGRADED": 4
+        },
+        "mismatches": 0,
+        "geometryChanges": 1
+      },
+      "refill": {
+        "medianOffered": 305,
+        "medianDeclinedTooClose": 270,
+        "medianDeclinedOutOfReach": 35,
+        "cumulativeRedetected": 24222,
+        "note": "What §11's refill produced each frame and why each point was or was not admitted. Declined-too-close means the point is already being tracked, which is a healthy tracker rather than a failing one; declined-out-of-reach means it sat where the solver's window cannot cover it. Without the split, a population below §11's minimum cannot be told apart from a detector that found little."
+      },
+      "cost": {
+        "meanFlowMs": 34.116,
+        "meanShiftMs": 3.286,
+        "meanTrackedPoints": 202.9,
+        "samples": 400
+      },
+      "lastRecordSamples": [
+        {
+          "id": 20951,
+          "x": 84.94468692247548,
+          "y": 26.910671606835987,
+          "x0": 169.88937384495097,
+          "y0": 53.82134321367197,
+          "cornerStrength": 21315.158203125,
+          "age": 166,
+          "trackLength": 167,
+          "forwardBackwardError": 0.008,
+          "reprojectionError": null,
+          "qualityScore": 0.3243805387672414,
+          "cell": 2
+        },
+        {
+          "id": 21875,
+          "x": 144.50751447314298,
+          "y": 24.053209711066817,
+          "x0": 289.01502894628595,
+          "y0": 48.106419422133634,
+          "cornerStrength": 27930.75,
+          "age": 149,
+          "trackLength": 150,
+          "forwardBackwardError": 0,
+          "reprojectionError": null,
+          "qualityScore": 0.4506181378138365,
+          "cell": 4
+        },
+        {
+          "id": 22431,
+          "x": 167.23823072464126,
+          "y": 129.74557683566755,
+          "x0": 334.4764614492825,
+          "y0": 259.4911536713351,
+          "cornerStrength": 44516.3359375,
+          "age": 135,
+          "trackLength": 136,
+          "forwardBackwardError": 0,
+          "reprojectionError": null,
+          "qualityScore": 0.7407646438529611,
+          "cell": 37
+        },
+        {
+          "id": 22873,
+          "x": 187.74421131473903,
+          "y": 11.514819438406365,
+          "x0": 375.48842262947807,
+          "y0": 23.02963887681273,
+          "cornerStrength": 54567.69140625,
+          "age": 126,
+          "trackLength": 127,
+          "forwardBackwardError": 0,
+          "reprojectionError": null,
+          "qualityScore": 0.8673335328343845,
+          "cell": 6
+        },
+        {
+          "id": 23449,
+          "x": 193.76234814609577,
+          "y": 88.78075814419496,
+          "x0": 387.52469629219155,
+          "y0": 177.56151628838992,
+          "cornerStrength": 33967.81640625,
+          "age": 117,
+          "trackLength": 118,
+          "forwardBackwardError": 0,
+          "reprojectionError": null,
+          "qualityScore": 0.5436426455592667,
+          "cell": 22
+        },
+        {
+          "id": 23785,
+          "x": 82.30199577806421,
+          "y": 29.25076975224057,
+          "x0": 164.60399155612842,
+          "y0": 58.50153950448114,
+          "cornerStrength": 23743.306640625,
+          "age": 112,
+          "trackLength": 113,
+          "forwardBackwardError": 0.002,
+          "reprojectionError": null,
+          "qualityScore": 0.3879358424297775,
+          "cell": 2
+        },
+        {
+          "id": 23909,
+          "x": 129.74035760900438,
+          "y": 162.10065102691036,
+          "x0": 259.48071521800875,
+          "y0": 324.2013020538207,
+          "cornerStrength": 18410.140625,
+          "age": 110,
+          "trackLength": 111,
+          "forwardBackwardError": 0,
+          "reprojectionError": null,
+          "qualityScore": 0.31646856244217475,
+          "cell": 44
+        },
+        {
+          "id": 23992,
+          "x": 45.89467156035575,
+          "y": 29.799998765756353,
+          "x0": 91.7893431207115,
+          "y0": 59.599997531512706,
+          "cornerStrength": 24204.537109375,
+          "age": 108,
+          "trackLength": 109,
+          "forwardBackwardError": 0.002,
+          "reprojectionError": null,
+          "qualityScore": 0.40433150238155596,
+          "cell": 1
+        },
+        {
+          "id": 24046,
+          "x": 96.71753195014989,
+          "y": 57.1697988482355,
+          "x0": 193.43506390029978,
+          "y0": 114.339597696471,
+          "cornerStrength": 29941.591796875,
+          "age": 107,
+          "trackLength": 108,
+          "forwardBackwardError": 0.004,
+          "reprojectionError": null,
+          "qualityScore": 0.49705015493474414,
+          "cell": 11
+        },
+        {
+          "id": 24105,
+          "x": 229.2430491763614,
+          "y": 163.7132608026113,
+          "x0": 458.4860983527228,
+          "y0": 327.4265216052226,
+          "cornerStrength": 21947.751953125,
+          "age": 106,
+          "trackLength": 107,
+          "forwardBackwardError": 0,
+          "reprojectionError": null,
+          "qualityScore": 0.3526893064210422,
+          "cell": 47
+        },
+        {
+          "id": 24184,
+          "x": 15,
+          "y": 108,
+          "x0": 30,
+          "y0": 216,
+          "cornerStrength": 55896.76953125,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.8729322699025815,
+          "cell": 24
+        },
+        {
+          "id": 24203,
+          "x": 110,
+          "y": 118,
+          "x0": 220,
+          "y0": 236,
+          "cornerStrength": 30853.220703125,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.4818305638777036,
+          "cell": 27
+        }
+      ],
+      "note": "Motion classes are measured from the image by an integer SAD translation search on the pyramid’s top level, which shares no code with the Lucas-Kanade solver and never reads the feature list. `tracked` counts only points carried forward from the previous frame; `redetected` counts what §11’s refill added, and the two are never summed into a survival figure — a refill can top the population back up while the tracker is losing everything."
+    },
+    "verification": {
+      "verifiedFrames": 746,
+      "judgedFrames": 684,
+      "current": {
+        "state": "UNVERIFIED",
+        "reason": "the two views are 3.18 px apart, under the 15 px a two-view geometry needs. Every model fits a motionless pair perfectly, so a high inlier ratio here would verify nothing",
+        "goodBlockedBy": [],
+        "correspondences": 183,
+        "inliers": 181,
+        "inlierRatio": 0.9891,
+        "baselinePx": 3.181,
+        "model": null,
+        "planar": false,
+        "anchorAge": 1
+      },
+      "overRun": {
+        "medianCorrespondences": 48,
+        "medianInliers": 47,
+        "medianInlierRatio": 0.9792,
+        "medianBaselinePx": 116.02,
+        "medianSpreadPx": 79.1,
+        "stateFrames": {
+          "UNVERIFIED": 62,
+          "GOOD": 108,
+          "USABLE": 576
+        },
+        "stateMismatches": 0,
+        "reAnchors": 15,
+        "cappedFrames": 0,
+        "degenerateFrames": 0
+      },
+      "byTexture": {
+        "TEXTURE_RICH": {
+          "frames": 746,
+          "judged": 684,
+          "medianCorrespondences": 48,
+          "medianInliers": 47,
+          "medianInlierRatio": 0.9792,
+          "medianBaselinePx": 116.02,
+          "medianSpreadPx": 79.1,
+          "unverified": 62,
+          "usable": 576,
+          "good": 108
+        },
+        "TEXTURE_POOR": {
+          "frames": 0,
+          "judged": 0,
+          "medianCorrespondences": -1,
+          "medianInliers": -1,
+          "medianInlierRatio": -1,
+          "medianBaselinePx": -1,
+          "medianSpreadPx": -1,
+          "unverified": 0,
+          "usable": 0,
+          "good": 0
+        }
+      },
+      "injectedOutliers": {
+        "samples": 118,
+        "medianRecall": 1,
+        "medianCleanRejection": 0.0183,
+        "medianSurvivingInliers": 39.5,
+        "recent": [
+          {
+            "injected": 23,
+            "clean": 52,
+            "injectedRejected": 23,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 52,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 4100624353,
+            "at": 55300.299999999814
+          },
+          {
+            "injected": 22,
+            "clean": 52,
+            "injectedRejected": 22,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 52,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2630086460,
+            "at": 55393.299999999814
+          },
+          {
+            "injected": 21,
+            "clean": 48,
+            "injectedRejected": 21,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 48,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3752639839,
+            "at": 55495
+          },
+          {
+            "injected": 20,
+            "clean": 47,
+            "injectedRejected": 20,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0213,
+            "survivingInliers": 46,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1375013826,
+            "at": 55593.5
+          },
+          {
+            "injected": 20,
+            "clean": 46,
+            "injectedRejected": 20,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 46,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2377115370,
+            "at": 55661.89999999944
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1377397402,
+            "at": 58280.799999999814
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1694469392,
+            "at": 58349
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 32,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3377911258,
+            "at": 58406.39999999944
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 32,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 918550618,
+            "at": 58473.799999999814
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 34,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3947452615,
+            "at": 58541.89999999944
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 32,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2944543835,
+            "at": 58607.699999999255
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 34,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1203799236,
+            "at": 58684.699999999255
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3496054107,
+            "at": 61247.699999999255
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1648132422,
+            "at": 61308.5
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 32,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2391907691,
+            "at": 61384.699999999255
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3621861561,
+            "at": 61440.799999999814
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1509950887,
+            "at": 61506.5
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 1,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0294,
+            "survivingInliers": 33,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1463262993,
+            "at": 61576.699999999255
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 32,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3537519430,
+            "at": 61641.199999999255
+          },
+          {
+            "injected": 14,
+            "clean": 34,
+            "injectedRejected": 14,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0588,
+            "survivingInliers": 32,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3527578424,
+            "at": 61710.89999999944
+          }
+        ],
+        "note": "GEO-003. The harness displaces a known fraction of the correspondences by a known amount and hands the verifier the set with no marking. `medianRecall` is the fraction of the harness’s own outliers the verifier rejected — the one number in this phase a stage that returns its input cannot produce, because returning its input scores exactly 0 while satisfying every count-based criterion v3 §14 names."
+      },
+      "planarHandling": {
+        "bothModelsFitted": 746,
+        "planarFrames": 709,
+        "nonPlanarFrames": 37,
+        "planarMismatches": 0,
+        "medianFundamentalInliers": 48,
+        "medianHomographyInliers": 47,
+        "note": "v3 §16. Both models are fitted on every judged frame, never skipped as an optimisation: the fundamental matrix is the weaker constraint and normally admits at least as many points, so the homography reaching it is the signal that the scene is planar. Phase 6 lowers translation confidence there, because an Essential matrix decomposed from a planar scene is degenerate and yields a pose that looks entirely reasonable."
+      },
+      "cost": {
+        "meanVerifyMs": 0.467,
+        "samples": 400
+      },
+      "integrity": {
+        "partitionFaults": 0,
+        "modelWithoutVerdict": 0
+      }
+    },
+    "pose": {
+      "poseFrames": 741,
+      "current": {
+        "state": "NO_POSE",
+        "reason": "Phase 5 reported UNVERIFIED on this frame — the two views are 3.18 px apart, under the 15 px a two-view geometry needs. Every model fits a motionless pair perfectly, so a high inlier ratio here would verify nothing",
+        "source": null,
+        "rotationDeg": -1,
+        "translation": null,
+        "scale": "LOCAL_UNITS",
+        "confidence": 0,
+        "rotationConfidence": 0,
+        "translationConfidence": 0,
+        "terms": [],
+        "withheld": [],
+        "cheirality": []
+      },
+      "intrinsics": {
+        "fx": 362.6,
+        "fy": 362.6,
+        "cx": 240,
+        "cy": 180,
+        "width": 480,
+        "height": 360,
+        "estimated": true,
+        "assumedFovDeg": 67,
+        "note": "v3 §15: INTRINSICS: ESTIMATED. Safari exposes no focal length, so K is derived from an assumed field of view and every record says so. §H.0 is why it is recomputed per frame rather than read once: rotating the device swaps the frame dimensions on the same track, and fx, fy, cx, cy all change with them."
+      },
+      "overRun": {
+        "stateFrames": {
+          "POSE": 681,
+          "NO_POSE": 60
+        },
+        "stateMismatches": 0,
+        "medianRotationDeg": 0.076,
+        "medianReprojectionPx": 0.049,
+        "medianCheiralityFraction": 1,
+        "medianConfidence": 0.5,
+        "posedFrames": 681,
+        "translationSpreadDeg": 0.153,
+        "ambiguousFrames": 677
+      },
+      "sensitivity": {
+        "focalFactor": 0.2,
+        "medianRotationDeg": 0.0145,
+        "medianTranslationDeg": 0.0675,
+        "note": "How far the pose moves when the assumed focal length is scaled by ±20%. This is the other half of being allowed to say INTRINSICS: ESTIMATED — a quantity that barely moves does not depend on the guess, and one that moves does."
+      },
+      "gyroscope": {
+        "available": false,
+        "reason": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "samples": 0,
+        "comparisonsMade": 0,
+        "medianVisualDeg": -1,
+        "medianGyroDeg": -1,
+        "medianDisagreementDeg": -1,
+        "agreementRate": -1,
+        "recent": [],
+        "note": "POSE-002. The gyroscope is an instrument here and never an input: v3 §19 lists IMU consistency among the confidence terms and Phase 6 withholds it on purpose, because a confidence that consumed the gyroscope could not then be checked against it. Angles only — rotationRate is in the device frame and the camera frame differs by a fixed rotation nobody has measured; an angle is invariant under that, an axis is not."
+      },
+      "planarHandling": {
+        "planarPosedFrames": 677,
+        "nonPlanarPosedFrames": 4,
+        "planarFromEssential": 0,
+        "medianPlanarTranslationConfidence": 0.5,
+        "medianNonPlanarTranslationConfidence": 0.5455,
+        "medianPlanarUnseparated": 2,
+        "medianNonPlanarUnseparated": 1,
+        "planarTranslationNotLowered": 0,
+        "note": "v3 §16. A planar scene is decomposed from the homography, never the Essential matrix, and its translation confidence is lowered by the number of candidates cheirality could not separate — generically two on a plane, so 1/2. Counted, not assumed. The two confidence medians are reported and NOT compared across classes: each is a minimum over several terms, and on a frame with a thin population the binding term is not the planar one, so the cross-class comparison measures the population rather than v3 §16. The candidate counts beside them are what the penalty is made of."
+      },
+      "failClosed": {
+        "lowParallaxFrames": 0,
+        "lowParallaxWithTranslation": 0,
+        "unverifiedFrames": 60,
+        "unverifiedWithRotation": 0,
+        "note": "POSE-004. A camera that turned without moving produces large, well-conditioned image motion and no translation at all; the direction fitted to it would be noise with a unit length. Decided from the correspondences — what rotation alone leaves unexplained — rather than from the decomposition."
+      },
+      "injectedRotation": {
+        "samples": 115,
+        "requestedDeg": 8,
+        "medianRecoveredDeg": 8,
+        "medianControlDeg": 0,
+        "medianInlierDrift": 0,
+        "medianControlInlierDrift": 0,
+        "planarFlips": 0,
+        "controlPlanarFlips": 0,
+        "recent": [
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0004,
+            "controlDeg": 0,
+            "axis": [
+              -0.02561544092883532,
+              -0.7879150010234942,
+              0.6152510059708707
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 2268599808,
+            "at": 59982.5
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0002,
+            "controlDeg": 0,
+            "axis": [
+              -0.6072120091337078,
+              0.2804025641958731,
+              0.7434164229798703
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 2831082552,
+            "at": 60045.199999999255
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0003,
+            "controlDeg": 0,
+            "axis": [
+              0.6217635864988043,
+              -0.6204315413691264,
+              -0.47799031891710314
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 367521514,
+            "at": 60115.09999999963
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0002,
+            "controlDeg": 0,
+            "axis": [
+              0.5248063928941761,
+              -0.4529243896280503,
+              -0.7207202975201003
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 3458714998,
+            "at": 60181.699999999255
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0008,
+            "controlDeg": 0,
+            "axis": [
+              -0.6270892355692492,
+              -0.6906971698048809,
+              0.3601340170779515
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 571484789,
+            "at": 62750.699999999255
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0008,
+            "controlDeg": 0,
+            "axis": [
+              -0.8104400248706587,
+              -0.5302646931092669,
+              -0.24901068517110048
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 2081866239,
+            "at": 62811
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0006,
+            "controlDeg": 0,
+            "axis": [
+              -0.29227821679361343,
+              0.5587499033469214,
+              0.7761262716193489
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 2386062962,
+            "at": 62876.199999999255
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0006,
+            "controlDeg": 0,
+            "axis": [
+              -0.574216517774183,
+              -0.6177500660531761,
+              0.5372711108989465
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 1969294523,
+            "at": 62946.699999999255
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0008,
+            "controlDeg": 0,
+            "axis": [
+              0.5692947996425517,
+              0.7167487157864708,
+              -0.4027092121101674
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 3535503003,
+            "at": 63011.199999999255
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0006,
+            "controlDeg": 0,
+            "axis": [
+              0.8337387647806176,
+              0.4244176177164182,
+              -0.3531987512350662
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 4053248029,
+            "at": 63076.799999999814
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0015,
+            "controlDeg": 0,
+            "axis": [
+              0.10975675071871316,
+              0.9919222942450869,
+              -0.06358944764057572
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 4033074568,
+            "at": 63151.39999999944
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0011,
+            "controlDeg": 0,
+            "axis": [
+              0.09647920587805008,
+              0.7202810787419313,
+              0.6869402670098038
+            ],
+            "inliersBefore": 46,
+            "inliersAfter": 46,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 46,
+            "controlPlanar": true,
+            "seed": 3816998370,
+            "at": 63210.89999999944
+          }
+        ],
+        "note": "POSE-005, and the one number in this phase a stage returning a constant pose cannot produce — it scores exactly 0.00° while satisfying every other numeric criterion. The harness applies K Rj K^-1 to the second view, which is exactly the camera having turned by Rj, and re-runs the whole chain on a set handed over unmarked. The control is the same set unmodified: without it a solver returning noise would also pass."
+      },
+      "cost": {
+        "meanPoseMs": 2.75,
+        "samples": 400
+      },
+      "integrity": {
+        "scaleViolations": 0,
+        "intrinsicsUnmarked": 0,
+        "reprojectionWithoutTriangulation": 0,
+        "pointsInFrontOverflow": 0,
+        "confidenceAboveWorstTerm": 0,
+        "poseWithoutVerdict": 0
+      }
+    },
+    "fusion": {
+      "running": false,
+      "fusionFrames": 740,
+      "mode": "VISION_ONLY",
+      "usable": true,
+      "orientation": [
+        0.9999997816742293,
+        0.00046632790532297863,
+        -0.00042780047824743177,
+        -0.00019020128630950204
+      ],
+      "gyroBiasDps": null,
+      "position": null,
+      "positionReason": "the accelerometer reports m/s² and Phase 6’s translation is a unit direction in LOCAL_UNITS with no scale, so fusing them needs the scale — which is exactly the quantity a monocular camera does not have (v3 §15, §17; v4 §18, §19)",
+      "velocityReason": "velocity is refused for the same reason as position: integrating an acceleration gives a velocity in m/s, and there is nothing in LOCAL_UNITS to correct it against (v3 §17, §18). It is absent rather than reported as zero",
+      "accelBiasReason": "accelerometer bias is not observable without position observability, and position is refused — so estimating it would be estimating a quantity nothing can correct (v3 §18)",
+      "scale": "UNKNOWN",
+      "heading": "RELATIVE",
+      "innovationDeg": -1,
+      "propagatedMs": 216.9,
+      "gravityDeg": -1,
+      "imuConsistency": -1,
+      "confidence": 0.5,
+      "confidenceTerms": [
+        {
+          "name": "inlierRatio",
+          "value": 1,
+          "note": "0.9583 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "reprojectionError",
+          "value": 0.979,
+          "note": "0.042 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "trackedFeatures",
+          "value": 0.7182,
+          "note": "238 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "featureDistribution",
+          "value": 0.591,
+          "note": "79.097 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "temporalStability",
+          "value": 1,
+          "note": "0° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "modelConsistency",
+          "value": 0.5,
+          "note": "2 candidates were equally supported and two views cannot separate them — the translation is one of 2 answers, so this term is 1/2. v3 §16's \"Translation confidenceを低下させる\", counted rather than assumed (Phase 6's measurement of the visual pose, carried through unchanged)"
+        },
+        {
+          "name": "imuConsistency",
+          "value": -1,
+          "note": "no IMU is reporting, so there is nothing to be consistent with — v3 §19 lists this term and this run cannot measure it; it is withheld by name rather than scored as 1"
+        },
+        {
+          "name": "propagation",
+          "value": 1,
+          "note": "216.9 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
+        }
+      ],
+      "confidenceWithheld": [
+        "IMUConsistency — no IMU is reporting on this run (v3 §68: vision-only continues)"
+      ],
+      "visualConfidence": 0.5,
+      "sensors": [
+        {
+          "name": "acceleration",
+          "arriving": false,
+          "detail": "no finite value has arrived on this channel"
+        },
+        {
+          "name": "accelerationIncludingGravity",
+          "arriving": false,
+          "detail": "no finite value has arrived on this channel"
+        },
+        {
+          "name": "rotationRate",
+          "arriving": false,
+          "detail": "no finite value has arrived on this channel"
+        },
+        {
+          "name": "interval",
+          "arriving": true,
+          "detail": "delivering finite values"
+        },
+        {
+          "name": "deviceorientation",
+          "arriving": false,
+          "detail": "not consumed: it is a fused attitude the platform computed, and consuming it would make the filter agree with itself rather than with the sensors"
+        },
+        {
+          "name": "magnetometer",
+          "arriving": false,
+          "detail": "not read by Phase 7 at all — the heading is RELATIVE for that reason, and v3 §17 does not require an absolute one"
+        }
+      ],
+      "imuAvailable": false,
+      "imuReason": "listening for devicemotion; no event with rotationRate has arrived yet",
+      "imuSamples": 0,
+      "measuredImuHz": -1,
+      "reportedImuHz": 0.06,
+      "gravitySamples": 0,
+      "gravityRejected": 1,
+      "fusedFrames": 0,
+      "propagatingFrames": 0,
+      "biasMagnitudeDps": -1,
+      "biasReason": "no gyroscope is reporting, so the bias is unmeasured — and therefore absent, not zero",
+      "modeFrames": {
+        "VISION_ONLY": 740
+      },
+      "modeMismatches": 0,
+      "innovationSamples": 0,
+      "medianInnovationDeg": -1,
+      "maxInnovationDeg": -1,
+      "zeroInnovationSamples": 0,
+      "medianVisualIncrementDeg": -1,
+      "toleranceDeg": 3,
+      "innovationsWithinTolerance": 0,
+      "fusedVsVisualSamples": 0,
+      "medianFusedVsVisualDeg": -1,
+      "maxFusedVsVisualDeg": -1,
+      "zeroFusedVsVisualFrames": 0,
+      "imuConsistencySamples": 0,
+      "medianImuConsistency": -1,
+      "minImuConsistency": -1,
+      "imuConsistencyBelowOne": 0,
+      "gravityDegSamples": 0,
+      "medianGravityDeg": -1,
+      "confidenceAboveWorstTerm": 0,
+      "fusedAboveVisual": 0,
+      "biasSamples": 0,
+      "medianBiasDifferenceDps": -1,
+      "medianBiasAxisErrorDeg": -1,
+      "requestedInjectionDps": 3,
+      "injectionAxis": [
+        0,
+        1,
+        0
+      ],
+      "medianInjectedInnovationDeg": -1,
+      "biasDifferences": [],
+      "positionsReported": 0,
+      "scaleViolations": 0,
+      "deadReckonedPositionM": 0,
+      "deadReckonedSeconds": 0,
+      "dropoutFrames": 0,
+      "longestPropagatedMs": 397.7,
+      "dropouts": [],
+      "dropoutConfidenceRises": 0,
+      "usableBeyondMax": 0,
+      "reconvergences": 0,
+      "medianReconvergenceInnovationDeg": -1,
+      "meanFusionMs": 0.0192,
+      "fusionCostSamples": 400,
+      "eulerEmitted": 0,
+      "biasZeroWithoutGyro": 0,
+      "rateOutOfRange": 0
+    },
+    "keyframes": {
+      "running": false,
+      "decisions": 738,
+      "inserted": false,
+      "reason": "NO_CONDITION",
+      "detail": "none of v3 §20’s conditions is met and the maximum interval has not elapsed — this view adds no viewpoint the store does not already hold",
+      "conditions": [
+        {
+          "name": "ROTATION",
+          "value": 0,
+          "threshold": 10,
+          "unit": "deg",
+          "state": "MEASURED",
+          "fired": false,
+          "note": "accumulated from Phase 6’s per-frame increments, not read from one report: its rotation is measured from Phase 5’s anchor, and across a re-anchor two such rotations have different origins"
+        },
+        {
+          "name": "TRANSLATION",
+          "value": -1,
+          "threshold": 0.1,
+          "unit": "local unit",
+          "state": "UNMEASURED",
+          "fired": false,
+          "note": "v3 §20 asks for a translation **magnitude**. Phase 6 recovers a unit direction with SCALE: LOCAL_UNITS, because v3 §15 and v4 §18 forbid a monocular camera claiming a distance — so there is no such magnitude in this build and this condition never fires. DISPLACEMENT below is the same quantity in the units the platform can produce"
+        },
+        {
+          "name": "DISPLACEMENT",
+          "value": 6.3581,
+          "threshold": 30,
+          "unit": "px",
+          "state": "MEASURED",
+          "fired": false,
+          "note": "median over the features this view and the last keyframe **share**, by feature id — a net displacement between exactly those two views, which needs no anchor"
+        },
+        {
+          "name": "QUALITY",
+          "value": 0.0308,
+          "threshold": 0.15,
+          "unit": "inlier ratio",
+          "state": "MEASURED",
+          "fired": false,
+          "note": "the inlier ratio moved by v3 §14’s own usable→GOOD band, so the frame changed quality class rather than merely changing"
+        }
+      ],
+      "rotationDeg": 0,
+      "displacementPx": 6.3581,
+      "translationDirectionDeg": 0.175,
+      "sinceLastMs": 2646.5,
+      "observations": 230,
+      "sharedWithLast": 175,
+      "frameMotion": "SLOW",
+      "scale": "LOCAL_UNITS",
+      "keyframes": 30,
+      "maxStoreSize": 30,
+      "totalInserted": 54,
+      "insertionsByReason": {
+        "FIRST": 5,
+        "TOO_SOON": 277,
+        "DISPLACEMENT": 35,
+        "NO_CONDITION": 407,
+        "HEARTBEAT": 4,
+        "QUALITY": 10
+      },
+      "geometricInsertions": 45,
+      "heartbeatInsertions": 4,
+      "recent": [
+        {
+          "id": 51,
+          "at": 54288.5,
+          "frameIndex": 627,
+          "reason": "DISPLACEMENT",
+          "observations": 223,
+          "intrinsics": {
+            "fx": 362.6,
+            "fy": 362.6,
+            "cx": 240,
+            "cy": 180,
+            "width": 480,
+            "height": 360,
+            "estimated": true,
+            "assumedFovDeg": 67
+          },
+          "rotationFromPreviousDeg": 0,
+          "displacementFromPreviousPx": 30.1975,
+          "translationDirectionDeg": -1,
+          "droppedIncrements": 0,
+          "inlierRatio": 0.9216,
+          "trackedFeatures": 154,
+          "trackingState": "TRACKING",
+          "poseConfidence": 0.3364,
+          "survivingFraction": 0.2646,
+          "stale": false
+        },
+        {
+          "id": 52,
+          "at": 54983.6,
+          "frameIndex": 635,
+          "reason": "DISPLACEMENT",
+          "observations": 217,
+          "intrinsics": {
+            "fx": 362.6,
+            "fy": 362.6,
+            "cx": 240,
+            "cy": 180,
+            "width": 480,
+            "height": 360,
+            "estimated": true,
+            "assumedFovDeg": 67
+          },
+          "rotationFromPreviousDeg": 0,
+          "displacementFromPreviousPx": 33.3717,
+          "translationDirectionDeg": 0.6878,
+          "droppedIncrements": 0,
+          "inlierRatio": 1,
+          "trackedFeatures": 147,
+          "trackingState": "TRACKING",
+          "poseConfidence": 0.3045,
+          "survivingFraction": 0.3502,
+          "stale": false
+        },
+        {
+          "id": 53,
+          "at": 55644.5,
+          "frameIndex": 642,
+          "reason": "DISPLACEMENT",
+          "observations": 220,
+          "intrinsics": {
+            "fx": 362.6,
+            "fy": 362.6,
+            "cx": 240,
+            "cy": 180,
+            "width": 480,
+            "height": 360,
+            "estimated": true,
+            "assumedFovDeg": 67
+          },
+          "rotationFromPreviousDeg": 0,
+          "displacementFromPreviousPx": 31.7843,
+          "translationDirectionDeg": 0.1605,
+          "droppedIncrements": 0,
+          "inlierRatio": 0.9836,
+          "trackedFeatures": 165,
+          "trackingState": "TRACKING",
+          "poseConfidence": 0.3864,
+          "survivingFraction": 0.4682,
+          "stale": false
+        },
+        {
+          "id": 54,
+          "at": 60666.5,
+          "frameIndex": 715,
+          "reason": "HEARTBEAT",
+          "observations": 238,
+          "intrinsics": {
+            "fx": 362.6,
+            "fy": 362.6,
+            "cx": 240,
+            "cy": 180,
+            "width": 480,
+            "height": 360,
+            "estimated": true,
+            "assumedFovDeg": 67
+          },
+          "rotationFromPreviousDeg": 0,
+          "displacementFromPreviousPx": 22.2498,
+          "translationDirectionDeg": 0.175,
+          "droppedIncrements": 0,
+          "inlierRatio": 0.9583,
+          "trackedFeatures": 238,
+          "trackingState": "TRACKING",
+          "poseConfidence": 0.5,
+          "survivingFraction": 0.7353,
+          "stale": false
+        }
+      ],
+      "reasonMismatches": 0,
+      "minIntervalViolations": 0,
+      "maxIntervalGaps": 0,
+      "longestGapMs": 5066.7,
+      "staticDecisions": 377,
+      "staticSelectorInsertions": 4,
+      "staticGeometricInsertions": 0,
+      "stillIntervalGeometricInsertions": 0,
+      "stillIntervalDecisions": 128,
+      "stillIntervalViolations": [],
+      "staticInsertionsByReason": {
+        "HEARTBEAT": 4
+      },
+      "staticMetronomeInsertions": 52,
+      "staticRatio": 13,
+      "metronomeKeyframes": 111,
+      "evictions": 24,
+      "storeOverflows": 0,
+      "evictionsWithoutReason": 0,
+      "evictedNewest": 0,
+      "evictionsCoverageKept": 24,
+      "recentEvictions": [
+        {
+          "keyframeId": 1,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 111.243,
+          "oldestFirstSeparationPx": 111.243
+        },
+        {
+          "keyframeId": 2,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 111.244,
+          "oldestFirstSeparationPx": 111.244
+        },
+        {
+          "keyframeId": 3,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 112.311,
+          "oldestFirstSeparationPx": 112.311
+        },
+        {
+          "keyframeId": 4,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.224,
+          "oldestFirstSeparationPx": 114.224
+        },
+        {
+          "keyframeId": 5,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 115.217,
+          "oldestFirstSeparationPx": 115.217
+        },
+        {
+          "keyframeId": 6,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 115.217,
+          "oldestFirstSeparationPx": 115.217
+        },
+        {
+          "keyframeId": 7,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 116.012,
+          "oldestFirstSeparationPx": 116.012
+        },
+        {
+          "keyframeId": 8,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 115.221,
+          "oldestFirstSeparationPx": 115.221
+        },
+        {
+          "keyframeId": 9,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.027,
+          "oldestFirstSeparationPx": 114.027
+        },
+        {
+          "keyframeId": 10,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.027,
+          "oldestFirstSeparationPx": 114.027
+        },
+        {
+          "keyframeId": 11,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.224,
+          "oldestFirstSeparationPx": 114.224
+        },
+        {
+          "keyframeId": 12,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.421,
+          "oldestFirstSeparationPx": 114.421
+        },
+        {
+          "keyframeId": 13,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.421,
+          "oldestFirstSeparationPx": 114.421
+        },
+        {
+          "keyframeId": 14,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.224,
+          "oldestFirstSeparationPx": 114.224
+        },
+        {
+          "keyframeId": 15,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.027,
+          "oldestFirstSeparationPx": 114.027
+        },
+        {
+          "keyframeId": 16,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 113.43,
+          "oldestFirstSeparationPx": 113.43
+        },
+        {
+          "keyframeId": 17,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 112.834,
+          "oldestFirstSeparationPx": 112.834
+        },
+        {
+          "keyframeId": 18,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 112.834,
+          "oldestFirstSeparationPx": 112.834
+        },
+        {
+          "keyframeId": 19,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 113.409,
+          "oldestFirstSeparationPx": 113.409
+        },
+        {
+          "keyframeId": 20,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 113.984,
+          "oldestFirstSeparationPx": 113.984
+        },
+        {
+          "keyframeId": 21,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 113.409,
+          "oldestFirstSeparationPx": 113.409
+        },
+        {
+          "keyframeId": 22,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 113.984,
+          "oldestFirstSeparationPx": 113.984
+        },
+        {
+          "keyframeId": 23,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 113.984,
+          "oldestFirstSeparationPx": 113.984
+        },
+        {
+          "keyframeId": 24,
+          "reason": "STALE",
+          "detail": "0% of its observations are still tracked, below 25% — it can no longer be related to the present",
+          "survivingFraction": 0,
+          "retainedSeparationPx": 114.027,
+          "oldestFirstSeparationPx": 114.027
+        }
+      ],
+      "observationFloorViolations": 0,
+      "duplicateObservationIds": 0,
+      "intrinsicsMismatches": 0,
+      "medianSharedWithLast": 110,
+      "sharedBelowFloor": 0,
+      "translationCondition": {
+        "name": "TRANSLATION",
+        "value": -1,
+        "threshold": 0.1,
+        "unit": "local unit",
+        "state": "UNMEASURED",
+        "fired": false,
+        "note": "v3 §20 asks for a translation **magnitude**. Phase 6 recovers a unit direction with SCALE: LOCAL_UNITS, because v3 §15 and v4 §18 forbid a monocular camera claiming a distance — so there is no such magnitude in this build and this condition never fires. DISPLACEMENT below is the same quantity in the units the platform can produce"
+      },
+      "translationFired": 0,
+      "translationDirectionSamples": 400,
+      "medianTranslationDirectionDeg": 0.251,
+      "scaleViolations": 0,
+      "staleKeyframes": 26,
+      "staleEver": 29,
+      "stalePartnerUsed": 0,
+      "survivalSamples": 400,
+      "medianSurvivingFraction": 0.3594,
+      "droppedIncrements": 0,
+      "ambiguousPosesDeclined": 73,
+      "meanKeyframeMs": 0.8183,
+      "costSamples": 400,
+      "rateOutOfRange": 0,
+      "eulerEmitted": 0,
+      "sizeMismatches": 0
+    },
+    "devEntry": true,
+    "previewPresented": true
+  }
+}

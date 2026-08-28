@@ -244,11 +244,18 @@ src/
                  FlowTracker, FlowStage, FlowSession, trackingState,
                  VerificationStage, VerificationSession, PoseStage, PoseSession,
                  poseConfidence, gyroRotation, FusionStage, FusionSession,
-                 fusionConfidence, types and messages
-  testkit/       Phase0Tests..Phase7Tests, runTests (the shape all eight share)
-  ui/            Phase0Screen..Phase7Screen, dom (el/card/stat/formatters),
+                 fusionConfidence, KeyframeStage, KeyframeSession,
+                 TriangulationStage, TriangulationSession, LandmarkStage,
+                 LandmarkSession, types and messages
+  mapping/       keyframes (v3 §20's selector, the bounded store and the metronome it is
+                 scored against), triangulation (the parallax gate and the solve),
+                 landmarks (the map, the similarity that registers a batch into it,
+                 and the gate) — same rule as geometry and fusion: numbers in,
+                 structures out, may import nothing but core and geometry (audited)
+  testkit/       Phase0Tests..Phase10Tests, runTests (the shape all eleven share)
+  ui/            Phase0Screen..Phase10Screen, dom (el/card/stat/formatters),
                  phaseSections (the tests/evidence/navigation cards), PreviewVideo, styles
-  mapping/ world/ renderer/ game/   empty — later phases
+  world/ renderer/ game/   empty — later phases
 scripts/         audit-fake-data, audit-architecture, run-e2e*,
                  lib/ (the leg harness: serve, launch, the phase ladder, the Y4M feed)
 ```
@@ -624,9 +631,154 @@ no visual updates at all, a true (0.4, −0.9, 0.2) °/s came back as (0.400, �
 injected twin's difference as 2.9996 °/s on the injected axis. The criteria did not change; what
 changed is the reasoning printed beside them, recorded in place with the measurement (§29).
 
+## What Phase 8 does
+
+Phase 8 — Keyframe System (**v3 §20**, which v4 §20 compresses into two lines and no conditions)
+— decides which views are worth keeping, keeps at most thirty of them, and lets go of the ones
+that have stopped describing anything.
+
+v3 §20 gives four conditions, a minimum interval and a maximum. **Phase 8 implements three of the
+four and refuses the second**, because *relative translation ≥ 0.10 local unit* is a **magnitude**
+and Phase 6 recovers a unit direction with `SCALE: LOCAL_UNITS`. It is carried in every decision
+record as `UNMEASURED` with the missing scale named — a value a later phase has to remove
+deliberately, exactly as Phase 7 carries `POSITION: UNAVAILABLE` — and the refusal carries a
+number: the angle the translation *direction* moved, which is measurable. What fires in its place
+is v3 §20's own third condition, the median displacement of the features the two views share.
+
+The anti-fake gate is **KEY-002**, and it is needed because a **metronome** passes almost
+everything else in the phase: its intervals are legal, its store stays bounded, its keyframes
+carry observations and intrinsics, and on a moving camera its views are as well separated as
+anyone's — because on a moving camera *any* schedule produces separated views. So a metronome runs
+inside the app beside the real selector, on the same frames, firing as often as the real one is
+allowed to, and the measurement is the difference between the two counts **over the frames where
+the camera is not moving**.
+
+Whether the camera is moving is not decided by Phase 8. It is Phase 4's own scene-shift search —
+an exhaustive integer search that shares no code with the tracker and never sees the feature list
+— reporting `STATIC` below 1 px of image motion. A phase that classified its own test conditions
+would be marking its own paper.
+
+### The leg decides the whole required suite, which is new
+
+Phase 7's leg was the first to decide one required record. Phase 8's decides all six, because the
+instruments are a still segment and a metronome and the harness can produce both: the feed holds
+for seven seconds in the middle of a pan. On the committed run the selector kept **4** views over
+377 static decisions, all of them the five-second heartbeat, where a metronome would have kept
+**52** — 13×. Rule 004 is untouched and means what it always meant.
+
+### Four defects the leg found before any device saw the code
+
+**A re-derivation that rounds its inputs is checking the formatter.** `sinceLastMs` was rounded to
+a tenth of a millisecond on its way into the record, `499.99999999999955` became `500`, and Rule
+002's re-derivation then disagreed with the stage on every decision that landed on v3 §20's
+minimum interval — 30 of them in a 32-second fixture.
+
+**Composing a per-frame increment over five seconds is a random walk.** The rotation since the last
+keyframe was first accumulated the way `FusionStage` accumulates its visual increments. Phase 7
+composes over one second and is unaffected; Phase 8 composes over up to five, and on the leg's
+lateral pan — true rotation zero throughout — the accumulated angle reached 10° and fired
+`ROTATION` **seven times while the image was not moving**. It is now assembled per anchor epoch,
+one composition per re-anchor rather than per frame.
+
+**A rotation the layer below had already refused to stand behind.** Per-epoch assembly took
+`ROTATION` on a still camera from every run down to about two runs in six, and the rest had a
+different cause. The leg was made to print Phase 6's pose beside each violation, and every one of
+them read `ambiguous true` with `2 unseparated candidate(s)`: on a static image the
+correspondences stop changing, cheirality stops separating the essential matrix's four
+decompositions, and the recovered rotation **alternates between two of them** — about 18° apart,
+so 10° is crossed twice over by an artefact rather than by a camera. Phase 6 had been saying it
+could not tell; Phase 8 was reading the pose and ignoring the flag. It now declines an `ambiguous`
+pose, holds the accumulator at its last settled value, and carries `ambiguousPosesDeclined` (73 on
+the committed run) so an under-reported turn is visible rather than silent. Six consecutive legs
+green afterwards. This is v4 §25 applied one layer earlier than §25 names it.
+
+**And a cost that measured the fixture.** The eviction record carries the retained set's spread
+beside the counterfactual, and the first version built one observation index per pair — 435 of
+them — putting the mean at 1.67 ms against this phase's own 1.0 ms ceiling. §H.8, again.
+
+## What Phase 9 does
+
+Phase 9 — Triangulation (**v4 §21**, on v3 §15 and §16's geometry) — recovers the first
+three-dimensional quantity in this project: where a point **is**, not merely where it appears.
+Two keyframes, related by the features they share, and a depth for every point whose two viewing
+rays meet at enough of an angle to determine one.
+
+**The floor is an angle, and it is derived.** A triangulated depth's relative uncertainty is
+`σ_Z/Z ≈ σ_θ/θ`; §13's 1.5 px correspondence band over the assumed `f ≈ 967 px` is 0.089° of
+angular noise, and asking for a depth good to a tenth of itself gives 0.89°. One degree. A
+percentile of whatever the frame contained could not express *there is not enough parallax here* —
+§H.6, which Phase 3's corner floor is the reason for.
+
+**Two gates, because two different fakes produce a full set of plausible points.** A triangulator
+returning one constant depth puts every point in front of both cameras, reports a small
+reprojection error, and adds up perfectly; a solver that solves anything solvable produces a full
+set from a camera that turned and never moved, which is what a phone does when someone stands
+still and turns.
+
+- **TRI-004** synthesises a pair from depths the stage picked and never disclosed. Measured error
+  **0**; the best possible constant depth scores **0.234**, printed beside it so the tolerance is
+  not what separates them.
+- **TRI-003** replaces the pair's second view with `K R K⁻¹` applied to its first — a real
+  rotation and no baseline at all. **0 points from 16 injections**, and the pose came back
+  `ROTATION_ONLY` 16 times out of 16.
+
+`tests/unit/triangulation.test.ts` drives the real stage with a constant-depth solver and it fails
+**TRI-004 and nothing else** — while reporting a *better* reprojection error than the real one.
+
+**The pose for the pair is a fresh fit, and it has a witness.** No model exists for a keyframe
+pair, so one is fitted with Phase 5's verifier and Phase 6's decomposition, unmodified. TRI-006
+then compares it against the rotation Phase 6 measured by an entirely different route — per-frame
+poses against a moving anchor, composed by Phase 8 across anchor epochs. The fit says 0.047°, the
+chain disagrees by 0.048°, tolerance 3°.
+
+**And no distance.** Every depth is in units of that pair's own baseline, which is 1 by
+construction. Two batches' depths are two different units and no record pools them; the number
+behind that refusal is the batch-to-batch spread of the median depth, **0.96 on one scene with one
+camera**. Phase 10 is where the pairs come into one frame.
+
+## What Phase 10 does
+
+Phase 10 — Landmark Map (**v4 §22**, with §56's bound and §34's origin) — brings Phase 9's batches
+into **one frame**.
+
+Phase 9 leaves one answer per keyframe pair, each in units of that pair's own baseline; its leg
+measured the median depth moving by **96 % of itself** between consecutive batches on a scene that
+never changed. The landmarks two batches share fix the ratio between their scales, recovered as the
+scale term of a similarity fitted in closed form — **1.208** on the committed run, at a residual of
+0.0004 of a depth. That is a ratio between two quantities nobody has measured, and it is what makes
+ninety separate answers one map. The world has a consistent unit and no known one.
+
+**Two gates, and one of them corrected the plan.**
+
+- **MAP-002** — a landmark's position, as the map held it *before* this batch, projected into the
+  keyframe the batch has just added, and compared against where the tracker saw it: **0.106 px**
+  median, none exactly zero, from landmarks with a median of three observations at the moment they
+  were asked.
+- **MAP-005** — GEO-003's shape one layer up: a known subset of the incoming positions displaced
+  perpendicular to their viewing rays by 5 % of their depth, which moves the projection by 24 px
+  whatever the depth. Recall **1.00**, with a false-cull **excess over the batch's own baseline**
+  of **0**.
+
+`tests/unit/landmarks.test.ts` drives the real stage with the position rule replaced by one that
+keeps only the newest observation, and it fails **MAP-006 and nothing else** — *not* MAP-002, which
+the plan predicted. A map with no memory still predicts, from the previous batch; what it cannot do
+is settle. The two records catch different fakes and the fixture is what established which.
+
+**Five corrections the measurements forced**, each recorded beside the criterion it affects: a gate
+that was not looking at what the injection corrupts (recall 0.17); the same comparison in world
+units refusing 71 % of untouched points, because a triangulated position's dominant error is radial
+and invisible; the same lesson applied to the registration's trimming making it *worse*, because a
+similarity's scale is a depth quantity; an absolute false-cull ceiling that measured the scene
+rather than the gate; and a sparsity figure that read **338 %** — the same shape as Phase 6's
+232.3 % agreement rate, and the reason every rate here is checked against `0..1`.
+
+**Confidence has four measured terms and none of them is a clock**: observation count, parallax,
+prediction agreement, viewpoint spread, combined as the minimum. `audit-fake-data.mjs` enforces the
+absence of the alternative mechanically.
+
 ## Next
 
-Phase 8 — Keyframe System (v3 §20), once Phase 7 has a device run behind it.
+Phase 11 — Surface Understanding (v4 §23), once Phase 10 has a device run behind it.
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

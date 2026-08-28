@@ -138,6 +138,9 @@ function frameFor(v: VerificationReport, pose: PoseReport, reAnchored: boolean):
     flowAge: null,
     verification: { ...v, reAnchored },
     pose,
+    keyframe: null,
+    triangulation: null,
+    landmarks: null,
   };
 }
 

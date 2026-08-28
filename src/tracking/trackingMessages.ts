@@ -50,6 +50,43 @@ export interface TrackingOptions {
   readonly pose: boolean;
   /** Run POSE-005's injected-rotation measurement. Costs a second fit and a second decomposition. */
   readonly wantPoseInjection: boolean;
+  /**
+   * Whether to keep keyframes (Phase 8, v3 §20).
+   *
+   * `false` in Phases 4–7. When `true` the worker also maintains the keyframe store, which is a
+   * **second** long-lived structure beside Phase 5's verification anchor rather than a
+   * replacement for it — Phases 5 and 6 passed on the device with that anchor and editing a
+   * passed phase is not a fix. See `docs/phase8/TEST-PLAN.md`.
+   */
+  readonly keyframes: boolean;
+  /**
+   * Whether to triangulate each new keyframe against the one before it (Phase 9, v4 §21).
+   *
+   * `false` in Phases 4–8. When `true` the worker fits a pose for the **pair** — a different two
+   * views from Phase 5's anchor pair, for which no model exists — and triangulates its verified
+   * subset. Off the frame cadence by construction: it runs on keyframe inserts only, which is
+   * where §27 puts mapping work.
+   */
+  readonly triangulate: boolean;
+  /**
+   * Whether Phase 9's two injections run at all.
+   *
+   * **Which batches they run on is the stage's to decide, not this option's**, and that is a
+   * correction the leg forced: a batch happens when Phase 8 inserts a keyframe, which only the
+   * worker knows about, so a flag sampled on the main thread's option cadence lands on whatever
+   * fraction of batches the two rates happen to intersect on. Measured at **64 % of batches**
+   * where the plan says *on a sampled schedule*, and each injection costs a full extra fit and
+   * solve. The stage samples on its own batch index instead.
+   */
+  readonly wantInjections: boolean;
+  /**
+   * Whether to maintain the landmark map (Phase 10, v4 §22).
+   *
+   * `false` in Phases 4–9. When `true` the worker brings each Phase 9 batch into one frame by
+   * the landmarks it shares with the map, which is the only mechanism a monocular camera has for
+   * relating two pairs' baselines to each other.
+   */
+  readonly landmarks: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -70,6 +107,10 @@ export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   wantInjection: false,
   pose: false,
   wantPoseInjection: false,
+  keyframes: false,
+  triangulate: false,
+  wantInjections: false,
+  landmarks: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -454,6 +495,342 @@ export interface FusionReport {
   readonly fusionMs: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Phase 8 — keyframe system                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** One of v3 §20's conditions, as it crosses the boundary. */
+export interface KeyframeConditionRecord {
+  readonly name: string;
+  readonly value: number;
+  readonly threshold: number;
+  readonly unit: string;
+  /** `MEASURED` / `UNMEASURED` / `UNAVAILABLE`. An `UNMEASURED` condition never fires. */
+  readonly state: string;
+  readonly fired: boolean;
+  readonly note: string;
+}
+
+/**
+ * The decision's inputs, carried verbatim beside its answer.
+ *
+ * Rule 002, for the fifth phase running: `KeyframeSession` calls the same `decideKeyframe` on
+ * this and compares. A selector that inserted on a timer and labelled the record `ROTATION`
+ * would satisfy every count in Phase 8 and be caught here — which only works if the inputs
+ * travel with the answer rather than being summarised into it.
+ */
+export interface KeyframeDecisionRecord {
+  readonly at: number;
+  readonly observations: number;
+  readonly hasPrevious: boolean;
+  readonly sinceLastMs: number;
+  readonly rotationDeg: number;
+  readonly displacementPx: number;
+  readonly inlierRatio: number;
+  readonly previousInlierRatio: number;
+  readonly trackingState: string;
+  readonly previousTrackingState: string;
+}
+
+/** A stored keyframe, summarised for the boundary — the observations stay in the worker. */
+export interface KeyframeRecord {
+  readonly id: number;
+  readonly at: number;
+  readonly frameIndex: number;
+  readonly reason: string;
+  readonly observations: number;
+  readonly intrinsics: IntrinsicsRecord;
+  readonly rotationFromPreviousDeg: number;
+  readonly displacementFromPreviousPx: number;
+  readonly translationDirectionDeg: number;
+  readonly droppedIncrements: number;
+  readonly inlierRatio: number;
+  readonly trackedFeatures: number;
+  readonly trackingState: string;
+  readonly poseConfidence: number;
+  /** Fraction of this keyframe's observations still being tracked. Never a function of age. */
+  readonly survivingFraction: number;
+  readonly stale: boolean;
+}
+
+export interface KeyframeEvictionRecord {
+  readonly keyframeId: number;
+  readonly reason: string;
+  readonly detail: string;
+  readonly survivingFraction: number;
+  /** Median pairwise separation of the set this policy kept, px... */
+  readonly retainedSeparationPx: number;
+  /** ...and of the set dropping the oldest would have kept. KEY-003's counterfactual. */
+  readonly oldestFirstSeparationPx: number;
+}
+
+/**
+ * One frame of Phase 8: what was decided, from what, and what the store holds now.
+ *
+ * `metronomeInserted` is the twin's answer on the same frame. On a moving camera the two
+ * selectors agree often enough to look alike; on a camera that is not moving they do not, and
+ * KEY-002 is exactly that difference.
+ */
+export interface KeyframeReport {
+  readonly frames: number;
+  readonly decisions: number;
+  readonly inserted: boolean;
+  /** `FIRST` / `ROTATION` / `DISPLACEMENT` / `QUALITY` / `HEARTBEAT`, or a refusal. */
+  readonly reason: string;
+  readonly detail: string;
+  readonly conditions: readonly KeyframeConditionRecord[];
+  readonly input: KeyframeDecisionRecord;
+  /** Features in this view, and how many of them the last usable keyframe also holds. */
+  readonly observations: number;
+  readonly sharedWithLast: number;
+  /** Which keyframe this decision was measured against. `-1` where there is none. */
+  readonly partnerKeyframeId: number;
+  /**
+   * Whether that partner is stale — KEY-006's second criterion, as a value rather than a promise.
+   *
+   * The stage takes the newest **usable** keyframe rather than the newest, so this should be
+   * `false` whenever a partner exists. It is reported so that "a stale keyframe is not used as
+   * the comparison partner" is something the evidence says rather than something the code claims.
+   */
+  readonly partnerStale: boolean;
+  /** Observation ids that repeated within one keyframe. Must be 0 — the ids are run-unique. */
+  readonly duplicateObservationIds: number;
+  /** Phase 4's own independent classification of this frame's motion — KEY-002's instrument. */
+  readonly frameMotion: string;
+  /**
+   * Whether **every** decision since the last keyframe reported `STATIC`.
+   *
+   * KEY-002 is about a camera that is not moving, and the quantity a geometric condition fires on
+   * is accumulated over the *interval*, not measured on the frame. A view 30 px from the last
+   * keyframe is 30 px from it whether or not the image happens to be still at the instant the
+   * minimum interval elapses — so a per-frame classification cannot say whether a condition was
+   * honestly met. This can: nothing moved between these two views.
+   */
+  readonly intervalStatic: boolean;
+  /** Phase 6's own verdict on the pose this decision's rotation was accumulated from. */
+  readonly poseState: string;
+  readonly poseAmbiguous: boolean;
+  readonly poseRotationConfidence: number;
+  readonly poseUnseparatedCandidates: number;
+  readonly keyframes: number;
+  readonly totalInserted: number;
+  readonly totalEvictions: number;
+  readonly evicted: KeyframeEvictionRecord | null;
+  readonly staleKeyframes: number;
+  /** Increments dropped across a Phase 5 re-anchor since the last keyframe — a named gap. */
+  readonly droppedIncrements: number;
+  /**
+   * Poses declined because Phase 6 marked them `ambiguous` — a second named gap.
+   *
+   * Cheirality did not separate the decomposition's candidates, so the pose Phase 6 reported is
+   * one of two it could not choose between. On a static image the recovered rotation alternates
+   * between them; accumulating that is how a pure lateral pan reports having rotated 18°.
+   */
+  readonly ambiguousPosesDeclined: number;
+  readonly reAnchorsSinceKeyframe: number;
+  /** v4 §18, carried as a value a later phase has to remove deliberately. */
+  readonly scale: string;
+  readonly metronomeInserted: boolean;
+  readonly metronomeKeyframes: number;
+  readonly recent: readonly KeyframeRecord[];
+  readonly keyframeMs: number;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Phase 9 — triangulation                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** One triangulated point, as a sample crossing the boundary. */
+export interface TriangulatedPointRecord {
+  readonly id: number;
+  /** First view's camera frame, in units of that pair's baseline. Never a distance. */
+  readonly position: readonly number[];
+  readonly depth: number;
+  readonly parallaxDeg: number;
+  readonly depthUncertainty: number;
+  readonly reprojectionPx: number;
+}
+
+/**
+ * TRI-004's measurement: depths the harness chose and did not disclose.
+ *
+ * `controlRelativeError` is what the best possible **constant** depth would have scored on the
+ * same set — the number fake 1 produces. Reported beside the measurement so the tolerance is not
+ * what separates the two.
+ */
+export interface DepthInjectionRecord {
+  readonly points: number;
+  readonly accepted: number;
+  readonly medianRelativeError: number;
+  readonly controlRelativeError: number;
+  /** Spearman rank correlation between the chosen depths and the recovered ones. */
+  readonly rankCorrelation: number;
+  readonly medianTrueDepth: number;
+  readonly medianRecoveredDepth: number;
+  readonly recoveredRotationDeg: number;
+  readonly requestedRotationDeg: number;
+  readonly seed: number;
+}
+
+/**
+ * TRI-003's measurement: a camera that turned and did not move.
+ *
+ * `cleanAccepted` is the same batch's untouched pair, because a refusal without it is satisfied
+ * by a stage that refuses everything.
+ */
+export interface RotationInjectionRecord {
+  readonly requestedDeg: number;
+  readonly correspondences: number;
+  /** Points accepted from a pure rotation. Must be 0 — there is no tolerance on this. */
+  readonly accepted: number;
+  readonly cleanAccepted: number;
+  /** `NO_POSE` / `ROTATION_ONLY` / `POSE` — which of the two ways the refusal happened. */
+  readonly poseState: string;
+  readonly lowParallaxRefusals: number;
+  readonly seed: number;
+}
+
+/** One batch of Phase 9: one keyframe pair, or the frames in between. */
+export interface TriangulationReport {
+  readonly frames: number;
+  readonly batches: number;
+  /** `TRIANGULATED` / `REFUSED` / `IDLE`. */
+  readonly state: string;
+  readonly stateReason: string;
+  /** The two keyframe ids this batch related. `null` on an idle frame. */
+  readonly keyframePair: readonly number[] | null;
+  readonly correspondences: number;
+  readonly inliers: number;
+  readonly inlierRatio: number;
+  readonly candidates: number;
+  readonly accepted: number;
+  readonly refusals: Record<string, number>;
+  readonly medianParallaxDeg: number;
+  readonly medianAcceptedParallaxDeg: number;
+  /** The worst accepted point on each gate, so a gate that let one through is visible exactly. */
+  readonly minAcceptedParallaxDeg: number;
+  readonly maxAcceptedReprojectionPx: number;
+  readonly minAcceptedDepth: number;
+  readonly medianDepth: number;
+  readonly medianDepthUncertainty: number;
+  readonly medianReprojectionPx: number;
+  /** The pair fit's rotation... */
+  readonly rotationDeg: number;
+  /** ...and Phase 6's own, accumulated between the same two keyframes. TRI-006 compares them. */
+  readonly keyframeRotationDeg: number;
+  readonly rotationDisagreementDeg: number;
+  readonly model: string | null;
+  readonly planar: boolean;
+  readonly poseState: string;
+  /** v4 §18. The depths are in units of this pair's baseline, which is 1 by construction. */
+  readonly scale: string;
+  readonly baselineUnits: number;
+  readonly baselineNote: string;
+  readonly samples: readonly TriangulatedPointRecord[];
+  readonly depthInjection: DepthInjectionRecord | null;
+  readonly rotationInjection: RotationInjectionRecord | null;
+  /** What this batch cost, ms. `-1` on an idle frame. */
+  readonly triangulationMs: number;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Phase 10 — landmark map                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** One landmark, as a sample crossing the boundary. */
+export interface LandmarkRecord {
+  readonly id: number;
+  /** In the world frame — the first registered keyframe's, in its batch's baseline units. */
+  readonly position: readonly number[];
+  readonly observations: number;
+  readonly keyframes: number;
+  readonly maxParallaxDeg: number;
+  readonly meanPredictionPx: number;
+  readonly predictions: number;
+  readonly lastMoveRelative: number;
+  readonly confidence: number;
+  readonly state: string;
+}
+
+export interface LandmarkCullRecord {
+  readonly id: number;
+  readonly reason: string;
+  readonly detail: string;
+}
+
+/**
+ * MAP-005's measurement: positions the harness displaced and did not disclose.
+ *
+ * `cleanRejectionRate` is beside `recall` for GEO-003's reason: recall alone is scored perfectly
+ * by a map that rejects everything, and the false-cull rate alone by one that rejects nothing.
+ */
+export interface LandmarkInjectionRecord {
+  readonly injected: number;
+  readonly clean: number;
+  readonly injectedRejected: number;
+  readonly cleanRejected: number;
+  readonly recall: number;
+  readonly cleanRejectionRate: number;
+  /**
+   * ...and the rate the gate refuses those same untouched points on the **uncorrupted** batch.
+   *
+   * The baseline. An absolute ceiling on `cleanRejectionRate` measures how noisy the scene is;
+   * the *excess* over this measures whether the injection made the gate suspicious of the
+   * innocent, which is what MAP-005's companion figure is for.
+   */
+  readonly baselineRejectionRate: number;
+  /** How far the displacement moved each point's projection, px — an outlier by construction. */
+  readonly displacementPx: number;
+  readonly fraction: number;
+  readonly seed: number;
+}
+
+/** One batch of Phase 10, or the frames in between. */
+export interface LandmarkReport {
+  readonly frames: number;
+  readonly batches: number;
+  /** `REGISTERED` / `UNREGISTERED` / `EPOCH_RESTART` / `IDLE`. */
+  readonly state: string;
+  readonly stateReason: string;
+  readonly keyframePair: readonly number[] | null;
+  readonly points: number;
+  readonly shared: number;
+  readonly admitted: number;
+  readonly merged: number;
+  readonly rejected: number;
+  /** The ratio the registration recovered between this batch's baseline and the world's. */
+  readonly registrationScale: number;
+  readonly registrationResidual: number;
+  readonly registrationUsed: number;
+  readonly registrationOutliers: number;
+  /* ---- MAP-002 ---- */
+  readonly heldOut: number;
+  readonly medianHeldOutPx: number;
+  readonly maxHeldOutPx: number;
+  readonly zeroHeldOut: number;
+  readonly medianObservationsAtPrediction: number;
+  /* ---- the map ---- */
+  readonly landmarks: number;
+  readonly confirmed: number;
+  readonly culled: readonly LandmarkCullRecord[];
+  readonly epoch: number;
+  readonly epochRestarted: boolean;
+  readonly medianConfidence: number;
+  readonly medianMoveRelative: number;
+  /** Median relative move at exactly two observations, and at five or more — MAP-006. */
+  readonly moveAtTwo: number;
+  readonly moveAtFive: number;
+  readonly moveAtTwoSamples: number;
+  readonly moveAtFiveSamples: number;
+  /** v4 §22: this is not a model, and the record says so as a value. */
+  readonly scale: string;
+  readonly modelClaim: string;
+  readonly landmarksPerKeyframe: number;
+  readonly samples: readonly LandmarkRecord[];
+  readonly injection: LandmarkInjectionRecord | null;
+  readonly landmarkMs: number;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -515,6 +892,31 @@ export interface TrackingResult {
    * be two measurements of two moments presented as one pose.
    */
   readonly pose: PoseReport | null;
+  /**
+   * Phase 8's frame, or `null` when the keyframe store is not running.
+   *
+   * On the same message as Phases 4, 5 and 6's, for the reason each of those rides with the one
+   * before it: they describe one frame. A keyframe decision reported beside a pose from a
+   * different frame would be a decision about a view nobody took.
+   */
+  readonly keyframe: KeyframeReport | null;
+  /**
+   * Phase 9's frame, or `null` when triangulation is not running.
+   *
+   * Carried on every frame rather than only on the frames that batch, with `state: IDLE` in
+   * between: the screen and the session need the cumulative counters, and a message that
+   * appeared only on keyframe inserts would leave the screen frozen at the last batch with no
+   * way to tell that from a stage that had stopped.
+   */
+  readonly triangulation: TriangulationReport | null;
+  /**
+   * Phase 10's frame, or `null` when the map is not running.
+   *
+   * Carried on every frame with `state: IDLE` in between, as Phase 9's is and for the same
+   * reason: the screen needs the cumulative state, and a message that appeared only on batches
+   * would leave it unable to tell "no batch this frame" from "the map has stopped".
+   */
+  readonly landmarks: LandmarkReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

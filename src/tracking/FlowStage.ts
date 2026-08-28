@@ -306,6 +306,9 @@ export class FlowStage {
       flowAge: ages.buffer,
       verification: null,
       pose: null,
+      keyframe: null,
+      triangulation: null,
+      landmarks: null,
     };
   }
 

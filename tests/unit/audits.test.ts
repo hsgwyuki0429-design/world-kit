@@ -61,6 +61,13 @@ describe('audit-architecture', () => {
     expect(r.out).toContain('fusion');
   });
 
+  it('rejects a mapping module reaching the tracker (KEY-002, §H.7)', () => {
+    const r = runAudit('scripts/audit-architecture.mjs', 'tests/fixtures/arch-src');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('PeeksAtTheHarness');
+    expect(r.out).toContain('mapping');
+  });
+
   it('passes over the real src/ tree', () => {
     const r = runAudit('scripts/audit-architecture.mjs', 'src');
     expect(r.code).toBe(0);

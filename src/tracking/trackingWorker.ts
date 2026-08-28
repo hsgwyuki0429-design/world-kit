@@ -34,6 +34,9 @@ import { GRID_CELLS, featureStateFor } from './featureTypes';
 import { FlowStage } from './FlowStage';
 import { VerificationStage } from './VerificationStage';
 import { PoseStage } from './PoseStage';
+import { KeyframeStage } from './KeyframeStage';
+import { TriangulationStage } from './TriangulationStage';
+import { LandmarkStage } from './LandmarkStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -86,6 +89,31 @@ const flowStage = new FlowStage(detector, refillDetector);
 const verificationStage = new VerificationStage();
 /** Phase 6. Decomposes the model Phase 5 selected on this frame, never a fresh fit of its own. */
 const poseStage = new PoseStage();
+/**
+ * Phase 8. Keeps the keyframe store beside Phase 5's anchor rather than in place of it.
+ *
+ * The anchor is what Phases 5 and 6 passed on the device with, and editing a passed phase is not
+ * a fix. The two structures answer different questions: the anchor is one slot re-taken on
+ * displacement so that *this frame* has a two-view partner, and the store is thirty views chosen
+ * on v3 §20's conditions so that the *room* has a set of viewpoints.
+ */
+const keyframeStage = new KeyframeStage();
+/**
+ * Phase 9. Runs on keyframe inserts only, which is where §27 puts mapping work.
+ *
+ * In the tracking worker rather than in a second one, and that is a decision deferred to a
+ * measurement rather than taken from §B.2's diagram: the cost per insert and the amortised
+ * per-frame figure are both on the record, and a mapping worker is what the numbers should buy
+ * if they turn out to need it.
+ */
+const triangulationStage = new TriangulationStage();
+/**
+ * Phase 10. Brings Phase 9's batches into one frame by the landmarks they share.
+ *
+ * In the same worker for the same reason Phase 9 is: it consumes the full point set, which the
+ * report deliberately does not carry across the boundary, and it runs on keyframe inserts only.
+ */
+const landmarkStage = new LandmarkStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -306,6 +334,9 @@ function runTracking(
       flowStage.reset();
       verificationStage.reset();
       poseStage.reset();
+      keyframeStage.reset();
+      triangulationStage.reset();
+      landmarkStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -321,6 +352,9 @@ function runTracking(
     flowStage.reset();
     verificationStage.reset();
     poseStage.reset();
+    keyframeStage.reset();
+    triangulationStage.reset();
+    landmarkStage.reset();
     flowActive = false;
   }
 
@@ -414,6 +448,9 @@ function runTracking(
     flowAge: null,
     verification: null,
     pose: null,
+    keyframe: null,
+    triangulation: null,
+    landmarks: null,
   };
 }
 
@@ -460,7 +497,44 @@ function runFlow(
     trackedFeatures: result.flow?.tracked ?? 0,
     wantInjection: options.wantPoseInjection,
   });
-  return { ...result, verification: outcome.report, pose };
+  if (!options.keyframes) return { ...result, verification: outcome.report, pose };
+
+  // Phase 8 decides on the same frame, from the same three reports the screen shows. A decision
+  // taken from one frame's pose beside another frame's population would be a decision about a
+  // view nobody took.
+  const keyframe = keyframeStage.process({
+    at: performance.now(),
+    frameIndex: flowStage.getTracker().getFrameIndex(),
+    tracker: flowStage.getTracker(),
+    width: p.levels[0]?.width ?? 0,
+    height: p.levels[0]?.height ?? 0,
+    pose,
+    verification: outcome.report,
+    flow: result.flow,
+  });
+  if (!options.triangulate) return { ...result, verification: outcome.report, pose, keyframe };
+
+  // Phase 9 relates the keyframe Phase 8 has just inserted to the one before it. On every other
+  // frame it reports IDLE and carries its counters forward, so the screen can tell "no pair this
+  // frame" from "the stage has stopped".
+  const triangulation = triangulationStage.process({
+    keyframes: keyframeStage.keyframes(),
+    inserted: keyframe.inserted,
+    wantInjections: options.wantInjections,
+  });
+  if (!options.landmarks) {
+    return { ...result, verification: outcome.report, pose, keyframe, triangulation };
+  }
+
+  // Phase 10 consumes the **full** batch, which the Phase 9 report deliberately does not carry
+  // across the boundary — six sampled points is what a screen needs and every point is what a map
+  // needs. `getBatch` is the same division `VerificationStage` makes between its report and its
+  // outcome.
+  const landmarks = landmarkStage.process({
+    batch: triangulationStage.getBatch(),
+    wantInjection: options.wantInjections,
+  });
+  return { ...result, verification: outcome.report, pose, keyframe, triangulation, landmarks };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {
