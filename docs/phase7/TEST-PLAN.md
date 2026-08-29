@@ -121,6 +121,111 @@ injected bias and both fakes above.
 
 ---
 
+## The frame this phase had not measured
+
+> **Amendment, 2026-08-29 — a defect in the stage, found by the first device run that could
+> reach it. Three required records failed; every one of them for this reason.**
+>
+> `DeviceMotionEvent.rotationRate` and the accelerometer report in the **device's** body frame.
+> Phase 6's orientation is in the **camera's**. They differ by a fixed rotation that is a property
+> of how the sensor sits behind the lens, and until this amendment nothing in this codebase had
+> measured it. Both of the phases below say so in as many words, and both arranged not to need
+> it — `gyroRotation.ts`: *this module returns no axis at all rather than one that would be
+> quietly wrong*; `PoseSession`, the same, for POSE-002. **A rotation angle is invariant under a
+> change of basis, so comparing angles needs no extrinsic. Fusing does.**
+>
+> `FusionStage` propagated on the gyroscope and corrected on gravity — both device-frame — and
+> corrected again on Phase 6's increment, in the camera's. Three signals, two frames, no rotation
+> between them. What a filter does when asked to hold that contradiction, measured:
+>
+> | | device, 2026-08-29 | what it should be |
+> | --- | --- | --- |
+> | estimated gyro bias | **9.19 °/s** | a fraction of a degree — and iOS already bias-corrects `rotationRate` |
+> | fused vs. measured gravity | **33.16°** | inside 10° |
+> | fused vs. visual pose | **73.9°** (max 119°) | a few degrees |
+> | median innovation | **11.78°** | inside 3° |
+> | median visual increment | 4.78° | — |
+> | injected bias, off its axis | **25.78°** | inside the axis tolerance |
+>
+> The fourth and fifth rows together are the diagnosis: **the innovation is larger than the
+> rotation being predicted.** A filter predicting no rotation at all would have scored 4.78°. The
+> gyroscope was not merely failing to help, it was actively worse than nothing — which is what
+> propagating about the wrong axes does. The bias state then absorbed the standing disagreement,
+> which is how a sensor with a bias under 1 °/s came to be credited with 9.19.
+>
+> **Why nothing caught it earlier.** `tests/unit/fusion.test.ts` advanced its truth by the same
+> `omega` it fed the gyroscope and derived the visual pose from that same truth, so all three
+> signals lived in one frame *by construction* and the fixture could not express the mismatch.
+> The automated leg has no IMU at all, so IMU-001, 003, 004, 005 and 007 are permanently
+> `PENDING` there. This was reachable only from a device, and the first device run reached it.
+>
+> ### What replaces the assumption
+>
+> `src/fusion/handEye.ts` estimates the rotation instead of assuming it. Over one interval the
+> same turn is seen twice — as `q_d` by the gyroscope and as `q_c` by Phase 6 — and the two are
+> related by the fixed `x` the filter needs:
+>
+> ```
+>   q_c = x ⊗ q_d ⊗ x*
+> ```
+>
+> the rotation half of the hand-eye problem. Conjugation preserves the angle, which is exactly
+> why the phases below could compare angles without knowing `x`, and carries the **axis** through
+> `x`. Each interval therefore contributes a pair of unit axes, and `x` is the rotation carrying
+> one set onto the other — Wahba's problem, solved in closed form by Davenport's q-method on the
+> symmetric 4×4 built from the correlation matrix. `symmetricEigen` is the same Jacobi routine
+> Phase 5's eight-point solver uses; no new numerics were written for this.
+>
+> ### The refusal, and why it is not optional
+>
+> **A single rotation axis does not determine `x`.** Any further turn *about that shared axis*
+> maps every `n_d` onto its `n_c` just as well, so a whole one-parameter family fits. A phone
+> panned left and right cannot calibrate this, and an estimator returning one member of that
+> family with confidence would be inventing the unconstrained degree of freedom.
+> `AXIS_SPREAD_FLOOR` refuses it, measured as λ_min/λ_max of the axis scatter.
+> `tests/unit/handEye.test.ts` demonstrates the family rather than asserting it: it constructs a
+> wrong extrinsic 37° from the truth and shows it fitting every pair of a single-axis run to
+> within 1e-6.
+>
+> **Until `x` is known the stage does not fuse.** The filter is left uninitialised, `gyroBiasDps`
+> stays null, and `fusionModeFollowsFrom` derives `VISION_ONLY` from the report's own fields — so
+> nothing disagrees with anything. The samples are still read, because they are what the
+> calibration is made from, and `uncalibratedSamples` counts them so a run that never calibrated
+> is distinguishable on the record from a run with no sensors. An identity extrinsic is **not** a
+> neutral default; it is an unmeasured claim that the sensor and the lens share axes, and it is
+> precisely the claim that produced the table above.
+>
+> ### What this costs, stated
+>
+> Fusion no longer begins at the first sample. It begins when `MIN_HAND_EYE_PAIRS` rotation pairs
+> with enough axis spread have accumulated, which on the fixture is a vision-only stretch at the
+> start of the run. That is a real change in behaviour and it is on the record rather than hidden:
+> the screen says **Not fusing** with the reason, and the bundle carries `handEye`.
+>
+> ### A consequence for IMU-005's amendment above
+>
+> The 2026-08-23 amendment measured a dead-reckoner recovering the bias through gravity alone and
+> concluded that criteria 1–3 are not by themselves evidence that vision was fused. **That
+> reasoning stands, and the gate is now strictly harder to fake than it describes**: calibrating
+> requires pairs, pairs require vision, so a run with no visual updates never calibrates, never
+> initialises the filter, and reports no bias at all. Fake 1 no longer reaches criterion 1.
+> `tests/unit/fusion.test.ts` asserts the new outcome and records why it changed.
+>
+> ### And one more thing the realistic fixture exposed
+>
+> Making the fixture's motion turn about a moving axis — as a hand does — surfaced a separate,
+> pre-existing defect: **the confidence could rise while running open-loop.** `imuConsistency`
+> keeps being measured through a dropout, because the accelerometer is still reporting, and its
+> gravity half can improve as the filter settles: 0.8576 → 0.8578 between two consecutive
+> dead-reckoning frames, while `propagation` fell 0.9933 → 0.9867 exactly as it should. `overall`
+> is the minimum of the terms, so it followed the wrong one up. v3 §17 limits how long a
+> propagated orientation is worth anything and IMU-007 requires the confidence to fall the whole
+> way; an orientation running open-loop does not become more trustworthy without new visual
+> information. While propagating, the reported confidence is now the running minimum. **No term is
+> altered** — every one keeps its own value on the record, including the one that rose.
+
+---
+
 ## Thresholds, fixed here
 
 | Symbol | Value | Where it comes from |

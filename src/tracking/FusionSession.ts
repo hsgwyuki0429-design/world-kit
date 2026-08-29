@@ -385,6 +385,15 @@ export class FusionSession {
       fusionFrames: this.fusionFrames,
 
       mode: r?.mode ?? FusionMode.VISION_ONLY,
+      handEye: r?.handEye ?? {
+        calibrated: false,
+        rotation: null,
+        pairs: 0,
+        axisSpread: 0,
+        residualDeg: -1,
+        reason: 'no fusion report has been produced yet',
+        uncalibratedSamples: 0,
+      },
       usable: r?.usable ?? true,
       orientation: r?.orientation ?? null,
       gyroBiasDps: r?.gyroBiasDps ?? null,
