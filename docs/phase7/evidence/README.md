@@ -93,3 +93,37 @@ difference as 2.9996 °/s along the injected axis. The plan's table had said a d
 scores 0 there. The criteria did not change; the amendment is recorded in place in
 `docs/phase7/TEST-PLAN.md`, and it names what actually separates a dead-reckoner: criterion 4,
 and the gate withholding the bias difference until visual updates have been applied.
+
+## The 2026-08-29 device run, which failed three records for one reason
+
+`phase7-real-device-FAILED-2026-08-29T00-33-26-777Z.json`. Kept because it is the measurement
+that found the defect, and because it was reachable from nowhere else: the automated leg has no
+IMU, and the unit fixture generated all three signals in one frame by construction.
+
+IMU-003, IMU-004 and IMU-005 failed. **The verifier was not the problem and neither was the
+filter's arithmetic** — the stage was fusing three signals from two coordinate frames with no
+rotation between them. `rotationRate` and gravity are in the **device's** frame; Phase 6's
+increment is in the **camera's**.
+
+| | measured | should be |
+| --- | --- | --- |
+| estimated gyro bias | **9.19 °/s** | under 1 °/s, and iOS already bias-corrects `rotationRate` |
+| fused vs. measured gravity | **33.16°** | inside 10° |
+| fused vs. visual pose | **73.9°**, max 119° | a few degrees |
+| median innovation | **11.78°** | inside 3° |
+| median visual increment | 4.78° | — |
+| injected bias, off its axis | **25.78°** | inside tolerance |
+
+The last two rows of the middle pair are the diagnosis: **the innovation was larger than the
+rotation being predicted**. Predicting no rotation at all would have scored 4.78°; the gyroscope
+was worse than nothing, which is what propagating about the wrong axes does. The bias state then
+absorbed the standing disagreement, which is how a sensor whose true bias is a fraction of a
+degree came to be credited with 9.19 °/s.
+
+Note that **IMU-001 passed** on this run, and reported the 73.9° itself. Its third criterion asks
+only that the fused orientation be *its own* rather than a copy of the visual one — a pass-through
+scores zero there. 73.9° is not a copy. It is also not an orientation.
+
+`src/fusion/handEye.ts` now measures the rotation instead of assuming it, and the stage does not
+fuse until it has. `docs/phase7/TEST-PLAN.md` records the amendment with the derivation and the
+refusal that goes with it.

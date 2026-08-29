@@ -212,6 +212,25 @@ function renderInjection(vm: Phase7ViewModel): HTMLElement {
       stat('Samples', enough ? String(s.biasSamples) : `${s.biasSamples} / ${MIN_BIAS_SAMPLES_JUDGED}`),
       stat('This phone’s own bias', vec(s.gyroBiasDps)),
       stat('Injected along', vec(s.injectionAxis)),
+      stat(
+        'Device → camera',
+        s.handEye.calibrated ? `${s.handEye.pairs} pairs · ${deg(s.handEye.residualDeg)}` : null,
+        s.handEye.calibrated ? OK : BAD,
+      ),
+    ]),
+    el('p', { class: 'footnote' }, [
+      s.handEye.calibrated
+        ? 'The gyroscope reports in the **device’s** frame and Phase 6’s orientation is in the ' +
+          '**camera’s**; they differ by a fixed rotation nobody measured until this phase did. ' +
+          `It is estimated from ${s.handEye.pairs} pairs of rotations — the same turn seen by ` +
+          `both instruments — with a median axis residual of ${deg(s.handEye.residualDeg)} and ` +
+          `an axis spread of ${s.handEye.axisSpread}. Nothing is fused until it is known.`
+        : `**Not fusing.** ${s.handEye.reason}. The gyroscope reports in the device’s frame and ` +
+          'Phase 6’s orientation is in the camera’s; until the rotation between them is measured ' +
+          'there is no honest way to combine them, and an identity rotation is not a neutral ' +
+          'default but an unmeasured claim that the sensor and the lens share axes. ' +
+          `${s.handEye.uncalibratedSamples} sample(s) have been read for the calibration and ` +
+          'declined for the pose.',
     ]),
     el('p', { class: 'footnote' }, [
       `Two filters run on the same visual poses and the same gyroscope, and one of them is fed ` +

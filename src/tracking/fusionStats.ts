@@ -11,6 +11,7 @@
 
 import type { ConfidenceTermRecord, FusionReport } from './trackingMessages';
 import { DEAD_RECKONING_AFTER_MS, FusionMode, MAX_PROPAGATION_MS } from './FusionStage';
+import type { HandEyeReport } from './trackingMessages';
 
 /** One of §17's channels, and whether it is actually arriving. */
 export interface SensorChannel {
@@ -46,6 +47,8 @@ export interface DropoutSample {
 }
 
 export interface FusionStats {
+  /** The device→camera rotation as the last report carried it — see `fusion/handEye.ts`. */
+  readonly handEye: HandEyeReport;
   readonly running: boolean;
   /** Frames the fusion stage reported on at all. */
   readonly fusionFrames: number;

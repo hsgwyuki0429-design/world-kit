@@ -51,8 +51,18 @@
 
 import { OrientationEkf } from '../fusion/orientationEkf';
 import { fusionConfidence } from './fusionConfidence';
-import { angleBetweenDeg, angleDeg, multiply, conjugate, normalise } from '../fusion/quat';
+import {
+  IDENTITY,
+  angleBetweenDeg,
+  angleDeg,
+  multiply,
+  conjugate,
+  fromRotationVector,
+  normalise,
+} from '../fusion/quat';
 import type { Quat } from '../fusion/quat';
+import { MIN_HAND_EYE_PAIRS, NO_HAND_EYE, estimateHandEye, rotateByHandEye } from '../fusion/handEye';
+import type { HandEyeEstimate, HandEyePair, HandEyeRefusal } from '../fusion/handEye';
 import { PoseState } from '../geometry/pose';
 import type {
   ConfidenceTermRecord,
@@ -146,6 +156,18 @@ export type FusionMode = (typeof FusionMode)[keyof typeof FusionMode];
 
 const DEG = Math.PI / 180;
 
+/**
+ * The most rotation pairs kept for the calibration.
+ *
+ * The extrinsic is a constant of the hardware, so more pairs only refine it — but a run is
+ * bounded and so is what it may hold. 240 pairs at one visual update every 200 ms is the last
+ * minute of motion, which is far more than the estimate needs and cheap to keep.
+ */
+export const MAX_HAND_EYE_PAIRS = 240;
+
+/** How many new pairs must arrive before the 4×4 eigenproblem is solved again. */
+export const HAND_EYE_RESOLVE_EVERY = 10;
+
 export class FusionStage {
   private readonly main = new OrientationEkf();
   /** IMU-005's twin: the same everything, with a known bias added to the gyroscope. */
@@ -165,6 +187,35 @@ export class FusionStage {
   /** The visual rotation accumulated since the filter's interval began. */
   private pendingQ: Quat | null = null;
   private pendingSince = -1;
+
+  /* The device→camera rotation, and the pairs it is estimated from — see `fusion/handEye.ts`. */
+  /** The gyroscope's net rotation over the current visual window, in the **device** frame. */
+  private pendingGyroQ: Quat = IDENTITY;
+  private readonly handEyePairs: HandEyePair[] = [];
+  private handEye: HandEyeEstimate | HandEyeRefusal = NO_HAND_EYE;
+  /** Pair count at the last solve, so the estimate is not re-solved on every visual update. */
+  private handEyeSolvedAt = 0;
+  /** IMU samples that arrived while the extrinsic was still unknown and so were not fused. */
+  private uncalibratedSamples = 0;
+  /**
+   * The lowest confidence reported since the current open-loop run began, or `-1` between runs.
+   *
+   * An orientation running open-loop does not become more trustworthy while it runs: no new
+   * visual information is arriving, which is the whole meaning of the state. But `overall` is the
+   * minimum of terms and one of them — `imuConsistency` — keeps being *measured* through a
+   * dropout, because the accelerometer is still reporting. Its gravity half can improve as the
+   * filter settles, and when it is the smallest term the reported confidence follows it up.
+   *
+   * Measured on the fixture the moment its motion was made realistic: 0.8576 → 0.8578 between two
+   * consecutive dead-reckoning frames, while `propagation` fell 0.9933 → 0.9867 exactly as it
+   * should. Small, and still the wrong direction — v3 §17 limits how long a propagated
+   * orientation is worth anything, and IMU-007 requires the confidence to fall the whole way.
+   *
+   * So while propagating, the reported confidence is the running minimum. It is not a new term
+   * and it hides nothing: every term keeps its own value on the record, including the one that
+   * rose.
+   */
+  private openLoopFloor = -1;
   private visualUpdates = 0;
   private lastInnovationDeg = -1;
   /** The twin's innovation on the same update — IMU-005 criterion 4. */
@@ -202,6 +253,12 @@ export class FusionStage {
     this.lastPoseAt = -1;
     this.pendingQ = null;
     this.pendingSince = -1;
+    this.pendingGyroQ = IDENTITY;
+    this.handEyePairs.length = 0;
+    this.handEye = NO_HAND_EYE;
+    this.handEyeSolvedAt = 0;
+    this.uncalibratedSamples = 0;
+    this.openLoopFloor = -1;
     this.visualUpdates = 0;
     this.lastInnovationDeg = -1;
     this.lastInjectedInnovationDeg = -1;
@@ -229,6 +286,26 @@ export class FusionStage {
    * not a gravity direction — it is rejected rather than fed in with a larger noise, because a
    * measurement of the wrong quantity is not a noisy measurement of the right one.
    */
+  /**
+   * Re-solve the extrinsic when enough new pairs have arrived to change the answer.
+   *
+   * Re-solved rather than solved once: the first estimate is taken from the fewest pairs that
+   * can constrain it, and every later one is taken from more. It is not re-solved on every
+   * update, because Davenport's method is a 4×4 eigenproblem and the answer does not move
+   * measurably for one more pair out of a hundred.
+   */
+  private solveHandEyeIfDue(): void {
+    const n = this.handEyePairs.length;
+    if (n < MIN_HAND_EYE_PAIRS) return;
+    if (n - this.handEyeSolvedAt < HAND_EYE_RESOLVE_EVERY && this.handEye.rotation !== null) return;
+    this.handEyeSolvedAt = n;
+    const next = estimateHandEye(this.handEyePairs);
+    // A refusal never replaces a standing estimate: the calibration is a property of how the
+    // sensor is mounted, and it does not stop being known because the last few turns shared an
+    // axis. What a refusal means is *not yet*, and only while there is no estimate at all.
+    if (next.rotation !== null || this.handEye.rotation === null) this.handEye = next;
+  }
+
   noteImu(s: ImuSample): void {
     const t0 = performance.now();
     this.noteImuInner(s);
@@ -237,6 +314,18 @@ export class FusionStage {
 
   private noteImuInner(s: ImuSample): void {
     if (!Number.isFinite(s.at)) return;
+
+    // The gyroscope's own rotation over the current visual window, composed in the **device**
+    // frame and never touched by the extrinsic. It is one half of the pair the calibration is
+    // solved from, so it must stay in the frame it was measured in.
+    const gyroDtMs = this.lastImuAt >= 0 ? s.at - this.lastImuAt : -1;
+    if (gyroDtMs > 0 && gyroDtMs <= MAX_IMU_GAP_MS) {
+      const dtS = gyroDtMs / 1000;
+      this.pendingGyroQ = normalise(
+        multiply(this.pendingGyroQ, fromRotationVector(s.rotationRate.map((w) => w * dtS))),
+      );
+    }
+
     const gravity = [
       (s.accelerationIncludingGravity[0] ?? 0) - (s.acceleration[0] ?? 0),
       (s.accelerationIncludingGravity[1] ?? 0) - (s.acceleration[1] ?? 0),
@@ -244,6 +333,29 @@ export class FusionStage {
     ];
     const gMag = Math.hypot(gravity[0] ?? 0, gravity[1] ?? 0, gravity[2] ?? 0);
     const gravityUsable = Math.abs(gMag - GRAVITY_MS2) <= GRAVITY_TOLERANCE_MS2;
+
+    // **Nothing is fused until the two frames are related by a measured rotation.**
+    //
+    // `rotationRate` and `gravity` are in the device's frame; the filter is corrected by Phase
+    // 6's increment, which is in the camera's. Feeding one to the other with no rotation between
+    // them is what the device run of 2026-08-29 did, and the filter answered by driving its bias
+    // to 9.19 °/s and its attitude 33° off gravity. An identity extrinsic is not a neutral
+    // default — it is an unmeasured claim that the sensor and the lens share axes.
+    //
+    // While it is unknown the filter is left uninitialised, so `gyroBiasDps` stays null and
+    // `fusionModeFollowsFrom` derives VISION_ONLY from the report's own fields. The samples are
+    // still read — they are what the calibration is solved from — and counted, so a run that
+    // never calibrated says how much it declined rather than looking like a run with no sensors.
+    const extrinsic = this.handEye.rotation;
+    if (extrinsic === null) {
+      this.uncalibratedSamples++;
+      this.imuSamples++;
+      this.lastImuAt = s.at;
+      return;
+    }
+    // Into the camera's frame, where the state and the visual correction already live.
+    const rotationRate = rotateByHandEye(extrinsic, s.rotationRate);
+    const gravityCam = rotateByHandEye(extrinsic, gravity);
 
     if (!this.main.isInitialised()) {
       if (!gravityUsable) {
@@ -253,8 +365,8 @@ export class FusionStage {
       }
       // The world frame is *defined* by this reading — see `initialiseFrom`. No sign convention
       // for `accelerationIncludingGravity` is assumed, because the platforms disagree about it.
-      this.main.initialiseFrom(gravity);
-      this.injected.initialiseFrom(gravity);
+      this.main.initialiseFrom(gravityCam);
+      this.injected.initialiseFrom(gravityCam);
       this.main.beginVisualInterval();
       this.injected.beginVisualInterval();
       this.lastImuAt = s.at;
@@ -268,14 +380,17 @@ export class FusionStage {
     const dt = dtMs / 1000;
     this.imuSamples++;
 
-    this.main.predict(s.rotationRate, dt);
+    // Both in the camera's frame now. The injection is applied **after** the rotation, so
+    // IMU-005's injected axis is the axis the filter's own bias state is expressed in — the
+    // device run's 25.78° axis error was the injection and the state being read in two frames.
+    this.main.predict(rotationRate, dt);
     const b = this.injectionVector();
-    this.injected.predict(s.rotationRate.map((w, i) => w + (b[i] ?? 0)), dt);
+    this.injected.predict(rotationRate.map((w, i) => w + (b[i] ?? 0)), dt);
 
     if (gravityUsable) {
       this.gravitySamples++;
-      const out = this.main.updateGravity(gravity);
-      this.injected.updateGravity(gravity);
+      const out = this.main.updateGravity(gravityCam);
+      this.injected.updateGravity(gravityCam);
       if (out.applied) this.lastGravityDeg = out.innovationDeg;
     } else {
       this.gravityRejected++;
@@ -339,13 +454,28 @@ export class FusionStage {
     if (at - this.pendingSince < VISUAL_UPDATE_INTERVAL_MS) return;
     if (!this.main.isInitialised()) {
       // Vision-only: there is no filter to correct, and inventing one from absent sensors is
-      // what IMU-002 forbids.
+      // what IMU-002 forbids. The pair is still worth keeping — while the extrinsic is unknown
+      // this is the *only* path by which it becomes known, and the filter is uninitialised
+      // precisely because it is unknown.
+      this.handEyePairs.push({ device: this.pendingGyroQ, camera: this.pendingQ });
+      while (this.handEyePairs.length > MAX_HAND_EYE_PAIRS) this.handEyePairs.shift();
+      this.pendingGyroQ = IDENTITY;
+      this.solveHandEyeIfDue();
       this.pendingQ = null;
       this.pendingSince = at;
       return;
     }
 
     const increment = this.pendingQ;
+
+    // One interval, seen twice: by the gyroscope in the device's frame and by Phase 6 in the
+    // camera's. The pair is offered to the calibration whether or not the filter is running,
+    // because until it *has* run the filter is not running for want of this.
+    this.handEyePairs.push({ device: this.pendingGyroQ, camera: increment });
+    while (this.handEyePairs.length > MAX_HAND_EYE_PAIRS) this.handEyePairs.shift();
+    this.pendingGyroQ = IDENTITY;
+    this.solveHandEyeIfDue();
+
     const out = this.main.updateVisualIncrement(increment);
     const outInjected = this.injected.updateVisualIncrement(increment);
     if (out.applied) {
@@ -419,6 +549,17 @@ export class FusionStage {
       hasImu,
     });
     const imuTerm = confidence.terms.find((t) => t.name === 'imuConsistency');
+
+    // While open-loop, the reported confidence is the running minimum — see `openLoopFloor`.
+    // The terms above are untouched, so the record still shows which of them moved and how.
+    let overall = confidence.overall;
+    if (mode === FusionMode.DEAD_RECKONING && overall >= 0) {
+      if (this.openLoopFloor >= 0) overall = Math.min(overall, this.openLoopFloor);
+      this.openLoopFloor = overall;
+    } else if (mode !== FusionMode.DEAD_RECKONING) {
+      // Vision is back; the next open-loop run is scored from its own start.
+      this.openLoopFloor = -1;
+    }
     // IMU-008 charges this stage for everything it did on this frame — the IMU samples and the
     // pose alike, not just the report — and the accumulator restarts here so the next frame is
     // charged for its own work only.
@@ -444,8 +585,19 @@ export class FusionStage {
       visualIncrementDeg: this.lastVisualIncrementDeg,
       propagatedMs: round(propagatedMs, 1),
       gravityDeg: this.lastGravityDeg,
+      handEye: {
+        // Rule 002: the state the fusion is actually in, as a value. A run that never
+        // calibrated must not be indistinguishable on the record from a run with no sensors.
+        calibrated: this.handEye.rotation !== null,
+        rotation: this.handEye.rotation ? [...this.handEye.rotation] : null,
+        pairs: this.handEye.pairs,
+        axisSpread: round(this.handEye.axisSpread, 4),
+        residualDeg: 'residualDeg' in this.handEye ? round(this.handEye.residualDeg, 3) : -1,
+        reason: 'reason' in this.handEye ? this.handEye.reason : 'measured from paired rotations',
+        uncalibratedSamples: this.uncalibratedSamples,
+      },
       imuConsistency: imuTerm ? imuTerm.value : -1,
-      confidence: confidence.overall,
+      confidence: overall,
       confidenceTerms: confidence.terms,
       confidenceWithheld: confidence.withheld,
       // Phase 6's own number, unedited, beside the fused one — IMU-004's comparison is then a

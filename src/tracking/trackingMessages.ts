@@ -426,6 +426,19 @@ export interface ImuSample {
  * IMU-005 are exactly those two readings, which is why both are on the record rather than
  * derived by whoever grades it.
  */
+/** What is known about the device→camera rotation, and how — see `fusion/handEye.ts`. */
+export interface HandEyeReport {
+  readonly calibrated: boolean;
+  /** Device → camera, or `null` while it has not been measured. Never an assumed identity. */
+  readonly rotation: readonly number[] | null;
+  readonly pairs: number;
+  readonly axisSpread: number;
+  readonly residualDeg: number;
+  readonly reason: string;
+  /** IMU samples that arrived before the extrinsic was known and so were not fused. */
+  readonly uncalibratedSamples: number;
+}
+
 export interface FusionReport {
   readonly frames: number;
   /** `VISION_ONLY` / `FUSED` / `DEAD_RECKONING`. */
@@ -453,6 +466,7 @@ export interface FusionReport {
   readonly propagatedMs: number;
   /** ...and the same for the gravity update. */
   readonly gravityDeg: number;
+  readonly handEye: HandEyeReport;
   /** v3 §19's seventh term, which Phase 6 withheld on purpose. `-1` where it cannot be formed. */
   readonly imuConsistency: number;
   /** The **fused** pose's confidence — Phase 6's is untouched and travels beside it. */

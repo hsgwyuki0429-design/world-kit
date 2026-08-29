@@ -631,6 +631,32 @@ no visual updates at all, a true (0.4, −0.9, 0.2) °/s came back as (0.400, �
 injected twin's difference as 2.9996 °/s on the injected axis. The criteria did not change; what
 changed is the reasoning printed beside them, recorded in place with the measurement (§29).
 
+### The frame this phase had not measured, and the device that found it
+
+The gyroscope and the accelerometer report in the **device's** frame. Phase 6's orientation is in
+the **camera's**. They differ by a fixed rotation, and `gyroRotation.ts` and `PoseSession` both
+say so — both arranged not to need it, by comparing only the rotation *angle*, which is invariant
+under a change of basis. **Fusing is not invariant**, and the stage was fusing three signals
+across two frames with no rotation between them.
+
+The first device run that could reach this failed IMU-003, IMU-004 and IMU-005 on it. The
+filter answered the contradiction by crediting a sensor whose true bias is a fraction of a degree
+with **9.19 °/s**, sitting **33.16°** from measured gravity and **73.9°** from vision, and
+producing a median innovation of **11.78°** on visual increments whose own median was **4.78°** —
+a prediction worse than predicting no rotation at all. Nothing else could have found it: the
+fixture generated all three signals in one frame by construction, and the automated leg has no
+IMU.
+
+`src/fusion/handEye.ts` estimates the rotation now. The same turn seen by both instruments gives
+a pair of axes, and the answer is the rotation carrying one set onto the other — Wahba's problem,
+by Davenport's q-method on the same Jacobi eigensolver Phase 5's eight-point solver uses. **A
+phone panned about one axis cannot determine it**, because every further turn about that shared
+axis fits the pairs equally well, so such a run is refused rather than answered — and the test
+builds a wrong extrinsic 37° from the truth and shows it fitting every pair to 1e-6, which is the
+family made visible rather than asserted. Until the rotation is known the stage does not fuse, and
+the screen says **Not fusing** with the reason: an identity extrinsic is not a neutral default but
+an unmeasured claim that the sensor and the lens share axes.
+
 ## What Phase 8 does
 
 Phase 8 — Keyframe System (**v3 §20**, which v4 §20 compresses into two lines and no conditions)

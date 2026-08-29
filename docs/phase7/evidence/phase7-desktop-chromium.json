@@ -3,9 +3,9 @@
   "leg": "DESKTOP_DEV",
   "phase": 7,
   "phaseName": "IMU Support / Fusion",
-  "createdAt": "2026-08-23T11:26:44.519Z",
+  "createdAt": "2026-08-29T01:00:49.685Z",
   "appVersion": "0.1.0",
-  "origin": "http://localhost:46349",
+  "origin": "http://localhost:39199",
   "secureContext": true,
   "device": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
@@ -33,15 +33,15 @@
         "label": "Secure context (HTTPS)",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "secure context over http://localhost:46349",
+        "detail": "secure context over http://localhost:39199",
         "data": {
           "isSecureContext": true,
           "protocol": "http:",
-          "host": "localhost:46349",
+          "host": "localhost:39199",
           "crossOriginIsolated": false
         },
-        "durationMs": 0.3,
-        "timestamp": 1787484371044
+        "durationMs": 0.2,
+        "timestamp": 1787965216564
       },
       {
         "id": "platform.iosSafariGuess",
@@ -55,8 +55,8 @@
           "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
           "maxTouchPoints": 1
         },
-        "durationMs": 0.1,
-        "timestamp": 1787484371045
+        "durationMs": 0,
+        "timestamp": 1787965216564
       },
       {
         "id": "camera.getUserMedia",
@@ -70,8 +70,8 @@
           "hasGetUserMedia": true,
           "secureContext": true
         },
-        "durationMs": 0.1,
-        "timestamp": 1787484371045
+        "durationMs": 0,
+        "timestamp": 1787965216564
       },
       {
         "id": "camera.enumerateDevices",
@@ -87,8 +87,8 @@
           "labelsHidden": false,
           "deviceIdsHidden": false
         },
-        "durationMs": 39.7,
-        "timestamp": 1787484371084
+        "durationMs": 42.5,
+        "timestamp": 1787965216607
       },
       {
         "id": "camera.supportedConstraints",
@@ -107,8 +107,8 @@
           "deviceId": true,
           "missing": []
         },
-        "durationMs": 0.2,
-        "timestamp": 1787484371085
+        "durationMs": 0.3,
+        "timestamp": 1787965216607
       },
       {
         "id": "camera.trackControl",
@@ -123,7 +123,7 @@
           "applyConstraints": true
         },
         "durationMs": 0,
-        "timestamp": 1787484371085
+        "timestamp": 1787965216607
       },
       {
         "id": "compute.webassembly",
@@ -138,8 +138,8 @@
           "hasInstantiateStreaming": true,
           "hasMemory": true
         },
-        "durationMs": 0.6,
-        "timestamp": 1787484371085
+        "durationMs": 0.8,
+        "timestamp": 1787965216608
       },
       {
         "id": "compute.worker",
@@ -147,13 +147,13 @@
         "label": "Web Worker round-trip",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "blob worker round-trip succeeded in 6.6 ms",
+        "detail": "blob worker round-trip succeeded in 6.8 ms",
         "data": {
-          "roundTripMs": 6.6,
+          "roundTripMs": 6.8,
           "tokenMatched": true
         },
         "durationMs": 8,
-        "timestamp": 1787484371093
+        "timestamp": 1787965216616
       },
       {
         "id": "compute.offscreenCanvas",
@@ -172,7 +172,7 @@
           "exact": true
         },
         "durationMs": 0.6,
-        "timestamp": 1787484371094
+        "timestamp": 1787965216617
       },
       {
         "id": "compute.transferControlToOffscreen",
@@ -186,7 +186,7 @@
           "height": 4
         },
         "durationMs": 0.3,
-        "timestamp": 1787484371094
+        "timestamp": 1787965216617
       },
       {
         "id": "compute.offscreenInWorker",
@@ -205,8 +205,8 @@
           ],
           "exact": true
         },
-        "durationMs": 6.9,
-        "timestamp": 1787484371101
+        "durationMs": 6.7,
+        "timestamp": 1787965216624
       },
       {
         "id": "compute.sharedArrayBuffer",
@@ -219,7 +219,7 @@
           "crossOriginIsolated": false
         },
         "durationMs": 0,
-        "timestamp": 1787484371101
+        "timestamp": 1787965216624
       },
       {
         "id": "graphics.webgl2",
@@ -241,8 +241,8 @@
           "textureFloatLinear": true,
           "extensionCount": 29
         },
-        "durationMs": 11.8,
-        "timestamp": 1787484371113
+        "durationMs": 10,
+        "timestamp": 1787965216634
       },
       {
         "id": "graphics.webgpu",
@@ -255,8 +255,8 @@
           "hasNavigatorGpu": true,
           "adapter": null
         },
-        "durationMs": 2,
-        "timestamp": 1787484371115
+        "durationMs": 2.1,
+        "timestamp": 1787965216636
       },
       {
         "id": "graphics.createImageBitmap",
@@ -269,8 +269,8 @@
           "width": 4,
           "height": 4
         },
-        "durationMs": 1.8,
-        "timestamp": 1787484371117
+        "durationMs": 1.5,
+        "timestamp": 1787965216637
       },
       {
         "id": "graphics.canvas2dReadback",
@@ -289,7 +289,7 @@
           "exact": true
         },
         "durationMs": 0.3,
-        "timestamp": 1787484371117
+        "timestamp": 1787965216637
       },
       {
         "id": "media.imageCapture",
@@ -300,7 +300,7 @@
         "detail": "ImageCapture is present",
         "data": {},
         "durationMs": 0,
-        "timestamp": 1787484371117
+        "timestamp": 1787965216637
       },
       {
         "id": "media.webcodecs",
@@ -315,7 +315,7 @@
           "VideoEncoder": true
         },
         "durationMs": 0.1,
-        "timestamp": 1787484371117
+        "timestamp": 1787965216638
       },
       {
         "id": "media.videoFrameCallback",
@@ -328,7 +328,7 @@
           "playsInline": true
         },
         "durationMs": 0.2,
-        "timestamp": 1787484371117
+        "timestamp": 1787965216638
       },
       {
         "id": "storage.estimate",
@@ -336,13 +336,13 @@
         "label": "Storage quota",
         "state": "AVAILABLE",
         "method": "FUNCTIONAL_PROBE",
-        "detail": "storage quota reported by the platform: 1.0 GB (used 0.0 B)",
+        "detail": "storage quota reported by the platform: 865.7 MB (used 0.0 B)",
         "data": {
-          "quotaBytes": 1093848571,
+          "quotaBytes": 907777154,
           "usageBytes": 0
         },
-        "durationMs": 1.7,
-        "timestamp": 1787484371119
+        "durationMs": 2.2,
+        "timestamp": 1787965216640
       },
       {
         "id": "storage.localStorage",
@@ -352,8 +352,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "wrote, read and removed a real localStorage key",
         "data": {},
-        "durationMs": 1,
-        "timestamp": 1787484371120
+        "durationMs": 1.1,
+        "timestamp": 1787965216641
       },
       {
         "id": "storage.indexedDB",
@@ -363,8 +363,8 @@
         "method": "FUNCTIONAL_PROBE",
         "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
         "data": {},
-        "durationMs": 2.9,
-        "timestamp": 1787484371123
+        "durationMs": 2,
+        "timestamp": 1787965216643
       },
       {
         "id": "storage.performanceMemory",
@@ -376,8 +376,8 @@
         "data": {
           "deviceMemory": 8
         },
-        "durationMs": 0.1,
-        "timestamp": 1787484371123
+        "durationMs": 0.2,
+        "timestamp": 1787965216643
       },
       {
         "id": "spatial.webxr",
@@ -391,8 +391,8 @@
           "immersiveAR": false,
           "immersiveVR": false
         },
-        "durationMs": 6.3,
-        "timestamp": 1787484371129
+        "durationMs": 6.5,
+        "timestamp": 1787965216650
       },
       {
         "id": "spatial.nativeBridge",
@@ -405,7 +405,7 @@
           "handlerNames": []
         },
         "durationMs": 0.1,
-        "timestamp": 1787484371129
+        "timestamp": 1787965216650
       },
       {
         "id": "spatial.cameraDepth",
@@ -419,7 +419,7 @@
           "webxrAvailable": false
         },
         "durationMs": 0.2,
-        "timestamp": 1787484371130
+        "timestamp": 1787965216650
       },
       {
         "id": "spatial.arkit",
@@ -432,7 +432,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787484371130
+        "timestamp": 1787965216650
       },
       {
         "id": "spatial.roomplan",
@@ -445,7 +445,7 @@
           "nativeBridgePresent": false
         },
         "durationMs": 0,
-        "timestamp": 1787484371130
+        "timestamp": 1787965216650
       },
       {
         "id": "spatial.metricScale",
@@ -458,8 +458,8 @@
           "scaleStatus": "UNKNOWN",
           "units": "LOCAL_UNITS"
         },
-        "durationMs": 0,
-        "timestamp": 1787484371130
+        "durationMs": 0.1,
+        "timestamp": 1787965216650
       },
       {
         "id": "motion.deviceMotion",
@@ -472,7 +472,7 @@
           "requiresPermission": false
         },
         "durationMs": 0,
-        "timestamp": 1787484371130
+        "timestamp": 1787965216650
       },
       {
         "id": "motion.deviceOrientation",
@@ -485,12 +485,12 @@
           "requiresPermission": false
         },
         "durationMs": 0,
-        "timestamp": 1787484371130
+        "timestamp": 1787965216650
       }
     ],
-    "startedAt": 1787484371024,
-    "completedAt": 1787484371130,
-    "totalDurationMs": 85.3
+    "startedAt": 1787965216544,
+    "completedAt": 1787965216650,
+    "totalDurationMs": 86
   },
   "testResults": [
     {
@@ -550,7 +550,7 @@
         "zeroFusedVsVisualFrames": 0,
         "fusedVsVisualSamples": 0
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -563,15 +563,15 @@
         "failureCondition": "any fused state produced from absent sensors, or a run that stops"
       },
       "verdict": "PASS",
-      "observed": "334 frames, all VISION_ONLY — listening for devicemotion; no event with rotationRate has arrived yet. Bias null, imuConsistency withheld by name",
+      "observed": "404 frames, all VISION_ONLY — listening for devicemotion; no event with rotationRate has arrived yet. Bias null, imuConsistency withheld by name",
       "reason": "v3 §68’s pass condition, met: IMU unavailableでもVision-only modeで継続可能. The run continued, the fused orientation is the visual one unchanged, and nothing was invented from sensors that are not reporting — the bias is null rather than zero, because a zero would be a claim that it was estimated and found to be nothing",
       "metrics": {
         "imuAvailable": false,
         "imuReason": "listening for devicemotion; no event with rotationRate has arrived yet",
         "modeFrames": {
-          "VISION_ONLY": 334
+          "VISION_ONLY": 404
         },
-        "fusionFrames": 334,
+        "fusionFrames": 404,
         "gyroBiasDps": null,
         "biasZeroWithoutGyro": 0,
         "confidenceWithheld": [
@@ -581,7 +581,7 @@
         "medianFusedVsVisualDeg": -1,
         "modeMismatches": 0
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -605,7 +605,7 @@
         "innovationsWithinTolerance": 0,
         "zeroInnovationSamples": 0
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -628,7 +628,7 @@
         "imuConsistencySamples": 0,
         "gravityDegSamples": 0,
         "medianGravityDeg": -1,
-        "gravityRejected": 1,
+        "gravityRejected": 0,
         "confidence": 0,
         "visualConfidence": 0,
         "confidenceAboveWorstTerm": 0,
@@ -637,27 +637,27 @@
           {
             "name": "inlierRatio",
             "value": 1,
-            "note": "0.9375 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+            "note": "0.8611 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
           },
           {
             "name": "reprojectionError",
             "value": 0,
-            "note": "18.0041 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
+            "note": "10.8239 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
           },
           {
             "name": "trackedFeatures",
-            "value": 0.3091,
-            "note": "148 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+            "value": 0.3727,
+            "note": "162 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
           },
           {
             "name": "featureDistribution",
-            "value": 0.6183,
-            "note": "81.833 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
+            "value": 0.6818,
+            "note": "88.183 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
           },
           {
             "name": "temporalStability",
-            "value": 0.7435,
-            "note": "3.8469° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
+            "value": 0.7327,
+            "note": "4.0091° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
           },
           {
             "name": "modelConsistency",
@@ -672,11 +672,11 @@
           {
             "name": "propagation",
             "value": 1,
-            "note": "462.4 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
+            "note": "123.6 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
           }
         ]
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -706,7 +706,7 @@
         "gyroBiasDps": null,
         "biasDifferences": []
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -719,7 +719,7 @@
         "failureCondition": "any position field with a value. There is no tolerance on this one"
       },
       "verdict": "PASS",
-      "observed": "334 records, no position in any of them, scale UNKNOWN throughout. no accelerometer reported, so the drift this phase declined to produce could not be measured on this run",
+      "observed": "404 records, no position in any of them, scale UNKNOWN throughout. no accelerometer reported, so the drift this phase declined to produce could not be measured on this run",
       "reason": "v3 §17’s two prohibitions and v4 §19’s one, held. The accelerometer reports m/s² and Phase 6’s translation is a unit direction in LOCAL_UNITS, so fusing them needs the scale a monocular camera does not have. The drift measurement needs an accelerometer and this run had none",
       "metrics": {
         "positionsReported": 0,
@@ -731,7 +731,7 @@
         "deadReckonedPositionM": 0,
         "deadReckonedSeconds": 0
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -748,17 +748,17 @@
       "reason": "this record is about what the fusion does with the sensors, and there are none. The run continues on vision alone, which is v3 §68’s pass condition and IMU-002’s subject — so the absence is decided there rather than rounded up here",
       "metrics": {
         "dropoutFrames": 0,
-        "longestPropagatedMs": 1981.9,
+        "longestPropagatedMs": 1748.2,
         "dropoutConfidenceRises": 0,
         "usableBeyondMax": 0,
         "reconvergences": 0,
         "medianReconvergenceInnovationDeg": -1,
         "dropouts": [],
         "modeFrames": {
-          "VISION_ONLY": 334
+          "VISION_ONLY": 404
         }
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -771,15 +771,15 @@
         "failureCondition": "over budget. Advisory because §34 ranks correctness above performance, and because §H has no line for fusion at all — any cost here is spent from margin"
       },
       "verdict": "PASS",
-      "observed": "0.0341 ms mean over 334 frames, against a 1 ms budget, with the IMU delivering at -1 Hz",
+      "observed": "0.033 ms mean over 400 frames, against a 1 ms budget, with the IMU delivering at -1 Hz",
       "reason": "an orientation error-state filter is a handful of 3×3 operations per sample, and it costs about what that predicts — which matters because §H had no millisecond left to give it",
       "metrics": {
-        "meanFusionMs": 0.0341,
-        "fusionCostSamples": 334,
+        "meanFusionMs": 0.033,
+        "fusionCostSamples": 400,
         "measuredImuHz": -1,
         "budgetMs": 1
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     },
     {
       "spec": {
@@ -792,7 +792,7 @@
         "failureCondition": "any of the above unmet"
       },
       "verdict": "PASS",
-      "observed": "334 records inspected: scale UNKNOWN, no position, orientation carried as a quaternion, heading RELATIVE (no magnetometer is read), every mode implied by its own inputs, every rate inside 0..1",
+      "observed": "404 records inspected: scale UNKNOWN, no position, orientation carried as a quaternion, heading RELATIVE (no magnetometer is read), every mode implied by its own inputs, every rate inside 0..1",
       "reason": "the record is honest about the two things this phase refused and the one it could not have: no position, no scale, and a heading that is relative because nothing here reads a magnetometer. §18’s quaternion preference is met by there being no Euler conversion in the codebase to emit one",
       "metrics": {
         "scaleViolations": 0,
@@ -836,70 +836,70 @@
           }
         ]
       },
-      "timestamp": 1787484404516
+      "timestamp": 1787965249682
     }
   ],
   "overallVerdict": "TESTING",
   "overallReason": "PENDING: IMU-001, IMU-003, IMU-004, IMU-005, IMU-007 — not yet evaluable",
   "stateTransitions": [
     {
-      "timestamp": 1787484371010,
+      "timestamp": 1787965216531,
       "subject": "phase[0] Environment / Capability",
       "from": "NOT_STARTED",
       "to": "IMPLEMENTING",
       "reason": "capability detection starting"
     },
     {
-      "timestamp": 1787484371134,
+      "timestamp": 1787965216653,
       "subject": "phase[0] Environment / Capability",
       "from": "IMPLEMENTING",
       "to": "TESTING",
       "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
     },
     {
-      "timestamp": 1787484371156,
+      "timestamp": 1787965216673,
       "subject": "phase[2] Frame Pipeline",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
     },
     {
-      "timestamp": 1787484372262,
+      "timestamp": 1787965217796,
       "subject": "phase[3] Feature Detection",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
     },
     {
-      "timestamp": 1787484372614,
+      "timestamp": 1787965218131,
       "subject": "phase[4] Optical Flow Tracking",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
     },
     {
-      "timestamp": 1787484373461,
+      "timestamp": 1787965218827,
       "subject": "phase[5] Geometric Verification",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
     },
     {
-      "timestamp": 1787484374128,
+      "timestamp": 1787965219360,
       "subject": "phase[6] Relative Pose",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
     },
     {
-      "timestamp": 1787484374453,
+      "timestamp": 1787965219620,
       "subject": "phase[7] IMU Support / Fusion",
       "from": "BLOCKED",
       "to": "TESTING",
       "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
     },
     {
-      "timestamp": 1787484375022,
+      "timestamp": 1787965220184,
       "subject": "phase[7] IMU Support / Fusion",
       "from": "TESTING",
       "to": "TESTING",
@@ -909,7 +909,7 @@
   "errorLog": [],
   "fullLog": [
     {
-      "timestamp": 1787484371022,
+      "timestamp": 1787965216542,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -917,22 +917,22 @@
       "data": {
         "appVersion": "0.1.0",
         "leg": "DESKTOP_DEV",
-        "origin": "http://localhost:46349"
+        "origin": "http://localhost:39199"
       }
     },
     {
-      "timestamp": 1787484371130,
+      "timestamp": 1787965216650,
       "level": "INFO",
       "phase": 0,
       "source": "CapabilityDetector",
       "message": "capability detection complete",
       "data": {
         "records": 31,
-        "totalProbeMs": 85.3
+        "totalProbeMs": 86
       }
     },
     {
-      "timestamp": 1787484371139,
+      "timestamp": 1787965216658,
       "level": "INFO",
       "phase": 0,
       "source": "App",
@@ -942,7 +942,7 @@
       }
     },
     {
-      "timestamp": 1787484371154,
+      "timestamp": 1787965216672,
       "level": "WARN",
       "phase": 2,
       "source": "App",
@@ -952,7 +952,7 @@
       }
     },
     {
-      "timestamp": 1787484371156,
+      "timestamp": 1787965216673,
       "level": "INFO",
       "phase": 2,
       "source": "App",
@@ -962,7 +962,7 @@
       }
     },
     {
-      "timestamp": 1787484371208,
+      "timestamp": 1787965216725,
       "level": "INFO",
       "phase": 2,
       "source": "FramePipeline",
@@ -977,7 +977,7 @@
       }
     },
     {
-      "timestamp": 1787484371235,
+      "timestamp": 1787965216747,
       "level": "INFO",
       "phase": 2,
       "source": "FrameWorker",
@@ -989,31 +989,31 @@
       }
     },
     {
-      "timestamp": 1787484371399,
+      "timestamp": 1787965216912,
       "level": "INFO",
       "phase": 2,
       "source": "FramePipeline",
       "message": "acquisition route VIDEO_FRAME selected",
       "data": {
         "successes": 5,
-        "meanAcquireMs": 0.14
+        "meanAcquireMs": 0.08
       }
     },
     {
-      "timestamp": 1787484371780,
+      "timestamp": 1787965217311,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
       "data": {
-        "reason": "median worker latency 5.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
-        "medianWorkerMs": 5.3,
+        "reason": "median worker latency 4.7 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 4.7,
         "budgetMs": 33.33,
         "underInjectedLoad": false
       }
     },
     {
-      "timestamp": 1787484372261,
+      "timestamp": 1787965217795,
       "level": "WARN",
       "phase": 3,
       "source": "App",
@@ -1023,7 +1023,7 @@
       }
     },
     {
-      "timestamp": 1787484372262,
+      "timestamp": 1787965217796,
       "level": "INFO",
       "phase": 3,
       "source": "App",
@@ -1033,7 +1033,7 @@
       }
     },
     {
-      "timestamp": 1787484372335,
+      "timestamp": 1787965217885,
       "level": "INFO",
       "phase": 3,
       "source": "App",
@@ -1043,7 +1043,7 @@
       }
     },
     {
-      "timestamp": 1787484372612,
+      "timestamp": 1787965218130,
       "level": "WARN",
       "phase": 4,
       "source": "App",
@@ -1053,7 +1053,7 @@
       }
     },
     {
-      "timestamp": 1787484372614,
+      "timestamp": 1787965218131,
       "level": "INFO",
       "phase": 4,
       "source": "App",
@@ -1063,7 +1063,7 @@
       }
     },
     {
-      "timestamp": 1787484372682,
+      "timestamp": 1787965218197,
       "level": "INFO",
       "phase": 4,
       "source": "App",
@@ -1073,7 +1073,7 @@
       }
     },
     {
-      "timestamp": 1787484372686,
+      "timestamp": 1787965218200,
       "level": "INFO",
       "phase": 4,
       "source": "RotationRateMonitor",
@@ -1083,7 +1083,7 @@
       }
     },
     {
-      "timestamp": 1787484373460,
+      "timestamp": 1787965218827,
       "level": "WARN",
       "phase": 5,
       "source": "App",
@@ -1093,7 +1093,7 @@
       }
     },
     {
-      "timestamp": 1787484373461,
+      "timestamp": 1787965218827,
       "level": "INFO",
       "phase": 5,
       "source": "App",
@@ -1103,7 +1103,7 @@
       }
     },
     {
-      "timestamp": 1787484373514,
+      "timestamp": 1787965218879,
       "level": "INFO",
       "phase": 5,
       "source": "App",
@@ -1113,7 +1113,7 @@
       }
     },
     {
-      "timestamp": 1787484374127,
+      "timestamp": 1787965219359,
       "level": "WARN",
       "phase": 6,
       "source": "App",
@@ -1123,7 +1123,7 @@
       }
     },
     {
-      "timestamp": 1787484374128,
+      "timestamp": 1787965219360,
       "level": "INFO",
       "phase": 6,
       "source": "App",
@@ -1133,7 +1133,7 @@
       }
     },
     {
-      "timestamp": 1787484374180,
+      "timestamp": 1787965219412,
       "level": "INFO",
       "phase": 6,
       "source": "App",
@@ -1143,7 +1143,7 @@
       }
     },
     {
-      "timestamp": 1787484374185,
+      "timestamp": 1787965219417,
       "level": "INFO",
       "phase": 6,
       "source": "RotationRateMonitor",
@@ -1154,7 +1154,7 @@
       }
     },
     {
-      "timestamp": 1787484374452,
+      "timestamp": 1787965219619,
       "level": "WARN",
       "phase": 7,
       "source": "App",
@@ -1164,7 +1164,7 @@
       }
     },
     {
-      "timestamp": 1787484374453,
+      "timestamp": 1787965219620,
       "level": "INFO",
       "phase": 7,
       "source": "App",
@@ -1174,7 +1174,7 @@
       }
     },
     {
-      "timestamp": 1787484374513,
+      "timestamp": 1787965219679,
       "level": "INFO",
       "phase": 7,
       "source": "App",
@@ -1184,7 +1184,7 @@
       }
     },
     {
-      "timestamp": 1787484374517,
+      "timestamp": 1787965219683,
       "level": "INFO",
       "phase": 7,
       "source": "RotationRateMonitor",
@@ -1195,53 +1195,53 @@
       }
     },
     {
-      "timestamp": 1787484375946,
+      "timestamp": 1787965221418,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
       "data": {
-        "reason": "median worker latency 140.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
-        "medianWorkerMs": 140.1,
+        "reason": "median worker latency 100.7 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
+        "medianWorkerMs": 100.7,
         "budgetMs": 33.33,
         "underInjectedLoad": false
       }
     },
     {
-      "timestamp": 1787484380055,
+      "timestamp": 1787965225475,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier DOWN: BASIC 960x540@30 -> BASIC 960x540@20",
       "data": {
-        "reason": "median worker latency 138.9 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
-        "medianWorkerMs": 138.9,
+        "reason": "median worker latency 87.4 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
+        "medianWorkerMs": 87.4,
         "budgetMs": 33.33,
         "underInjectedLoad": false
       }
     },
     {
-      "timestamp": 1787484384077,
+      "timestamp": 1787965229552,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
       "data": {
-        "reason": "median worker latency 132.2 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)",
-        "medianWorkerMs": 132.2,
+        "reason": "median worker latency 104.5 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)",
+        "medianWorkerMs": 104.5,
         "budgetMs": 50,
         "underInjectedLoad": false
       }
     },
     {
-      "timestamp": 1787484388119,
+      "timestamp": 1787965233557,
       "level": "INFO",
       "phase": 2,
       "source": "AdaptiveController",
       "message": "tier DOWN: REDUCED 640x360@20 -> REDUCED 640x360@15",
       "data": {
-        "reason": "median worker latency 83.7 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)",
-        "medianWorkerMs": 83.7,
+        "reason": "median worker latency 65.4 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)",
+        "medianWorkerMs": 65.4,
         "budgetMs": 50,
         "underInjectedLoad": false
       }
@@ -1286,7 +1286,7 @@
           "rung": 2,
           "label": "rear camera (preferred), 1280x720 ideal",
           "ok": true,
-          "durationMs": 5
+          "durationMs": 7
         }
       ],
       "requestedLadder": [
@@ -1312,26 +1312,26 @@
         "height": 480,
         "frameRate": 30,
         "facingMode": "unreported",
-        "deviceId": "76f2f36980690c1daf801bb6f0a5b7f3cfe643ccff7179eb7869903665465042",
+        "deviceId": "018445b7dbf3474091b3056d840f8764e025563273fa2a55ac9ffadbcf1c0457",
         "label": "/home/user/world-kit/node_modules/.cache/fusion-motion.y4m",
         "aspectRatio": 1.333
       },
-      "openDurationMs": 7,
+      "openDurationMs": 9,
       "failure": null
     },
     "pipeline": {
       "running": true,
-      "startedAt": 248.10000000009313,
-      "uptimeMs": 33308,
+      "startedAt": 235.5,
+      "uptimeMs": 32957,
       "route": "VIDEO_FRAME",
       "routeLocked": true,
       "routeProbes": [
         {
           "route": "VIDEO_FRAME",
           "ok": true,
-          "attempts": 329,
-          "successes": 328,
-          "meanAcquireMs": 0.07,
+          "attempts": 400,
+          "successes": 399,
+          "meanAcquireMs": 0.057,
           "error": null,
           "note": "selected"
         },
@@ -1364,48 +1364,48 @@
         "hardwareConcurrency": 4
       },
       "workerErrors": [],
-      "callbacks": 998,
-      "admitted": 329,
-      "completed": 328,
-      "pacedOut": 81,
-      "backpressured": 588,
+      "callbacks": 988,
+      "admitted": 400,
+      "completed": 399,
+      "pacedOut": 104,
+      "backpressured": 484,
       "lost": 0,
       "acquireFailures": 0,
-      "deliveredFps": 10.46,
-      "sourceFps": 30,
-      "sessionDeliveredFps": 9.85,
-      "maxResultGapMs": 218.8,
+      "deliveredFps": 13.02,
+      "sourceFps": 30.16,
+      "sessionDeliveredFps": 12.11,
+      "maxResultGapMs": 170.4,
       "uiCostMs": {
-        "count": 329,
-        "mean": 0.13,
+        "count": 400,
+        "mean": 0.12,
         "p50": 0.1,
         "p95": 0.2,
         "min": 0,
-        "max": 0.9
+        "max": 0.3
       },
       "acquireMs": {
-        "count": 329,
-        "mean": 0.07,
+        "count": 400,
+        "mean": 0.06,
         "p50": 0.1,
-        "p95": 0.2,
+        "p95": 0.1,
         "min": 0,
-        "max": 1
+        "max": 0.3
       },
       "workerMs": {
-        "count": 328,
-        "mean": 80.04,
-        "p50": 75.5,
-        "p95": 146.8,
-        "min": 3.4,
-        "max": 171.5
+        "count": 399,
+        "mean": 62.34,
+        "p50": 59.3,
+        "p95": 109.9,
+        "min": 3.1,
+        "max": 138.2
       },
       "roundTripMs": {
-        "count": 328,
-        "mean": 80.76,
-        "p50": 75.9,
-        "p95": 147.2,
-        "min": 3.7,
-        "max": 172.2
+        "count": 399,
+        "mean": 63.14,
+        "p50": 60.2,
+        "p95": 111,
+        "min": 3.4,
+        "max": 138.6
       },
       "tierStep": 4,
       "tierLabel": "REDUCED 640x360@15",
@@ -1414,7 +1414,7 @@
       "procHeight": 360,
       "decisions": [
         {
-          "at": 819.6000000000931,
+          "at": 821.5,
           "direction": "UP",
           "fromStep": 1,
           "toStep": 0,
@@ -1422,14 +1422,14 @@
           "toLabel": "HIGH 1280x720@30",
           "fromTargetFps": 30,
           "toTargetFps": 30,
-          "medianWorkerMs": 5.3,
+          "medianWorkerMs": 4.7,
           "budgetMs": 33.33,
-          "deliveredFps": 31.15,
+          "deliveredFps": 29.62,
           "windowSize": 15,
-          "reason": "median worker latency 5.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          "reason": "median worker latency 4.7 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
         },
         {
-          "at": 4985.399999999907,
+          "at": 4927.600000000093,
           "direction": "DOWN",
           "fromStep": 0,
           "toStep": 1,
@@ -1437,14 +1437,14 @@
           "toLabel": "BASIC 960x540@30",
           "fromTargetFps": 30,
           "toTargetFps": 30,
-          "medianWorkerMs": 140.1,
+          "medianWorkerMs": 100.7,
           "budgetMs": 33.33,
-          "deliveredFps": 15.6,
+          "deliveredFps": 16.35,
           "windowSize": 15,
-          "reason": "median worker latency 140.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+          "reason": "median worker latency 100.7 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
         },
         {
-          "at": 9095.399999999907,
+          "at": 8985,
           "direction": "DOWN",
           "fromStep": 1,
           "toStep": 2,
@@ -1452,14 +1452,14 @@
           "toLabel": "BASIC 960x540@20",
           "fromTargetFps": 30,
           "toTargetFps": 20,
-          "medianWorkerMs": 138.9,
+          "medianWorkerMs": 87.4,
           "budgetMs": 33.33,
-          "deliveredFps": 10.41,
+          "deliveredFps": 11.53,
           "windowSize": 15,
-          "reason": "median worker latency 138.9 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          "reason": "median worker latency 87.4 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
         },
         {
-          "at": 13116.899999999907,
+          "at": 13061.699999999953,
           "direction": "DOWN",
           "fromStep": 2,
           "toStep": 3,
@@ -1467,14 +1467,14 @@
           "toLabel": "REDUCED 640x360@20",
           "fromTargetFps": 20,
           "toTargetFps": 20,
-          "medianWorkerMs": 132.2,
+          "medianWorkerMs": 104.5,
           "budgetMs": 50,
-          "deliveredFps": 7.97,
+          "deliveredFps": 8.55,
           "windowSize": 15,
-          "reason": "median worker latency 132.2 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+          "reason": "median worker latency 104.5 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
         },
         {
-          "at": 17159.399999999907,
+          "at": 17066.699999999953,
           "direction": "DOWN",
           "fromStep": 3,
           "toStep": 4,
@@ -1482,11 +1482,11 @@
           "toLabel": "REDUCED 640x360@15",
           "fromTargetFps": 20,
           "toTargetFps": 15,
-          "medianWorkerMs": 83.7,
+          "medianWorkerMs": 65.4,
           "budgetMs": 50,
-          "deliveredFps": 7.73,
+          "deliveredFps": 10.7,
           "windowSize": 15,
-          "reason": "median worker latency 83.7 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+          "reason": "median worker latency 65.4 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
         }
       ],
       "spontaneousDegrade": true,
@@ -1509,7 +1509,7 @@
         {
           "step": 0,
           "label": "HIGH 1280x720@30",
-          "frames": 46,
+          "frames": 53,
           "sizes": [
             "640x480"
           ]
@@ -1517,7 +1517,7 @@
         {
           "step": 1,
           "label": "BASIC 960x540@30",
-          "frames": 42,
+          "frames": 52,
           "sizes": [
             "640x480"
           ]
@@ -1525,7 +1525,7 @@
         {
           "step": 2,
           "label": "BASIC 960x540@20",
-          "frames": 26,
+          "frames": 34,
           "sizes": [
             "640x480"
           ]
@@ -1533,7 +1533,7 @@
         {
           "step": 3,
           "label": "REDUCED 640x360@20",
-          "frames": 44,
+          "frames": 54,
           "sizes": [
             "480x360"
           ]
@@ -1541,7 +1541,7 @@
         {
           "step": 4,
           "label": "REDUCED 640x360@15",
-          "frames": 170,
+          "frames": 206,
           "sizes": [
             "480x360"
           ]
@@ -1551,36 +1551,36 @@
         {
           "decisionIndex": 0,
           "direction": "UP",
-          "beforeMedianWorkerMs": 5.3,
+          "beforeMedianWorkerMs": 4.7,
           "afterMedianWorkerMs": 4.4,
           "samples": 15
         },
         {
           "decisionIndex": 1,
           "direction": "DOWN",
-          "beforeMedianWorkerMs": 140.1,
-          "afterMedianWorkerMs": 144.2,
+          "beforeMedianWorkerMs": 100.7,
+          "afterMedianWorkerMs": 105.1,
           "samples": 15
         },
         {
           "decisionIndex": 2,
           "direction": "DOWN",
-          "beforeMedianWorkerMs": 138.9,
-          "afterMedianWorkerMs": 136.3,
+          "beforeMedianWorkerMs": 87.4,
+          "afterMedianWorkerMs": 106.1,
           "samples": 15
         },
         {
           "decisionIndex": 3,
           "direction": "DOWN",
-          "beforeMedianWorkerMs": 132.2,
-          "afterMedianWorkerMs": 70.1,
+          "beforeMedianWorkerMs": 104.5,
+          "afterMedianWorkerMs": 57.7,
           "samples": 15
         },
         {
           "decisionIndex": 4,
           "direction": "DOWN",
-          "beforeMedianWorkerMs": 83.7,
-          "afterMedianWorkerMs": 80.7,
+          "beforeMedianWorkerMs": 65.4,
+          "afterMedianWorkerMs": 60,
           "samples": 15
         }
       ],
@@ -1603,28 +1603,28 @@
       ],
       "pyramidConsistent": true,
       "pyramidProblems": [],
-      "meanLuma": 131.96,
-      "topMadMax": 52.431,
-      "topMadMedian": 41.487,
-      "topMadSamples": 326,
-      "stripMadMax": 52.249,
-      "stripMadMedian": 39.146,
-      "stripMadSamples": 226,
-      "distinctChecksums": 236,
+      "meanLuma": 132.19,
+      "topMadMax": 49.37,
+      "topMadMedian": 37.078,
+      "topMadSamples": 397,
+      "stripMadMax": 52.607,
+      "stripMadMedian": 39.104,
+      "stripMadSamples": 231,
+      "distinctChecksums": 291,
       "crossCheck": {
         "count": 31,
         "unmatched": 0,
-        "medianAbsDifference": 1.18,
-        "maxAbsDifference": 1.675,
-        "sceneStdDev": 0.251,
-        "sceneRange": 0.959,
+        "medianAbsDifference": 1.178,
+        "maxAbsDifference": 1.668,
+        "sceneStdDev": 0.233,
+        "sceneRange": 0.916,
         "costMs": {
           "count": 31,
-          "mean": 2.01,
-          "p50": 1.4,
-          "p95": 3.4,
-          "min": 1.1,
-          "max": 3.7
+          "mean": 4.02,
+          "p50": 1.8,
+          "p95": 18.2,
+          "min": 1.2,
+          "max": 19.4
         }
       },
       "stressPasses": 0,
@@ -1634,589 +1634,589 @@
         {
           "index": 0,
           "stressed": false,
-          "startedAt": 248.1,
+          "startedAt": 235.5,
           "endedAt": null,
-          "observedMs": 33196,
-          "results": 328,
-          "meanFps": 9.85,
-          "maxGapMs": 218.8,
+          "observedMs": 32865.3,
+          "results": 399,
+          "meanFps": 12.11,
+          "maxGapMs": 170.4,
           "wasHidden": false,
-          "endReason": "open at 33556.1"
+          "endReason": "open at 33192.4"
         }
       ],
       "longestCleanSegment": {
         "index": 0,
         "stressed": false,
-        "startedAt": 248.1,
+        "startedAt": 235.5,
         "endedAt": null,
-        "observedMs": 33196,
-        "results": 328,
-        "meanFps": 9.85,
-        "maxGapMs": 218.8,
+        "observedMs": 32865.3,
+        "results": 399,
+        "meanFps": 12.11,
+        "maxGapMs": 170.4,
         "wasHidden": false,
-        "endReason": "open at 33556.1"
+        "endReason": "open at 33192.4"
       },
       "wasEverHidden": false,
       "hiddenCount": 0,
       "recentFrames": [
         {
-          "frameId": 289,
-          "at": 29823,
+          "frameId": 360,
+          "at": 30131,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 75.7,
-          "roundTripMs": 76.2,
-          "meanLuma": 132.49,
-          "checksum": 376225446,
+          "workerMs": 62.5,
+          "roundTripMs": 63.1,
+          "meanLuma": 132.3,
+          "checksum": 487516745,
           "stressPasses": 0
         },
         {
-          "frameId": 290,
-          "at": 29918,
+          "frameId": 361,
+          "at": 30208,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 70.3,
-          "roundTripMs": 70.8,
-          "meanLuma": 132.37,
-          "checksum": 1511179923,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 291,
-          "at": 30014,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 66.7,
-          "roundTripMs": 67.1,
-          "meanLuma": 132.12,
-          "checksum": 436689128,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 292,
-          "at": 30120,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 72.8,
-          "roundTripMs": 73.2,
-          "meanLuma": 132.19,
-          "checksum": 1873015415,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 293,
-          "at": 30228,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 81.1,
-          "roundTripMs": 81.4,
+          "workerMs": 73.7,
+          "roundTripMs": 74.1,
           "meanLuma": 132.36,
           "checksum": 908805594,
           "stressPasses": 0
         },
         {
-          "frameId": 294,
-          "at": 30332,
+          "frameId": 362,
+          "at": 30281,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 84.8,
-          "roundTripMs": 85.2,
-          "meanLuma": 132.24,
-          "checksum": 1854146767,
+          "workerMs": 63.9,
+          "roundTripMs": 64.5,
+          "meanLuma": 132.29,
+          "checksum": 886692870,
           "stressPasses": 0
         },
         {
-          "frameId": 295,
-          "at": 30424,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 77.2,
-          "roundTripMs": 77.7,
-          "meanLuma": 132.02,
-          "checksum": 1776475081,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 296,
-          "at": 30528,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 80.8,
-          "roundTripMs": 81.2,
-          "meanLuma": 132.05,
-          "checksum": 432442118,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 297,
-          "at": 30625,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 77.7,
-          "roundTripMs": 78.3,
-          "meanLuma": 132.09,
-          "checksum": 2175582741,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 298,
-          "at": 30716,
+          "frameId": 363,
+          "at": 30369,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
           "workerMs": 67,
-          "roundTripMs": 67.3,
+          "roundTripMs": 68.3,
+          "meanLuma": 132.02,
+          "checksum": 503651510,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 364,
+          "at": 30450,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 48,
+          "roundTripMs": 48.9,
+          "meanLuma": 131.98,
+          "checksum": 3543271762,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 365,
+          "at": 30543,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 59.3,
+          "roundTripMs": 60.1,
+          "meanLuma": 132.03,
+          "checksum": 2794691835,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 366,
+          "at": 30632,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 60.2,
+          "roundTripMs": 60.9,
+          "meanLuma": 132,
+          "checksum": 1652020929,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 367,
+          "at": 30702,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 58.4,
+          "roundTripMs": 67.7,
           "meanLuma": 131.87,
           "checksum": 1696100935,
           "stressPasses": 0
         },
         {
-          "frameId": 299,
-          "at": 30814,
+          "frameId": 368,
+          "at": 30776,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 66.6,
-          "roundTripMs": 67.1,
-          "meanLuma": 131.68,
-          "checksum": 2424941968,
+          "workerMs": 58.6,
+          "roundTripMs": 59.1,
+          "meanLuma": 131.76,
+          "checksum": 2614747092,
           "stressPasses": 0
         },
         {
-          "frameId": 300,
-          "at": 30911,
+          "frameId": 369,
+          "at": 30848,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 64.5,
-          "roundTripMs": 64.8,
-          "meanLuma": 131.85,
-          "checksum": 1302070216,
+          "workerMs": 46.7,
+          "roundTripMs": 47.2,
+          "meanLuma": 131.82,
+          "checksum": 2551439803,
           "stressPasses": 0
         },
         {
-          "frameId": 301,
-          "at": 30981,
+          "frameId": 370,
+          "at": 30942,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 66.9,
-          "roundTripMs": 67.3,
-          "meanLuma": 132.06,
-          "checksum": 1216720979,
+          "workerMs": 58.4,
+          "roundTripMs": 58.9,
+          "meanLuma": 132,
+          "checksum": 1349989750,
           "stressPasses": 0
         },
         {
-          "frameId": 302,
-          "at": 31086,
+          "frameId": 371,
+          "at": 31022,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 72,
-          "roundTripMs": 72.5,
+          "workerMs": 54.5,
+          "roundTripMs": 55.2,
+          "meanLuma": 132.15,
+          "checksum": 1379139948,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 372,
+          "at": 31087,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 51.9,
+          "roundTripMs": 52.4,
           "meanLuma": 132.09,
-          "checksum": 1952345980,
+          "checksum": 991910965,
           "stressPasses": 0
         },
         {
-          "frameId": 303,
-          "at": 31178,
+          "frameId": 373,
+          "at": 31164,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 65,
-          "roundTripMs": 65.3,
+          "workerMs": 46.7,
+          "roundTripMs": 47.3,
           "meanLuma": 131.98,
           "checksum": 2534763968,
           "stressPasses": 0
         },
         {
-          "frameId": 304,
-          "at": 31249,
+          "frameId": 374,
+          "at": 31213,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 68.8,
-          "roundTripMs": 69.1,
+          "workerMs": 45.2,
+          "roundTripMs": 45.6,
           "meanLuma": 132.01,
           "checksum": 2631645639,
           "stressPasses": 0
         },
         {
-          "frameId": 305,
-          "at": 31345,
+          "frameId": 375,
+          "at": 31269,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 64.7,
-          "roundTripMs": 65.3,
+          "workerMs": 52.7,
+          "roundTripMs": 53.2,
+          "meanLuma": 132.03,
+          "checksum": 2679961885,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 376,
+          "at": 31328,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 44.7,
+          "roundTripMs": 45.2,
           "meanLuma": 132.13,
           "checksum": 924258362,
           "stressPasses": 0
         },
         {
-          "frameId": 306,
-          "at": 31403,
+          "frameId": 377,
+          "at": 31393,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 56.1,
-          "roundTripMs": 56.5,
+          "workerMs": 57.7,
+          "roundTripMs": 58.2,
           "meanLuma": 132.28,
           "checksum": 4009399409,
           "stressPasses": 0
         },
         {
-          "frameId": 307,
-          "at": 31477,
+          "frameId": 378,
+          "at": 31451,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 63.3,
-          "roundTripMs": 63.8,
+          "workerMs": 49.3,
+          "roundTripMs": 49.8,
           "meanLuma": 132.41,
           "checksum": 1711835167,
           "stressPasses": 0
         },
         {
-          "frameId": 308,
-          "at": 31539,
+          "frameId": 379,
+          "at": 31532,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 58.9,
-          "roundTripMs": 59.1,
+          "workerMs": 61.1,
+          "roundTripMs": 64.2,
           "meanLuma": 132.51,
           "checksum": 4148853624,
           "stressPasses": 0
         },
         {
-          "frameId": 309,
-          "at": 31610,
+          "frameId": 380,
+          "at": 31587,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 63.1,
-          "roundTripMs": 63.5,
+          "workerMs": 52.7,
+          "roundTripMs": 53.1,
           "meanLuma": 132.63,
           "checksum": 1027636272,
           "stressPasses": 0
         },
         {
-          "frameId": 310,
-          "at": 31683,
+          "frameId": 381,
+          "at": 31651,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 69.5,
-          "roundTripMs": 69.8,
+          "workerMs": 46,
+          "roundTripMs": 46.6,
           "meanLuma": 132.73,
           "checksum": 994055806,
           "stressPasses": 0
         },
         {
-          "frameId": 311,
-          "at": 31803,
+          "frameId": 382,
+          "at": 31713,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 88.1,
-          "roundTripMs": 88.7,
+          "workerMs": 45.1,
+          "roundTripMs": 45.6,
+          "meanLuma": 132.68,
+          "checksum": 1921703257,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 383,
+          "at": 31780,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 62.7,
+          "roundTripMs": 63.1,
           "meanLuma": 132.6,
           "checksum": 1843083742,
           "stressPasses": 0
         },
         {
-          "frameId": 312,
-          "at": 31894,
+          "frameId": 384,
+          "at": 31865,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 81,
-          "roundTripMs": 81.3,
+          "workerMs": 63.4,
+          "roundTripMs": 63.9,
           "meanLuma": 132.45,
           "checksum": 804426403,
           "stressPasses": 0
         },
         {
-          "frameId": 313,
-          "at": 31992,
+          "frameId": 385,
+          "at": 31933,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 78,
-          "roundTripMs": 78.5,
-          "meanLuma": 132.51,
-          "checksum": 2709686598,
+          "workerMs": 65.1,
+          "roundTripMs": 65.8,
+          "meanLuma": 132.53,
+          "checksum": 1600722546,
           "stressPasses": 0
         },
         {
-          "frameId": 314,
-          "at": 32097,
+          "frameId": 386,
+          "at": 32009,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 83.4,
-          "roundTripMs": 83.8,
-          "meanLuma": 132.57,
-          "checksum": 3129628980,
+          "workerMs": 58.8,
+          "roundTripMs": 59.4,
+          "meanLuma": 132.6,
+          "checksum": 1465727796,
           "stressPasses": 0
         },
         {
-          "frameId": 315,
-          "at": 32191,
+          "frameId": 387,
+          "at": 32090,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 76.8,
-          "roundTripMs": 77.2,
+          "workerMs": 55.7,
+          "roundTripMs": 56.2,
+          "meanLuma": 132.6,
+          "checksum": 2122036904,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 388,
+          "at": 32169,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 67.6,
+          "roundTripMs": 68.1,
           "meanLuma": 132.46,
           "checksum": 497395127,
           "stressPasses": 0
         },
         {
-          "frameId": 316,
-          "at": 32295,
+          "frameId": 389,
+          "at": 32271,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 79.8,
-          "roundTripMs": 81.2,
+          "workerMs": 54.4,
+          "roundTripMs": 54.9,
           "meanLuma": 132.37,
           "checksum": 3399514560,
           "stressPasses": 0
         },
         {
-          "frameId": 317,
-          "at": 32399,
+          "frameId": 390,
+          "at": 32364,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 86,
-          "roundTripMs": 86.3,
+          "workerMs": 62.9,
+          "roundTripMs": 63.3,
           "meanLuma": 132.08,
           "checksum": 1593034767,
           "stressPasses": 0
         },
         {
-          "frameId": 318,
-          "at": 32491,
+          "frameId": 391,
+          "at": 32415,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 77.8,
-          "roundTripMs": 78.3,
-          "meanLuma": 132.24,
-          "checksum": 3089022296,
+          "workerMs": 47.1,
+          "roundTripMs": 47.5,
+          "meanLuma": 132.13,
+          "checksum": 1103740716,
           "stressPasses": 0
         },
         {
-          "frameId": 319,
-          "at": 32591,
+          "frameId": 392,
+          "at": 32486,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 77.6,
-          "roundTripMs": 78.1,
+          "workerMs": 51.5,
+          "roundTripMs": 52,
+          "meanLuma": 132.26,
+          "checksum": 3767044471,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 393,
+          "at": 32571,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 54.3,
+          "roundTripMs": 54.4,
           "meanLuma": 132.41,
           "checksum": 2198173422,
           "stressPasses": 0
         },
         {
-          "frameId": 320,
-          "at": 32689,
+          "frameId": 394,
+          "at": 32659,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 75.9,
-          "roundTripMs": 76.2,
+          "workerMs": 55.8,
+          "roundTripMs": 56.4,
           "meanLuma": 132.37,
           "checksum": 3636590106,
           "stressPasses": 0
         },
         {
-          "frameId": 321,
-          "at": 32798,
+          "frameId": 395,
+          "at": 32741,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 80.7,
-          "roundTripMs": 81.2,
-          "meanLuma": 132.06,
-          "checksum": 731267615,
+          "workerMs": 57.2,
+          "roundTripMs": 57.7,
+          "meanLuma": 132.21,
+          "checksum": 850996572,
           "stressPasses": 0
         },
         {
-          "frameId": 322,
-          "at": 32891,
+          "frameId": 396,
+          "at": 32850,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 77.4,
-          "roundTripMs": 77.9,
-          "meanLuma": 131.97,
-          "checksum": 2422736831,
+          "workerMs": 66.4,
+          "roundTripMs": 66.8,
+          "meanLuma": 132,
+          "checksum": 1933202880,
           "stressPasses": 0
         },
         {
-          "frameId": 323,
-          "at": 32995,
+          "frameId": 397,
+          "at": 32941,
           "sourceWidth": 640,
           "sourceHeight": 480,
           "procWidth": 480,
           "procHeight": 360,
           "tierStep": 4,
-          "workerMs": 81.2,
-          "roundTripMs": 81.7,
+          "workerMs": 72.5,
+          "roundTripMs": 73,
+          "meanLuma": 132.11,
+          "checksum": 745935875,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 398,
+          "at": 33068,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 100.1,
+          "roundTripMs": 100.7,
+          "meanLuma": 132.29,
+          "checksum": 2349097491,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 399,
+          "at": 33150,
+          "sourceWidth": 640,
+          "sourceHeight": 480,
+          "procWidth": 480,
+          "procHeight": 360,
+          "tierStep": 4,
+          "workerMs": 67,
+          "roundTripMs": 67.5,
           "meanLuma": 132.19,
-          "checksum": 1972987300,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 324,
-          "at": 33093,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 79.8,
-          "roundTripMs": 80.3,
-          "meanLuma": 132.33,
-          "checksum": 3950906252,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 325,
-          "at": 33192,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 78.1,
-          "roundTripMs": 78.4,
-          "meanLuma": 132.17,
-          "checksum": 1700451379,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 326,
-          "at": 33282,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 68.4,
-          "roundTripMs": 68.6,
-          "meanLuma": 132.08,
-          "checksum": 2546349440,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 327,
-          "at": 33385,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 71.5,
-          "roundTripMs": 72,
-          "meanLuma": 132.12,
-          "checksum": 3471429751,
-          "stressPasses": 0
-        },
-        {
-          "frameId": 328,
-          "at": 33495,
-          "sourceWidth": 640,
-          "sourceHeight": 480,
-          "procWidth": 480,
-          "procHeight": 360,
-          "tierStep": 4,
-          "workerMs": 81.7,
-          "roundTripMs": 82,
-          "meanLuma": 131.96,
-          "checksum": 4129701856,
+          "checksum": 2942333534,
           "stressPasses": 0
         }
       ],
@@ -2266,7 +2266,7 @@
         "windowFill": 15,
         "decisions": [
           {
-            "at": 819.6000000000931,
+            "at": 821.5,
             "direction": "UP",
             "fromStep": 1,
             "toStep": 0,
@@ -2274,14 +2274,14 @@
             "toLabel": "HIGH 1280x720@30",
             "fromTargetFps": 30,
             "toTargetFps": 30,
-            "medianWorkerMs": 5.3,
+            "medianWorkerMs": 4.7,
             "budgetMs": 33.33,
-            "deliveredFps": 31.15,
+            "deliveredFps": 29.62,
             "windowSize": 15,
-            "reason": "median worker latency 5.3 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+            "reason": "median worker latency 4.7 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
           },
           {
-            "at": 4985.399999999907,
+            "at": 4927.600000000093,
             "direction": "DOWN",
             "fromStep": 0,
             "toStep": 1,
@@ -2289,14 +2289,14 @@
             "toLabel": "BASIC 960x540@30",
             "fromTargetFps": 30,
             "toTargetFps": 30,
-            "medianWorkerMs": 140.1,
+            "medianWorkerMs": 100.7,
             "budgetMs": 33.33,
-            "deliveredFps": 15.6,
+            "deliveredFps": 16.35,
             "windowSize": 15,
-            "reason": "median worker latency 140.1 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+            "reason": "median worker latency 100.7 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
           },
           {
-            "at": 9095.399999999907,
+            "at": 8985,
             "direction": "DOWN",
             "fromStep": 1,
             "toStep": 2,
@@ -2304,14 +2304,14 @@
             "toLabel": "BASIC 960x540@20",
             "fromTargetFps": 30,
             "toTargetFps": 20,
-            "medianWorkerMs": 138.9,
+            "medianWorkerMs": 87.4,
             "budgetMs": 33.33,
-            "deliveredFps": 10.41,
+            "deliveredFps": 11.53,
             "windowSize": 15,
-            "reason": "median worker latency 138.9 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+            "reason": "median worker latency 87.4 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
           },
           {
-            "at": 13116.899999999907,
+            "at": 13061.699999999953,
             "direction": "DOWN",
             "fromStep": 2,
             "toStep": 3,
@@ -2319,14 +2319,14 @@
             "toLabel": "REDUCED 640x360@20",
             "fromTargetFps": 20,
             "toTargetFps": 20,
-            "medianWorkerMs": 132.2,
+            "medianWorkerMs": 104.5,
             "budgetMs": 50,
-            "deliveredFps": 7.97,
+            "deliveredFps": 8.55,
             "windowSize": 15,
-            "reason": "median worker latency 132.2 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+            "reason": "median worker latency 104.5 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
           },
           {
-            "at": 17159.399999999907,
+            "at": 17066.699999999953,
             "direction": "DOWN",
             "fromStep": 3,
             "toStep": 4,
@@ -2334,11 +2334,11 @@
             "toLabel": "REDUCED 640x360@15",
             "fromTargetFps": 20,
             "toTargetFps": 15,
-            "medianWorkerMs": 83.7,
+            "medianWorkerMs": 65.4,
             "budgetMs": 50,
-            "deliveredFps": 7.73,
+            "deliveredFps": 10.7,
             "windowSize": 15,
-            "reason": "median worker latency 83.7 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+            "reason": "median worker latency 65.4 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
           }
         ],
         "note": "Every decision carries the median worker latency and the budget it was compared against. The controller reads no clock of its own — only the timestamps on the samples it is given (§59)."
@@ -2348,227 +2348,227 @@
           {
             "index": 0,
             "stressed": false,
-            "startedAt": 248.1,
+            "startedAt": 235.5,
             "endedAt": null,
-            "observedMs": 33196,
-            "results": 328,
-            "meanFps": 9.85,
-            "maxGapMs": 218.8,
+            "observedMs": 32865.3,
+            "results": 399,
+            "meanFps": 12.11,
+            "maxGapMs": 170.4,
             "wasHidden": false,
-            "endReason": "open at 33556.1"
+            "endReason": "open at 33192.3"
           }
         ],
         "droppedSegments": 0,
-        "longestCleanMs": 33196,
+        "longestCleanMs": 32865.3,
         "note": "The timeline is cut wherever load injection was switched on or off. FRAME-001 reads the longest unstressed segment; stressed segments are measured and reported but never counted toward continuity."
       },
       "crossCheckDetail": {
         "count": 31,
         "unmatched": 0,
-        "medianAbsDifference": 1.18,
-        "maxAbsDifference": 1.675,
-        "sceneStdDev": 0.251,
-        "sceneRange": 0.959,
+        "medianAbsDifference": 1.178,
+        "maxAbsDifference": 1.668,
+        "sceneStdDev": 0.233,
+        "sceneRange": 0.916,
         "costMs": {
           "count": 31,
-          "mean": 2.01,
-          "p50": 1.4,
-          "p95": 3.4,
-          "min": 1.1,
-          "max": 3.7
+          "mean": 4.02,
+          "p50": 1.8,
+          "p95": 18.2,
+          "min": 1.2,
+          "max": 19.4
         },
         "recentSamples": [
           {
-            "frameId": 85,
-            "at": 8519.600000000093,
+            "frameId": 101,
+            "at": 8501,
             "mainMeanLuma": 131.187,
             "workerMeanLuma": 132.839,
             "absDifference": 1.6518229166666742,
-            "costMs": 3.3999999999068677
+            "costMs": 1.6000000000931323
           },
           {
-            "frameId": 92,
-            "at": 9613.200000000186,
-            "mainMeanLuma": 131.041,
-            "workerMeanLuma": 132.716,
-            "absDifference": 1.674612630208344,
-            "costMs": 1.1999999997206032
+            "frameId": 110,
+            "at": 9567.399999999907,
+            "mainMeanLuma": 130.986,
+            "workerMeanLuma": 132.631,
+            "absDifference": 1.6445149739583371,
+            "costMs": 1.6000000000931323
           },
           {
-            "frameId": 99,
-            "at": 10746.5,
-            "mainMeanLuma": 131.325,
-            "workerMeanLuma": 132.929,
-            "absDifference": 1.6045377604166902,
-            "costMs": 2.7000000001862645
+            "frameId": 119,
+            "at": 10583.600000000093,
+            "mainMeanLuma": 131.291,
+            "workerMeanLuma": 132.874,
+            "absDifference": 1.583248697916673,
+            "costMs": 1.7999999998137355
           },
           {
-            "frameId": 107,
-            "at": 11880.80000000028,
-            "mainMeanLuma": 131.191,
-            "workerMeanLuma": 132.741,
-            "absDifference": 1.5499348958333314,
-            "costMs": 1.099999999627471
-          },
-          {
-            "frameId": 114,
-            "at": 12981.30000000028,
-            "mainMeanLuma": 131,
-            "workerMeanLuma": 132.66,
-            "absDifference": 1.660208333333344,
-            "costMs": 2.6999999997206032
-          },
-          {
-            "frameId": 126,
-            "at": 14046.30000000028,
-            "mainMeanLuma": 131.155,
-            "workerMeanLuma": 132.324,
-            "absDifference": 1.1698509837962945,
-            "costMs": 2.7999999998137355
+            "frameId": 128,
+            "at": 11616.800000000047,
+            "mainMeanLuma": 130.673,
+            "workerMeanLuma": 132.327,
+            "absDifference": 1.6539029947916788,
+            "costMs": 1.6000000000931323
           },
           {
             "frameId": 137,
-            "at": 15046.600000000093,
-            "mainMeanLuma": 130.849,
-            "workerMeanLuma": 131.984,
-            "absDifference": 1.1351866319444355,
-            "costMs": 1.3999999999068677
+            "at": 12667.600000000093,
+            "mainMeanLuma": 131.347,
+            "workerMeanLuma": 132.955,
+            "absDifference": 1.6079524739583348,
+            "costMs": 1.5999999998603016
           },
           {
             "frameId": 150,
-            "at": 16147.80000000028,
-            "mainMeanLuma": 131.191,
-            "workerMeanLuma": 132.367,
-            "absDifference": 1.1758072916666436,
-            "costMs": 1.1000000000931323
+            "at": 13716.699999999953,
+            "mainMeanLuma": 131.304,
+            "workerMeanLuma": 132.459,
+            "absDifference": 1.154943576388888,
+            "costMs": 1.6999999999534339
           },
           {
-            "frameId": 159,
-            "at": 17179.700000000186,
-            "mainMeanLuma": 130.856,
-            "workerMeanLuma": 132.036,
-            "absDifference": 1.1798046874999955,
-            "costMs": 1.2999999998137355
+            "frameId": 164,
+            "at": 14783.399999999907,
+            "mainMeanLuma": 130.65,
+            "workerMeanLuma": 131.855,
+            "absDifference": 1.2047034143518545,
+            "costMs": 1.4000000001396984
           },
           {
-            "frameId": 169,
-            "at": 18180.399999999907,
-            "mainMeanLuma": 131.401,
-            "workerMeanLuma": 132.558,
-            "absDifference": 1.1571585648148357,
-            "costMs": 2.7000000001862645
+            "frameId": 179,
+            "at": 15834.199999999953,
+            "mainMeanLuma": 131.37,
+            "workerMeanLuma": 132.509,
+            "absDifference": 1.139241898148157,
+            "costMs": 1.6000000000931323
           },
           {
-            "frameId": 181,
-            "at": 19246.200000000186,
-            "mainMeanLuma": 130.607,
-            "workerMeanLuma": 131.712,
-            "absDifference": 1.1055034722222103,
-            "costMs": 3.6999999997206032
+            "frameId": 192,
+            "at": 16900.800000000047,
+            "mainMeanLuma": 131.126,
+            "workerMeanLuma": 132.293,
+            "absDifference": 1.1669169560185253,
+            "costMs": 1.3000000000465661
           },
           {
-            "frameId": 191,
-            "at": 20246.899999999907,
-            "mainMeanLuma": 131.271,
-            "workerMeanLuma": 132.462,
-            "absDifference": 1.1908145254629687,
-            "costMs": 1.1000000000931323
+            "frameId": 205,
+            "at": 17934.100000000093,
+            "mainMeanLuma": 130.977,
+            "workerMeanLuma": 132.075,
+            "absDifference": 1.0981047453703923,
+            "costMs": 17
           },
           {
-            "frameId": 202,
-            "at": 21246.899999999907,
-            "mainMeanLuma": 131.218,
-            "workerMeanLuma": 132.275,
-            "absDifference": 1.0566102430555588,
-            "costMs": 3.2000000001862645
+            "frameId": 218,
+            "at": 19000.699999999953,
+            "mainMeanLuma": 131.082,
+            "workerMeanLuma": 132.229,
+            "absDifference": 1.146718749999991,
+            "costMs": 1.6999999999534339
           },
           {
-            "frameId": 213,
-            "at": 22279.700000000186,
-            "mainMeanLuma": 130.834,
-            "workerMeanLuma": 132.019,
-            "absDifference": 1.1847656250000114,
-            "costMs": 1.2999999998137355
+            "frameId": 233,
+            "at": 20034.399999999907,
+            "mainMeanLuma": 131.061,
+            "workerMeanLuma": 132.18,
+            "absDifference": 1.1188252314814804,
+            "costMs": 1.6999999999534339
           },
           {
-            "frameId": 223,
-            "at": 23279.899999999907,
-            "mainMeanLuma": 131.054,
-            "workerMeanLuma": 132.208,
-            "absDifference": 1.1538223379629642,
-            "costMs": 2.900000000372529
+            "frameId": 247,
+            "at": 21100.699999999953,
+            "mainMeanLuma": 131.021,
+            "workerMeanLuma": 132.145,
+            "absDifference": 1.1248567708333326,
+            "costMs": 14.400000000139698
           },
           {
-            "frameId": 234,
-            "at": 24346.80000000028,
-            "mainMeanLuma": 130.962,
-            "workerMeanLuma": 132.13,
-            "absDifference": 1.1677835648148118,
-            "costMs": 1.2999999998137355
+            "frameId": 261,
+            "at": 22149.699999999953,
+            "mainMeanLuma": 131.227,
+            "workerMeanLuma": 132.392,
+            "absDifference": 1.1651793981481546,
+            "costMs": 1.9000000001396984
           },
           {
-            "frameId": 244,
-            "at": 25413.100000000093,
-            "mainMeanLuma": 130.764,
-            "workerMeanLuma": 131.857,
-            "absDifference": 1.0925188078703627,
-            "costMs": 2.7999999998137355
-          },
-          {
-            "frameId": 255,
-            "at": 26446.600000000093,
-            "mainMeanLuma": 131.455,
-            "workerMeanLuma": 132.663,
-            "absDifference": 1.2077531828703911,
-            "costMs": 1.2000000001862645
-          },
-          {
-            "frameId": 266,
-            "at": 27479.899999999907,
-            "mainMeanLuma": 130.886,
-            "workerMeanLuma": 131.994,
-            "absDifference": 1.1076056134259318,
-            "costMs": 1.1000000000931323
-          },
-          {
-            "frameId": 277,
-            "at": 28579.80000000028,
-            "mainMeanLuma": 131.248,
-            "workerMeanLuma": 132.351,
-            "absDifference": 1.103760127314814,
-            "costMs": 1.1999999997206032
+            "frameId": 275,
+            "at": 23216.300000000047,
+            "mainMeanLuma": 131.013,
+            "workerMeanLuma": 132.128,
+            "absDifference": 1.1145703125000068,
+            "costMs": 1.8000000000465661
           },
           {
             "frameId": 288,
-            "at": 29646.5,
-            "mainMeanLuma": 131.156,
-            "workerMeanLuma": 132.308,
-            "absDifference": 1.1526591435185196,
-            "costMs": 2.7000000001862645
+            "at": 24249.5,
+            "mainMeanLuma": 131.174,
+            "workerMeanLuma": 132.322,
+            "absDifference": 1.1484649884259284,
+            "costMs": 18.199999999953434
           },
           {
-            "frameId": 298,
-            "at": 30646.600000000093,
-            "mainMeanLuma": 130.733,
-            "workerMeanLuma": 131.866,
-            "absDifference": 1.132650462962971,
+            "frameId": 301,
+            "at": 25333.899999999907,
+            "mainMeanLuma": 130.965,
+            "workerMeanLuma": 132.052,
+            "absDifference": 1.0865538194444468,
+            "costMs": 1.8000000000465661
+          },
+          {
+            "frameId": 312,
+            "at": 26400.600000000093,
+            "mainMeanLuma": 131.489,
+            "workerMeanLuma": 132.694,
+            "absDifference": 1.2048755787037067,
+            "costMs": 19.399999999906868
+          },
+          {
+            "frameId": 325,
+            "at": 27449.699999999953,
+            "mainMeanLuma": 130.721,
+            "workerMeanLuma": 131.856,
+            "absDifference": 1.1356741898148073,
+            "costMs": 1.6999999999534339
+          },
+          {
+            "frameId": 339,
+            "at": 28467.399999999907,
+            "mainMeanLuma": 131.237,
+            "workerMeanLuma": 132.356,
+            "absDifference": 1.1188122106481444,
+            "costMs": 3.800000000046566
+          },
+          {
+            "frameId": 353,
+            "at": 29516,
+            "mainMeanLuma": 130.919,
+            "workerMeanLuma": 132.128,
+            "absDifference": 1.208855613425925,
             "costMs": 1.3999999999068677
           },
           {
-            "frameId": 311,
-            "at": 31712.899999999907,
-            "mainMeanLuma": 131.464,
-            "workerMeanLuma": 132.6,
-            "absDifference": 1.1366189236111097,
-            "costMs": 1.2000000001862645
+            "frameId": 366,
+            "at": 30567.199999999953,
+            "mainMeanLuma": 130.878,
+            "workerMeanLuma": 131.997,
+            "absDifference": 1.1187832754629596,
+            "costMs": 3.800000000046566
           },
           {
-            "frameId": 321,
-            "at": 32713.100000000093,
-            "mainMeanLuma": 130.928,
-            "workerMeanLuma": 132.062,
-            "absDifference": 1.1333969907407493,
-            "costMs": 3.2999999998137355
+            "frameId": 381,
+            "at": 31600.600000000093,
+            "mainMeanLuma": 131.566,
+            "workerMeanLuma": 132.731,
+            "absDifference": 1.1649913194444252,
+            "costMs": 3.8999999999068677
+          },
+          {
+            "frameId": 394,
+            "at": 32600.899999999907,
+            "mainMeanLuma": 131.187,
+            "workerMeanLuma": 132.365,
+            "absDifference": 1.178155381944464,
+            "costMs": 1.2000000001862645
           }
         ],
         "note": "Each pair is one video frame measured twice: on the main thread with an independent 64x48 readback, and in the worker on the pixels the pipeline actually delivered. The readback costs what §H.1 measured, which is why it runs at 1 Hz and is excluded from the pipeline UI cost in FRAME-005."
@@ -2624,15 +2624,15 @@
       "note": "Frames declined by rate pacing (pacedOut) are the scheduler working as designed and are not drops. Frames declined because the worker was busy (backpressured) are deliberate too. Only `lost` counts frames that were handed over and never came back, and only that is held against FRAME-001."
     },
     "flow": {
-      "flowFrames": 287,
-      "trackedFrames": 285,
+      "flowFrames": 357,
+      "trackedFrames": 355,
       "population": {
-        "tracked": 151,
-        "redetected": 60,
-        "total": 211,
-        "cumulativeTracked": 49330,
-        "cumulativeRedetected": 24948,
-        "maxTrackLength": 57
+        "tracked": 159,
+        "redetected": 81,
+        "total": 240,
+        "cumulativeTracked": 68173,
+        "cumulativeRedetected": 26168,
+        "maxTrackLength": 79
       },
       "byMotion": {
         "STATIC": {
@@ -2648,26 +2648,26 @@
           "degradedFrames": 0
         },
         "SLOW": {
-          "frames": 233,
-          "framesSeen": 233,
-          "medianSurvival": 0.7054,
-          "medianDisplacementPx": 4.775,
-          "medianFbErrorPx": 0.011,
-          "medianTracked": 161,
-          "medianCellSpread": 10.884,
-          "medianRejectFraction": 0.2264,
+          "frames": 328,
+          "framesSeen": 328,
+          "medianSurvival": 0.7802,
+          "medianDisplacementPx": 3.182,
+          "medianFbErrorPx": 0,
+          "medianTracked": 184,
+          "medianCellSpread": 8.282,
+          "medianRejectFraction": 0.1575,
           "lostFrames": 0,
           "degradedFrames": 0
         },
         "FAST": {
-          "frames": 52,
-          "framesSeen": 52,
-          "medianSurvival": 0.5444,
-          "medianDisplacementPx": 10.595,
+          "frames": 27,
+          "framesSeen": 27,
+          "medianSurvival": 0.6638,
+          "medianDisplacementPx": 6.358,
           "medianFbErrorPx": 0,
-          "medianTracked": 197,
-          "medianCellSpread": 12.7,
-          "medianRejectFraction": 0.3933,
+          "medianTracked": 243,
+          "medianCellSpread": 15.902,
+          "medianRejectFraction": 0.281,
           "lostFrames": 0,
           "degradedFrames": 3
         },
@@ -2686,26 +2686,26 @@
         "INDETERMINATE": 2
       },
       "forwardBackward": {
-        "acceptable": 45074,
-        "reduced": 4256,
-        "rejected": 17841,
-        "medianPx": 0.01
+        "acceptable": 64172,
+        "reduced": 4001,
+        "rejected": 17757,
+        "medianPx": 0
       },
       "shiftCrossCheck": {
-        "samples": 285,
-        "medianDisagreementPx": 0.778,
+        "samples": 355,
+        "medianDisagreementPx": 0.819,
         "medianMeasuredShiftPx": 4,
-        "medianTrackedDisplacementPx": 4.778,
-        "agreementRate": 0.9684,
+        "medianTrackedDisplacementPx": 4.772,
+        "agreementRate": 0.8704,
         "recent": [
           {
-            "trackedDisplacementPx": 4.772,
+            "trackedDisplacementPx": 3.18,
             "sceneShiftPx": 4,
-            "disagreementPx": 0.772,
+            "disagreementPx": 0.82,
             "tolerancePx": 2,
             "agreed": true,
-            "confidence": 1.706,
-            "trackedCount": 143,
+            "confidence": 1.863,
+            "trackedCount": 190,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2716,7 +2716,7 @@
             "tolerancePx": 2,
             "agreed": true,
             "confidence": 1.897,
-            "trackedCount": 187,
+            "trackedCount": 200,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2727,7 +2727,7 @@
             "tolerancePx": 2,
             "agreed": true,
             "confidence": 1.863,
-            "trackedCount": 182,
+            "trackedCount": 193,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2738,18 +2738,18 @@
             "tolerancePx": 2,
             "agreed": true,
             "confidence": 1.851,
-            "trackedCount": 185,
+            "trackedCount": 197,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
           {
-            "trackedDisplacementPx": 3.18,
+            "trackedDisplacementPx": 3.181,
             "sceneShiftPx": 4,
-            "disagreementPx": 0.82,
+            "disagreementPx": 0.819,
             "tolerancePx": 2,
             "agreed": true,
             "confidence": 1.868,
-            "trackedCount": 189,
+            "trackedCount": 203,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2760,7 +2760,161 @@
             "tolerancePx": 2,
             "agreed": true,
             "confidence": 1.856,
-            "trackedCount": 192,
+            "trackedCount": 206,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.182,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.818,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.87,
+            "trackedCount": 203,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 1.622,
+            "sceneShiftPx": 4,
+            "disagreementPx": 2.378,
+            "tolerancePx": 2,
+            "agreed": false,
+            "confidence": 3.126,
+            "trackedCount": 231,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.776,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.776,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.693,
+            "trackedCount": 154,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.18,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.82,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.886,
+            "trackedCount": 174,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.181,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.819,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.859,
+            "trackedCount": 179,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.772,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.772,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.701,
+            "trackedCount": 157,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.18,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.82,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.865,
+            "trackedCount": 177,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.773,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.773,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.714,
+            "trackedCount": 152,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 28.576,
+            "sceneShiftPx": 24.331050121192877,
+            "disagreementPx": 4.245,
+            "tolerancePx": 8.516,
+            "agreed": true,
+            "confidence": 1.475,
+            "trackedCount": 75,
+            "sceneDx0": 4,
+            "sceneDy0": 24
+          },
+          {
+            "trackedDisplacementPx": 1.689,
+            "sceneShiftPx": 4,
+            "disagreementPx": 2.311,
+            "tolerancePx": 2,
+            "agreed": false,
+            "confidence": 2.95,
+            "trackedCount": 207,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.181,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.819,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.856,
+            "trackedCount": 198,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.181,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.819,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.813,
+            "trackedCount": 201,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.797,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.797,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.719,
+            "trackedCount": 185,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 3.182,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.818,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.887,
+            "trackedCount": 198,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2770,96 +2924,8 @@
             "disagreementPx": 0.77,
             "tolerancePx": 2,
             "agreed": true,
-            "confidence": 1.697,
-            "trackedCount": 155,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.777,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.777,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.693,
-            "trackedCount": 151,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.771,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.771,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.711,
-            "trackedCount": 156,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.775,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.775,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.699,
-            "trackedCount": 148,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.769,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.769,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.716,
-            "trackedCount": 148,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.775,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.775,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.714,
-            "trackedCount": 159,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 28.93,
-            "sceneShiftPx": 24.331050121192877,
-            "disagreementPx": 4.599,
-            "tolerancePx": 8.516,
-            "agreed": true,
-            "confidence": 1.475,
-            "trackedCount": 73,
-            "sceneDx0": 4,
-            "sceneDy0": 24
-          },
-          {
-            "trackedDisplacementPx": 3.181,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.819,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.829,
-            "trackedCount": 167,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.781,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.781,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.682,
-            "trackedCount": 163,
+            "confidence": 1.694,
+            "trackedCount": 142,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2869,19 +2935,8 @@
             "disagreementPx": 0.78,
             "tolerancePx": 2,
             "agreed": true,
-            "confidence": 1.719,
-            "trackedCount": 158,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.777,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.777,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.697,
-            "trackedCount": 152,
+            "confidence": 1.687,
+            "trackedCount": 170,
             "sceneDx0": -4,
             "sceneDy0": 0
           },
@@ -2889,76 +2944,21 @@
             "trackedDisplacementPx": 4.781,
             "sceneShiftPx": 4,
             "disagreementPx": 0.781,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.706,
-            "trackedCount": 165,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.777,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.777,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.698,
-            "trackedCount": 166,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.78,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.78,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.697,
-            "trackedCount": 148,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.777,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.777,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.703,
-            "trackedCount": 144,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.779,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.779,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.698,
-            "trackedCount": 148,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.778,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.778,
-            "tolerancePx": 2,
-            "agreed": true,
-            "confidence": 1.701,
-            "trackedCount": 149,
-            "sceneDx0": -4,
-            "sceneDy0": 0
-          },
-          {
-            "trackedDisplacementPx": 4.783,
-            "sceneShiftPx": 4,
-            "disagreementPx": 0.783,
             "tolerancePx": 2,
             "agreed": true,
             "confidence": 1.685,
-            "trackedCount": 151,
+            "trackedCount": 162,
+            "sceneDx0": -4,
+            "sceneDy0": 0
+          },
+          {
+            "trackedDisplacementPx": 4.776,
+            "sceneShiftPx": 4,
+            "disagreementPx": 0.776,
+            "tolerancePx": 2,
+            "agreed": true,
+            "confidence": 1.7,
+            "trackedCount": 159,
             "sceneDx0": -4,
             "sceneDy0": 0
           }
@@ -2977,232 +2977,232 @@
       "occlusions": [],
       "state": {
         "current": "TRACKING",
-        "reason": "151 of 211 points carried from the previous frame. GOOD is not claimed: inlierRatio — §14 geometric verification (Phase 5) has not been written; reprojectionError — §15 pose (Phase 6) has not been written; features 211 < 300",
+        "reason": "159 of 240 points carried from the previous frame. GOOD is not claimed: inlierRatio — §14 geometric verification (Phase 5) has not been written; reprojectionError — §15 pose (Phase 6) has not been written; features 240 < 300",
         "goodBlockedBy": [
           "inlierRatio — §14 geometric verification (Phase 5) has not been written",
           "reprojectionError — §15 pose (Phase 6) has not been written",
-          "features 211 < 300"
+          "features 240 < 300"
         ],
         "frames": {
           "READY": 1,
-          "TRACKING": 282,
+          "TRACKING": 352,
           "DEGRADED": 4
         },
         "mismatches": 0,
         "geometryChanges": 1
       },
       "refill": {
-        "medianOffered": 333,
-        "medianDeclinedTooClose": 235,
-        "medianDeclinedOutOfReach": 39,
-        "cumulativeRedetected": 24948,
+        "medianOffered": 335,
+        "medianDeclinedTooClose": 249,
+        "medianDeclinedOutOfReach": 38,
+        "cumulativeRedetected": 26168,
         "note": "What §11's refill produced each frame and why each point was or was not admitted. Declined-too-close means the point is already being tracked, which is a healthy tracker rather than a failing one; declined-out-of-reach means it sat where the solver's window cannot cover it. Without the split, a population below §11's minimum cannot be told apart from a detector that found little."
       },
       "cost": {
-        "meanFlowMs": 56.848,
-        "meanShiftMs": 3.742,
-        "meanTrackedPoints": 171.9,
-        "samples": 287
+        "meanFlowMs": 41.246,
+        "meanShiftMs": 3.028,
+        "meanTrackedPoints": 191,
+        "samples": 357
       },
       "lastRecordSamples": [
         {
-          "id": 21553,
-          "x": 113.95038190035064,
-          "y": 88.61651200061597,
-          "x0": 227.90076380070127,
-          "y0": 177.23302400123194,
-          "cornerStrength": 37261.63671875,
-          "age": 55,
-          "trackLength": 56,
-          "forwardBackwardError": 0.066,
+          "id": 22870,
+          "x": 125.5024696371543,
+          "y": 98.1619477419341,
+          "x0": 251.0049392743086,
+          "y0": 196.3238954838682,
+          "cornerStrength": 36121.234375,
+          "age": 65,
+          "trackLength": 66,
+          "forwardBackwardError": 0.007,
           "reprojectionError": null,
-          "qualityScore": 0.5354447842249344,
-          "cell": 19
+          "qualityScore": 0.5047378979352599,
+          "cell": 28
         },
         {
-          "id": 22787,
-          "x": 163.46709411877563,
-          "y": 126.66777369063531,
-          "x0": 326.93418823755127,
-          "y0": 253.33554738127063,
-          "cornerStrength": 31666.736328125,
-          "age": 35,
-          "trackLength": 36,
+          "id": 24322,
+          "x": 171.90336635207944,
+          "y": 57.602004163027075,
+          "x0": 343.8067327041589,
+          "y0": 115.20400832605415,
+          "cornerStrength": 30376.365234375,
+          "age": 36,
+          "trackLength": 37,
           "forwardBackwardError": 0.002,
           "reprojectionError": null,
-          "qualityScore": 0.5063262431797345,
-          "cell": 37
-        },
-        {
-          "id": 24067,
-          "x": 190.17782828189266,
-          "y": 39.914252579995676,
-          "x0": 380.3556565637853,
-          "y0": 79.82850515999135,
-          "cornerStrength": 25624.361328125,
-          "age": 13,
-          "trackLength": 14,
-          "forwardBackwardError": 0.006,
-          "reprojectionError": null,
-          "qualityScore": 0.4010424014356915,
-          "cell": 14
-        },
-        {
-          "id": 24194,
-          "x": 194.9969533864023,
-          "y": 98.63152447373764,
-          "x0": 389.9939067728046,
-          "y0": 197.26304894747528,
-          "cornerStrength": 30219.658203125,
-          "age": 11,
-          "trackLength": 12,
-          "forwardBackwardError": 0.008,
-          "reprojectionError": null,
-          "qualityScore": 0.459891918975033,
-          "cell": 30
-        },
-        {
-          "id": 24248,
-          "x": 124.095168651318,
-          "y": 76.77259155750232,
-          "x0": 248.190337302636,
-          "y0": 153.54518311500465,
-          "cornerStrength": 21277.482421875,
-          "age": 11,
-          "trackLength": 12,
-          "forwardBackwardError": 2.744,
-          "reprojectionError": null,
-          "qualityScore": 0.3238071773075755,
-          "cell": 20
-        },
-        {
-          "id": 24369,
-          "x": 170.73759396785073,
-          "y": 42.9713733073916,
-          "x0": 341.47518793570146,
-          "y0": 85.9427466147832,
-          "cornerStrength": 22335.330078125,
-          "age": 9,
-          "trackLength": 10,
-          "forwardBackwardError": 0.008,
-          "reprojectionError": null,
-          "qualityScore": 0.36524263263525064,
+          "qualityScore": 0.46794458271733347,
           "cell": 13
         },
         {
-          "id": 24754,
-          "x": 220.23459764880786,
-          "y": 75.71991945331035,
-          "x0": 440.4691952976157,
-          "y0": 151.4398389066207,
-          "cornerStrength": 20460.826171875,
-          "age": 3,
-          "trackLength": 4,
-          "forwardBackwardError": 0.017,
+          "id": 25520,
+          "x": 63.20052748117332,
+          "y": 93.45893066541461,
+          "x0": 126.40105496234663,
+          "y0": 186.91786133082923,
+          "cornerStrength": 26305.0234375,
+          "age": 10,
+          "trackLength": 11,
+          "forwardBackwardError": 0.004,
           "reprojectionError": null,
-          "qualityScore": 0.33638203120999993,
-          "cell": 23
+          "qualityScore": 0.43081660774100483,
+          "cell": 26
         },
         {
-          "id": 24839,
-          "x": 59.60216687815057,
-          "y": 41.009470323332835,
-          "x0": 119.20433375630114,
-          "y0": 82.01894064666567,
-          "cornerStrength": 57788.12890625,
-          "age": 1,
-          "trackLength": 2,
-          "forwardBackwardError": 1.648,
+          "id": 25627,
+          "x": 156.5034537515237,
+          "y": 91.199797293542,
+          "x0": 313.0069075030474,
+          "y0": 182.399594587084,
+          "cornerStrength": 25726.833984375,
+          "age": 9,
+          "trackLength": 10,
+          "forwardBackwardError": 0.012,
           "reprojectionError": null,
-          "qualityScore": 0.9455034445822089,
-          "cell": 9
+          "qualityScore": 0.3915187581109973,
+          "cell": 29
         },
         {
-          "id": 24865,
-          "x": 213.76454934039936,
-          "y": 121.16244184305559,
-          "x0": 427.5290986807987,
-          "y0": 242.32488368611118,
-          "cornerStrength": 33641.9921875,
-          "age": 1,
-          "trackLength": 2,
+          "id": 25653,
+          "x": 155.497305356984,
+          "y": 79.25453838193498,
+          "x0": 310.994610713968,
+          "y0": 158.50907676386996,
+          "cornerStrength": 21315.158203125,
+          "age": 9,
+          "trackLength": 10,
+          "forwardBackwardError": 0.019,
+          "reprojectionError": null,
+          "qualityScore": 0.3243805387672414,
+          "cell": 21
+        },
+        {
+          "id": 25864,
+          "x": 218.99981867357258,
+          "y": 24.85100501460267,
+          "x0": 437.99963734714515,
+          "y0": 49.70201002920534,
+          "cornerStrength": 28053.9765625,
+          "age": 4,
+          "trackLength": 5,
           "forwardBackwardError": 0.003,
           "reprojectionError": null,
-          "qualityScore": 0.5504351862212447,
-          "cell": 39
+          "qualityScore": 0.4423815134691648,
+          "cell": 7
         },
         {
-          "id": 24896,
-          "x": 119,
-          "y": 171,
-          "x0": 238,
-          "y0": 342,
-          "cornerStrength": 47204.88671875,
+          "id": 26004,
+          "x": 64.9133227640308,
+          "y": 82.96041755790453,
+          "x0": 129.8266455280616,
+          "y0": 165.92083511580907,
+          "cornerStrength": 23794.6484375,
+          "age": 2,
+          "trackLength": 3,
+          "forwardBackwardError": 1.285,
+          "reprojectionError": null,
+          "qualityScore": 0.3633140019170133,
+          "cell": 18
+        },
+        {
+          "id": 26035,
+          "x": 67.54853826378628,
+          "y": 46.59737124697253,
+          "x0": 135.09707652757257,
+          "y0": 93.19474249394506,
+          "cornerStrength": 57334.96484375,
+          "age": 1,
+          "trackLength": 2,
+          "forwardBackwardError": 2.39,
+          "reprojectionError": null,
+          "qualityScore": 0.8491976210047149,
+          "cell": 10
+        },
+        {
+          "id": 26089,
+          "x": 56,
+          "y": 10,
+          "x0": 112,
+          "y0": 20,
+          "cornerStrength": 67076.78125,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 0.7205252486847361,
-          "cell": 43
+          "qualityScore": 1,
+          "cell": 1
         },
         {
-          "id": 24913,
-          "x": 111,
-          "y": 168,
-          "x0": 222,
-          "y0": 336,
-          "cornerStrength": 29074.875,
+          "id": 26109,
+          "x": 52,
+          "y": 173,
+          "x0": 104,
+          "y0": 346,
+          "cornerStrength": 35720.50390625,
           "age": 0,
           "trackLength": 1,
           "forwardBackwardError": null,
           "reprojectionError": null,
-          "qualityScore": 0.44379264512738476,
-          "cell": 43
-        },
-        {
-          "id": 24931,
-          "x": 34,
-          "y": 158,
-          "x0": 68,
-          "y0": 316,
-          "cornerStrength": 24155.998046875,
-          "age": 0,
-          "trackLength": 1,
-          "forwardBackwardError": null,
-          "reprojectionError": null,
-          "qualityScore": 0.36871196415855945,
+          "qualityScore": 0.5325315850459763,
           "cell": 41
+        },
+        {
+          "id": 26129,
+          "x": 119,
+          "y": 81,
+          "x0": 238,
+          "y0": 162,
+          "cornerStrength": 28935.421875,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.4313776232135308,
+          "cell": 19
+        },
+        {
+          "id": 26149,
+          "x": 78,
+          "y": 166,
+          "x0": 156,
+          "y0": 332,
+          "cornerStrength": 18737.484375,
+          "age": 0,
+          "trackLength": 1,
+          "forwardBackwardError": null,
+          "reprojectionError": null,
+          "qualityScore": 0.2793438267327205,
+          "cell": 42
         }
       ],
       "note": "Motion classes are measured from the image by an integer SAD translation search on the pyramid’s top level, which shares no code with the Lucas-Kanade solver and never reads the feature list. `tracked` counts only points carried forward from the previous frame; `redetected` counts what §11’s refill added, and the two are never summed into a survival figure — a refill can top the population back up while the tracker is losing everything."
     },
     "verification": {
-      "verifiedFrames": 280,
-      "judgedFrames": 230,
+      "verifiedFrames": 350,
+      "judgedFrames": 292,
       "current": {
         "state": "UNVERIFIED",
-        "reason": "25 inlier(s), below v3 §14's minimum of 30",
+        "reason": "29 inlier(s), below v3 §14's minimum of 30",
         "goodBlockedBy": [
-          "inliers 25 <= 100"
+          "inliers 29 <= 100"
         ],
-        "correspondences": 27,
-        "inliers": 25,
-        "inlierRatio": 0.9259,
-        "baselinePx": 84.104,
+        "correspondences": 33,
+        "inliers": 29,
+        "inlierRatio": 0.8788,
+        "baselinePx": 60.946,
         "model": null,
         "planar": false,
-        "anchorAge": 22
+        "anchorAge": 19
       },
       "overRun": {
-        "medianCorrespondences": 88.5,
-        "medianInliers": 71,
-        "medianInlierRatio": 0.9732,
-        "medianBaselinePx": 52.23,
-        "medianSpreadPx": 87.96,
+        "medianCorrespondences": 96,
+        "medianInliers": 73,
+        "medianInlierRatio": 0.969,
+        "medianBaselinePx": 54.03,
+        "medianSpreadPx": 90.77,
         "stateFrames": {
-          "UNVERIFIED": 83,
-          "GOOD": 62,
-          "USABLE": 135
+          "UNVERIFIED": 86,
+          "GOOD": 92,
+          "USABLE": 172
         },
         "stateMismatches": 0,
         "reAnchors": 14,
@@ -3211,16 +3211,18 @@
       },
       "byTexture": {
         "TEXTURE_RICH": {
-          "frames": 280,
-          "judged": 230,
-          "medianCorrespondences": 88.5,
-          "medianInliers": 71,
-          "medianInlierRatio": 0.9732,
-          "medianBaselinePx": 52.23,
-          "medianSpreadPx": 87.96,
-          "unverified": 83,
-          "usable": 135,
-          "good": 62
+          "frames": 350,
+          "judged": 292,
+          "medianCorrespondences": 96,
+          "medianInliers": 73,
+          "medianInlierRatio": 0.969,
+          "medianBaselinePx": 54.03,
+          "medianSpreadPx": 90.77,
+          "unverified": 86,
+          "usable": 172,
+          "good": 92,
+          "verdictOnThinEvidence": 0,
+          "goodOnThinEvidence": 0
         },
         "TEXTURE_POOR": {
           "frames": 0,
@@ -3232,290 +3234,312 @@
           "medianSpreadPx": -1,
           "unverified": 0,
           "usable": 0,
-          "good": 0
+          "good": 0,
+          "verdictOnThinEvidence": 0,
+          "goodOnThinEvidence": 0
         }
       },
       "injectedOutliers": {
-        "samples": 46,
+        "samples": 45,
         "medianRecall": 1,
-        "medianCleanRejection": 0.0248,
-        "medianSurvivingInliers": 55.5,
+        "medianCleanRejection": 0.0388,
+        "medianSurvivingInliers": 72,
         "recent": [
           {
-            "injected": 20,
-            "clean": 47,
-            "injectedRejected": 20,
-            "cleanRejected": 0,
+            "correspondences": 69,
+            "injected": 21,
+            "clean": 48,
+            "injectedRejected": 21,
+            "cleanRejected": 1,
             "injectedRecall": 1,
-            "cleanRejectionRate": 0,
+            "cleanRejectionRate": 0.0208,
             "survivingInliers": 47,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 1393936047,
-            "at": 22754.100000000093
+            "seed": 2448704325,
+            "at": 20181.399999999907
           },
           {
-            "injected": 20,
-            "clean": 45,
-            "injectedRejected": 20,
+            "correspondences": 63,
+            "injected": 19,
+            "clean": 44,
+            "injectedRejected": 19,
+            "cleanRejected": 3,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0682,
+            "survivingInliers": 41,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3954235255,
+            "at": 22802.100000000093
+          },
+          {
+            "correspondences": 59,
+            "injected": 18,
+            "clean": 41,
+            "injectedRejected": 18,
             "cleanRejected": 1,
             "injectedRecall": 1,
-            "cleanRejectionRate": 0.0222,
-            "survivingInliers": 44,
-            "state": "USABLE",
-            "displacementPx": 25,
-            "seed": 1953898175,
-            "at": 22852.200000000186
-          },
-          {
-            "injected": 19,
-            "clean": 43,
-            "injectedRejected": 19,
-            "cleanRejected": 0,
-            "injectedRecall": 1,
-            "cleanRejectionRate": 0,
-            "survivingInliers": 43,
-            "state": "USABLE",
-            "displacementPx": 25,
-            "seed": 2870966781,
-            "at": 22949.700000000186
-          },
-          {
-            "injected": 18,
-            "clean": 42,
-            "injectedRejected": 18,
-            "cleanRejected": 2,
-            "injectedRecall": 1,
-            "cleanRejectionRate": 0.0476,
+            "cleanRejectionRate": 0.0244,
             "survivingInliers": 40,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 4056687318,
-            "at": 23051.899999999907
+            "seed": 420640859,
+            "at": 22881.399999999907
           },
           {
-            "injected": 8,
-            "clean": 17,
-            "injectedRejected": 7,
-            "cleanRejected": 1,
-            "injectedRecall": 0.875,
-            "cleanRejectionRate": 0.0588,
-            "survivingInliers": 17,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 2986146282,
-            "at": 25709.100000000093
-          },
-          {
-            "injected": 8,
-            "clean": 17,
-            "injectedRejected": 7,
-            "cleanRejected": 1,
-            "injectedRecall": 0.875,
-            "cleanRejectionRate": 0.0588,
-            "survivingInliers": 17,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 1560052732,
-            "at": 25800.200000000186
-          },
-          {
-            "injected": 7,
-            "clean": 17,
-            "injectedRejected": 7,
-            "cleanRejected": 0,
-            "injectedRecall": 1,
-            "cleanRejectionRate": 0,
-            "survivingInliers": 17,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 3810917383,
-            "at": 25906.30000000028
-          },
-          {
-            "injected": 7,
-            "clean": 16,
-            "injectedRejected": 2,
-            "cleanRejected": 6,
-            "injectedRecall": 0.2857,
-            "cleanRejectionRate": 0.375,
-            "survivingInliers": 15,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 3096235741,
-            "at": 26004.700000000186
-          },
-          {
-            "injected": 7,
-            "clean": 16,
-            "injectedRejected": 6,
+            "correspondences": 58,
+            "injected": 17,
+            "clean": 41,
+            "injectedRejected": 17,
             "cleanRejected": 3,
-            "injectedRecall": 0.8571,
-            "cleanRejectionRate": 0.1875,
-            "survivingInliers": 14,
-            "state": "UNVERIFIED",
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0732,
+            "survivingInliers": 38,
+            "state": "USABLE",
             "displacementPx": 25,
-            "seed": 1160360830,
-            "at": 26126.399999999907
+            "seed": 3161137429,
+            "at": 22977.399999999907
           },
           {
+            "correspondences": 56,
+            "injected": 17,
+            "clean": 39,
+            "injectedRejected": 17,
+            "cleanRejected": 3,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0769,
+            "survivingInliers": 36,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 3906385445,
+            "at": 23062.399999999907
+          },
+          {
+            "correspondences": 55,
             "injected": 17,
             "clean": 38,
             "injectedRejected": 17,
-            "cleanRejected": 1,
+            "cleanRejected": 3,
             "injectedRecall": 1,
-            "cleanRejectionRate": 0.0263,
-            "survivingInliers": 37,
+            "cleanRejectionRate": 0.0789,
+            "survivingInliers": 35,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 4285559778,
-            "at": 28653.600000000093
+            "seed": 719620190,
+            "at": 23125
           },
           {
+            "correspondences": 54,
+            "injected": 16,
+            "clean": 38,
+            "injectedRejected": 16,
+            "cleanRejected": 2,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0526,
+            "survivingInliers": 36,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 213316940,
+            "at": 23206.199999999953
+          },
+          {
+            "correspondences": 54,
+            "injected": 16,
+            "clean": 38,
+            "injectedRejected": 16,
+            "cleanRejected": 3,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.0789,
+            "survivingInliers": 35,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 2757914223,
+            "at": 28771.399999999907
+          },
+          {
+            "correspondences": 50,
             "injected": 15,
-            "clean": 36,
+            "clean": 35,
             "injectedRejected": 15,
             "cleanRejected": 0,
             "injectedRecall": 1,
             "cleanRejectionRate": 0,
-            "survivingInliers": 36,
+            "survivingInliers": 35,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 3572689477,
-            "at": 28750.80000000028
+            "seed": 1943160613,
+            "at": 28867
           },
           {
-            "injected": 63,
-            "clean": 148,
-            "injectedRejected": 63,
+            "correspondences": 49,
+            "injected": 15,
+            "clean": 34,
+            "injectedRejected": 15,
             "cleanRejected": 0,
             "injectedRecall": 1,
             "cleanRejectionRate": 0,
-            "survivingInliers": 148,
-            "state": "UNVERIFIED",
+            "survivingInliers": 34,
+            "state": "USABLE",
             "displacementPx": 25,
-            "seed": 3450772777,
-            "at": 28841.600000000093
+            "seed": 1058174457,
+            "at": 28947.199999999953
           },
           {
+            "correspondences": 232,
+            "injected": 70,
+            "clean": 162,
+            "injectedRejected": 70,
+            "cleanRejected": 0,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0,
+            "survivingInliers": 162,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 4143025158,
+            "at": 29025.300000000047
+          },
+          {
+            "correspondences": 187,
+            "injected": 56,
+            "clean": 131,
+            "injectedRejected": 52,
+            "cleanRejected": 4,
+            "injectedRecall": 0.9286,
+            "cleanRejectionRate": 0.0305,
+            "survivingInliers": 131,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 1728525884,
+            "at": 29086.399999999907
+          },
+          {
+            "correspondences": 175,
+            "injected": 53,
+            "clean": 122,
+            "injectedRejected": 49,
+            "cleanRejected": 4,
+            "injectedRecall": 0.9245,
+            "cleanRejectionRate": 0.0328,
+            "survivingInliers": 122,
+            "state": "GOOD",
+            "displacementPx": 25,
+            "seed": 402443303,
+            "at": 29146.5
+          },
+          {
+            "correspondences": 164,
+            "injected": 49,
+            "clean": 115,
+            "injectedRejected": 44,
+            "cleanRejected": 2,
+            "injectedRecall": 0.898,
+            "cleanRejectionRate": 0.0174,
+            "survivingInliers": 118,
+            "state": "GOOD",
+            "displacementPx": 25,
+            "seed": 3155923143,
+            "at": 29225.100000000093
+          },
+          {
+            "correspondences": 186,
             "injected": 56,
             "clean": 130,
             "injectedRejected": 52,
-            "cleanRejected": 6,
+            "cleanRejected": 1,
             "injectedRecall": 0.9286,
-            "cleanRejectionRate": 0.0462,
-            "survivingInliers": 128,
-            "state": "UNVERIFIED",
+            "cleanRejectionRate": 0.0077,
+            "survivingInliers": 133,
+            "state": "GOOD",
             "displacementPx": 25,
-            "seed": 2907690134,
-            "at": 28922.5
+            "seed": 2321042701,
+            "at": 31779.699999999953
           },
           {
-            "injected": 44,
-            "clean": 101,
+            "correspondences": 137,
+            "injected": 41,
+            "clean": 96,
+            "injectedRejected": 41,
+            "cleanRejected": 15,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.1563,
+            "survivingInliers": 81,
+            "state": "UNVERIFIED",
+            "displacementPx": 25,
+            "seed": 2164526251,
+            "at": 31864.800000000047
+          },
+          {
+            "correspondences": 134,
+            "injected": 40,
+            "clean": 94,
+            "injectedRejected": 40,
+            "cleanRejected": 15,
+            "injectedRecall": 1,
+            "cleanRejectionRate": 0.1596,
+            "survivingInliers": 79,
+            "state": "USABLE",
+            "displacementPx": 25,
+            "seed": 1254792076,
+            "at": 31933.300000000047
+          },
+          {
+            "correspondences": 131,
+            "injected": 39,
+            "clean": 92,
             "injectedRejected": 39,
-            "cleanRejected": 1,
-            "injectedRecall": 0.8864,
-            "cleanRejectionRate": 0.0099,
-            "survivingInliers": 105,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 3887545092,
-            "at": 29015.30000000028
-          },
-          {
-            "injected": 38,
-            "clean": 88,
-            "injectedRejected": 38,
-            "cleanRejected": 16,
+            "cleanRejected": 14,
             "injectedRecall": 1,
-            "cleanRejectionRate": 0.1818,
-            "survivingInliers": 72,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 874064638,
-            "at": 29118.600000000093
-          },
-          {
-            "injected": 47,
-            "clean": 110,
-            "injectedRejected": 42,
-            "cleanRejected": 1,
-            "injectedRecall": 0.8936,
-            "cleanRejectionRate": 0.0091,
-            "survivingInliers": 114,
-            "state": "UNVERIFIED",
-            "displacementPx": 25,
-            "seed": 62670370,
-            "at": 31682.700000000186
-          },
-          {
-            "injected": 37,
-            "clean": 87,
-            "injectedRejected": 37,
-            "cleanRejected": 11,
-            "injectedRecall": 1,
-            "cleanRejectionRate": 0.1264,
-            "survivingInliers": 76,
+            "cleanRejectionRate": 0.1522,
+            "survivingInliers": 78,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 2529583784,
-            "at": 31802.899999999907
+            "seed": 749425972,
+            "at": 32008.899999999907
           },
           {
-            "injected": 33,
-            "clean": 77,
-            "injectedRejected": 33,
-            "cleanRejected": 8,
+            "correspondences": 118,
+            "injected": 35,
+            "clean": 83,
+            "injectedRejected": 35,
+            "cleanRejected": 10,
             "injectedRecall": 1,
-            "cleanRejectionRate": 0.1039,
-            "survivingInliers": 69,
+            "cleanRejectionRate": 0.1205,
+            "survivingInliers": 73,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 1246896509,
-            "at": 31894.399999999907
+            "seed": 2316199416,
+            "at": 32090.5
           },
           {
-            "injected": 32,
-            "clean": 76,
-            "injectedRejected": 32,
-            "cleanRejected": 4,
+            "correspondences": 118,
+            "injected": 35,
+            "clean": 83,
+            "injectedRejected": 35,
+            "cleanRejected": 10,
             "injectedRecall": 1,
-            "cleanRejectionRate": 0.0526,
-            "survivingInliers": 72,
+            "cleanRejectionRate": 0.1205,
+            "survivingInliers": 73,
             "state": "USABLE",
             "displacementPx": 25,
-            "seed": 3967298060,
-            "at": 31991.80000000028
-          },
-          {
-            "injected": 29,
-            "clean": 68,
-            "injectedRejected": 29,
-            "cleanRejected": 1,
-            "injectedRecall": 1,
-            "cleanRejectionRate": 0.0147,
-            "survivingInliers": 67,
-            "state": "USABLE",
-            "displacementPx": 25,
-            "seed": 1392366005,
-            "at": 32097.100000000093
+            "seed": 3185127979,
+            "at": 32169
           }
         ],
         "note": "GEO-003. The harness displaces a known fraction of the correspondences by a known amount and hands the verifier the set with no marking. `medianRecall` is the fraction of the harness’s own outliers the verifier rejected — the one number in this phase a stage that returns its input cannot produce, because returning its input scores exactly 0 while satisfying every count-based criterion v3 §14 names."
       },
       "planarHandling": {
-        "bothModelsFitted": 280,
-        "planarFrames": 194,
-        "nonPlanarFrames": 86,
+        "bothModelsFitted": 350,
+        "planarFrames": 245,
+        "nonPlanarFrames": 105,
         "planarMismatches": 0,
-        "medianFundamentalInliers": 88,
-        "medianHomographyInliers": 86.5,
+        "medianFundamentalInliers": 92,
+        "medianHomographyInliers": 87,
         "note": "v3 §16. Both models are fitted on every judged frame, never skipped as an optimisation: the fundamental matrix is the weaker constraint and normally admits at least as many points, so the homography reaching it is the signal that the scene is planar. Phase 6 lowers translation confidence there, because an Essential matrix decomposed from a planar scene is degenerate and yields a pose that looks entirely reasonable."
       },
       "cost": {
-        "meanVerifyMs": 3.741,
-        "samples": 280
+        "meanVerifyMs": 2.846,
+        "samples": 350
       },
       "integrity": {
         "partitionFaults": 0,
@@ -3523,10 +3547,10 @@
       }
     },
     "pose": {
-      "poseFrames": 275,
+      "poseFrames": 345,
       "current": {
         "state": "NO_POSE",
-        "reason": "Phase 5 reported UNVERIFIED on this frame — 25 inlier(s), below v3 §14's minimum of 30",
+        "reason": "Phase 5 reported UNVERIFIED on this frame — 29 inlier(s), below v3 §14's minimum of 30",
         "source": null,
         "rotationDeg": -1,
         "translation": null,
@@ -3551,22 +3575,22 @@
       },
       "overRun": {
         "stateFrames": {
-          "POSE": 183,
-          "NO_POSE": 92
+          "POSE": 246,
+          "NO_POSE": 99
         },
         "stateMismatches": 0,
-        "medianRotationDeg": 0.056,
-        "medianReprojectionPx": 0.051,
+        "medianRotationDeg": 0.045,
+        "medianReprojectionPx": 0.049,
         "medianCheiralityFraction": 1,
-        "medianConfidence": 0.3227,
-        "posedFrames": 183,
-        "translationSpreadDeg": 0.359,
-        "ambiguousFrames": 168
+        "medianConfidence": 0.4273,
+        "posedFrames": 246,
+        "translationSpreadDeg": 0.549,
+        "ambiguousFrames": 216
       },
       "sensitivity": {
         "focalFactor": 0.2,
-        "medianRotationDeg": 0.0113,
-        "medianTranslationDeg": 0.0732,
+        "medianRotationDeg": 0.009,
+        "medianTranslationDeg": 0.0626,
         "note": "How far the pose moves when the assumed focal length is scaled by ±20%. This is the other half of being allowed to say INTRINSICS: ESTIMATED — a quantity that barely moves does not depend on the guess, and one that moves does."
       },
       "gyroscope": {
@@ -3582,10 +3606,10 @@
         "note": "POSE-002. The gyroscope is an instrument here and never an input: v3 §19 lists IMU consistency among the confidence terms and Phase 6 withholds it on purpose, because a confidence that consumed the gyroscope could not then be checked against it. Angles only — rotationRate is in the device frame and the camera frame differs by a fixed rotation nobody has measured; an angle is invariant under that, an axis is not."
       },
       "planarHandling": {
-        "planarPosedFrames": 168,
-        "nonPlanarPosedFrames": 15,
+        "planarPosedFrames": 216,
+        "nonPlanarPosedFrames": 30,
         "planarFromEssential": 0,
-        "medianPlanarTranslationConfidence": 0.3591,
+        "medianPlanarTranslationConfidence": 0.4841,
         "medianNonPlanarTranslationConfidence": 0,
         "medianPlanarUnseparated": 2,
         "medianNonPlanarUnseparated": 1,
@@ -3595,64 +3619,82 @@
       "failClosed": {
         "lowParallaxFrames": 0,
         "lowParallaxWithTranslation": 0,
-        "unverifiedFrames": 81,
+        "unverifiedFrames": 83,
         "unverifiedWithRotation": 0,
         "note": "POSE-004. A camera that turned without moving produces large, well-conditioned image motion and no translation at all; the direction fitted to it would be noise with a unit length. Decided from the correspondences — what rotation alone leaves unexplained — rather than from the decomposition."
       },
       "injectedRotation": {
-        "samples": 29,
+        "samples": 34,
         "requestedDeg": 8,
         "medianRecoveredDeg": 8,
         "medianControlDeg": 0,
         "medianInlierDrift": 0,
         "medianControlInlierDrift": 0,
         "planarFlips": 0,
-        "controlPlanarFlips": 1,
+        "controlPlanarFlips": 0,
         "recent": [
           {
             "requestedDeg": 8,
-            "recoveredDeg": 10.312,
-            "controlDeg": -1,
+            "recoveredDeg": 8.0019,
+            "controlDeg": 0,
             "axis": [
-              -0.5209479928830407,
-              0.7665500313405227,
-              0.3755186255873005
+              -0.45804673454694417,
+              -0.7166913786641095,
+              0.5258770357406941
             ],
-            "inliersBefore": 30,
-            "inliersAfter": 30,
-            "planarBefore": false,
-            "planarAfter": false,
-            "controlInliers": 28,
-            "controlPlanar": false,
-            "seed": 423940525,
-            "at": 24469.700000000186
+            "inliersBefore": 101,
+            "inliersAfter": 101,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 101,
+            "controlPlanar": true,
+            "seed": 1822823215,
+            "at": 26840.5
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": -1,
-            "controlDeg": -1,
+            "recoveredDeg": 8.0029,
+            "controlDeg": 0,
             "axis": [
-              0.3631106374607881,
-              0.8902415258389156,
-              0.2749921646789589
+              0.16996934325506846,
+              0.7495886334949812,
+              0.6397087641173658
             ],
-            "inliersBefore": 30,
-            "inliersAfter": 29,
-            "planarBefore": false,
-            "planarAfter": false,
-            "controlInliers": 29,
-            "controlPlanar": false,
-            "seed": 818163978,
-            "at": 24596.200000000186
+            "inliersBefore": 99,
+            "inliersAfter": 99,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 99,
+            "controlPlanar": true,
+            "seed": 692570003,
+            "at": 26927.399999999907
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": 7.9991,
-            "controlDeg": 0.0195,
+            "recoveredDeg": 7.9999,
+            "controlDeg": 0,
             "axis": [
-              -0.8928530639037526,
-              0.23757371633623775,
-              -0.38258611525233116
+              0.43204116170204454,
+              0.5889939413513987,
+              -0.682954296894377
+            ],
+            "inliersBefore": 98,
+            "inliersAfter": 98,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 98,
+            "controlPlanar": true,
+            "seed": 3663535690,
+            "at": 27006
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 8.0003,
+            "controlDeg": 0,
+            "axis": [
+              -0.48636003210222983,
+              0.8680896797656873,
+              0.09936914540149996
             ],
             "inliersBefore": 95,
             "inliersAfter": 95,
@@ -3660,17 +3702,17 @@
             "planarAfter": true,
             "controlInliers": 95,
             "controlPlanar": true,
-            "seed": 1400830558,
-            "at": 27167.30000000028
+            "seed": 1386979828,
+            "at": 27101.399999999907
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": 7.9986,
+            "recoveredDeg": 8.0009,
             "controlDeg": 0,
             "axis": [
-              -0.738001028539384,
-              -0.3244205818909943,
-              0.5916973617655565
+              0.5374447516586051,
+              -0.606699519662609,
+              -0.5857207796858328
             ],
             "inliersBefore": 93,
             "inliersAfter": 93,
@@ -3678,17 +3720,35 @@
             "planarAfter": true,
             "controlInliers": 93,
             "controlPlanar": true,
-            "seed": 3390066897,
-            "at": 27265.80000000028
+            "seed": 2027772282,
+            "at": 27181.899999999907
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": 8.0011,
+            "recoveredDeg": 8.4084,
             "controlDeg": 0,
             "axis": [
-              -0.15643818205440288,
-              -0.9509518228095117,
-              0.26686649450761
+              0.30507972768918784,
+              0.2728219353721405,
+              -0.9124113936886642
+            ],
+            "inliersBefore": 93,
+            "inliersAfter": 94,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 93,
+            "controlPlanar": true,
+            "seed": 153095940,
+            "at": 29801.300000000047
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9996,
+            "controlDeg": 0,
+            "axis": [
+              -0.05833088238748271,
+              0.5001788172952297,
+              -0.863955241253297
             ],
             "inliersBefore": 90,
             "inliersAfter": 90,
@@ -3696,141 +3756,105 @@
             "planarAfter": true,
             "controlInliers": 90,
             "controlPlanar": true,
-            "seed": 132642284,
-            "at": 27361.30000000028
+            "seed": 3742843140,
+            "at": 29901.399999999907
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": 8.0013,
+            "recoveredDeg": 7.9973,
             "controlDeg": 0,
             "axis": [
-              0.7771309314327003,
-              0.5310209216288926,
-              -0.3377636691578077
+              0.6272705430202304,
+              0.46623690101319365,
+              0.6238227456519351
             ],
-            "inliersBefore": 87,
-            "inliersAfter": 87,
+            "inliersBefore": 88,
+            "inliersAfter": 88,
             "planarBefore": true,
             "planarAfter": true,
-            "controlInliers": 87,
+            "controlInliers": 88,
             "controlPlanar": true,
-            "seed": 365238504,
-            "at": 27466.5
+            "seed": 3450682224,
+            "at": 29986.100000000093
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": 7.9996,
+            "recoveredDeg": 7.6238,
+            "controlDeg": 0.4461,
+            "axis": [
+              -0.5885823391394671,
+              0.6953728957474499,
+              0.41234374727030804
+            ],
+            "inliersBefore": 85,
+            "inliersAfter": 86,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 86,
+            "controlPlanar": true,
+            "seed": 1771532684,
+            "at": 30055
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": -1,
+            "controlDeg": 0.1232,
+            "axis": [
+              -0.1043377589937692,
+              0.6842269290015367,
+              0.7217666809137728
+            ],
+            "inliersBefore": 85,
+            "inliersAfter": 85,
+            "planarBefore": true,
+            "planarAfter": true,
+            "controlInliers": 85,
+            "controlPlanar": true,
+            "seed": 304059839,
+            "at": 30130.5
+          },
+          {
+            "requestedDeg": 8,
+            "recoveredDeg": 7.9981,
             "controlDeg": 0,
             "axis": [
-              -0.45804673454694417,
-              -0.7166913786641095,
-              0.5258770357406941
+              0.4384239932752089,
+              0.42452747603506824,
+              0.7921873668595796
             ],
-            "inliersBefore": 81,
-            "inliersAfter": 81,
+            "inliersBefore": 84,
+            "inliersAfter": 84,
             "planarBefore": true,
             "planarAfter": true,
-            "controlInliers": 81,
+            "controlInliers": 84,
             "controlPlanar": true,
-            "seed": 1822823215,
-            "at": 27571.600000000093
+            "seed": 1012844775,
+            "at": 30208.300000000047
           },
           {
             "requestedDeg": 8,
-            "recoveredDeg": 7.9996,
-            "controlDeg": 0.0249,
+            "recoveredDeg": -1,
+            "controlDeg": 2.9931,
             "axis": [
-              0.16996934325506846,
-              0.7495886334949812,
-              0.6397087641173658
+              0.14923670444183101,
+              -0.5335983358664653,
+              -0.8324669494988257
             ],
-            "inliersBefore": 75,
-            "inliersAfter": 75,
-            "planarBefore": true,
-            "planarAfter": true,
-            "controlInliers": 75,
-            "controlPlanar": true,
-            "seed": 692570003,
-            "at": 30228.100000000093
-          },
-          {
-            "requestedDeg": 8,
-            "recoveredDeg": 7.9993,
-            "controlDeg": 0,
-            "axis": [
-              0.43204116170204454,
-              0.5889939413513987,
-              -0.682954296894377
-            ],
-            "inliersBefore": 69,
-            "inliersAfter": 69,
-            "planarBefore": true,
-            "planarAfter": true,
-            "controlInliers": 69,
-            "controlPlanar": true,
-            "seed": 3663535690,
-            "at": 30331.899999999907
-          },
-          {
-            "requestedDeg": 8,
-            "recoveredDeg": 7.9969,
-            "controlDeg": 0,
-            "axis": [
-              -0.48636003210222983,
-              0.8680896797656873,
-              0.09936914540149996
-            ],
-            "inliersBefore": 67,
-            "inliersAfter": 67,
-            "planarBefore": true,
-            "planarAfter": true,
-            "controlInliers": 67,
-            "controlPlanar": true,
-            "seed": 1386979828,
-            "at": 30424.100000000093
-          },
-          {
-            "requestedDeg": 8,
-            "recoveredDeg": 8.0006,
-            "controlDeg": 0,
-            "axis": [
-              0.5374447516586051,
-              -0.606699519662609,
-              -0.5857207796858328
-            ],
-            "inliersBefore": 65,
-            "inliersAfter": 65,
-            "planarBefore": true,
-            "planarAfter": true,
-            "controlInliers": 65,
-            "controlPlanar": true,
-            "seed": 2027772282,
-            "at": 30527.700000000186
-          },
-          {
-            "requestedDeg": 8,
-            "recoveredDeg": 7.9997,
-            "controlDeg": 0,
-            "axis": [
-              0.30507972768918784,
-              0.2728219353721405,
-              -0.9124113936886642
-            ],
-            "inliersBefore": 62,
-            "inliersAfter": 62,
-            "planarBefore": true,
-            "planarAfter": true,
-            "controlInliers": 62,
-            "controlPlanar": true,
-            "seed": 153095940,
-            "at": 30624.80000000028
+            "inliersBefore": 31,
+            "inliersAfter": 31,
+            "planarBefore": false,
+            "planarAfter": false,
+            "controlInliers": 32,
+            "controlPlanar": false,
+            "seed": 2613489619,
+            "at": 33068.5
           }
         ],
         "note": "POSE-005, and the one number in this phase a stage returning a constant pose cannot produce — it scores exactly 0.00° while satisfying every other numeric criterion. The harness applies K Rj K^-1 to the second view, which is exactly the camera having turned by Rj, and re-runs the whole chain on a set handed over unmarked. The control is the same set unmodified: without it a solver returning noise would also pass."
       },
       "cost": {
-        "meanPoseMs": 4.621,
-        "samples": 194
+        "meanPoseMs": 3.031,
+        "samples": 262
       },
       "integrity": {
         "scaleViolations": 0,
@@ -3843,14 +3867,23 @@
     },
     "fusion": {
       "running": false,
-      "fusionFrames": 334,
+      "fusionFrames": 404,
       "mode": "VISION_ONLY",
+      "handEye": {
+        "calibrated": false,
+        "rotation": null,
+        "pairs": 0,
+        "axisSpread": 0,
+        "residualDeg": -1,
+        "reason": "0 usable rotation pair(s), below the 12 this needs — turn the device so both instruments see the same motion",
+        "uncalibratedSamples": 1
+      },
       "usable": true,
       "orientation": [
-        0.9988242366176783,
-        -0.013094581263947268,
-        -0.036565510089227475,
-        0.02901102822288056
+        0.9983033385628769,
+        0.03270004927464468,
+        -0.04713920323671702,
+        -0.009952211304899736
       ],
       "gyroBiasDps": null,
       "position": null,
@@ -3860,7 +3893,7 @@
       "scale": "UNKNOWN",
       "heading": "RELATIVE",
       "innovationDeg": -1,
-      "propagatedMs": 462.4,
+      "propagatedMs": 123.6,
       "gravityDeg": -1,
       "imuConsistency": -1,
       "confidence": 0,
@@ -3868,27 +3901,27 @@
         {
           "name": "inlierRatio",
           "value": 1,
-          "note": "0.9375 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+          "note": "0.8611 against v3 §14's 0.35 usable / 0.5 good (Phase 6's measurement of the visual pose, carried through unchanged)"
         },
         {
           "name": "reprojectionError",
           "value": 0,
-          "note": "18.0041 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
+          "note": "10.8239 px against §33's 2 px (Phase 6's measurement of the visual pose, carried through unchanged)"
         },
         {
           "name": "trackedFeatures",
-          "value": 0.3091,
-          "note": "148 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
+          "value": 0.3727,
+          "note": "162 against §11's 80 degraded / 300 good (Phase 6's measurement of the visual pose, carried through unchanged)"
         },
         {
           "name": "featureDistribution",
-          "value": 0.6183,
-          "note": "81.833 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
+          "value": 0.6818,
+          "note": "88.183 px spread against 120 px, a quarter of the frame (Phase 6's measurement of the visual pose, carried through unchanged)"
         },
         {
           "name": "temporalStability",
-          "value": 0.7435,
-          "note": "3.8469° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
+          "value": 0.7327,
+          "note": "4.0091° from the previous frame's rotation (Phase 6's measurement of the visual pose, carried through unchanged)"
         },
         {
           "name": "modelConsistency",
@@ -3903,7 +3936,7 @@
         {
           "name": "propagation",
           "value": 1,
-          "note": "462.4 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
+          "note": "123.6 ms since vision last reported, against v3 §17's 短時間 window of 500–3000 ms. Not one of §19's seven — added because §17 limits how long a propagated orientation is worth anything, and IMU-007 requires the confidence to fall while running open-loop"
         }
       ],
       "confidenceWithheld": [
@@ -3944,17 +3977,17 @@
       ],
       "imuAvailable": false,
       "imuReason": "listening for devicemotion; no event with rotationRate has arrived yet",
-      "imuSamples": 0,
+      "imuSamples": 1,
       "measuredImuHz": -1,
       "reportedImuHz": 0.06,
       "gravitySamples": 0,
-      "gravityRejected": 1,
+      "gravityRejected": 0,
       "fusedFrames": 0,
       "propagatingFrames": 0,
       "biasMagnitudeDps": -1,
       "biasReason": "no gyroscope is reporting, so the bias is unmeasured — and therefore absent, not zero",
       "modeFrames": {
-        "VISION_ONLY": 334
+        "VISION_ONLY": 404
       },
       "modeMismatches": 0,
       "innovationSamples": 0,
@@ -3992,14 +4025,14 @@
       "deadReckonedPositionM": 0,
       "deadReckonedSeconds": 0,
       "dropoutFrames": 0,
-      "longestPropagatedMs": 1981.9,
+      "longestPropagatedMs": 1748.2,
       "dropouts": [],
       "dropoutConfidenceRises": 0,
       "usableBeyondMax": 0,
       "reconvergences": 0,
       "medianReconvergenceInnovationDeg": -1,
-      "meanFusionMs": 0.0341,
-      "fusionCostSamples": 334,
+      "meanFusionMs": 0.033,
+      "fusionCostSamples": 400,
       "eulerEmitted": 0,
       "biasZeroWithoutGyro": 0,
       "rateOutOfRange": 0
@@ -4009,7 +4042,7 @@
       "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
       "events": 3,
       "eventsWithRotation": 0,
-      "measuredHz": 1.09,
+      "measuredHz": 1.35,
       "lastReading": null
     },
     "devEntry": true,

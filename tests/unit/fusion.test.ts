@@ -48,6 +48,7 @@ import type {
   PoseReport,
 } from '../../src/tracking/trackingMessages';
 import { runPhase7Tests } from '../../src/testkit/Phase7Tests';
+import { AXIS_SPREAD_FLOOR, MIN_HAND_EYE_PAIRS } from '../../src/fusion/handEye';
 import { Verdict } from '../../src/core/types';
 import type { TestResult } from '../../src/core/types';
 import { CameraState } from '../../src/capture/CameraSource';
@@ -470,6 +471,22 @@ interface RunOptions {
   /** The device's own true gyroscope bias, rad/s — unknown to both filters, as on a phone. */
   readonly trueBias?: number[];
   readonly omega?: number[];
+  /**
+   * The rotation between the device's frame and the camera's — the thing `handEye.ts` estimates.
+   *
+   * `IDENTITY` is **not** the realistic case and is not the default. On a phone the sensor and
+   * the lens do not share axes, and the device run of 2026-08-29 failed three records because
+   * the stage behaved as though they did.
+   */
+  readonly extrinsic?: Quat;
+  /**
+   * Hold the turn to one axis, as a tripod pan does.
+   *
+   * The extrinsic is not observable from such a run — every rotation about the shared axis fits
+   * — so the calibration must refuse and the stage must decline to fuse. Off by default because
+   * a hand-held phone is not a tripod.
+   */
+  readonly singleAxis?: boolean;
   readonly seconds?: number;
   /** `[fromMs, toMs]` where Phase 6 produces no pose at all. */
   readonly dropout?: [number, number];
@@ -504,6 +521,13 @@ function runStage(o: RunOptions = {}): Run {
     seed = 0x7ea1,
     accelNoise = 0.05,
     gyroNoise = 2e-3,
+    // A quarter turn and a flip — roughly where a rear camera sits, and nowhere near identity,
+    // so nothing below can pass by the two frames happening to agree.
+    extrinsic = normalise(multiply(
+      fromRotationVector([0, 0, (Math.PI / 2)]),
+      fromRotationVector([Math.PI, 0, 0]),
+    )),
+    singleAxis = false,
   } = o;
   const random = rng(seed);
   const stage = new FusionStage(1);
@@ -519,14 +543,25 @@ function runStage(o: RunOptions = {}): Run {
 
   for (let ms = 0; ms <= seconds * 1000; ms += dtGyro) {
     const dt = dtGyro / 1000;
-    trueQ = normalise(multiply(trueQ, fromRotationVector(omega.map((w) => w * dt))));
+    // The axis of the turn moves, because a hand-held phone's does. A constant axis leaves the
+    // extrinsic unobservable — every rotation about that axis fits the data equally — and the
+    // calibration is required to refuse it, which `singleAxis` below exercises directly.
+    const t = ms / 1000;
+    const bodyOmega = singleAxis
+      ? omega
+      : [
+          (omega[0] ?? 0) * Math.cos(0.7 * t),
+          (omega[1] ?? 0) * Math.cos(0.41 * t + 1.1),
+          (omega[2] ?? 0) * Math.cos(0.23 * t + 2.3),
+        ];
+    trueQ = normalise(multiply(trueQ, fromRotationVector(bodyOmega.map((w) => w * dt))));
     const gravityBody = rotateInverse(trueQ, WORLD_DOWN).map((c) => c * GRAVITY_MS2);
     const linear = [0, 1, 2].map(() => (random() - 0.5) * 2 * accelNoise);
     const sample: ImuSample = {
       at: ms,
       acceleration: linear,
       accelerationIncludingGravity: gravityBody.map((g, i) => g + (linear[i] ?? 0)),
-      rotationRate: omega.map(
+      rotationRate: bodyOmega.map(
         (w, i) => w + (trueBias[i] ?? 0) + (random() - 0.5) * 2 * gyroNoise,
       ),
       interval: 1 / GYRO_HZ,
@@ -545,7 +580,13 @@ function runStage(o: RunOptions = {}): Run {
       const blind = dropout ? ms >= dropout[0] && ms < dropout[1] : false;
       if (!blind) {
         poseFrames++;
-        pose = poseReport(normalise(multiply(conjugate(anchorQ), trueQ)), poseFrames);
+        // Phase 6 sees the **camera's** attitude, which is the device's carried through the
+        // extrinsic: with `v_cam = X v_dev`, the two attitudes satisfy `R_c = R_d X⁻¹`. The
+        // increment between two such poses is then `X Δ_d X⁻¹`, which is exactly the relation
+        // `estimateHandEye` inverts — applied forward here so the fixture never borrows the
+        // solver's arithmetic to make its data.
+        const cameraQ = normalise(multiply(trueQ, conjugate(extrinsic)));
+        pose = poseReport(normalise(multiply(conjugate(anchorQ), cameraQ)), poseFrames);
         stage.notePose(pose, false, ms);
       }
     }
@@ -576,9 +617,49 @@ describe('the real stage, graded by the real suite', () => {
   const run = runStage();
   const g = grade(run.stats);
 
-  it('reports FUSED once both instruments are running', () => {
+  it('reports FUSED once both instruments are running — and not before', () => {
     expect(run.stats.fusedFrames).toBeGreaterThan(100);
-    expect(run.stats.modeFrames[FusionMode.VISION_ONLY] ?? 0).toBeLessThan(5);
+    // There *is* a vision-only stretch at the start, and it is not a defect: the two frames are
+    // related by a rotation nobody has measured yet, and until it is measured the gyroscope's
+    // axes mean nothing to a filter corrected in the camera's. Fusing through it is what the
+    // device run of 2026-08-29 did.
+    const visionOnly = run.stats.modeFrames[FusionMode.VISION_ONLY] ?? 0;
+    expect(visionOnly).toBeGreaterThan(0);
+    // ...and it ends. A run that never calibrates is a run that never fuses, which is the other
+    // half of this and is exercised by the single-axis fixture below.
+    expect(run.stats.fusedFrames).toBeGreaterThan(visionOnly);
+  });
+
+  it('says on the record that it calibrated, and what the fit cost', () => {
+    // Rule 002: a run that fused must be able to show the rotation it fused through. A run that
+    // never calibrated must not be indistinguishable from a run with no sensors.
+    const last = run.reports[run.reports.length - 1];
+    expect(last?.handEye.calibrated).toBe(true);
+    expect(last?.handEye.rotation).not.toBeNull();
+    expect(last?.handEye.pairs).toBeGreaterThanOrEqual(MIN_HAND_EYE_PAIRS);
+    expect(last?.handEye.axisSpread).toBeGreaterThan(AXIS_SPREAD_FLOOR);
+    // The residual is measured against axes the estimator could not choose.
+    expect(last?.handEye.residualDeg).toBeGreaterThanOrEqual(0);
+    expect(last?.handEye.residualDeg).toBeLessThan(15);
+    expect(last?.handEye.uncalibratedSamples).toBeGreaterThan(0);
+  });
+
+  it('declines to fuse at all on a turn that cannot determine the extrinsic', () => {
+    // A phone swept about one axis. Every rotation about that axis fits the pairs equally well,
+    // so the calibration refuses — and the stage then has no way to bring the gyroscope into the
+    // camera's frame. It reports vision-only and says why, rather than fusing through an
+    // identity rotation it has no evidence for.
+    const pan = runStage({ seconds: 40, singleAxis: true });
+    const last = pan.reports[pan.reports.length - 1];
+    expect(last?.handEye.calibrated).toBe(false);
+    expect(last?.handEye.rotation).toBeNull();
+    expect(last?.handEye.reason).toContain('share an axis');
+    expect(last?.handEye.uncalibratedSamples).toBeGreaterThan(0);
+    expect(pan.stats.fusedFrames).toBe(0);
+    // And the mode still follows from the report's own fields — no bias was estimated, so
+    // `fusionModeFollowsFrom` derives VISION_ONLY and nothing disagrees.
+    expect(pan.stats.modeMismatches).toBe(0);
+    expect(last?.gyroBiasDps).toBeNull();
   });
 
   it('re-derives every mode and every usable flag from the inputs beside it (Rule 002)', () => {
@@ -726,6 +807,16 @@ function passThroughRun(o: { deadReckoner?: boolean } = {}): Run {
       frames,
       mode: FusionMode.FUSED,
       usable: true,
+      // A dead-reckoner claims a calibration like it claims everything else.
+      handEye: {
+        calibrated: true,
+        rotation: [1, 0, 0, 0],
+        pairs: 40,
+        axisSpread: 0.3,
+        residualDeg: 0.5,
+        reason: 'measured from paired rotations',
+        uncalibratedSamples: 0,
+      },
       // The whole fake, in one line.
       orientation: o.deadReckoner ? [...trueQ] : [...trueQ],
       gyroBiasDps: [0, 0, 0],
@@ -837,19 +928,35 @@ describe('what a dead-reckoner scores on the same suite', () => {
     expect(stats.biasSamples).toBe(0);
   });
 
-  it('...and still finds the bias, because gravity observes it — the plan’s table was wrong', () => {
-    // The measurement that forced the amendment in `docs/phase7/TEST-PLAN.md`. The plan said a
-    // dead-reckoner scores 0 on the bias. It does not: on a device that turns, the body axes
-    // move relative to gravity and all three components become observable through it alone. The
-    // true bias here is (0.4, −0.9, 0.2) °/s, magnitude 1.0049.
-    expect(stats.biasMagnitudeDps).toBeCloseTo(1.0049, 2);
+  it('...and now cannot find a bias at all, because calibrating needs vision', () => {
+    /*
+     * This test used to assert the opposite, and the change is a strengthening rather than a
+     * regression — recorded here because the plan's 2026-08-23 amendment rests on the old
+     * result.
+     *
+     * That amendment measured a dead-reckoner recovering the bias through gravity alone: on a
+     * device that turns, the body axes move relative to gravity and all three components become
+     * observable without a single visual update. It concluded that criteria 1–3 of IMU-005 are
+     * not by themselves evidence that vision was fused, and that criterion 4 is what separates
+     * them. That reasoning was right and still is.
+     *
+     * What changed underneath it is that the filter no longer starts at all until the
+     * device→camera rotation has been measured, and **that measurement is made from pairs of
+     * gyroscope and visual rotations**. No vision, no pairs; no pairs, no extrinsic; no
+     * extrinsic, nothing to fuse. So a dead-reckoner now scores `-1` — not estimated — where it
+     * used to score the bias exactly.
+     *
+     * The gate is strictly harder to fake than the plan describes: fake 1 no longer reaches the
+     * first criterion, let alone the fourth.
+     */
+    expect(stats.biasMagnitudeDps).toBe(-1);
     const last = session.getLast();
-    const control = last?.gyroBiasDps ?? [];
-    const injected = last?.injectedBiasDps ?? [];
-    const difference = injected.map((b, i) => b - (control[i] ?? 0));
-    // ...and the injection comes back essentially perfectly, on the injected axis, with no
-    // vision anywhere in the run. Criteria 1–3 of IMU-005 alone would have passed this.
-    expect(Math.hypot(difference[0] ?? 0, difference[1] ?? 0, difference[2] ?? 0)).toBeCloseTo(3, 1);
+    expect(last?.gyroBiasDps).toBeNull();
+    expect(last?.handEye.calibrated).toBe(false);
+    expect(last?.handEye.pairs).toBe(0);
+    // And it says which of the two reasons it is in, rather than looking like a run with no
+    // sensors: the samples arrived and were declined.
+    expect(last?.handEye.uncalibratedSamples).toBeGreaterThan(0);
   });
 
   it('cannot pass IMU-005 anyway — the difference is withheld without visual updates', () => {

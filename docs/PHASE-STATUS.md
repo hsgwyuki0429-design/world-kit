@@ -1082,6 +1082,58 @@ change with them.
 Built. `docs/phase7/TEST-PLAN.md` was committed before any Phase 7 code existed (§29), and the
 automated leg is green: `docs/phase7/evidence/phase7-desktop-chromium.json`.
 
+### 2026-08-29: the first device run failed three records, and the stage was at fault
+
+`docs/phase7/evidence/phase7-real-device-FAILED-2026-08-29T00-33-26-777Z.json`. IMU-003, IMU-004
+and IMU-005, all for one reason — and unlike the Phase 4 and Phase 5 device findings, **this one
+was the engine, not the instrument.**
+
+The stage fused three signals from two coordinate frames with no rotation between them:
+`rotationRate` and gravity in the **device's** frame, Phase 6's increment in the **camera's**.
+Both `gyroRotation.ts` and `PoseSession` say in as many words that those frames differ by a fixed
+rotation nobody had measured, and both avoided needing it by comparing only the rotation *angle*,
+which is invariant under a change of basis. Fusing is not invariant.
+
+| | measured | should be |
+| --- | --- | --- |
+| estimated gyro bias | **9.19 °/s** | under 1 °/s — and iOS already bias-corrects `rotationRate` |
+| fused vs. measured gravity | **33.16°** | inside 10° |
+| fused vs. visual pose | **73.9°**, max 119° | a few degrees |
+| median innovation | **11.78°** | inside 3° |
+| median visual increment | 4.78° | — |
+| injected bias, off its axis | **25.78°** | inside tolerance |
+
+The diagnosis is in the innovation being **larger than the rotation it was predicting**: a filter
+predicting nothing at all would have scored 4.78°. The gyroscope was worse than useless, which is
+what propagating about the wrong axes does, and the bias state then absorbed the standing
+disagreement. IMU-001 *passed* on this run and reported the 73.9° itself — its third criterion
+asks only that the fused orientation not be a copy of the visual one, and 73.9° is certainly not
+a copy.
+
+**Nothing could have caught it earlier.** The unit fixture advanced its truth by the same `omega`
+it fed the gyroscope and derived the visual pose from that same truth, so all three signals lived
+in one frame by construction. The automated leg has no IMU, so five of the nine records are
+permanently `PENDING` there. A device was the only instrument that could see this.
+
+`src/fusion/handEye.ts` now estimates the rotation — the same turn seen by both instruments gives
+a pair of axes, and `x` is the rotation carrying one set onto the other, solved by Davenport's
+q-method on `symmetricEigen`, the same Jacobi routine Phase 5's eight-point solver uses. **A
+single rotation axis cannot determine it** — every further turn about the shared axis fits
+equally — so a pan is refused rather than answered, and `tests/unit/handEye.test.ts` demonstrates
+that family rather than asserting it. Until `x` is known the stage does not fuse: the filter stays
+uninitialised, `gyroBiasDps` stays null, `fusionModeFollowsFrom` derives `VISION_ONLY` from the
+report's own fields, and `uncalibratedSamples` keeps a run that declined distinguishable from a
+run with no sensors.
+
+Two consequences worth having on the record. **The gate got harder to fake**: calibrating needs
+pairs, pairs need vision, so a dead-reckoner never calibrates and now reports no bias at all,
+where the plan's 2026-08-23 amendment had measured it recovering one through gravity alone.
+And making the fixture's motion realistic exposed a separate pre-existing defect — **the
+confidence could rise while running open-loop**, because `imuConsistency` keeps being measured
+through a dropout and its gravity half improved 0.8576 → 0.8578 while `propagation` fell
+0.9933 → 0.9867. While propagating, the reported confidence is the running minimum now; no term
+was altered, and the one that rose still shows its own value.
+
 **No device bundle yet.** Rule 004 stands — nothing passes this phase until an iPhone / Safari /
 HTTPS run exists. `docs/phase7/HOW-TO-RUN-DEVICE-TEST.md` is that run.
 
