@@ -1186,6 +1186,64 @@ was altered, and the one that rose still shows its own value.
 **No device bundle yet.** Rule 004 stands — nothing passes this phase until an iPhone / Safari /
 HTTPS run exists. `docs/phase7/HOW-TO-RUN-DEVICE-TEST.md` is that run.
 
+### 2026-09-05: the extrinsic never calibrated, and the record said the wrong thing about why
+
+`phase7-real-device-TESTING-2026-09-05T05-40-52-031Z.json` — the first device run on the corrected
+Phase 5 instruments, and it carries **Phase 5 and Phase 6 both PASSING on the device** in its own
+transition log. Phase 7 held at TESTING with IMU-001, 003, 004, 005 and 007 `PENDING`, and one
+number is upstream of all five:
+
+```
+handEye: calibrated false, pairs 5 of the 12 needed
+mode:    VISION_ONLY on all 3825 frames, fusedFrames 0
+imu:     imuAvailable true, imuSamples 9619, measuredImuHz 50.71
+```
+
+The chain is exact and runs one way. `handEye.rotation` is null → `noteImuInner` returns before
+the filter → the EKF is never initialised → `hasImu` is false → every record that needs a fused
+frame is `PENDING`. Nothing downstream is wrong; nothing downstream ran.
+
+**The record then blamed the sensor.** `confidenceWithheld` read *IMUConsistency — no IMU is
+reporting on this run*, in a bundle whose own `sensors` block, `imuAvailable`, `imuSamples` and
+`measuredImuHz` all say the opposite, and which IMU-002 declines precisely *because* the
+gyroscope is live. The cause was one flag: `hasImu = imuSamples > 0 && main.isInitialised()`
+meant both "the sensor is delivering" and "the filter is running", and those differ for exactly
+one reason — the extrinsic is not measured yet. Rule 002: the bundle may not contradict itself,
+and a reader who believes that line goes looking for a permission problem that is not there.
+`imuReporting` is a separate field now and the withheld term names the real cause.
+
+**And the bundle could not say which filter took the pairs.** `handEye.ts`'s own doc says
+`axisPairFrom` is exported *"because the caller counts the rejections by reason: a run that
+produced hundreds of pairs and used none of them should say which filter took them"*. The caller
+did not. `estimateHandEye` returns a `HandEyeRejections` tally on both branches now — offered,
+and the four filters partitioning the rest — and the refusal reason names the dominant one, so
+the phone screen carries it rather than only the JSON.
+
+**What the retained samples suggest, pending that tally.** `pose.gyroscope.recent` keeps 12
+comparisons, all from one stretch at anchor ages of 871–1538 ms — the interval length hand-eye
+needs. Every one of them fails `PAIR_ANGLE_TOLERANCE`:
+
+| anchor age | visual | gyro net | gyro path |
+| --- | --- | --- | --- |
+| 871 ms | 10.40° | 2.56° | 3.47° |
+| 1004 ms | 10.41° | 2.12° | 6.76° |
+| 1201 ms | 12.25° | 5.22° | 10.03° |
+| 1538 ms | 15.04° | 6.51° | 12.40° |
+
+The visual rotation is two to three times the gyroscope's net over the same interval, and at
+1538 ms it exceeds even the gyroscope's total **path** length of 12.40° — which one motion cannot
+do. Run-wide the two agree: `agreementRate 0.9025`, median disagreement `0.65°`. So the
+disagreement is a function of interval length, and hand-eye pairs are formed at exactly the
+length where it is worst. That is a lead, not a finding — 12 samples from one stretch — and the
+new tally is what settles it run-wide on the next device run. If it is `angleDisagrees` that is
+eating the pairs, the question is Phase 6's anchor-relative rotation over a long anchor age, not
+how the phone was moved.
+
+**IMU-002 cannot pass in the same run as IMU-001.** One asks for a granted motion permission and
+the other for a denied one, and this run reports IMU-002 `PENDING` for the right reason: *a run
+with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
+Phase 1 did — see its row, which passed *across two runs covering both permission scenarios*.
+
 ### The first automated leg in this project that decides a required test
 
 v3 §68's pass condition for this phase is unusual among the per-phase tables in being about

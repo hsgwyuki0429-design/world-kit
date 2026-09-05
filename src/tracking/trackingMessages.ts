@@ -16,6 +16,7 @@
  */
 
 import type { SceneTexture } from './featureTypes';
+import type { HandEyeRejections } from '../fusion/handEye';
 
 /** Per-frame options the composition root hands to the tracking stage. */
 export interface TrackingOptions {
@@ -437,6 +438,12 @@ export interface HandEyeReport {
   readonly reason: string;
   /** IMU samples that arrived before the extrinsic was known and so were not fused. */
   readonly uncalibratedSamples: number;
+  /**
+   * Pairs offered, and which filter took the ones that did not contribute.
+   *
+   * `pairs` alone cannot say why a run stalled — see `fusion/handEye.ts`'s `HandEyeRejections`.
+   */
+  readonly rejections: HandEyeRejections;
 }
 
 export interface FusionReport {

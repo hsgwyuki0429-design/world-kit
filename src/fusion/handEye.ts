@@ -112,6 +112,39 @@ export interface HandEyePair {
   readonly camera: Quat;
 }
 
+/**
+ * Which filter took the pairs that did not contribute — the diagnostic a stalled run needs.
+ *
+ * `estimateHandEye` returns this on **both** branches, because "5 usable pairs" is not a finding:
+ * it does not say whether the turns were too small to carry an axis, too large to be one motion,
+ * or two instruments disagreeing about the same one. The device run of 2026-09-05 sat at 5 usable
+ * pairs for eleven minutes with a live 50 Hz gyroscope and every record in the bundle reading
+ * healthy, and the reason it stalled was not recoverable from the evidence because this was not
+ * in it.
+ *
+ * `offered` is the pairs handed in; the four counts partition `offered − pairs`.
+ */
+export interface HandEyeRejections {
+  /** Pairs handed to the estimator, before any filter. */
+  readonly offered: number;
+  /** Either instrument turned less than `MIN_PAIR_ROTATION_DEG` — no axis to take. */
+  readonly tooSmall: number;
+  /** ...or more than `MAX_PAIR_ROTATION_DEG` — not one motion seen twice. */
+  readonly tooLarge: number;
+  /** The two angles disagreed by more than `PAIR_ANGLE_TOLERANCE` of the larger. */
+  readonly angleDisagrees: number;
+  /** A rotation vector of zero length, so no axis could be normalised. */
+  readonly noAxis: number;
+}
+
+export const NO_REJECTIONS: HandEyeRejections = {
+  offered: 0,
+  tooSmall: 0,
+  tooLarge: 0,
+  angleDisagrees: 0,
+  noAxis: 0,
+};
+
 export interface HandEyeEstimate {
   /** Device → camera. `v_camera = rotate(rotation, v_device)`. */
   readonly rotation: Quat;
@@ -124,6 +157,8 @@ export interface HandEyeEstimate {
    * `x` cannot make small: it is measured against axes the estimator was not free to choose.
    */
   readonly residualDeg: number;
+  /** Which filter took the pairs that did not contribute. */
+  readonly rejections: HandEyeRejections;
 }
 
 export interface HandEyeRefusal {
@@ -131,6 +166,8 @@ export interface HandEyeRefusal {
   readonly pairs: number;
   readonly axisSpread: number;
   readonly reason: string;
+  /** Which filter took the pairs that did not contribute. */
+  readonly rejections: HandEyeRejections;
 }
 
 /** A pair reduced to what the fit uses: two unit axes and the angle that weights them. */
@@ -181,19 +218,39 @@ export function estimateHandEye(
   pairs: readonly HandEyePair[],
 ): HandEyeEstimate | HandEyeRefusal {
   const axes: AxisPair[] = [];
+  let tooSmall = 0;
+  let tooLarge = 0;
+  let angleDisagrees = 0;
+  let noAxis = 0;
   for (const p of pairs) {
     const a = axisPairFrom(p);
-    if ('rejected' in a) continue;
+    if ('rejected' in a) {
+      if (a.rejected === 'TOO_SMALL') tooSmall++;
+      else if (a.rejected === 'TOO_LARGE') tooLarge++;
+      else if (a.rejected === 'ANGLE_DISAGREES') angleDisagrees++;
+      else noAxis++;
+      continue;
+    }
     axes.push(a);
   }
+  const rejections: HandEyeRejections = {
+    offered: pairs.length,
+    tooSmall,
+    tooLarge,
+    angleDisagrees,
+    noAxis,
+  };
   if (axes.length < MIN_HAND_EYE_PAIRS) {
     return {
       rotation: null,
       pairs: axes.length,
       axisSpread: 0,
+      rejections,
+      // Which filter took the rest, in the reason itself: a run that stalls here is read from a
+      // phone, and "below the 12 this needs" alone does not say what to do differently.
       reason:
-        `${axes.length} usable rotation pair(s), below the ${MIN_HAND_EYE_PAIRS} this needs — ` +
-        'turn the device so both instruments see the same motion',
+        `${axes.length} usable rotation pair(s) of ${pairs.length} offered, below the ` +
+        `${MIN_HAND_EYE_PAIRS} this needs — ${describeRejections(rejections)}`,
     };
   }
 
@@ -212,7 +269,13 @@ export function estimateHandEye(
     }
   }
   if (weightSum <= 0) {
-    return { rotation: null, pairs: axes.length, axisSpread: 0, reason: 'no weighted axes' };
+    return {
+      rotation: null,
+      pairs: axes.length,
+      axisSpread: 0,
+      rejections,
+      reason: 'no weighted axes',
+    };
   }
   const eig = symmetricEigen(scatter, 3);
   const largest = eig.values[2] ?? 0;
@@ -223,6 +286,7 @@ export function estimateHandEye(
       rotation: null,
       pairs: axes.length,
       axisSpread,
+      rejections,
       reason:
         `the turns share an axis — spread ${axisSpread.toFixed(4)} against the ` +
         `${AXIS_SPREAD_FLOOR} needed. A rotation about the axis every turn shares is a degree ` +
@@ -270,7 +334,32 @@ export function estimateHandEye(
   residuals.sort((p, q) => p - q);
   const residualDeg = residuals[Math.floor(residuals.length / 2)] ?? -1;
 
-  return { rotation, pairs: axes.length, axisSpread, residualDeg };
+  return { rotation, pairs: axes.length, axisSpread, residualDeg, rejections };
+}
+
+/**
+ * The rejection tally as one clause, dominant filter first — what to do differently.
+ *
+ * Each filter has one thing that clears it, and they are not the same thing: turns too small need
+ * a larger turn, turns too large need the visual anchor to hold across one, and two instruments
+ * disagreeing about the same turn's *angle* is not a movement problem at all.
+ */
+export function describeRejections(r: HandEyeRejections): string {
+  const rejected = r.tooSmall + r.tooLarge + r.angleDisagrees + r.noAxis;
+  if (rejected === 0) {
+    return 'no pair was rejected, so this is simply how many intervals have completed — keep ' +
+      'both instruments running';
+  }
+  const ranked = [
+    { n: r.angleDisagrees, why: 'the two instruments disagreed about the angle of the same turn' },
+    { n: r.tooSmall, why: `the turn was under ${MIN_PAIR_ROTATION_DEG}°, too small to carry an axis` },
+    { n: r.tooLarge, why: `the turn was over ${MAX_PAIR_ROTATION_DEG}°, so it is not one motion seen twice` },
+    { n: r.noAxis, why: 'the rotation had no axis to take' },
+  ]
+    .filter((e) => e.n > 0)
+    .sort((a, b) => b.n - a.n);
+  const parts = ranked.map((e) => `${e.n} because ${e.why}`);
+  return `${rejected} of ${r.offered} rejected: ${parts.join('; ')}`;
 }
 
 /** `q · v · q*`, kept local so this module depends on nothing but the quaternion primitives. */
@@ -300,6 +389,7 @@ export const NO_HAND_EYE: HandEyeRefusal = {
   rotation: null,
   pairs: 0,
   axisSpread: 0,
+  rejections: NO_REJECTIONS,
   reason: 'no rotation pairs have been offered yet',
 };
 

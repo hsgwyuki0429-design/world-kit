@@ -20,6 +20,7 @@
  */
 
 import { toJsonSafe } from '../core/validate';
+import { NO_REJECTIONS } from '../fusion/handEye';
 import type { JsonValue } from '../core/types';
 import {
   DEAD_RECKONING_AFTER_MS,
@@ -393,6 +394,7 @@ export class FusionSession {
         residualDeg: -1,
         reason: 'no fusion report has been produced yet',
         uncalibratedSamples: 0,
+        rejections: NO_REJECTIONS,
       },
       usable: r?.usable ?? true,
       orientation: r?.orientation ?? null,

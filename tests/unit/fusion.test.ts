@@ -48,7 +48,15 @@ import type {
   PoseReport,
 } from '../../src/tracking/trackingMessages';
 import { runPhase7Tests } from '../../src/testkit/Phase7Tests';
-import { AXIS_SPREAD_FLOOR, MIN_HAND_EYE_PAIRS } from '../../src/fusion/handEye';
+import {
+  AXIS_SPREAD_FLOOR,
+  MAX_PAIR_ROTATION_DEG,
+  MIN_HAND_EYE_PAIRS,
+  MIN_PAIR_ROTATION_DEG,
+  describeRejections,
+  estimateHandEye,
+} from '../../src/fusion/handEye';
+import type { HandEyePair } from '../../src/fusion/handEye';
 import { Verdict } from '../../src/core/types';
 import type { TestResult } from '../../src/core/types';
 import { CameraState } from '../../src/capture/CameraSource';
@@ -656,6 +664,15 @@ describe('the real stage, graded by the real suite', () => {
     expect(last?.handEye.reason).toContain('share an axis');
     expect(last?.handEye.uncalibratedSamples).toBeGreaterThan(0);
     expect(pan.stats.fusedFrames).toBe(0);
+    // ...and the record does not then claim the sensor is absent. The device run of 2026-09-05
+    // carried `imuSamples: 9619` at a measured 50.71 Hz beside a withheld term reading *no IMU
+    // is reporting on this run*, because one flag meant both "the sensor is delivering" and
+    // "the filter is running". Rule 002: the bundle may not contradict itself, and a reader who
+    // believes that line goes hunting for a permission problem that is not there.
+    expect(last?.imuSamples).toBeGreaterThan(0);
+    const withheld = last?.confidenceWithheld.find((w) => w.includes('IMUConsistency')) ?? '';
+    expect(withheld).not.toContain('no IMU is reporting');
+    expect(withheld).toContain('device→camera');
     // And the mode still follows from the report's own fields — no bias was estimated, so
     // `fusionModeFollowsFrom` derives VISION_ONLY and nothing disagrees.
     expect(pan.stats.modeMismatches).toBe(0);
@@ -816,6 +833,7 @@ function passThroughRun(o: { deadReckoner?: boolean } = {}): Run {
         residualDeg: 0.5,
         reason: 'measured from paired rotations',
         uncalibratedSamples: 0,
+        rejections: { offered: 40, tooSmall: 0, tooLarge: 0, angleDisagrees: 0, noAxis: 0 },
       },
       // The whole fake, in one line.
       orientation: o.deadReckoner ? [...trueQ] : [...trueQ],
@@ -1027,5 +1045,99 @@ describe('no IMU at all — the case the automated leg is permanently in', () =>
     for (const id of ['IMU-001', 'IMU-003', 'IMU-004', 'IMU-005', 'IMU-007']) {
       expect(verdictOf(g, id)).toBe(Verdict.PENDING);
     }
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+describe('why the calibration stalled — the tally the 2026-09-05 device run did not have', () => {
+  /*
+   * That run sat at 5 usable pairs against the 12 needed for eleven minutes, with a live 50 Hz
+   * gyroscope, Phase 6 posing on 1487 frames and every other record in the bundle reading
+   * healthy. `pairs: 5` was the whole diagnosis, and it does not distinguish "the turns were too
+   * small" from "the two instruments disagreed about the same turn" — which call for opposite
+   * things from whoever is holding the phone. `estimateHandEye` now returns which filter took
+   * them, on both branches.
+   */
+  const about = (axis: readonly number[], deg: number): Quat =>
+    fromRotationVector(axis.map((a) => a * deg * DEG));
+
+  it('counts each filter separately and accounts for every pair offered', () => {
+    const pairs: HandEyePair[] = [
+      // Under MIN_PAIR_ROTATION_DEG on the camera side.
+      { device: about([1, 0, 0], 5), camera: about([1, 0, 0], MIN_PAIR_ROTATION_DEG / 2) },
+      // Over MAX_PAIR_ROTATION_DEG on both.
+      {
+        device: about([0, 1, 0], MAX_PAIR_ROTATION_DEG + 10),
+        camera: about([0, 1, 0], MAX_PAIR_ROTATION_DEG + 10),
+      },
+      // Both in range, but not the same turn: 10° against 2°.
+      { device: about([0, 0, 1], 10), camera: about([0, 0, 1], 2) },
+      // ...and one that survives everything.
+      { device: about([1, 0, 0], 8), camera: about([1, 0, 0], 8) },
+    ];
+    const out = estimateHandEye(pairs);
+    expect(out.rotation).toBeNull();
+    expect(out.rejections.offered).toBe(4);
+    expect(out.rejections.tooSmall).toBe(1);
+    expect(out.rejections.tooLarge).toBe(1);
+    expect(out.rejections.angleDisagrees).toBe(1);
+    // The four counts partition everything that did not contribute.
+    const rejected =
+      out.rejections.tooSmall +
+      out.rejections.tooLarge +
+      out.rejections.angleDisagrees +
+      out.rejections.noAxis;
+    expect(out.pairs + rejected).toBe(out.rejections.offered);
+  });
+
+  it('says so in the reason, so a phone screen carries it rather than only the bundle', () => {
+    const pairs: HandEyePair[] = Array.from({ length: 20 }, (_, i) => ({
+      device: about([0, 0, 1], 10 + i * 0.1),
+      camera: about([0, 0, 1], 2),
+    }));
+    const out = estimateHandEye(pairs);
+    expect(out.rotation).toBeNull();
+    expect('reason' in out ? out.reason : '').toContain('of 20 offered');
+    expect('reason' in out ? out.reason : '').toContain('disagreed about the angle');
+  });
+
+  it('is still returned on the branch that succeeds, so a fit can be read the same way', () => {
+    // Three axes, so the spread clears the floor, plus one pair each filter takes.
+    const good: HandEyePair[] = [];
+    for (let i = 0; i < 6; i++) {
+      good.push({ device: about([1, 0, 0], 6 + i), camera: about([1, 0, 0], 6 + i) });
+      good.push({ device: about([0, 1, 0], 6 + i), camera: about([0, 1, 0], 6 + i) });
+      good.push({ device: about([0, 0, 1], 6 + i), camera: about([0, 0, 1], 6 + i) });
+    }
+    good.push({ device: about([1, 0, 0], 0.2), camera: about([1, 0, 0], 0.2) });
+    const out = estimateHandEye(good);
+    expect(out.rotation).not.toBeNull();
+    expect(out.rejections.offered).toBe(19);
+    expect(out.rejections.tooSmall).toBe(1);
+    expect(out.pairs).toBe(18);
+  });
+
+  it('ranks the dominant filter first, because that is the one to act on', () => {
+    const text = describeRejections({
+      offered: 40,
+      tooSmall: 3,
+      tooLarge: 1,
+      angleDisagrees: 30,
+      noAxis: 0,
+    });
+    expect(text.indexOf('disagreed about the angle')).toBeLessThan(text.indexOf('too small'));
+    expect(text).toContain('34 of 40 rejected');
+  });
+
+  it('does not blame a filter when none fired', () => {
+    const text = describeRejections({
+      offered: 4,
+      tooSmall: 0,
+      tooLarge: 0,
+      angleDisagrees: 0,
+      noAxis: 0,
+    });
+    expect(text).toContain('no pair was rejected');
   });
 });

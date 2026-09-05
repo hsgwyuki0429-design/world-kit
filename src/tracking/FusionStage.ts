@@ -500,7 +500,13 @@ export class FusionStage {
   report(now: number, visual: PoseReport | null): FusionReport {
     const t0 = performance.now();
     this.frames++;
-    const hasImu = this.imuSamples > 0 && this.main.isInitialised();
+    // Two different facts, and conflating them is how a bundle came to say "no IMU is reporting
+    // on this run" beside `imuSamples: 9619` and a measured 50.71 Hz. `hasImu` is *the filter is
+    // running on the IMU*; `imuReporting` is *the sensor is delivering*. They differ for exactly
+    // one reason — the device→camera rotation is not measured yet — and that reason is the thing
+    // a reader needs, so it is now what the withheld term says.
+    const imuReporting = this.imuSamples > 0;
+    const hasImu = imuReporting && this.main.isInitialised();
     const propagatedMs = this.lastPoseAt >= 0 ? Math.max(0, now - this.lastPoseAt) : -1;
 
     const mode: FusionMode = !hasImu
@@ -547,6 +553,8 @@ export class FusionStage {
       deadReckoningAfterMs: DEAD_RECKONING_AFTER_MS,
       maxPropagationMs: MAX_PROPAGATION_MS,
       hasImu,
+      imuReporting,
+      handEyeReason: 'reason' in this.handEye ? this.handEye.reason : '',
     });
     const imuTerm = confidence.terms.find((t) => t.name === 'imuConsistency');
 
@@ -595,6 +603,11 @@ export class FusionStage {
         residualDeg: 'residualDeg' in this.handEye ? round(this.handEye.residualDeg, 3) : -1,
         reason: 'reason' in this.handEye ? this.handEye.reason : 'measured from paired rotations',
         uncalibratedSamples: this.uncalibratedSamples,
+        // Which filter took the pairs that did not contribute. Without this a stalled run
+        // reports a live gyroscope, healthy vision and "5 usable pairs", and says nothing about
+        // what to do differently — which is what the device run of 2026-09-05 did for eleven
+        // minutes.
+        rejections: this.handEye.rejections,
       },
       imuConsistency: imuTerm ? imuTerm.value : -1,
       confidence: overall,
