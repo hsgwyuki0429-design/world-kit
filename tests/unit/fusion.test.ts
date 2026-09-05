@@ -495,6 +495,20 @@ interface RunOptions {
    * a hand-held phone is not a tripod.
    */
   readonly singleAxis?: boolean;
+  /**
+   * Mean interval between re-takings of Phase 5's verification anchor, in milliseconds.
+   *
+   * Drawn from an exponential distribution rather than used as a period, because the device's
+   * anchor does not re-take on a metronome: the run of 2026-09-05 re-anchored 3347 times in
+   * 8101 verified frames — a mean near 240 ms — and still offered 97 hand-eye pairs, which a
+   * strict 240 ms period could not do at all, since a pair needs 1000 ms of held anchor. It is
+   * the tail past a second that produces them, and the tail is the part that matters.
+   *
+   * Off by default, and that default is why this file did not catch the defect below: every
+   * call passed `reAnchored: false`, so the branch that restarts the visual interval was never
+   * exercised with a gyroscope running beside it.
+   */
+  readonly reAnchorEveryMs?: number;
   readonly seconds?: number;
   /** `[fromMs, toMs]` where Phase 6 produces no pose at all. */
   readonly dropout?: [number, number];
@@ -536,6 +550,7 @@ function runStage(o: RunOptions = {}): Run {
       fromRotationVector([Math.PI, 0, 0]),
     )),
     singleAxis = false,
+    reAnchorEveryMs,
   } = o;
   const random = rng(seed);
   const stage = new FusionStage(1);
@@ -545,7 +560,16 @@ function runStage(o: RunOptions = {}): Run {
   const dtGyro = 1000 / GYRO_HZ;
   const dtPose = 1000 / POSE_HZ;
   let trueQ: Quat = IDENTITY;
-  const anchorQ: Quat = IDENTITY;
+  // Phase 5's verification anchor, which moves: Phase 6's rotation is measured from it, so when
+  // it is re-taken the next pose is relative to a *different* origin and the increment across
+  // the change means nothing. `FusionStage` is told, and restarts the interval.
+  let anchorQ: Quat = IDENTITY;
+  // Exponential gaps with the given mean, from the fixture's own seeded generator.
+  const nextGap = (): number =>
+    reAnchorEveryMs === undefined
+      ? Number.POSITIVE_INFINITY
+      : -Math.log(1 - random()) * reAnchorEveryMs;
+  let nextReAnchorAt = reAnchorEveryMs === undefined ? Number.POSITIVE_INFINITY : nextGap();
   let nextPoseAt = 0;
   let poseFrames = 0;
 
@@ -594,8 +618,15 @@ function runStage(o: RunOptions = {}): Run {
         // `estimateHandEye` inverts — applied forward here so the fixture never borrows the
         // solver's arithmetic to make its data.
         const cameraQ = normalise(multiply(trueQ, conjugate(extrinsic)));
+        const reAnchored = ms >= nextReAnchorAt;
+        if (reAnchored) {
+          // The anchor becomes this view, so this pose is the identity against it and every
+          // later one is measured from here.
+          anchorQ = cameraQ;
+          nextReAnchorAt = ms + nextGap();
+        }
         pose = poseReport(normalise(multiply(conjugate(anchorQ), cameraQ)), poseFrames);
-        stage.notePose(pose, false, ms);
+        stage.notePose(pose, reAnchored, ms);
       }
     }
     const fused = stage.report(ms, pose);
@@ -1139,5 +1170,68 @@ describe('why the calibration stalled — the tally the 2026-09-05 device run di
       noAxis: 0,
     });
     expect(text).toContain('no pair was rejected');
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+describe('a scene that re-anchors, which is the only kind a room produces', () => {
+  /*
+   * The device run of 2026-09-05, read through the rejection tally added for it: 97 pairs
+   * offered, 4 usable, and **58 rejected because the two instruments disagreed about the angle
+   * of the same turn**. That is not a movement fault. A pair whose two halves disagree about an
+   * angle is not one turn seen twice, and the tally says it was the dominant filter by far.
+   *
+   * The cause is one missing line. On a re-anchor `notePoseInner` restarts the visual
+   * accumulator — `pendingQ = null`, `pendingSince = at` — and leaves `pendingGyroQ` running,
+   * because that field is cleared only where a pair is *pushed*. So the gyroscope half of the
+   * next pair spans from the previous push while the visual half spans from the re-anchor, and
+   * the two are measurements of different intervals. `PAIR_ANGLE_TOLERANCE` exists to catch
+   * exactly that, and did.
+   *
+   * Every call in this file passed `reAnchored: false` until now, so the branch was never run
+   * with a gyroscope beside it — and the contamination grows with the time between pushes,
+   * which is why a room full of re-anchors made it total and the fixture never saw it at all.
+   */
+  const MEAN_MS = 250;
+  const SECONDS = 300;
+
+  const run = runStage({ seconds: SECONDS, reAnchorEveryMs: MEAN_MS });
+  const last = run.reports[run.reports.length - 1];
+
+  it('offers pairs at all — the anchor holds past a second often enough', () => {
+    // The device managed 97 in 12.5 minutes on a mean gap of 240 ms. The fixture must reproduce
+    // that shape before it can say anything about what happens to them.
+    //
+    // `>=` rather than `>`: `offered` is the buffer size at the last *solve*, and once the
+    // extrinsic is known `solveHandEyeIfDue` waits for `HAND_EYE_RESOLVE_EVERY` more pairs
+    // before re-solving. A run that calibrates at the floor and then offers nine more reports
+    // the tally from the floor, which is the answer being read, not a smaller sample.
+    expect(last?.handEye.rejections.offered).toBeGreaterThanOrEqual(MIN_HAND_EYE_PAIRS);
+  });
+
+  it('does not lose them to the angle filter', () => {
+    const r = last?.handEye.rejections;
+    // The device's figure was 58 of 97 — 60%. With both halves on one interval the two
+    // instruments are describing the same turn and the filter has nothing to take.
+    expect((r?.angleDisagrees ?? 0) / (r?.offered ?? 1)).toBeLessThan(0.2);
+  });
+
+  it('calibrates, so the records downstream of the extrinsic can be evaluated at all', () => {
+    expect(last?.handEye.calibrated).toBe(true);
+    expect(last?.handEye.rotation).not.toBeNull();
+    expect(run.stats.fusedFrames).toBeGreaterThan(0);
+    expect(verdictOf(grade(run.stats), 'IMU-001')).not.toBe(Verdict.PENDING);
+  });
+
+  it('recovers the same extrinsic a run with a still anchor does', () => {
+    // The rotation is a property of the hardware. An anchor that moves is a fact about Phase 5,
+    // and it may not change the answer — only how long it takes to reach it.
+    const still = runStage({ seconds: 60 });
+    const a = still.reports[still.reports.length - 1]?.handEye.rotation as Quat;
+    const b = last?.handEye.rotation as Quat;
+    expect(a).not.toBeUndefined();
+    expect(b).not.toBeUndefined();
+    expect(angleBetweenDeg(a, b)).toBeLessThan(10);
   });
 });
