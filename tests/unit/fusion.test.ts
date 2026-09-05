@@ -441,6 +441,19 @@ const IDENTITY_TERMS: ConfidenceTermRecord[] = [
 ];
 
 /** A Phase 6 report carrying `q` as the rotation relative to the verification anchor. */
+/**
+ * The frame Phase 6 recovered nothing on — and it still reaches the stage.
+ *
+ * `main.ts` calls `notePose` on **every** frame and says so: *"`notePose` filters NO_POSE frames
+ * itself, so every frame reaches the stage and only the ones that recovered something advance
+ * the visual clock."* The flag riding beside it is Phase 5's `reAnchored`, and it is a fact about
+ * the anchor whether or not vision posed on that frame. This fixture had no such frame until
+ * now — a blind window simply did not call `notePose` at all — so the path was never exercised.
+ */
+function noPoseReport(frames: number): PoseReport {
+  return { ...poseReport(IDENTITY, frames), state: 'NO_POSE', quaternion: null };
+}
+
 function poseReport(q: Quat, frames: number): PoseReport {
   return {
     frames,
@@ -509,6 +522,14 @@ interface RunOptions {
    * exercised with a gyroscope running beside it.
    */
   readonly reAnchorEveryMs?: number;
+  /**
+   * Fraction of pose frames on which Phase 6 recovers nothing and reports `NO_POSE`.
+   *
+   * The device run of 2026-09-05 09:54 recorded 1971 of 4032 — **49%**. It matters because a
+   * re-anchor landing on such a frame is a re-anchor the stage must still act on, and until this
+   * option existed no test ever delivered one.
+   */
+  readonly noPoseRate?: number;
   readonly seconds?: number;
   /** `[fromMs, toMs]` where Phase 6 produces no pose at all. */
   readonly dropout?: [number, number];
@@ -551,6 +572,7 @@ function runStage(o: RunOptions = {}): Run {
     )),
     singleAxis = false,
     reAnchorEveryMs,
+    noPoseRate = 0,
   } = o;
   const random = rng(seed);
   const stage = new FusionStage(1);
@@ -625,7 +647,12 @@ function runStage(o: RunOptions = {}): Run {
           anchorQ = cameraQ;
           nextReAnchorAt = ms + nextGap();
         }
-        pose = poseReport(normalise(multiply(conjugate(anchorQ), cameraQ)), poseFrames);
+        // Vision may recover nothing on this frame — and the re-anchor beside it is still true.
+        // The stage is told either way, exactly as `main.ts` tells it.
+        pose =
+          random() < noPoseRate
+            ? noPoseReport(poseFrames)
+            : poseReport(normalise(multiply(conjugate(anchorQ), cameraQ)), poseFrames);
         stage.notePose(pose, reAnchored, ms);
       }
     }
@@ -1229,6 +1256,62 @@ describe('a scene that re-anchors, which is the only kind a room produces', () =
     // and it may not change the answer — only how long it takes to reach it.
     const still = runStage({ seconds: 60 });
     const a = still.reports[still.reports.length - 1]?.handEye.rotation as Quat;
+    const b = last?.handEye.rotation as Quat;
+    expect(a).not.toBeUndefined();
+    expect(b).not.toBeUndefined();
+    expect(angleBetweenDeg(a, b)).toBeLessThan(10);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+describe('a re-anchor on a frame vision did not pose — half of them, in a room', () => {
+  /*
+   * The run of 2026-09-05 09:54, taken after the interval fix above had shipped, and it moved
+   * nothing: 65 of 111 pairs still lost to the angle filter, against 58 of 97 before. The first
+   * fix was correct and was reaching almost none of the re-anchors.
+   *
+   * `notePoseInner` returns at its first line when Phase 6 recovered nothing — and `reAnchored`
+   * is an argument to that call, so returning there **discards it**. `lastVisualQ` then keeps a
+   * quaternion measured against the *old* anchor while the next pose is measured against the new
+   * one, and `step = conj(lastVisualQ) · q` is a difference between two origins rather than a
+   * rotation. That went straight into `pendingQ`.
+   *
+   * `main.ts` calls `notePose` on every frame, and the run recorded NO_POSE on 1971 of 4032 —
+   * so about half of its 1445 re-anchors arrived on a frame that threw the flag away. No test
+   * had ever delivered one: a blind window in this fixture skipped `notePose` entirely.
+   */
+  const MEAN_MS = 250;
+  const SECONDS = 300;
+  const NO_POSE_RATE = 0.5;
+
+  const run = runStage({
+    seconds: SECONDS,
+    reAnchorEveryMs: MEAN_MS,
+    noPoseRate: NO_POSE_RATE,
+  });
+  const last = run.reports[run.reports.length - 1];
+
+  it('still offers pairs, so the run has something to be judged on', () => {
+    expect(last?.handEye.rejections.offered).toBeGreaterThanOrEqual(MIN_HAND_EYE_PAIRS);
+  });
+
+  it('acts on the re-anchor rather than dropping it with the frame', () => {
+    const r = last?.handEye.rejections;
+    // The device's figure was 65 of 111 — 59% — and a `step` spanning two anchors is what
+    // produced it. An increment measured from one origin agrees with the gyroscope.
+    expect((r?.angleDisagrees ?? 0) / (r?.offered ?? 1)).toBeLessThan(0.2);
+  });
+
+  it('calibrates and fuses, so the five PENDING records become evaluable', () => {
+    expect(last?.handEye.calibrated).toBe(true);
+    expect(run.stats.fusedFrames).toBeGreaterThan(0);
+    expect(verdictOf(grade(run.stats), 'IMU-001')).not.toBe(Verdict.PENDING);
+  });
+
+  it('recovers the same extrinsic as a run where vision never drops out', () => {
+    const clean = runStage({ seconds: 60 });
+    const a = clean.reports[clean.reports.length - 1]?.handEye.rotation as Quat;
     const b = last?.handEye.rotation as Quat;
     expect(a).not.toBeUndefined();
     expect(b).not.toBeUndefined();

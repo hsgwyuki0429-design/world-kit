@@ -207,6 +207,15 @@ export interface EvidenceBundle {
   readonly phaseName: string;
   readonly createdAt: string;
   readonly appVersion: string;
+  /**
+   * The commit the app was built from, or `unknown` where the build could not name one.
+   *
+   * `appVersion` is `package.json`'s and has read `0.1.0` since Phase 0, so it cannot tell one
+   * build from another — and that is twice now the question a bundle could not answer: a Phase 5
+   * run judged on week-old instruments because a failing deploy had left the phone behind, and a
+   * Phase 7 fix whose presence on the device could not be established at all.
+   */
+  readonly buildCommit: string;
   readonly origin: string;
   readonly secureContext: boolean;
   readonly device: DeviceInfo;

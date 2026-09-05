@@ -1283,6 +1283,53 @@ the one beginning at `pendingSince`. No threshold moved.
 and the first one — fusing across two frames with no rotation between them — is what introduced
 the code this one was hiding in.
 
+### 2026-09-05, third run: the fix was correct and reached almost none of them
+
+`phase7-real-device-TESTING-2026-09-05T09-54-27-285Z.json`, taken after the interval fix had
+shipped. It moved nothing:
+
+| run | pairs lost to the angle filter |
+| --- | --- |
+| 06:46, before the interval fix | 58 of 97 = **0.598** |
+| 09:54, after it | 65 of 111 = **0.586** |
+
+`notePoseInner` returns at its first line when Phase 6 recovered nothing — and `reAnchored` is an
+**argument to that call**, so returning there discarded it. `main.ts` calls `notePose` on every
+frame and says why: *"`notePose` filters NO_POSE frames itself, so every frame reaches the stage
+and only the ones that recovered something advance the visual clock."* The frames were filtered.
+The flag riding beside them was filtered with them.
+
+`lastVisualQ` then kept a quaternion measured against the **old** anchor while the next pose was
+measured against the new one, so `step = conj(lastVisualQ) · q` was a difference between two
+origins rather than a rotation, and it went straight into `pendingQ`. This run recorded NO_POSE
+on **1971 of 4032** frames against **1445 re-anchors**, so about half of them landed there. The
+interval fix was in a branch they never reached, which is exactly why a correct fix changed
+nothing measurable.
+
+`reAnchored` on a frame with no pose now drops `lastVisualQ`, which sends the next posed frame
+through the restart branch — the one place that knows how to begin an interval. On the fixture,
+with re-anchors at a 250 ms mean and vision failing on half the frames, pairs lost to the angle
+filter go from **0.645** to **0.077**, and the run calibrates.
+
+**No test had ever delivered such a frame.** `runStage`'s blind window skipped `notePose`
+entirely, so a `NO_POSE` report with a live re-anchor beside it did not exist in this file.
+`noPoseRate` builds them now, at the device's own 49%.
+
+### The bundle can name the build it came from
+
+Twice in one day the question that mattered was *which build produced this*, and twice the
+evidence could not answer it. Phase 5's 2026-09-05 run was judged against instruments corrected a
+week earlier — established only by reading the **prose of a failure message** and noticing two
+absent metric keys — because a failing deploy had left the phone behind. Then the Phase 7
+interval fix appeared to do nothing, and whether the device had it could not be determined from
+the bundle at all.
+
+`appVersion` is `package.json`'s and has read `0.1.0` since Phase 0. `buildCommit` is beside it
+now: `GITHUB_SHA` in CI, `git rev-parse HEAD` locally, `unknown` where neither exists — read once
+in `buildEvidenceBundle` rather than passed by each of the eight call sites, because the one that
+forgot would produce a bundle indistinguishable from every other. Historical bundles do not carry
+it and are unaffected.
+
 **IMU-002 cannot pass in the same run as IMU-001.** One asks for a granted motion permission and
 the other for a denied one, and this run reports IMU-002 `PENDING` for the right reason: *a run
 with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
