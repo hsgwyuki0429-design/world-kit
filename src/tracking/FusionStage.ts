@@ -440,6 +440,19 @@ export class FusionStage {
       // The pending increment cannot span the re-anchor, so it starts again from here.
       this.pendingQ = null;
       this.pendingSince = at;
+      // **And so must the gyroscope's**, or the pair stops being one motion seen twice.
+      //
+      // `pendingGyroQ` used to be cleared only where a pair is *pushed*, so after a re-anchor
+      // its half spanned from the previous push while the visual half spanned from here — two
+      // measurements of two different intervals, handed over as one turn. `PAIR_ANGLE_TOLERANCE`
+      // exists to catch exactly that and did: the device run of 2026-09-05 offered 97 pairs and
+      // lost **58** to the angle filter, having re-anchored 3347 times in 8101 frames while a
+      // pair needs 1000 ms of held anchor. Nothing calibrated, so nothing fused, so five of the
+      // nine records could not be evaluated at all.
+      //
+      // The invariant is one line long and now holds in one place: `pendingGyroQ` and `pendingQ`
+      // cover the same interval, the one beginning at `pendingSince`.
+      this.pendingGyroQ = IDENTITY;
       this.main.beginVisualInterval();
       this.injected.beginVisualInterval();
       return;

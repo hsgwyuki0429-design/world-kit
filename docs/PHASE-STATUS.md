@@ -1239,6 +1239,50 @@ new tally is what settles it run-wide on the next device run. If it is `angleDis
 eating the pairs, the question is Phase 6's anchor-relative rotation over a long anchor age, not
 how the phone was moved.
 
+### 2026-09-05, second run: the tally answered in one reading, and it was the engine
+
+`phase7-real-device-TESTING-2026-09-05T06-46-12-702Z.json`, the first run carrying the rejection
+tally. It settled the lead above immediately, and not in the direction the movement advice
+assumed:
+
+```
+handEye: 4 usable rotation pair(s) of 97 offered, below the 12 this needs —
+         93 of 97 rejected: 58 because the two instruments disagreed about the angle
+         of the same turn; 27 because the turn was under 1°; 8 because it was over 60°
+```
+
+**58 of 97 to the angle filter.** That filter exists to catch a pair that is not one turn seen
+twice, and it was right: `pendingGyroQ` was cleared only where a pair is *pushed*, never on a
+re-anchor. So `notePoseInner`'s re-anchor branch restarted the visual accumulator — `pendingQ =
+null`, `pendingSince = at` — and left the gyroscope's running from the previous push. The two
+halves of the next pair then spanned **different intervals**, and the longer the gap between
+pushes, the worse the mismatch.
+
+That is total in a room. This run re-anchored **3347 times in 8101 verified frames** — a mean
+near 240 ms — while a pair needs 1000 ms of held anchor, so nearly every pair it managed to
+offer had at least one re-anchor inside it. Nothing calibrated, so nothing fused, so IMU-001,
+003, 004, 005 and 007 could not be evaluated at all.
+
+**Why no test caught it.** Every call in `tests/unit/fusion.test.ts` passed `reAnchored: false`.
+The branch existed, was correct about the visual half, and was never run with a gyroscope beside
+it. `runStage` takes `reAnchorEveryMs` now — the mean of an *exponential* gap rather than a
+period, because a strict 240 ms period offers no pairs at all and the device offered 97: it is
+the tail past a second that produces them. On that fixture the defect reproduces at
+**0.632** of pairs lost to the angle filter, against the device's 58/97 = **0.598**, and the fix
+takes it to **0.000** — all twelve offered pairs survive. Four tests: pairs are offered at all,
+they are not lost to the filter, the run calibrates and fuses so IMU-001 stops being `PENDING`,
+and the extrinsic recovered under a moving anchor is within 10° of the one recovered under a
+still one, because the rotation is a property of the hardware and Phase 5's anchor is not
+allowed to change it.
+
+The fix is one line — `pendingGyroQ = IDENTITY` in the re-anchor branch — and the invariant it
+restores is stated where it now holds: `pendingGyroQ` and `pendingQ` cover the same interval,
+the one beginning at `pendingSince`. No threshold moved.
+
+**This is the second Phase 7 device finding that was the engine rather than the instrument**,
+and the first one — fusing across two frames with no rotation between them — is what introduced
+the code this one was hiding in.
+
 **IMU-002 cannot pass in the same run as IMU-001.** One asks for a granted motion permission and
 the other for a denied one, and this run reports IMU-002 `PENDING` for the right reason: *a run
 with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
