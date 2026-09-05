@@ -21,6 +21,7 @@ function bundle(overrides: Partial<EvidenceBundle>): EvidenceBundle {
     phaseName: 'Environment / Capability',
     createdAt: '2026-08-21T07:57:50.291Z',
     appVersion: '0.1.0',
+    buildCommit: 'unknown',
     origin: 'https://example.test',
     secureContext: true,
     device: {} as EvidenceBundle['device'],

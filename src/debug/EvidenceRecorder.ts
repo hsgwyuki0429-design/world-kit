@@ -26,6 +26,17 @@ import { findIntegrityIssues } from '../core/validate';
 
 export const EVIDENCE_SCHEMA_VERSION = 1;
 
+/**
+ * The commit this build came from, read once.
+ *
+ * Through `typeof` because vite's `define` does not run in Node, where this module is imported
+ * by the unit tests — there the answer is `unknown`, which is the true one.
+ */
+export const BUILD_COMMIT: string =
+  typeof __BUILD_COMMIT__ === 'string' && __BUILD_COMMIT__.length > 0
+    ? __BUILD_COMMIT__
+    : 'unknown';
+
 export interface LegDetermination {
   readonly leg: EvidenceLeg;
   readonly signals: Record<string, JsonValue>;
@@ -122,6 +133,9 @@ export function buildEvidenceBundle(input: BuildBundleInput): BuiltEvidence {
     phaseName: input.phaseName,
     createdAt: new Date().toISOString(),
     appVersion: input.appVersion,
+    // Not taken from the caller: every one of the eight call sites would have to remember, and
+    // the one that forgot would produce a bundle that looked like every other one.
+    buildCommit: BUILD_COMMIT,
     origin: location.origin,
     secureContext: window.isSecureContext === true,
     device: input.device,

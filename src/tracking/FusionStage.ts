@@ -424,6 +424,28 @@ export class FusionStage {
     if (pose.state === PoseState.NO_POSE || !pose.quaternion) {
       // Vision produced nothing this frame. The interval keeps accumulating; `propagatedMs`
       // grows from `lastPoseAt`, which is what IMU-007 measures.
+      //
+      // **But the re-anchor is still true, and returning without it threw it away.**
+      //
+      // `reAnchored` is a fact about Phase 5's anchor, not about whether Phase 6 posed on the
+      // same frame, and `main.ts` calls this on *every* frame precisely so the stage sees both.
+      // Discarding it left `lastVisualQ` holding a quaternion measured against the old anchor
+      // while the next pose is measured against the new one, so `step` became a difference
+      // between two origins rather than a rotation — and went straight into `pendingQ`.
+      //
+      // The device run of 2026-09-05 09:54 recorded NO_POSE on 1971 of 4032 frames against 1445
+      // re-anchors, so about half of them landed here. It lost 65 of 111 pairs to the angle
+      // filter, against 58 of 97 before the interval fix above — which is how a correct fix
+      // moved nothing: it was in a branch these re-anchors never reached.
+      //
+      // Dropping `lastVisualQ` sends the next posed frame through the restart branch below,
+      // which is the one place that knows how to begin an interval.
+      if (reAnchored) {
+        this.lastVisualQ = null;
+        this.lastVisualAt = -1;
+        this.pendingQ = null;
+        this.pendingSince = -1;
+      }
       return;
     }
     const q = normalise([
