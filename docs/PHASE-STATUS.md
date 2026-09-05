@@ -863,6 +863,55 @@ was 68 correspondences so the per-frame count is 0 either way, and its injection
 Both changes move a verdict in one direction, and not this one. A device run under the corrected
 instruments would confirm it and is worth taking.
 
+### 2026-09-05: a third device run failed the same two records, on the old build
+
+`phase5-real-device-FAILED-2026-09-05T04-33-18-428Z.json`. It reports GEO-002 as *279
+texture-poor frame(s) reported USABLE or GOOD on a **median** of 0.5 correspondences* and runs
+GEO-003's injection on sets of **26, 28 and 40** correspondences. Both are the behaviour the
+corrections of 2026-08-28 removed: the median comparison was replaced by a per-frame count, and
+`MIN_INJECTABLE_CORRESPONDENCES` — 43 at these constants — was derived to stop the injection
+running below it. The bundle also carries neither `verdictOnThinEvidence` nor
+`goodOnThinEvidence`, which the corrected suite emits on every GEO-002 evaluation.
+
+**So the phone was not running this repository.** It was running commit `8aacc93`, from before
+the corrections, and it had been for a week:
+
+| Pages deploy | Commit | Result |
+| --- | --- | --- |
+| run 19, 2026-08-28 13:18 | `8aacc93` | success — **this is what the device kept loading** |
+| run 20, 2026-08-28 23:56 | `9d4646f` — the Phase 5 corrections | **failure** |
+| run 21, 2026-08-29 02:06 | `37b02de` | **failure** |
+
+Both failures are the same one line of `deploy-pages.yml`: the workflow runs `npm test` before
+it builds, and `verification.test.ts`'s own injection-floor test — *is where the recall actually
+collapses, measured on the real verifier* — **timed out at vitest's 5000 ms default**, at
+6892 ms on the runner. It runs 42 seeded RANSAC fits and half of them are deliberately on sets
+too small to converge, which is the thing it measures and cannot be made cheap. It takes 4726 ms
+on a developer machine, so it passed locally and passed in the PR that introduced it; the runner
+is about 1.4x slower and that is the whole margin.
+
+Nothing about Phase 5's geometry was wrong. **The instrument correction was never delivered to
+the instrument.** `testTimeout` is 30 s now, in `vitest.config.ts` and again at the test itself,
+with the measured figures and the reason written at both. `poseStage.test.ts`'s gyroscope test
+was at 4484 ms on the same runner — 516 ms from being the next deploy this failed silently.
+
+**What the failing bundle says about the phase itself is encouraging**, and none of it was
+judged by the corrected instruments:
+
+- GEO-002 will be 0 by construction. `deriveVerificationState` returns UNVERIFIED
+  unconditionally below 20 correspondences or 30 inliers, and the run recorded
+  `stateMismatches: 0`, so no frame can be counted as having reached a verdict on thin
+  evidence. The 0.5 median is the 461 declined frames doing exactly what the record exists to
+  confirm.
+- GEO-003 is close and the floor is what stands between it and the bar. The run's own last 20
+  injections median **0.900** recall and 43.5 surviving inliers; dropping the three below 43
+  moves the surviving count to 47 and leaves the recall at 0.900, against run-wide figures of
+  0.867 and 28. The discrimination was never in question at any point — 86.7 % of injected
+  outliers rejected against 9.1 % of untouched ones is a 9.6x advantage over 283 samples.
+
+A device run on a deployed build carrying the corrections is what decides it. Until the Pages
+deploy is green on `main`, every device run measures 2026-08-28.
+
 ### Three things this phase does not do
 
 - **No pose.** `Pose candidate` is the last step of v3 §14's chain and belongs to §15, which is

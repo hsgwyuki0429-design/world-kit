@@ -659,7 +659,12 @@ describe('GEO-003’s injection floor', () => {
     // Below it, on the sets the old gate admitted, it does not — and that is a fact about
     // eight-point RANSAC on a small contaminated set, not about this verifier.
     expect(medianRecallAt(MIN_CORRESPONDENCES + 11)).toBeLessThan(MIN_OUTLIER_RECALL);
-  });
+    // 42 seeded RANSAC fits, and half of them are on sets small enough that RANSAC spends its
+    // whole iteration budget — which is the thing being measured, so it cannot be made cheap.
+    // ~4.7 s on a developer machine and ~6.9 s on a CI runner: named here as well as in
+    // `vitest.config.ts`, because on 2026-08-29 the 5 s default made this the test that
+    // stopped the Pages deploy.
+  }, 30_000);
 });
 
 describe('v3 §14’s state function', () => {
