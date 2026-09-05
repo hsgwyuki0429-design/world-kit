@@ -61,8 +61,24 @@ export interface FusionConfidenceInput {
   readonly deadReckoningAfterMs: number;
   /** ...and past this the propagated orientation is no longer offered. */
   readonly maxPropagationMs: number;
-  /** False on a run with no IMU: the term is withheld by name, never scored as good. */
+  /**
+   * The filter is running on the IMU. False on a run with no IMU **and** on a run whose sensors
+   * are live but whose device→camera rotation has not been measured, so the term is withheld by
+   * name in both cases — never scored as good.
+   */
   readonly hasImu: boolean;
+  /**
+   * The sensor is delivering samples, whatever the filter is doing with them.
+   *
+   * Separate from `hasImu` because the two were one flag and the record paid for it: the device
+   * run of 2026-09-05 carried `imuSamples: 9619` at a measured 50.71 Hz and a withheld term
+   * reading *no IMU is reporting on this run*. Rule 002 — the bundle may not contradict itself,
+   * and a reader who believes the withheld line goes looking for a permission problem that is
+   * not there.
+   */
+  readonly imuReporting: boolean;
+  /** Why the extrinsic is not known yet, where it is not. Named in the withheld term. */
+  readonly handEyeReason: string;
 }
 
 export interface FusionConfidence {
@@ -93,19 +109,27 @@ export function fusionConfidence(input: FusionConfidenceInput): FusionConfidence
   }
 
   if (parts.length === 0) {
-    terms.push({
-      name: 'imuConsistency',
-      value: -1,
-      note: input.hasImu
-        ? 'the IMU is reporting but neither a visual increment nor a gravity sample has been ' +
-          'applied yet, so there is no disagreement to score — withheld rather than counted as good'
+    // Three cases, not two. The filter can be idle because there is no sensor, or because there
+    // is a sensor whose frame is not yet related to the camera's — and those call for opposite
+    // things from whoever is holding the phone.
+    const note = input.hasImu
+      ? 'the IMU is reporting but neither a visual increment nor a gravity sample has been ' +
+        'applied yet, so there is no disagreement to score — withheld rather than counted as good'
+      : input.imuReporting
+        ? 'the IMU is reporting, but nothing is fused yet because the device→camera rotation ' +
+          `has not been measured: ${input.handEyeReason}. Until it is, the gyroscope and the ` +
+          'visual increment are in two frames and their disagreement is not a measurement of ' +
+          'anything — withheld rather than counted as good'
         : 'no IMU is reporting, so there is nothing to be consistent with — v3 §19 lists this ' +
-          'term and this run cannot measure it; it is withheld by name rather than scored as 1',
-    });
+          'term and this run cannot measure it; it is withheld by name rather than scored as 1';
+    terms.push({ name: 'imuConsistency', value: -1, note });
     withheld.push(
       input.hasImu
         ? 'IMUConsistency — the sensors are live but no update has been applied yet'
-        : 'IMUConsistency — no IMU is reporting on this run (v3 §68: vision-only continues)',
+        : input.imuReporting
+          ? 'IMUConsistency — the sensors are live and the device→camera rotation is not ' +
+            'measured yet, so nothing is fused (v3 §68: vision-only continues)'
+          : 'IMUConsistency — no IMU is reporting on this run (v3 §68: vision-only continues)',
     );
   } else {
     const worst = parts.reduce((a, b) => (b.value < a.value ? b : a));
