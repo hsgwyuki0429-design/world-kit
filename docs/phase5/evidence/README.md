@@ -5,6 +5,8 @@
 | `phase5-real-device-PASSED-2026-08-23T01-09-36-993Z.json` | `REAL_DEVICE` | **Yes** — 4/4 required, 2/2 advisory |
 | `phase5-real-device-PASSED-2026-08-23T01-09-36-993Z.jpg` | `REAL_DEVICE` | The screen from that run |
 | `phase5-real-device-FAILED-2026-08-28T13-29-58-564Z.json` | `REAL_DEVICE` | No — GEO-002 and GEO-003, and both instruments were wrong. See below |
+| `phase5-real-device-FAILED-2026-09-05T04-33-18-428Z.json` | `REAL_DEVICE` | No — and not a Phase 5 finding: the phone was running the build from before those corrections. See below |
+| `phase5-real-device-FAILED-2026-09-05T04-33-18-428Z.jpg` | `REAL_DEVICE` | The screen from that run |
 | `phase5-desktop-chromium.json` | `DESKTOP_DEV` | No (Rule 004) |
 | `phase5-desktop-chromium.png` | `DESKTOP_DEV` | No — the screen at the end of that run |
 
@@ -190,3 +192,51 @@ Its texture-poor median was 68 correspondences, so the median check never fired 
 per-frame count is 0 either way. Its injections ran on sets of 59 at a recall of 1.00, above
 the new floor, and excluding smaller sets can only raise a median recall that was already 90.9 %.
 Both changes move the verdict in one direction only, and not this one.
+
+---
+
+## The 2026-09-05 run, which measured a build this repository had already fixed
+
+Kept as the record of a failure mode that is not about geometry at all, and that cost a week.
+
+It failed GEO-002 and GEO-003 again, with GEO-002's reason reading *279 texture-poor frame(s)
+reported USABLE or GOOD on a **median** of 0.5 correspondences* and GEO-003's injections running
+on sets of **26, 28 and 40**. Both are the pre-correction behaviour: the median comparison was
+replaced by a per-frame count on 2026-08-28, and the injection floor of 43 was derived in the
+same commit to stop exactly those sets being injected. The bundle also carries neither
+`verdictOnThinEvidence` nor `goodOnThinEvidence`, which the corrected suite emits on every
+GEO-002 evaluation, so it cannot have been produced by this code.
+
+### The build was never deployed
+
+The Pages workflow runs `npm test` before it builds. The last **successful** deploy was run 19
+at `8aacc93` on 2026-08-28 13:18 UTC — the commit *before* the corrections. Runs 20 (`9d4646f`,
+the corrections themselves) and 21 (`37b02de`) both failed at that step and never reached the
+build, so `https://hsgwyuki0429-design.github.io/world-kit/` kept serving `8aacc93` and every
+device run since has been measuring it.
+
+The failing step is one test: `verification.test.ts` → *GEO-003's injection floor* → *is where
+the recall actually collapses, measured on the real verifier*. It **timed out at vitest's
+5000 ms default**, having taken 6892 ms on the runner. It runs 42 seeded RANSAC fits and half of
+them are deliberately on sets too small to converge — that is the measurement, and it cannot be
+made cheap. On a developer machine it takes 4726 ms, which is why it passed locally and passed
+in its own pull request. The runner is roughly 1.4× slower and that was the entire margin.
+
+`testTimeout` is 30 s now, set in `vitest.config.ts` and again at the test itself, with the
+measured figures written at both. `poseStage.test.ts`'s gyroscope test ran 4484 ms on the same
+runner — 516 ms from being the next thing to stop the deploy without anyone reading a red X.
+
+### What the run does say about Phase 5, none of it judged by the corrected instruments
+
+- **GEO-002 is 0 by construction.** `deriveVerificationState` returns UNVERIFIED unconditionally
+  below 20 correspondences or 30 inliers, and the run recorded `stateMismatches: 0`. The 0.5
+  median is 461 declined frames doing precisely what the record exists to confirm.
+- **GEO-003 is close, and the floor is the difference.** The 20 injections the bundle retains
+  median **0.900** recall and 43.5 surviving inliers; dropping the three below the floor of 43
+  leaves the recall at 0.900 and moves the surviving count to 47 — against run-wide figures of
+  0.867 and 28, which include every set the floor now excludes. The discrimination was never in
+  doubt: 86.7 % of injected outliers rejected against 9.1 % of untouched ones is a **9.6×**
+  advantage over 283 samples, where a verifier returning its input scores 0.
+
+Deciding it needs one thing that has not happened yet: a device run against a deployed build
+that carries the corrections.
