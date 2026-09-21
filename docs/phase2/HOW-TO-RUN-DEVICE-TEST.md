@@ -3,28 +3,28 @@
 One run, about three minutes, on the iPhone in Safari over HTTPS.
 
 **Phase 1 has to have passed on this build — not necessarily in this session.** A phase that
-reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
-loads, so you do not re-run it to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run it to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA` — using the `GO TO …` buttons, because `BACK TO …` stops the stage you came
-from. The Phase Lock in front of the PIPELINE screen stays closed until Phase 1 has `PASSED` on
-this device on this build, and each screen's button says which of the two things is missing when
-it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始` — using the `… へ進む` buttons, because `… へ戻る` stops the stage you came from.
+The Phase Lock in front of the 「フレームパイプライン」 screen stays closed until Phase 1 has
+`PASSED` on this device on this build, and each screen's button says which of the two things is
+missing when it is disabled.
 
 ---
 
 ## The run
 
-1. Complete the Phase 1 granted run: **START SCAN → START CAMERA**, hold it 35 s while
+1. Complete the Phase 1 granted run: **スキャン開始 → カメラ開始**, hold it 35 s while
    moving the phone, rotate once. Wait for the Phase 1 verdict to read `PASSED`.
-2. Tap **GO TO FRAME PIPELINE**.
-3. Tap **START PIPELINE**. The camera opens again and frames begin flowing to the worker.
+2. Tap **フレームパイプラインへ進む**.
+3. Tap **パイプライン開始**. The camera opens again and frames begin flowing to the worker.
    - Within a second the *Worker output* panel appears below the preview, showing the
      grayscale the worker built. **Check that it moves when the preview moves.** That is
      the same thing FRAME-002 measures numerically, and it is what the screenshot records.
@@ -52,7 +52,7 @@ it is disabled.
      consecutive windows comfortably inside the next tier's budget.
    - FRAME-004 stays `PENDING` until this half has happened. An adaptation that only
      degrades is half a mechanism.
-8. When the verdict panel shows what you want, tap **DOWNLOAD EVIDENCE JSON** — the verdict
+8. When the verdict panel shows what you want, tap **エビデンス JSON をダウンロード** — the verdict
    is in the filename — and screenshot the screen.
 
 ---

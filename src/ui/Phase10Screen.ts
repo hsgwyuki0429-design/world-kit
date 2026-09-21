@@ -72,12 +72,12 @@ export function renderPhase10Screen(
   root.replaceChildren();
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Landmark Map']),
+      el('h1', {}, ['ランドマーク地図']),
       el('p', {}, [
-        'Phase 10 — one frame for what Phase 9 leaves as ninety separate answers. Each of its ' +
-          'batches is in units of its own pair’s baseline; the landmarks two batches share fix ' +
-          'the ratio between them, which is the only mechanism a monocular camera has. The world ' +
-          'has a consistent unit and no known one.',
+        'Phase 10 — Phase 9 が90個ばらばらの答えとして残したものを、1つの座標系にまとめます。' +
+          '各バッチはその組自身の基線を単位としており、2つのバッチが共有するランドマークが' +
+          '両者の比を決めます。単眼カメラに使える仕組みはこれだけです。この世界は' +
+          '一貫した単位を持ちますが、その単位が何メートルなのかは分かりません。',
       ]),
     ]),
   );
@@ -99,10 +99,10 @@ export function renderPhase10Screen(
   );
   root.append(
     navigationSection(
-      { index: 9, label: 'BACK TO TRIANGULATION', onClick: handlers.onBack },
+      { index: 9, label: '三角測量へ戻る', onClick: handlers.onBack },
       {
         index: 11,
-        name: 'SURFACE UNDERSTANDING',
+        name: '面の認識',
         phase: vm.phase11,
         canEnter: vm.canEnterPhase11,
         implemented: vm.phase11Implemented,
@@ -126,25 +126,26 @@ function renderPreview(vm: Phase10ViewModel, handlers: Phase10Handlers): HTMLEle
       ]),
       el('p', { class: 'footnote' }, [
         s.batches > 0
-          ? 'The landmarks are not drawn on the picture. A few hundred points over a camera ' +
-            'image reads as a reconstruction, and v4 §22 says in one line that this is not one — ' +
-            'so the map is reported as numbers until there is a phase whose job is to show it.'
+          ? 'ランドマークは画像の上に描いていません。カメラ映像の上に数百個の点が乗ると' +
+            '「再構成」に見えてしまいますが、v4 §22 は一行で「これは再構成ではない」と' +
+            '言っています。なので、それを見せることを仕事とするフェーズができるまで、' +
+            '地図は数値として報告します。'
           : vm.running
-            ? 'Waiting for the first batch. The map needs a keyframe pair Phase 9 could triangulate.'
-            : 'Triangulation is live. The map has not been started.',
+            ? '最初のバッチを待っています。地図には、Phase 9 が三角測量できたキーフレームの組が要ります。'
+            : '三角測量は動作中です。地図はまだ開始されていません。',
       ]),
     );
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'LANDMARK MAP NOT STARTED';
+              ? 'カメラを要求中…'
+              : 'ランドマーク地図は未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -159,19 +160,19 @@ function renderPreview(vm: Phase10ViewModel, handlers: Phase10Handlers): HTMLEle
         id: 'start-landmarks',
         // §H.5, for the eighth time and from the one predicate.
         disabled: vm.opening || vm.running,
-        textContent: vm.running ? 'MAPPING' : vm.opening ? 'REQUESTING…' : 'START LANDMARK MAP',
+        textContent: vm.running ? '地図を作成中' : vm.opening ? '要求中…' : 'ランドマーク地図開始',
         onclick: handlers.onStart,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-landmarks',
         disabled: !vm.running,
-        textContent: 'STOP',
+        textContent: '停止',
         onclick: handlers.onStop,
       } as never),
     ]),
   );
-  return card('Camera', children);
+  return card('カメラ', children);
 }
 
 /** MAP-002 — the gate. Nothing else here separates a map from a list of the last batch. */
@@ -180,26 +181,25 @@ function renderPrediction(vm: Phase10ViewModel): HTMLElement {
   const enough = s.heldOutBatches >= MIN_JUDGED_BATCHES;
   const within = enough && s.medianHeldOutPx <= MAX_LANDMARK_REPROJECTION_PX;
   const copying = enough && s.heldOutSamples > 0 && s.zeroHeldOut === s.heldOutSamples;
-  return card('Does the map predict what it has not seen?', [
+  return card('地図は、見ていないものを予測できるか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Held-out error', px(s.medianHeldOutPx), enough ? (within ? OK : BAD) : ''),
-      stat('Ceiling', `${MAX_LANDMARK_REPROJECTION_PX} px`),
-      stat('Worst', px(s.worstHeldOutPx)),
-      stat('Batches', enough ? String(s.heldOutBatches) : `${s.heldOutBatches} / ${MIN_JUDGED_BATCHES}`),
-      stat('Exactly zero', String(s.zeroHeldOut), copying ? BAD : ''),
-      stat('Observations when asked', num(s.medianObservationsAtPrediction)),
+      stat('取り置いた視点での誤差', px(s.medianHeldOutPx), enough ? (within ? OK : BAD) : ''),
+      stat('上限', `${MAX_LANDMARK_REPROJECTION_PX} px`),
+      stat('最悪', px(s.worstHeldOutPx)),
+      stat('バッチ数', enough ? String(s.heldOutBatches) : `${s.heldOutBatches} / ${MIN_JUDGED_BATCHES}`),
+      stat('ちょうどゼロ', String(s.zeroHeldOut), copying ? BAD : ''),
+      stat('尋ねた時点の観測数', num(s.medianObservationsAtPrediction)),
     ]),
     el('p', { class: 'footnote' }, [
-      'A landmark’s position, **as the map held it before this batch**, is projected into the ' +
-        'keyframe the batch has just added — a view that position was not computed from — and ' +
-        'compared against where the tracker actually saw it. The observation count each landmark ' +
-        'had at that moment travels with the record, so "before" is something the evidence says ' +
-        'rather than something the code claims.',
+      'ランドマークの位置を、**このバッチの前に地図が保持していた状態のまま**、' +
+        'バッチがいま追加したキーフレーム — その位置の計算には使われていない視点 — へ投影し、' +
+        '追跡器が実際に見た場所と比べます。各ランドマークがその時点で持っていた観測数も' +
+        '記録と一緒に残るので、「前の状態」はコードの主張ではなくエビデンスが語る事実になります。',
     ]),
     el('p', { class: 'footnote' }, [
-      'This is the only figure a map with no memory cannot produce. Overwrite each landmark with ' +
-        'the newest triangulation and it agrees with every observation exactly, is never ' +
-        'inconsistent, keeps every count right, and has nothing at all to predict with.',
+      '記憶を持たない地図が作れない数値はこれだけです。各ランドマークを最新の三角測量で' +
+        '上書きすれば、すべての観測とぴったり一致し、矛盾も起こさず、個数の勘定も合います。' +
+        'そして予測に使えるものが何ひとつありません。',
     ]),
   ]);
 }
@@ -210,40 +210,39 @@ function renderInjection(vm: Phase10ViewModel): HTMLElement {
   const enough = s.injections >= MIN_INJECTIONS;
   const found = enough && s.medianRecall >= INJECTION_RECALL_FLOOR;
   const spared = enough && s.medianCleanExcess <= MAX_CLEAN_CULL_EXCESS;
-  return card('Does the map find what it was not told about?', [
+  return card('地図は、教えられていないものを見つけるか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Recall', pct(s.medianRecall), enough ? (found ? OK : BAD) : ''),
-      stat('Floor', pct(INJECTION_RECALL_FLOOR)),
-      stat('Untouched, rejected', pct(s.medianCleanRejectionRate)),
-      stat('...uncorrupted, the same gate refuses', pct(s.medianBaselineRejectionRate)),
-      stat('Excess', pct(s.medianCleanExcess), enough ? (spared ? OK : BAD) : ''),
-      stat('Ceiling', pct(MAX_CLEAN_CULL_EXCESS)),
-      stat('Injections', enough ? String(s.injections) : `${s.injections} / ${MIN_INJECTIONS}`),
-      stat('Displacement', px(s.injectionDisplacementPx)),
+      stat('検出率', pct(s.medianRecall), enough ? (found ? OK : BAD) : ''),
+      stat('下限', pct(INJECTION_RECALL_FLOOR)),
+      stat('無傷の点の棄却率', pct(s.medianCleanRejectionRate)),
+      stat('…何も仕込まない時の同じ関門の棄却率', pct(s.medianBaselineRejectionRate)),
+      stat('超過分', pct(s.medianCleanExcess), enough ? (spared ? OK : BAD) : ''),
+      stat('上限', pct(MAX_CLEAN_CULL_EXCESS)),
+      stat('注入回数', enough ? String(s.injections) : `${s.injections} / ${MIN_INJECTIONS}`),
+      stat('ずらした量', px(s.injectionDisplacementPx)),
     ]),
     el('p', { class: 'footnote' }, [
-      `A known subset of the batch's positions is displaced **perpendicular to the viewing ray** ` +
-        `by ${LANDMARK_INJECTION_FRACTION} of the point's depth and handed over unmarked. Moving ` +
-        'a point *along* its ray changes its depth and barely moves it in the image; moving it ' +
-        'across moves the projection by `f · Δ/Z`, and at `Δ = 0.05 Z` the depth cancels — the ' +
-        'same displacement in pixels for a near point and a far one.',
+      `バッチの位置のうち既知の一部を、**視線に垂直な向き**へ、その点の深度の ` +
+        `${LANDMARK_INJECTION_FRACTION} だけずらし、印を付けずに渡します。点を視線に*沿って*` +
+        '動かすと深度は変わりますが画像上ではほとんど動きません。横に動かすと投影は ' +
+        '`f · Δ/Z` だけ動き、`Δ = 0.05 Z` では深度が打ち消えます。つまり近い点でも遠い点でも' +
+        '画素上のずれが同じになります。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The map is asked what it *would* do rather than being made to do it, so finding out ' +
-        'whether the gate works does not corrupt the thing being measured. That is why GEO-003 ' +
-        'verifies a copy of the correspondence set rather than the set itself.',
+      '地図には、実際にやらせるのではなく「どうする*はず*か」を尋ねています。' +
+        'そうすれば、関門が働くかを調べる行為が、計測対象そのものを汚さずに済みます。' +
+        'GEO-003 が対応点集合そのものではなく写しを検証しているのも同じ理由です。',
     ]),
     el('p', { class: 'footnote' }, [
-      'Every one of the numbers is reported, because each alone is scored perfectly by some ' +
-        'degenerate map: recall by one that rejects everything, the untouched rate by one that ' +
-        'rejects nothing, and an *absolute* untouched rate by a quiet scene.',
+      'どの数値も全部報告しています。1つだけならどれも、何かしら退化した地図が満点を' +
+        '取れてしまうからです。検出率は「全部棄却する」地図が、無傷の棄却率は「何も棄却しない」' +
+        '地図が、そして無傷の棄却率の*絶対値*は、何も起きていないシーンが満点にします。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The figure that is judged is the **excess**. This gate compares two estimates of one ' +
-        'point, so it refuses the ordinary tail of their disagreement whether or not anything ' +
-        'was injected — the same gate on the same batch, uncorrupted, is the baseline printed ' +
-        'above it. What the criterion asks is whether corrupting a third of the batch made the ' +
-        'gate suspicious of the innocent.',
+      '判定に使うのは**超過分**です。この関門は1つの点についての2つの推定を比べるので、' +
+        '何も仕込まなくても、両者の食い違いの裾をある程度は棄却します。同じバッチに対して' +
+        '何も仕込まずに同じ関門を通した結果が、上に出ている基準値です。基準が問うているのは、' +
+        'バッチの3分の1を汚したことで、関門が無実の点まで疑うようになったかどうかです。',
     ]),
   ]);
 }
@@ -252,41 +251,40 @@ function renderInjection(vm: Phase10ViewModel): HTMLElement {
 function renderRegistration(vm: Phase10ViewModel): HTMLElement {
   const s = vm.stats;
   const within = s.medianRegistrationResidual >= 0 && s.medianRegistrationResidual <= MAX_REGISTRATION_RESIDUAL;
-  return card('One frame', [
+  return card('1つの座標系', [
     el('div', { class: 'stat-grid' }, [
-      stat('Registered', `${s.registeredBatches} / ${s.batches}`),
-      stat('Scale recovered', num(s.medianRegistrationScale)),
-      stat('Residual', s.medianRegistrationResidual < 0 ? null : String(s.medianRegistrationResidual),
+      stat('位置合わせできたバッチ', `${s.registeredBatches} / ${s.batches}`),
+      stat('復元したスケール', num(s.medianRegistrationScale)),
+      stat('残差', s.medianRegistrationResidual < 0 ? null : String(s.medianRegistrationResidual),
         s.registeredBatches > 0 ? (within ? OK : BAD) : ''),
-      stat('Limit', String(MAX_REGISTRATION_RESIDUAL)),
-      stat('Epochs', `${s.epochs} (${s.epochRestarts} restart(s))`),
-      stat('Scale', s.scale, s.scaleViolations > 0 ? BAD : OK),
+      stat('上限', String(MAX_REGISTRATION_RESIDUAL)),
+      stat('世代', `${s.epochs}（うち再起動 ${s.epochRestarts} 回）`),
+      stat('スケール', s.scale, s.scaleViolations > 0 ? BAD : OK),
     ]),
     el('p', { class: 'footnote' }, [
-      'A similarity — seven degrees of freedom, in closed form — is fitted from each batch’s ' +
-        `frame to the world over the landmarks they share, with at least ` +
-        `${MIN_REGISTRATION_POINTS} of them. **Its scale term is the ratio** between that batch's ` +
-        'baseline and the world’s, and it is the quantity a monocular camera has no other way to ' +
-        'obtain. It is a ratio and never a length.',
+      `相似変換 — 自由度7、閉形式 — を、各バッチの座標系からワールドへ、両者が共有する` +
+        `ランドマーク（最低 ${MIN_REGISTRATION_POINTS} 個）の上で当てはめます。` +
+        '**そのスケール項が、そのバッチの基線とワールドの基線の比**であり、単眼カメラが' +
+        'それ以外の方法では得られない量です。これは比であって、長さでは決してありません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The residual is relative to the depth, because the world’s unit is a baseline whose ' +
-        `length nobody has measured. The limit is half Phase 9's depth-uncertainty limit: a ` +
-        'registration at that figure has added as much error as the depths already carry.',
+      '残差は深度に対する相対値です。ワールドの単位は、誰もその長さを測っていない基線だから' +
+        'です。上限は Phase 9 の深度不確かさの上限の半分にしてあります。その値まで来た' +
+        '位置合わせは、深度がもともと抱えている誤差と同じだけの誤差を足したことになります。',
     ]),
     ...(Object.keys(s.unregisteredReasons).length > 0
       ? [
           el('p', { class: 'footnote' }, [
-            `Batches the map could not register: ${JSON.stringify(s.unregisteredReasons)}. They ` +
-              'are not ingested — a batch the map cannot place is a batch whose points would go ' +
-              'somewhere arbitrary.',
+            `地図が位置合わせできなかったバッチ: ${JSON.stringify(s.unregisteredReasons)}。` +
+              'これらは取り込みません。置き場所を決められないバッチは、その点が任意の場所に' +
+              '行ってしまうバッチだからです。',
           ]),
         ]
       : []),
     el('p', { class: 'footnote' }, [
-      'After five consecutive batches it cannot register, the world is redefined and the epoch ' +
-        'count rises. §H.8’s three-way distinction: failed, restarted, and interrupted for a ' +
-        'reason we can name — and a run with several epochs is not the same run as one with none.',
+      '5バッチ連続で位置合わせできないと、ワールドを定義し直し、世代の数が増えます。' +
+        '§H.8 の3分類 — 失敗した、再起動した、名前の付けられる理由で中断した — であり、' +
+        '世代が何度も変わった実行は、一度も変わらなかった実行と同じ実行ではありません。',
     ]),
   ]);
 }
@@ -294,21 +292,21 @@ function renderRegistration(vm: Phase10ViewModel): HTMLElement {
 /** MAP-001 and MAP-004 — what the map holds, and what it let go of. */
 function renderMap(vm: Phase10ViewModel): HTMLElement {
   const s = vm.stats;
-  return card('The map', [
+  return card('地図', [
     el('div', { class: 'stat-grid' }, [
-      stat('Landmarks', `${s.landmarks} / ${MAX_LANDMARKS}`, s.boundBreaches > 0 ? BAD : OK),
-      stat('Confirmed', `${s.confirmed} (most ${s.peakConfirmed})`),
-      stat('...at', `${MIN_OBSERVATIONS_CONFIRMED} observations`),
-      stat('Median confidence', num(s.medianConfidence)),
-      stat('Culled', String(s.culled)),
-      stat('Batch', `${s.admitted} new · ${s.merged} merged · ${s.rejected} refused`),
+      stat('ランドマーク', `${s.landmarks} / ${MAX_LANDMARKS}`, s.boundBreaches > 0 ? BAD : OK),
+      stat('確定', `${s.confirmed}（最大 ${s.peakConfirmed}）`),
+      stat('…確定の条件', `観測 ${MIN_OBSERVATIONS_CONFIRMED} 回`),
+      stat('信頼度の中央値', num(s.medianConfidence)),
+      stat('除去', String(s.culled)),
+      stat('直近のバッチ', `新規 ${s.admitted} · 統合 ${s.merged} · 拒否 ${s.rejected}`),
     ]),
     ...s.samples.map((l) =>
       el('div', { class: 'cap-row' }, [
         el('span', { class: 'cap-label' }, [`#${l.id}`]),
         el('span', { class: 'cap-method' }, [
-          `${vec(l.position)} · ${l.observations} obs from ${l.keyframes} view(s) · ` +
-            `${deg(l.maxParallaxDeg)} parallax · predicts within ${px(l.meanPredictionPx)}`,
+          `${vec(l.position)} · ${l.keyframes} 視点から観測 ${l.observations} 回 · ` +
+            `視差 ${deg(l.maxParallaxDeg)} · 予測誤差 ${px(l.meanPredictionPx)} 以内`,
         ]),
         el('span', { class: `cap-state ${l.state === 'CONFIRMED' ? OK : ''}` }, [
           String(l.confidence),
@@ -317,7 +315,7 @@ function renderMap(vm: Phase10ViewModel): HTMLElement {
     ),
     ...(s.recentCulls.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Recently culled']),
+          el('p', { class: 'group-title' }, ['最近除去したもの']),
           ...s.recentCulls.slice(-4).map((c) =>
             el('div', { class: 'cap-row' }, [
               el('span', { class: 'cap-label' }, [`#${c.id}`]),
@@ -328,11 +326,10 @@ function renderMap(vm: Phase10ViewModel): HTMLElement {
         ]
       : []),
     el('p', { class: 'footnote' }, [
-      'Confidence is the **minimum** over four measured terms — observation count, the parallax ' +
-        'that determined the point, how well its predictions land, and how many viewpoints have ' +
-        'seen it. None of them is a clock: a landmark seen for a long time is not thereby a good ' +
-        'landmark, and `audit-fake-data.mjs` enforces the absence of the alternative rather than ' +
-        'leaving it to review.',
+      '信頼度は、実測した4つの項の**最小値**です — 観測回数、その点を決めた視差、' +
+        '予測がどれだけ当たるか、いくつの視点から見えたか。どれも時計ではありません。' +
+        '長く見えているというだけでは良いランドマークにはならないので、' +
+        '`audit-fake-data.mjs` が「時間に依存しないこと」をレビュー任せにせず機械的に強制しています。',
     ]),
   ]);
 }
@@ -342,23 +339,22 @@ function renderConvergence(vm: Phase10ViewModel): HTMLElement {
   const s = vm.stats;
   const settling =
     s.moveAtTwoSamples > 0 && s.moveAtFiveSamples > 0 && s.moveAtFive <= s.moveAtTwo;
-  return card('Convergence', [
+  return card('収束', [
     el('div', { class: 'stat-grid' }, [
-      stat('Move at 2 observations', s.moveAtTwo < 0 ? null : String(s.moveAtTwo)),
-      stat('...at 5 or more', s.moveAtFive < 0 ? null : String(s.moveAtFive),
+      stat('観測2回目での移動量', s.moveAtTwo < 0 ? null : String(s.moveAtTwo)),
+      stat('…5回目以降', s.moveAtFive < 0 ? null : String(s.moveAtFive),
         s.moveAtFiveSamples > 0 ? (settling ? OK : BAD) : ''),
-      stat('Samples', `${s.moveAtTwoSamples} · ${s.moveAtFiveSamples}`),
-      stat('Median move', s.medianMoveRelative < 0 ? null : String(s.medianMoveRelative)),
+      stat('サンプル数', `${s.moveAtTwoSamples} · ${s.moveAtFiveSamples}`),
+      stat('移動量の中央値', s.medianMoveRelative < 0 ? null : String(s.medianMoveRelative)),
     ]),
     el('p', { class: 'footnote' }, [
-      'A landmark’s position is a running mean over its observations, so what a new one moves it ' +
-        'by falls like 1/n. The figures are relative to the landmark’s own depth, because the ' +
-        'world’s unit has no length and an absolute movement would be a movement in an arbitrary ' +
-        'scale.',
+      'ランドマークの位置はその観測の逐次平均なので、新しい観測1つが動かす量は 1/n で' +
+        '小さくなります。数値はそのランドマーク自身の深度に対する相対値です。ワールドの単位に' +
+        '長さがない以上、絶対値での移動量は任意のスケールでの移動量にしかならないからです。',
     ]),
     el('p', { class: 'footnote' }, [
-      'A map that re-guesses each time random-walks instead, and the two are distinguishable in ' +
-        'exactly this figure: a random walk’s step size does not fall with the number of steps.',
+      '毎回推定し直す地図は、代わりにランダムウォークします。両者を区別できるのはまさに' +
+        'この数値です。ランダムウォークの歩幅は、歩数が増えても小さくなりません。',
     ]),
   ]);
 }
@@ -366,28 +362,27 @@ function renderConvergence(vm: Phase10ViewModel): HTMLElement {
 /** MAP-007 — v4 §22's second line, as a value. */
 function renderNotAModel(vm: Phase10ViewModel): HTMLElement {
   const s = vm.stats;
-  return card('What this is not', [
+  return card('これが何ではないか', [
     el('div', { class: 'stat-grid' }, [
-      stat('Surfaces', 'NONE', OK),
-      stat('Mesh', 'NONE', OK),
-      stat('Completeness', 'NOT CLAIMED', OK),
-      stat('Landmarks per keyframe', num(s.landmarksPerKeyframe)),
-      stat('...per tracked feature', num(s.landmarksPerTrackedFeature)),
-      stat('Confirmed', `${s.confirmed} · ${pct(s.confirmedShare)} of the map`),
+      stat('面', 'なし', OK),
+      stat('メッシュ', 'なし', OK),
+      stat('網羅性', '主張しない', OK),
+      stat('キーフレームあたりのランドマーク', num(s.landmarksPerKeyframe)),
+      stat('…追跡中の特徴点あたり', num(s.landmarksPerTrackedFeature)),
+      stat('確定', `${s.confirmed} · 地図の ${pct(s.confirmedShare)}`),
     ]),
     el('p', { class: 'footnote' }, [s.modelClaim]),
     el('p', { class: 'footnote' }, [
-      'The density figures are what makes the sparsity a measurement. A screen full of points ' +
-        'reads as a reconstruction; a dozen or so places per view, held for as long as the room ' +
-        'keeps agreeing with them, reads as what it is. Phase 11 is where surfaces begin, from ' +
-        'these.',
+      '密度の数値が、「疎である」ことを計測値にしています。画面いっぱいの点は再構成に' +
+        '見えますが、1視点あたり十数か所を、部屋がそれと矛盾しないあいだだけ保持している' +
+        'ものは、ありのままに見えます。面が始まるのは Phase 11 で、その材料がこれです。',
     ]),
     el('p', { class: 'footnote' }, [
-      '"Per tracked feature" is a **ratio and not a share**, and it is routinely above one: the ' +
-        'map remembers points that have left the frame and the tracked population does not. It ' +
-        'was first reported as a percentage of the population and read 338 % — the same shape as ' +
-        'Phase 6’s device run reporting an agreement rate of 232.3 %, and the reason every rate ' +
-        'in this project is checked against 0..1.',
+      '「追跡中の特徴点あたり」は**比であって割合ではなく**、日常的に 1 を超えます。' +
+        '地図はフレームから出ていった点も覚えていますが、追跡中の母数はそうではないからです。' +
+        '最初これを母数に対する百分率として報告したところ 338 % と出ました — Phase 6 の実機実行が' +
+        '一致率 232.3 % を報告したのと同じ形で、このプロジェクトのすべての比率が 0..1 に対して' +
+        '検査される理由です。',
     ]),
   ]);
 }
@@ -395,21 +390,21 @@ function renderNotAModel(vm: Phase10ViewModel): HTMLElement {
 function renderCost(vm: Phase10ViewModel): HTMLElement {
   const s = vm.stats;
   const within = s.meanLandmarkMs >= 0 && s.meanLandmarkMs <= LANDMARK_BUDGET_MS;
-  return card('Cost (§27 puts this off the frame cadence)', [
+  return card('コスト（§27 はこれをフレーム周期の外に置く）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Per batch', s.meanLandmarkMs >= 0 ? `${s.meanLandmarkMs} ms` : null,
+      stat('バッチあたり', s.meanLandmarkMs >= 0 ? `${s.meanLandmarkMs} ms` : null,
         s.meanLandmarkMs >= 0 ? (within ? OK : BAD) : ''),
-      stat('Budget', `${LANDMARK_BUDGET_MS} ms`),
-      stat('Amortised per frame', s.amortisedMsPerFrame < 0 ? null : `${s.amortisedMsPerFrame} ms`),
-      stat('Batches timed', String(s.costSamples)),
+      stat('予算', `${LANDMARK_BUDGET_MS} ms`),
+      stat('フレームあたりに均すと', s.amortisedMsPerFrame < 0 ? null : `${s.amortisedMsPerFrame} ms`),
+      stat('計測したバッチ数', String(s.costSamples)),
     ]),
     el('p', { class: 'footnote' }, [
-      'Half Phase 9’s per-batch ceiling, because this stage fits no two-view model: a closed-form ' +
-        'similarity over a few dozen points, one projection per shared landmark, and bookkeeping.',
+      'Phase 9 のバッチあたりの上限の半分です。このステージは2視点モデルを当てはめないからです。' +
+        '数十点に対する閉形式の相似変換、共有ランドマーク1つにつき1回の投影、あとは帳簿付けだけです。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The amortised figure is the one §B.2’s mapping-worker decision should be taken on, as ' +
-        'Phase 9’s is. Together they are what a second thread would be buying.',
+      '均した数値が、Phase 9 と同じく §B.2 のマッピング用ワーカーの判断の根拠にすべき値です。' +
+        '2つを合わせたものが、2本目のスレッドで買えるものです。',
     ]),
   ]);
 }

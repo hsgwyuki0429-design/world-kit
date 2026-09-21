@@ -90,10 +90,10 @@ export function renderPhase2Screen(
 
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Frame pipeline']),
+      el('h1', {}, ['フレームパイプライン']),
       el('p', {}, [
-        'Phase 2 — frames to a preprocessing worker. A grayscale pyramid is built and ' +
-          'measured; nothing consumes it yet, and nothing spatial is produced.',
+        'Phase 2 — フレームを前処理ワーカーへ。グレースケールのピラミッドを作って計測します。' +
+          'まだ誰もそれを使っておらず、空間的なものは何も作っていません。',
       ]),
     ]),
   );
@@ -113,10 +113,10 @@ export function renderPhase2Screen(
 
   root.append(
     navigationSection(
-      { index: 1, label: 'BACK TO CAMERA', onClick: handlers.onBack },
+      { index: 1, label: 'カメラ取得へ戻る', onClick: handlers.onBack },
       {
         index: 3,
-        name: 'FEATURE DETECTION',
+        name: '特徴点検出',
         phase: vm.phase3,
         canEnter: vm.canEnterPhase3,
         implemented: vm.phase3Implemented,
@@ -139,14 +139,14 @@ function renderImages(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElemen
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'PIPELINE NOT STARTED';
+              ? 'カメラを要求中…'
+              : 'パイプラインは未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -159,13 +159,13 @@ function renderImages(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElemen
     children.push(
       el('div', { class: 'worker-output-frame' }, [getStripCanvas()]),
       el('p', { class: 'footnote' }, [
-        `Worker output — ${STRIP_W}×${STRIP_H} grayscale, downsampled in the worker from the ` +
-          `${s.procWidth}×${s.procHeight} level-0 buffer it built. These are the worker's own ` +
-          'bytes, not a second copy of the video.',
+        `ワーカーの出力 — ${STRIP_W}×${STRIP_H} のグレースケール。ワーカーが自分で作った ` +
+          `${s.procWidth}×${s.procHeight} の level-0 バッファから縮小したものです。` +
+          'これはワーカー自身のバイト列であって、映像の2つ目のコピーではありません。',
       ]),
     );
   } else if (s.running) {
-    children.push(el('p', { class: 'empty' }, ['No worker output yet.']));
+    children.push(el('p', { class: 'empty' }, ['ワーカーの出力はまだありません。']));
   }
 
   children.push(
@@ -174,20 +174,20 @@ function renderImages(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLElemen
         class: 'primary',
         id: 'start-pipeline',
         disabled: vm.opening || s.running,
-        textContent: s.running ? 'PIPELINE RUNNING' : vm.opening ? 'REQUESTING…' : 'START PIPELINE',
+        textContent: s.running ? 'パイプライン動作中' : vm.opening ? '要求中…' : 'パイプライン開始',
         onclick: handlers.onStartCamera,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-pipeline',
         disabled: !s.running,
-        textContent: 'STOP PIPELINE',
+        textContent: 'パイプライン停止',
         onclick: handlers.onStopPipeline,
       } as never),
     ]),
   );
 
-  return card('Camera and worker output', children);
+  return card('カメラとワーカーの出力', children);
 }
 
 function renderThroughput(vm: Phase2ViewModel): HTMLElement {
@@ -203,39 +203,39 @@ function renderThroughput(vm: Phase2ViewModel): HTMLElement {
         : '';
   const lostRatio = s.admitted > 0 ? s.lost / s.admitted : 0;
 
-  return card('Throughput', [
+  return card('スループット', [
     el('div', { class: 'stat-grid' }, [
-      stat('Source', s.sourceWidth > 0 ? `${s.sourceWidth}×${s.sourceHeight}` : null),
-      stat('Processing', s.procWidth > 0 ? `${s.procWidth}×${s.procHeight}` : null),
-      stat('Delivered fps', s.completed > 1 ? String(s.deliveredFps) : null),
-      stat('Camera fps', s.callbacks > 1 ? String(s.sourceFps) : null),
-      stat('Target fps', String(s.targetFps)),
-      stat('Completed', s.completed > 0 ? String(s.completed) : null),
-      stat('Admitted', s.admitted > 0 ? String(s.admitted) : null),
-      stat('Paced out', String(s.pacedOut)),
-      stat('Backpressured', String(s.backpressured)),
-      stat('Lost', String(s.lost), s.lost > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('Loss rate', s.admitted > 0 ? `${(lostRatio * 100).toFixed(2)}%` : null),
+      stat('入力', s.sourceWidth > 0 ? `${s.sourceWidth}×${s.sourceHeight}` : null),
+      stat('処理解像度', s.procWidth > 0 ? `${s.procWidth}×${s.procHeight}` : null),
+      stat('実測 fps', s.completed > 1 ? String(s.deliveredFps) : null),
+      stat('カメラの fps', s.callbacks > 1 ? String(s.sourceFps) : null),
+      stat('目標 fps', String(s.targetFps)),
+      stat('完了', s.completed > 0 ? String(s.completed) : null),
+      stat('受け入れ', s.admitted > 0 ? String(s.admitted) : null),
+      stat('間引き', String(s.pacedOut)),
+      stat('詰まりで見送り', String(s.backpressured)),
+      stat('消失', String(s.lost), s.lost > 0 ? 's-PERMISSION_DENIED' : ''),
+      stat('消失率', s.admitted > 0 ? `${(lostRatio * 100).toFixed(2)}%` : null),
       stat(
-        'Unstressed run',
+        '負荷なしの連続',
         s.completed > 0 ? `${cleanSeconds.toFixed(1)} / ${target} s` : null,
         continuityClass,
       ),
-      stat('Longest gap', s.completed > 1 ? `${clean?.maxGapMs ?? s.maxResultGapMs} ms` : null),
+      stat('最長の途切れ', s.completed > 1 ? `${clean?.maxGapMs ?? s.maxResultGapMs} ms` : null),
     ]),
     el('p', { class: 'footnote' }, [
-      'Paced out = the target rate is below the camera rate, so the scheduler declined the ' +
-        'frame. Backpressured = the worker was still busy. Neither is a drop. Lost = handed ' +
-        'to the worker and never returned, which is the only one FRAME-001 holds against the ' +
-        'pipeline. The delivered rate cannot exceed the camera rate, so the controller ' +
-        'judges delivery against whichever of the two is lower.',
+      '間引き = 目標レートがカメラのレートより低いので、スケジューラがそのフレームを' +
+        '見送った。詰まりで見送り = ワーカーがまだ処理中だった。どちらも「落とした」ではありません。' +
+        '消失 = ワーカーに渡したまま返ってこなかったもので、FRAME-001 がパイプラインの責任と' +
+        'みなすのはこれだけです。実測レートはカメラのレートを超えられないので、' +
+        'コントローラは両者の低いほうを基準に判定します。',
     ]),
     ...(s.wasEverHidden
       ? [
           el('p', { class: 'evidence-warning' }, [
-            `The page was backgrounded ${s.hiddenCount} time(s). Frame callbacks stop while ` +
-              'hidden, so this run cannot demonstrate 30 s of supply. Restart the pipeline ' +
-              'without leaving the app.',
+            `ページが ${s.hiddenCount} 回バックグラウンドに回りました。隠れている間は` +
+              'フレームコールバックが止まるので、この実行では 30 秒の供給を示せません。' +
+              'アプリから離れずにパイプラインを開始し直してください。',
           ]),
         ]
       : []),
@@ -248,24 +248,24 @@ function renderLatency(vm: Phase2ViewModel): HTMLElement {
   const uiClass =
     s.uiCostMs.count === 0 ? '' : s.uiCostMs.p95 <= UI_BUDGET_MS ? 's-AVAILABLE' : 's-PERMISSION_DENIED';
 
-  return card('Latency and provenance', [
+  return card('遅延と出どころ', [
     el('div', { class: 'stat-grid' }, [
-      stat('UI cost mean', shown(s.uiCostMs.mean, s.uiCostMs.count), uiClass),
-      stat('UI cost p95', shown(s.uiCostMs.p95, s.uiCostMs.count), uiClass),
-      stat('Acquire mean', shown(s.acquireMs.mean, s.acquireMs.count)),
-      stat('Worker mean', shown(s.workerMs.mean, s.workerMs.count)),
-      stat('Worker p95', shown(s.workerMs.p95, s.workerMs.count)),
-      stat('Round trip p95', shown(s.roundTripMs.p95, s.roundTripMs.count)),
-      stat('Cross-checks', s.crossCheck.count > 0 ? String(s.crossCheck.count) : null),
+      stat('UI コスト 平均', shown(s.uiCostMs.mean, s.uiCostMs.count), uiClass),
+      stat('UI コスト p95', shown(s.uiCostMs.p95, s.uiCostMs.count), uiClass),
+      stat('取得 平均', shown(s.acquireMs.mean, s.acquireMs.count)),
+      stat('ワーカー 平均', shown(s.workerMs.mean, s.workerMs.count)),
+      stat('ワーカー p95', shown(s.workerMs.p95, s.workerMs.count)),
+      stat('往復 p95', shown(s.roundTripMs.p95, s.roundTripMs.count)),
+      stat('突き合わせ回数', s.crossCheck.count > 0 ? String(s.crossCheck.count) : null),
       stat(
-        'Δ luma median',
+        '輝度差 Δ 中央値',
         s.crossCheck.count > 0 ? String(s.crossCheck.medianAbsDifference) : null,
       ),
-      stat('Δ luma max', s.crossCheck.count > 0 ? String(s.crossCheck.maxAbsDifference) : null),
-      stat('Cross-check cost', shown(s.crossCheck.costMs.mean, s.crossCheck.costMs.count)),
-      stat('Strip Δ peak', s.stripMadSamples > 0 ? String(s.stripMadMax) : null),
+      stat('輝度差 Δ 最大', s.crossCheck.count > 0 ? String(s.crossCheck.maxAbsDifference) : null),
+      stat('突き合わせのコスト', shown(s.crossCheck.costMs.mean, s.crossCheck.costMs.count)),
+      stat('ストリップ Δ ピーク', s.stripMadSamples > 0 ? String(s.stripMadMax) : null),
       stat(
-        'Pyramid',
+        'ピラミッド',
         s.pyramidLevels.length > 0
           ? s.pyramidLevels.map((l) => `${l.width}×${l.height}`).join(' / ')
           : null,
@@ -273,16 +273,16 @@ function renderLatency(vm: Phase2ViewModel): HTMLElement {
       ),
     ]),
     el('p', { class: 'footnote' }, [
-      'Δ luma compares the worker’s grayscale against an independent reading of the same ' +
-        'video frame taken on this thread. That reading is the expensive route §H.1 ruled ' +
-        'out for the pipeline, which is why it runs once a second, and its cost is shown ' +
-        'above rather than folded into the UI cost.',
+      '輝度差 Δ は、ワーカーのグレースケールを、同じ映像フレームをこのスレッドで独立に' +
+        '読み取った結果と突き合わせたものです。その読み取りは §H.1 がパイプライン用には' +
+        '却下した重い経路なので、1秒に1回だけ走らせ、そのコストは UI コストに混ぜずに' +
+        '上に別立てで出しています。',
     ]),
     ...(s.pyramidProblems.length > 0
       ? [el('p', { class: 'evidence-warning' }, [s.pyramidProblems.join('; ')])]
       : []),
     ...(s.workerErrors.length > 0
-      ? [el('p', { class: 'evidence-warning' }, [`Worker errors: ${s.workerErrors.join(' | ')}`])]
+      ? [el('p', { class: 'evidence-warning' }, [`ワーカーのエラー: ${s.workerErrors.join(' | ')}`])]
       : []),
   ]);
 }
@@ -291,16 +291,16 @@ function renderAdaptation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLEl
   const s = vm.stats;
   const children: (Node | string)[] = [
     el('div', { class: 'stat-grid' }, [
-      stat('Tier', s.tierLabel, s.tierStep <= 1 ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
-      stat('Ladder step', String(s.tierStep)),
-      stat('Ladder moves', String(s.decisions.length)),
-      stat('Injected load', s.stressPasses > 0 ? `${s.stressPasses} extra passes` : 'none'),
+      stat('段', s.tierLabel, s.tierStep <= 1 ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
+      stat('段の位置', String(s.tierStep)),
+      stat('段の移動回数', String(s.decisions.length)),
+      stat('注入した負荷', s.stressPasses > 0 ? `追加 ${s.stressPasses} パス` : 'なし'),
     ]),
   ];
 
   if (s.tierUsage.length > 0) {
     children.push(
-      el('p', { class: 'group-title' }, ['Frames produced per tier']),
+      el('p', { class: 'group-title' }, ['段ごとに作られたフレーム数']),
       ...s.tierUsage.map((t) =>
         el('div', { class: 'cap-row' }, [
           el('span', { class: 'cap-label' }, [t.label]),
@@ -313,7 +313,7 @@ function renderAdaptation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLEl
 
   if (s.decisions.length > 0) {
     children.push(
-      el('p', { class: 'group-title' }, ['Ladder moves, with what caused each']),
+      el('p', { class: 'group-title' }, ['段の移動と、その原因']),
       ...s.decisions.map((d, i) => {
         const outcome = s.decisionOutcomes.find((o) => o.decisionIndex === i);
         return el('details', { class: 'row' }, [
@@ -323,14 +323,14 @@ function renderAdaptation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLEl
             el('span', { class: 'verdict' }, [`${d.medianWorkerMs} ms`]),
           ]),
           el('dl', { class: 'detail-grid' }, [
-            el('dt', {}, ['Reason']),
+            el('dt', {}, ['理由']),
             el('dd', {}, [d.reason]),
-            el('dt', {}, ['Effect']),
+            el('dt', {}, ['効果']),
             el('dd', { class: 'mono' }, [
               outcome
-                ? `median worker latency ${outcome.beforeMedianWorkerMs} ms → ` +
-                  `${outcome.afterMedianWorkerMs} ms over the next ${outcome.samples} frames`
-                : 'not yet measured',
+                ? `ワーカー遅延の中央値 ${outcome.beforeMedianWorkerMs} ms → ` +
+                  `${outcome.afterMedianWorkerMs} ms（以降 ${outcome.samples} フレーム）`
+                : 'まだ計測できていません',
             ]),
           ]),
         ]);
@@ -344,16 +344,15 @@ function renderAdaptation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLEl
         class: 'secondary',
         id: 'toggle-stress',
         disabled: !s.running,
-        textContent: s.stressPasses > 0 ? 'STOP INJECTED LOAD' : 'INJECT LOAD',
+        textContent: s.stressPasses > 0 ? '負荷の注入を止める' : '負荷を注入する',
         onclick: handlers.onToggleStress,
       } as never),
     ]),
     el('p', { class: 'footnote' }, [
-      'A device that meets its budget never degrades on its own, so FRAME-003 and FRAME-004 ' +
-        'need load. The load is real work — extra passes over the pyramid the worker actually ' +
-        'built — and the number of passes is computed from the measured cost of one pass on ' +
-        'this device. It is a stimulus; every latency the controller then sees is still a ' +
-        'measurement.',
+      '予算を満たしている端末は自分から性能を落としたりしないので、FRAME-003 と FRAME-004 には' +
+        '負荷が要ります。この負荷は本物の仕事です — ワーカーが実際に作ったピラミッドへの' +
+        '追加パスで、そのパス数はこの端末で1パスにかかる実測コストから決めています。' +
+        'これは刺激であって、そのあとコントローラが見る遅延はどれも依然として計測値です。',
     ]),
   );
 
@@ -363,19 +362,19 @@ function renderAdaptation(vm: Phase2ViewModel, handlers: Phase2Handlers): HTMLEl
   if (s.spontaneousDegrade) {
     children.push(
       el('p', { class: 'evidence-warning' }, [
-        'At least one downward step was taken with no load injected: this device could not ' +
-          'hold its tier unaided. That is a real result and is recorded as such.',
+        '負荷を注入していないのに、少なくとも1回は段を下げています。この端末は自力では' +
+          'その段を維持できなかったということです。これは本物の結果であり、そのまま記録されます。',
       ]),
     );
   }
 
-  return card('Adaptation', children);
+  return card('適応', children);
 }
 
 function renderRoutes(vm: Phase2ViewModel): HTMLElement {
   const s = vm.stats;
   const scope = s.workerScope;
-  return card('Acquisition route and worker', [
+  return card('取得経路とワーカー', [
     ...s.routeProbes.map((r) =>
       el('div', { class: 'cap-row' }, [
         el('span', { class: 'cap-label' }, [r.route]),
@@ -384,16 +383,16 @@ function renderRoutes(vm: Phase2ViewModel): HTMLElement {
       ]),
     ),
     el('p', { class: 'footnote' }, [
-      'Routes are tried in order and the first that completes real round trips is kept. The ' +
-        'last one is the main-thread readback §H.1 measured at 13.8 ms on this device — it is ' +
-        'kept as a declared fallback, and kept measured, rather than assumed unusable.',
+      '経路は順に試し、実際に往復が成立した最初のものを採用します。最後の1つは §H.1 が' +
+        'この端末で 13.8 ms と計測したメインスレッド読み戻しです。使えないと決めつけるのではなく、' +
+        '明示した代替手段として、計測したまま残してあります。',
     ]),
-    el('p', { class: 'group-title' }, ['Worker scope']),
+    el('p', { class: 'group-title' }, ['ワーカーのスコープ']),
     el('p', { class: 'cap-data' }, [
       scope
         ? `document: ${scope.hasDocument} · WorkerGlobalScope: ${scope.isWorkerGlobalScope} · ` +
           `OffscreenCanvas 2D: ${scope.canvas2dAvailable} · cores: ${scope.hardwareConcurrency}`
-        : 'the worker has not reported in',
+        : 'ワーカーからの報告がありません',
     ]),
   ]);
 }

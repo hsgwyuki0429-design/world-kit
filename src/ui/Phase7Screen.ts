@@ -93,14 +93,13 @@ export function renderPhase7Screen(
   root.replaceChildren();
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['IMU Support / Fusion']),
+      el('h1', {}, ['IMU 統合']),
       el('p', {}, [
-        'Phase 7 — the device’s own motion sensing, used as an **auxiliary** to the visual pose ' +
-          'and never as a replacement. Two of v3 §18’s five filter states are estimated: ' +
-          'orientation and gyroscope bias. Position, velocity and accelerometer bias are ' +
-          'refused, because the accelerometer reports m/s² and Phase 6’s translation is a unit ' +
-          'direction with no scale — and inventing the conversion is the fabrication Rule 001 ' +
-          'names.',
+        'Phase 7 — 端末自身のモーションセンシングを、視覚による姿勢の**補助**として使います。' +
+          '置き換えとしては決して使いません。v3 §18 の5つのフィルタ状態のうち2つ — 姿勢と' +
+          'ジャイロのバイアス — を推定します。位置・速度・加速度計バイアスは拒否します。' +
+          '加速度計は m/s² を返し、Phase 6 の並進はスケールのない単位ベクトルなので、' +
+          'その換算を作り出すことこそ Rule 001 の言う捏造だからです。',
       ]),
     ]),
   );
@@ -122,10 +121,10 @@ export function renderPhase7Screen(
   );
   root.append(
     navigationSection(
-      { index: 6, label: 'BACK TO RELATIVE POSE', onClick: handlers.onBack },
+      { index: 6, label: '相対姿勢へ戻る', onClick: handlers.onBack },
       {
         index: 8,
-        name: 'KEYFRAME SYSTEM',
+        name: 'キーフレーム',
         phase: vm.phase8,
         canEnter: vm.canEnterPhase8,
         implemented: vm.phase8Implemented,
@@ -149,25 +148,25 @@ function renderPreview(vm: Phase7ViewModel, handlers: Phase7Handlers): HTMLEleme
       ]),
       el('p', { class: 'footnote' }, [
         s.fusionFrames > 0
-          ? 'Nothing about the fused orientation is drawn on the picture, for the reason Phase 6 ' +
-            'drew nothing: an attitude belongs to the device, not to any point on screen, and ' +
-            'there is still no depth here to mark.'
+          ? '統合後の姿勢についても、Phase 6 と同じ理由で何も画像の上に描いていません。' +
+            '姿勢は端末のもので、画面上のどの点のものでもありませんし、' +
+            'ここにもまだ印を付けるべき深度がありません。'
           : vm.running
-            ? 'Waiting for the first fused frame.'
-            : 'Pose recovery is live. Fusion has not been started.',
+            ? '最初の統合フレームを待っています。'
+            : '姿勢の復元は動作中です。統合はまだ開始されていません。',
       ]),
     );
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'FUSION NOT STARTED';
+              ? 'カメラを要求中…'
+              : '統合は未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -183,19 +182,19 @@ function renderPreview(vm: Phase7ViewModel, handlers: Phase7Handlers): HTMLEleme
         // §H.5, for the fifth time and from the one predicate. Six stages are already live when
         // this screen opens; a predicate assembled from any of them cannot be pressed.
         disabled: vm.opening || vm.running,
-        textContent: vm.running ? 'FUSING' : vm.opening ? 'REQUESTING…' : 'START FUSION',
+        textContent: vm.running ? '統合中' : vm.opening ? '要求中…' : 'IMU 統合開始',
         onclick: handlers.onStart,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-fusion',
         disabled: !vm.running,
-        textContent: 'STOP',
+        textContent: '停止',
         onclick: handlers.onStop,
       } as never),
     ]),
   );
-  return card('Camera', children);
+  return card('カメラ', children);
 }
 
 /** IMU-005 — the gate. Nothing else here distinguishes a filter from a pass-through. */
@@ -207,65 +206,66 @@ function renderInjection(vm: Phase7ViewModel): HTMLElement {
   const onAxis =
     enough && s.medianBiasAxisErrorDeg >= 0 && s.medianBiasAxisErrorDeg <= BIAS_AXIS_TOLERANCE_DEG;
 
-  return card('Does the filter find a bias it was not told about?', [
+  return card('教えていないバイアスをフィルタは見つけるか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Bias injected', `${GYRO_BIAS_INJECTION_DPS} °/s`),
-      stat('Difference recovered', dps(s.medianBiasDifferenceDps), enough ? (found ? OK : BAD) : ''),
-      stat('Off the injected axis', deg(s.medianBiasAxisErrorDeg), enough ? (onAxis ? OK : BAD) : ''),
-      stat('Samples', enough ? String(s.biasSamples) : `${s.biasSamples} / ${MIN_BIAS_SAMPLES_JUDGED}`),
-      stat('This phone’s own bias', vec(s.gyroBiasDps)),
-      stat('Injected along', vec(s.injectionAxis)),
+      stat('仕込んだバイアス', `${GYRO_BIAS_INJECTION_DPS} °/s`),
+      stat('復元できた差', dps(s.medianBiasDifferenceDps), enough ? (found ? OK : BAD) : ''),
+      stat('仕込んだ軸からのずれ', deg(s.medianBiasAxisErrorDeg), enough ? (onAxis ? OK : BAD) : ''),
+      stat('サンプル数', enough ? String(s.biasSamples) : `${s.biasSamples} / ${MIN_BIAS_SAMPLES_JUDGED}`),
+      stat('この端末自身のバイアス', vec(s.gyroBiasDps)),
+      stat('仕込んだ方向', vec(s.injectionAxis)),
       stat(
-        'Device → camera',
-        s.handEye.calibrated ? `${s.handEye.pairs} pairs · ${deg(s.handEye.residualDeg)}` : null,
+        '端末 → カメラ',
+        s.handEye.calibrated ? `${s.handEye.pairs} 組 · ${deg(s.handEye.residualDeg)}` : null,
         s.handEye.calibrated ? OK : BAD,
       ),
     ]),
     el('p', { class: 'footnote' }, [
       s.handEye.calibrated
-        ? 'The gyroscope reports in the **device’s** frame and Phase 6’s orientation is in the ' +
-          '**camera’s**; they differ by a fixed rotation nobody measured until this phase did. ' +
-          `It is estimated from ${s.handEye.pairs} pairs of rotations — the same turn seen by ` +
-          `both instruments — with a median axis residual of ${deg(s.handEye.residualDeg)} and ` +
-          `an axis spread of ${s.handEye.axisSpread}. Nothing is fused until it is known.`
-        : `**Not fusing.** ${s.handEye.reason}. The gyroscope reports in the device’s frame and ` +
-          'Phase 6’s orientation is in the camera’s; until the rotation between them is measured ' +
-          'there is no honest way to combine them, and an identity rotation is not a neutral ' +
-          'default but an unmeasured claim that the sensor and the lens share axes. ' +
-          `${s.handEye.uncalibratedSamples} sample(s) have been read for the calibration and ` +
-          'declined for the pose.',
+        ? 'ジャイロは**端末**の座標系で報告し、Phase 6 の姿勢は**カメラ**の座標系にあります。' +
+          '両者は固定の回転だけ違っていて、それをこのフェーズが測るまで誰も測っていませんでした。' +
+          `いまは ${s.handEye.pairs} 組の回転 — 両方の計測器が見た同じ1回の回転 — から推定して` +
+          `おり、軸の残差の中央値は ${deg(s.handEye.residualDeg)}、軸の広がりは ` +
+          `${s.handEye.axisSpread} です。これが判るまで、何も統合しません。`
+        : `**統合していません。** ${s.handEye.reason}。ジャイロは端末の座標系で報告し、` +
+          'Phase 6 の姿勢はカメラの座標系にあります。両者のあいだの回転を測るまで、' +
+          'それらを正直に合成する方法はありません。恒等回転は中立な既定値ではなく、' +
+          '「センサーとレンズは軸を共有している」という未計測の主張です。' +
+          `較正のために読んだサンプルは ${s.handEye.uncalibratedSamples} 件で、` +
+          'いずれも姿勢には使っていません。',
     ]),
     el('p', { class: 'footnote' }, [
-      `Two filters run on the same visual poses and the same gyroscope, and one of them is fed ` +
-        `every sample with a constant ${GYRO_BIAS_INJECTION_DPS} °/s added before it sees it. ` +
-        'Neither is told which it is. The measurement is the **difference** between their bias ' +
-        'estimates: this phone’s own bias is unknown and common to both, so it cancels — which ' +
-        'is what makes this decidable on a device whose real bias nobody can look up.',
+      `同じ視覚姿勢と同じジャイロの上で、2つのフィルタを走らせます。片方には、見せる前に` +
+        `すべてのサンプルに一定の ${GYRO_BIAS_INJECTION_DPS} °/s を足しておきます。` +
+        'どちらのフィルタも自分がどちらかを知りません。計測するのは両者のバイアス推定の' +
+        '**差**です。この端末自身のバイアスは未知ですが両者に共通なので、差を取ると' +
+        '打ち消えます。実際のバイアスを誰も調べられない端末の上で、これが判定可能になる理由です。',
     ]),
     el('p', { class: 'footnote' }, [
-      '"This phone’s own bias" is the control filter’s estimate, shown because it *is* this ' +
-        'gyroscope’s bias and that is worth knowing. It is not what the test judges.',
+      '「この端末自身のバイアス」は対照側フィルタの推定値です。これはまさにこのジャイロの' +
+        'バイアスであり、知る価値があるので表示しています。テストが判定に' +
+        '使っているのはこちらではありません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'This is the only figure in Phase 7 a fusion that returned the visual pose could not ' +
-        'produce. Such a fusion tracks the camera perfectly, reports innovations of exactly zero ' +
-        '— better than a real filter’s — and never invents a position; it scores 0.0 °/s here. ' +
-        'v3 §68 asks for something else entirely, and IMU-002 below is where that is decided.',
+      'Phase 7 の中で、視覚姿勢をそのまま返すだけの統合が作れない数値はこれだけです。' +
+        'そういう統合はカメラを完璧に追い、イノベーションはちょうどゼロ — 本物のフィルタより' +
+        '良いほどに — で、位置を捏造することもありません。そしてここでは 0.0 °/s になります。' +
+        'v3 §68 が求めているのはまったく別のことで、それは下の IMU-002 で判定します。',
     ]),
     el('p', { class: 'footnote' }, [
-      `The difference is withheld until ${MIN_BIAS_SAMPLES_JUDGED} visual updates have been ` +
-        'applied. Not because the estimate needs them — gravity alone estimates the bias very ' +
-        'well on a device that turns, which the unit fixture measured — but because a number a ' +
-        'dead-reckoner can produce cannot be the gate on a fusion.',
+      `この差は、視覚更新が ${MIN_BIAS_SAMPLES_JUDGED} 回適用されるまで伏せられます。` +
+        '推定にそれだけ要るからではありません。回転している端末では重力だけでもバイアスは' +
+        'かなり良く推定でき、それは単体テストのフィクスチャで計測済みです。伏せるのは、' +
+        '自律航法だけでも出せる数値を、統合の関門にはできないからです。',
     ]),
     ...(s.biasDifferences.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Recent measurements']),
+          el('p', { class: 'group-title' }, ['最近の計測']),
           ...s.biasDifferences.slice(-4).map((b) =>
             el('div', { class: 'cap-row' }, [
-              el('span', { class: 'cap-label' }, [`${b.visualUpdates} updates`]),
+              el('span', { class: 'cap-label' }, [`更新 ${b.visualUpdates} 回`]),
               el('span', { class: 'cap-method' }, [
-                `${dps(b.magnitudeDps)} · ${deg(b.axisErrorDeg)} off axis`,
+                `${dps(b.magnitudeDps)} · 軸のずれ ${deg(b.axisErrorDeg)}`,
               ]),
               el('span', {
                 class: `cap-state ${
@@ -283,34 +283,33 @@ function renderInjection(vm: Phase7ViewModel): HTMLElement {
 function renderMode(vm: Phase7ViewModel): HTMLElement {
   const s = vm.stats;
   const propagating = s.mode === FusionMode.DEAD_RECKONING;
-  return card('Mode', [
+  return card('モード', [
     el('div', { class: 'stat-grid' }, [
-      stat('Now', s.mode, s.mode === FusionMode.FUSED ? OK : ''),
-      stat('Usable', s.usable ? 'YES' : 'NO', s.usable ? OK : BAD),
-      stat('Propagated for', s.propagatedMs < 0 ? null : `${Math.round(s.propagatedMs)} ms`,
+      stat('現在', s.mode, s.mode === FusionMode.FUSED ? OK : ''),
+      stat('使用可能', s.usable ? 'はい' : 'いいえ', s.usable ? OK : BAD),
+      stat('外挿の継続時間', s.propagatedMs < 0 ? null : `${Math.round(s.propagatedMs)} ms`,
         propagating ? (s.propagatedMs > MAX_PROPAGATION_MS ? BAD : '') : ''),
-      stat('Frames', `${s.fusedFrames} fused · ${s.dropoutFrames} open-loop`),
-      stat('Longest gap', s.longestPropagatedMs < 0 ? null : `${Math.round(s.longestPropagatedMs)} ms`),
-      stat('Reconvergence', deg(s.medianReconvergenceInnovationDeg)),
+      stat('フレーム', `統合 ${s.fusedFrames} · 開ループ ${s.dropoutFrames}`),
+      stat('最長の途切れ', s.longestPropagatedMs < 0 ? null : `${Math.round(s.longestPropagatedMs)} ms`),
+      stat('復帰時のずれ', deg(s.medianReconvergenceInnovationDeg)),
     ]),
     el('p', { class: 'footnote' }, [
-      `${FusionMode.VISION_ONLY} means no IMU is reporting and the fused orientation **is** the ` +
-        'visual orientation, unchanged. That is not a degraded state — it is v3 §68’s pass ' +
-        'condition, verbatim: IMU unavailableでもVision-only modeで継続可能. Nothing is invented ' +
-        'from sensors that are not there, and the bias reads null rather than zero.',
+      `${FusionMode.VISION_ONLY} は、IMU が何も報告しておらず、統合後の姿勢が視覚の姿勢` +
+        '**そのもの**であることを意味します。これは劣化状態ではありません。v3 §68 の合格条件' +
+        'そのままです: IMU unavailableでもVision-only modeで継続可能。' +
+        '存在しないセンサーから何かを作り出すことはせず、バイアスはゼロではなく null になります。',
     ]),
     el('p', { class: 'footnote' }, [
-      `${FusionMode.DEAD_RECKONING} means vision stopped more than ${DEAD_RECKONING_AFTER_MS} ms ` +
-        `ago and the gyroscope is carrying the orientation alone. Past ${MAX_PROPAGATION_MS} ms ` +
-        'the pose is no longer offered as usable: v3 §17 gives the gyroscope 短時間回転推定 ' +
-        'without saying how short, and three seconds is where a ~1 °/s consumer bias has ' +
-        'accumulated Phase 6’s own 3° agreement floor — the point at which a propagated ' +
-        'orientation stops being as good as a measurement.',
+      `${FusionMode.DEAD_RECKONING} は、視覚が ${DEAD_RECKONING_AFTER_MS} ms 以上前に止まり、` +
+        `ジャイロだけで姿勢を保っている状態です。${MAX_PROPAGATION_MS} ms を超えると、その姿勢は` +
+        '「使用可能」として提供しなくなります。v3 §17 はジャイロに 短時間回転推定 を認めていますが' +
+        '「どれくらい短時間か」は書いていません。3秒というのは、民生品でよくある約 1 °/s の' +
+        'バイアスが Phase 6 自身の一致基準である 3° を積み上げてしまう時点 — 外挿した姿勢が' +
+        '計測値と同等ではなくなる時点 — です。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The confidence falls the whole way down and the jump when vision returns is recorded ' +
-        'above rather than absorbed. A filter that snapped back silently would be hiding the one ' +
-        'moment its two instruments disagreed most.',
+      '外挿のあいだ信頼度は下がり続け、視覚が戻ったときの飛びは、吸収せずに上へ記録します。' +
+        '黙って元に戻るフィルタは、2つの計測器が最も食い違ったその瞬間を隠していることになります。',
     ]),
   ]);
 }
@@ -318,14 +317,14 @@ function renderMode(vm: Phase7ViewModel): HTMLElement {
 /** IMU-001 — what is actually arriving, never what the platform advertised. */
 function renderSensors(vm: Phase7ViewModel): HTMLElement {
   const s = vm.stats;
-  return card('Sensors', [
+  return card('センサー', [
     el('div', { class: 'stat-grid' }, [
-      stat('IMU', s.imuAvailable ? 'DELIVERING' : 'NOT AVAILABLE', s.imuAvailable ? OK : ''),
-      stat('Measured rate', s.measuredImuHz < 0 ? null : `${s.measuredImuHz} Hz`),
-      stat('Platform claims', s.reportedImuHz < 0 ? null : `${s.reportedImuHz} Hz`),
-      stat('Samples', String(s.imuSamples)),
-      stat('Gravity used', `${s.gravitySamples} · ${s.gravityRejected} rejected`),
-      stat('Propagating frames', `${s.propagatingFrames} / ${MIN_JUDGED_FRAMES}`,
+      stat('IMU', s.imuAvailable ? '受信中' : '利用できません', s.imuAvailable ? OK : ''),
+      stat('実測レート', s.measuredImuHz < 0 ? null : `${s.measuredImuHz} Hz`),
+      stat('プラットフォームの公称', s.reportedImuHz < 0 ? null : `${s.reportedImuHz} Hz`),
+      stat('サンプル数', String(s.imuSamples)),
+      stat('採用した重力', `${s.gravitySamples} · 棄却 ${s.gravityRejected}`),
+      stat('外挿したフレーム', `${s.propagatingFrames} / ${MIN_JUDGED_FRAMES}`,
         s.propagatingFrames >= MIN_JUDGED_FRAMES ? OK : ''),
     ]),
     ...s.sensors.map((c) =>
@@ -333,22 +332,22 @@ function renderSensors(vm: Phase7ViewModel): HTMLElement {
         el('span', { class: 'cap-label' }, [c.name]),
         el('span', { class: 'cap-method' }, [c.detail]),
         el('span', { class: `cap-state ${c.arriving ? OK : ''}` }, [
-          c.arriving ? 'ARRIVING' : 'ABSENT',
+          c.arriving ? '受信中' : '来ていません',
         ]),
       ]),
     ),
     el('p', { class: 'footnote' }, [s.imuReason]),
     el('p', { class: 'footnote' }, [
-      `A gravity sample is used only when ‖a+g − a‖ is within ±${GRAVITY_TOLERANCE_MS2} m/s² of ` +
-        '9.81. Outside that the phone was accelerating and the difference is not a gravity ' +
-        'direction at all — so it is rejected rather than fed in with a larger noise. A ' +
-        'measurement of the wrong quantity is not a noisy measurement of the right one.',
+      `重力のサンプルを使うのは、‖a+g − a‖ が 9.81 の ±${GRAVITY_TOLERANCE_MS2} m/s² 以内に` +
+        'あるときだけです。そこから外れていれば端末は加速しており、その差はそもそも重力の' +
+        '向きではありません。なのでノイズを大きくして取り込むのではなく、棄却します。' +
+        '別の量を測ってしまったものは、正しい量をノイズ混じりに測ったものではありません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The world frame is *defined* by the first accepted gravity reading rather than assumed ' +
-        'from a sign convention: the platforms disagree about the sign of ' +
-        '`accelerationIncludingGravity`, and one sample from one device cannot settle it. So no ' +
-        'sign is assumed — whatever direction gravity pointed at initialisation *is* down.',
+      'ワールド座標系は、符号の慣習から仮定するのではなく、最初に採用した重力の読みで' +
+        '*定義*します。`accelerationIncludingGravity` の符号はプラットフォームごとに食い違って' +
+        'おり、1台の端末の1サンプルでは決着しません。なので符号は仮定しません。' +
+        '初期化時に重力が指していた向きが、そのまま「下」です。',
     ]),
   ]);
 }
@@ -359,33 +358,32 @@ function renderConsistency(vm: Phase7ViewModel): HTMLElement {
   const enough = s.innovationSamples >= MIN_JUDGED_FRAMES;
   const within = enough && s.medianInnovationDeg >= 0 && s.medianInnovationDeg <= s.toleranceDeg;
   const copying = enough && s.zeroInnovationSamples === s.innovationSamples;
-  return card('Vision against the gyroscope', [
+  return card('視覚とジャイロの突き合わせ', [
     el('div', { class: 'stat-grid' }, [
-      stat('Camera turned by', deg(s.medianVisualIncrementDeg)),
-      stat('Prediction was off by', deg(s.medianInnovationDeg), enough ? (within ? OK : BAD) : ''),
-      stat('Tolerance', deg(s.toleranceDeg)),
-      stat('Updates', enough ? String(s.innovationSamples) : `${s.innovationSamples} / ${MIN_JUDGED_FRAMES}`),
-      stat('Exactly zero', String(s.zeroInnovationSamples), copying ? BAD : ''),
-      stat('Gravity disagreement', deg(s.medianGravityDeg),
+      stat('カメラが回った角度', deg(s.medianVisualIncrementDeg)),
+      stat('予測のずれ', deg(s.medianInnovationDeg), enough ? (within ? OK : BAD) : ''),
+      stat('許容範囲', deg(s.toleranceDeg)),
+      stat('更新回数', enough ? String(s.innovationSamples) : `${s.innovationSamples} / ${MIN_JUDGED_FRAMES}`),
+      stat('ちょうどゼロ', String(s.zeroInnovationSamples), copying ? BAD : ''),
+      stat('重力の食い違い', deg(s.medianGravityDeg),
         s.gravityDegSamples > 0 && s.medianGravityDeg > GRAVITY_AGREEMENT_DEG ? BAD : ''),
     ]),
     el('p', { class: 'footnote' }, [
-      `Each update spans about ${VISUAL_UPDATE_INTERVAL_MS} ms. The gyroscope is integrated ` +
-        'across it to predict where the camera should have ended up, and the visual increment ' +
-        'says where it actually did. The difference is the innovation, and it is the number that ' +
-        'separates a prediction from a copy: a "fusion" whose prediction always matches its ' +
-        'measurement exactly is not predicting.',
+      `1回の更新はおよそ ${VISUAL_UPDATE_INTERVAL_MS} ms を張ります。その区間でジャイロを積分して` +
+        'カメラがどこに到達するはずかを予測し、視覚の増分が実際にどこへ到達したかを言います。' +
+        'その差がイノベーションで、予測とコピーを分ける数値です。予測が常に計測値と' +
+        'ぴったり一致する「統合」は、何も予測していません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The interval is a second rather than a frame because the information a run collects about ' +
-        'the bias is proportional to the interval length — halving it halves what the run ' +
-        'learns, and at one visual frame per update a 3 °/s injection could not be separated ' +
-        'from nothing within the tolerance.',
+      '区間が1フレームではなく1秒なのは、その実行がバイアスについて集められる情報量が' +
+        '区間長に比例するからです。半分にすれば学べる量も半分になり、1フレームごとの更新では' +
+        '3 °/s の注入を許容範囲の中で「何もなし」と区別できません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The tolerance is Phase 6’s own, reused unchanged: max(3°, 30 % of what was measured). ' +
-        'These are the same two instruments POSE-002 compared, so inventing a new tolerance here ' +
-        'would be two phases disagreeing about when a camera and a gyroscope agree.',
+      '許容範囲は Phase 6 のものをそのまま流用しています: max(3°, 実測値の 30 %)。' +
+        'POSE-002 が比べたのと同じ2つの計測器なので、ここで新しい許容範囲を作れば、' +
+        '「カメラとジャイロが一致しているとはどういうことか」について2つのフェーズが' +
+        '食い違うことになります。',
     ]),
   ]);
 }
@@ -393,28 +391,28 @@ function renderConsistency(vm: Phase7ViewModel): HTMLElement {
 /** IMU-006 — the refusal, with the number behind it. */
 function renderPosition(vm: Phase7ViewModel): HTMLElement {
   const s = vm.stats;
-  return card('Position', [
+  return card('位置', [
     el('div', { class: 'stat-grid' }, [
-      stat('Position', 'UNAVAILABLE', s.positionsReported > 0 ? BAD : OK),
-      stat('Scale', s.scale, s.scaleViolations > 0 ? BAD : OK),
-      stat('Heading', s.heading),
-      stat('Records with a position', String(s.positionsReported), s.positionsReported > 0 ? BAD : OK),
-      stat('If it had been integrated', s.deadReckonedPositionM < 0 ? null : `${s.deadReckonedPositionM} m`),
-      stat('...over', s.deadReckonedSeconds < 0 ? null : `${s.deadReckonedSeconds} s`),
+      stat('位置', 'UNAVAILABLE', s.positionsReported > 0 ? BAD : OK),
+      stat('スケール', s.scale, s.scaleViolations > 0 ? BAD : OK),
+      stat('方位', s.heading),
+      stat('位置を持つ記録', String(s.positionsReported), s.positionsReported > 0 ? BAD : OK),
+      stat('もし積分していたら', s.deadReckonedPositionM < 0 ? null : `${s.deadReckonedPositionM} m`),
+      stat('…その経過時間', s.deadReckonedSeconds < 0 ? null : `${s.deadReckonedSeconds} s`),
     ]),
     el('p', { class: 'footnote' }, [s.positionReason]),
     el('p', { class: 'footnote' }, [s.velocityReason]),
     el('p', { class: 'footnote' }, [s.accelBiasReason]),
     el('p', { class: 'footnote' }, [
-      'The last two figures are what double-integrating the accelerometer over this run *would* ' +
-        'have produced. It is computed and it is never fed to the pose — it exists so that the ' +
-        'refusal carries a number rather than a citation. v3 §17 says it twice: Acceleration: ' +
-        '長時間の絶対位置推定には直接使用しない, and IMUだけを積分して絶対位置を生成してはならない.',
+      '最後の2つは、この実行で加速度計を二重積分していたら*出ていたはず*の値です。' +
+        '計算はしていますが、姿勢に渡すことは決してありません。拒否が引用ではなく数値を' +
+        '伴うようにするために存在します。v3 §17 は2度そう言っています: Acceleration: ' +
+        '長時間の絶対位置推定には直接使用しない、および IMUだけを積分して絶対位置を生成してはならない。',
     ]),
     el('p', { class: 'footnote' }, [
-      'UNAVAILABLE is a **value**, not an absent field. Phase 9 triangulates, Phase 11 fits ' +
-        'planes, Phase 19 drops a ball, and each reads what the phase below hands over — so a ' +
-        'later phase has to remove this deliberately rather than by forgetting.',
+      'UNAVAILABLE は欄が無いのではなく、**値**です。Phase 9 は三角測量し、Phase 11 は平面を' +
+        '当てはめ、Phase 19 はボールを落とします。どれも下のフェーズが渡したものを読むので、' +
+        '後のフェーズはこれを、忘れることによってではなく、意図的に取り除く必要があります。',
     ]),
   ]);
 }
@@ -423,43 +421,43 @@ function renderPosition(vm: Phase7ViewModel): HTMLElement {
 function renderConfidence(vm: Phase7ViewModel): HTMLElement {
   const s = vm.stats;
   const raised = s.fusedAboveVisual > 0;
-  return card('Confidence (v3 §19, all seven inputs)', [
+  return card('信頼度（v3 §19、7つの入力すべて）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Fused', s.confidence < 0 ? null : String(s.confidence), raised ? BAD : OK),
-      stat('Phase 6’s (visual)', s.visualConfidence < 0 ? null : String(s.visualConfidence)),
-      stat('IMU consistency', s.imuConsistency < 0 ? 'WITHHELD' : String(s.imuConsistency)),
-      stat('Lowest it reached', s.minImuConsistency < 0 ? null : String(s.minImuConsistency)),
-      stat('Frames below 1', String(s.imuConsistencyBelowOne)),
-      stat('Above its worst term', String(s.confidenceAboveWorstTerm),
+      stat('統合後', s.confidence < 0 ? null : String(s.confidence), raised ? BAD : OK),
+      stat('Phase 6（視覚のみ）', s.visualConfidence < 0 ? null : String(s.visualConfidence)),
+      stat('IMU consistency', s.imuConsistency < 0 ? '保留' : String(s.imuConsistency)),
+      stat('最低まで下がった値', s.minImuConsistency < 0 ? null : String(s.minImuConsistency)),
+      stat('1 を下回ったフレーム', String(s.imuConsistencyBelowOne)),
+      stat('最悪の項を上回った回数', String(s.confidenceAboveWorstTerm),
         s.confidenceAboveWorstTerm > 0 ? BAD : OK),
     ]),
-    el('p', { class: 'group-title' }, ['Terms']),
+    el('p', { class: 'group-title' }, ['各項']),
     ...s.confidenceTerms.map((t) =>
       el('div', { class: 'cap-row' }, [
         el('span', { class: 'cap-label' }, [t.name]),
         el('span', { class: 'cap-method' }, [t.note]),
         el('span', { class: `cap-state ${t.value < 0 ? '' : t.value >= 0.75 ? OK : ''}` }, [
-          t.value < 0 ? 'WITHHELD' : String(t.value),
+          t.value < 0 ? '保留' : String(t.value),
         ]),
       ]),
     ),
     ...s.confidenceWithheld.map((w) => el('p', { class: 'footnote' }, [w])),
     el('p', { class: 'footnote' }, [
-      'This is a **separate** number from Phase 6’s, not an edit to it. Phase 6’s confidence ' +
-        'describes the visual pose and withholds `IMU consistency` on purpose — it is the ' +
-        'instrument POSE-002 scored that phase against. Phase 6 has passed on the device with ' +
-        'that arrangement, and changing it now would be editing a passed phase.',
+      'これは Phase 6 の値を書き換えたものではなく、**別の**数値です。Phase 6 の信頼度は' +
+        '視覚による姿勢を表すもので、`IMU consistency` を意図的に保留しています。' +
+        'それは POSE-002 がそのフェーズを採点するのに使った計測器だからです。Phase 6 は' +
+        'その構成のまま実機で合格しており、いま変えることは合格済みのフェーズを書き換えることです。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The fused number is the **minimum** over its terms, so it can never sit above the visual ' +
-        'one: the fused terms are the visual terms plus two more, and a minimum over a superset ' +
-        'cannot exceed the minimum over the subset. Attaching a sensor can lower a confidence ' +
-        'and can never raise it — v3 §19: 不確実なPoseは強制的に高confidenceにしない.',
+      '統合後の数値は各項の**最小値**なので、視覚のみの値を上回ることは決してありません。' +
+        '統合側の項は視覚側の項に2つ加えたものであり、上位集合の最小値が部分集合の最小値を' +
+        '超えることはないからです。センサーを足すことは信頼度を下げ得ても、上げることは' +
+        'あり得ません — v3 §19: 不確実なPoseは強制的に高confidenceにしない。',
     ]),
     el('p', { class: 'footnote' }, [
-      '`propagation` is not one of §19’s seven. It is here because §17 limits how long a ' +
-        'propagated orientation is worth anything, and a confidence that could not fall while ' +
-        'running open-loop would be claiming otherwise.',
+      '`propagation` は §19 の7項には入っていません。ここにあるのは、§17 が外挿した姿勢の' +
+        '有効な長さを制限しているからです。開ループで走っているあいだ下がりようのない信頼度は、' +
+        'その制限が無いと主張しているのと同じになってしまいます。',
     ]),
   ]);
 }
@@ -467,24 +465,24 @@ function renderConfidence(vm: Phase7ViewModel): HTMLElement {
 function renderCost(vm: Phase7ViewModel): HTMLElement {
   const s = vm.stats;
   const within = s.meanFusionMs >= 0 && s.meanFusionMs <= FUSION_BUDGET_MS;
-  return card('Cost (§H has no line for this)', [
+  return card('コスト（§H にこの項目はない）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Fusion', s.meanFusionMs >= 0 ? `${s.meanFusionMs} ms` : null,
+      stat('統合', s.meanFusionMs >= 0 ? `${s.meanFusionMs} ms` : null,
         s.meanFusionMs >= 0 ? (within ? OK : BAD) : ''),
-      stat('Budget', `${FUSION_BUDGET_MS} ms`),
-      stat('Samples', String(s.fusionCostSamples)),
-      stat('Sensor rate', s.measuredImuHz < 0 ? null : `${s.measuredImuHz} Hz`),
+      stat('予算', `${FUSION_BUDGET_MS} ms`),
+      stat('サンプル数', String(s.fusionCostSamples)),
+      stat('センサーのレート', s.measuredImuHz < 0 ? null : `${s.measuredImuHz} Hz`),
     ]),
     el('p', { class: 'footnote' }, [
-      '§H allocates every millisecond it has — acquire 6, Shi-Tomasi 8 amortised, LK 14, ' +
-        'forward/backward 4, RANSAC and pose 6 — and names no line for fusion. So whatever this ' +
-        `costs comes out of margin that does not exist on paper, and the ${FUSION_BUDGET_MS} ms ` +
-        'above is a ceiling this phase set for itself rather than one it was given.',
+      '§H は持っているミリ秒をすべて割り当てています — 取得 6、Shi-Tomasi 償却 8、LK 14、' +
+        '往復 4、RANSAC と姿勢 6 — そして統合の項目はありません。つまりここでかかる分は' +
+        `紙の上には存在しない余白から出ています。上の ${FUSION_BUDGET_MS} ms は、` +
+        '与えられた上限ではなく、このフェーズが自分に課した上限です。',
     ]),
     el('p', { class: 'footnote' }, [
-      'An orientation error-state filter is a handful of 3×3 operations per sample. Anything ' +
-        'approaching a millisecond at 60 Hz is an implementation error rather than a platform ' +
-        'fact, which is why IMU-008 is advisory and gated separately (§34, §H.4).',
+      '姿勢の誤差状態フィルタは、1サンプルあたり 3×3 の演算がいくつかあるだけです。' +
+        '60 Hz で 1 ms に近づくとすれば、それはプラットフォームの事実ではなく実装の誤りです。' +
+        'IMU-008 が参考扱いで別に判定されるのはそのためです（§34、§H.4）。',
     ]),
   ]);
 }

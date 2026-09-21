@@ -3,21 +3,20 @@
 One run, about four minutes, on the iPhone in Safari over HTTPS.
 
 **Phases 1–9 have to have passed on this build — not necessarily in this session.** A phase that
-reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
-loads, so you do not re-run them to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`,
-`START VERIFICATION`, `START POSE RECOVERY`, `START FUSION`, `START KEYFRAMES`,
-`START TRIANGULATION` — using the `GO TO …` buttons, because `BACK TO …` stops the stage you came
-from. The Phase Lock in front of the LANDMARK MAP screen stays closed until Phase 9 has `PASSED`
-on this device on this build, and each screen's button says which of the two things is missing
-when it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`、`IMU 統合開始`、`キーフレーム開始`、`三角測量開始`
+— using the `… へ進む` buttons, because `… へ戻る` stops the stage you came from. The Phase Lock
+in front of the 「ランドマーク地図」 screen stays closed until Phase 9 has `PASSED` on this
+device on this build, and each screen's button says which of the two things is missing when it
+is disabled.
 
 What to have ready:
 
@@ -44,15 +43,14 @@ reported ±24.5°, so there is no global datum to align to.
 
 ## The run
 
-1. Open the app and walk forward to the LANDMARK MAP screen, tapping `START CAMERA`,
-   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`,
-   `START POSE RECOVERY`, `START FUSION`, `START KEYFRAMES`, `START TRIANGULATION` on the way. A
-   phase that already passed on this build keeps its door open; one that has not still has to pass
-   here, as its own guide describes.
-2. From the TRIANGULATION screen, tap **GO TO LANDMARK MAP**. Leave triangulation running.
-3. **Before tapping anything, check the button says `START LANDMARK MAP` and is tappable.**
-   If it already reads `MAPPING` and is greyed out, stop and report it (§H.5).
-4. Tap **START LANDMARK MAP**.
+1. Open the app and walk forward to the 「ランドマーク地図」 screen, tapping
+   `カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`、`IMU 統合開始`、`キーフレーム開始`、`三角測量開始`
+   on the way. A phase that already passed on this build keeps its door open; one that has not
+   still has to pass here, as its own guide describes.
+2. From the 「三角測量」画面, tap **ランドマーク地図へ進む**. Leave triangulation running.
+3. **Before tapping anything, check the button says `ランドマーク地図開始` and is tappable.**
+   If it already reads `地図を作成中` and is greyed out, stop and report it (§H.5).
+4. Tap **ランドマーク地図開始**.
 5. **Walk slowly along the scene**, as for Phase 9. Watch *The map*: landmarks appear as
    candidates and turn confirmed once three views have seen them.
 6. **Walk back the way you came**, slowly. This is the part that matters: it is what gets a
@@ -61,7 +59,7 @@ reported ±24.5°, so there is no global datum to align to.
 7. Keep going for two or three minutes, so the injection runs several times — it is sampled one
    batch in four, and only over points the map already holds.
 8. Watch the tests card. When MAP-001 through MAP-007 all read `PASS` and the verdict head reads
-   `PASSED`, tap **DOWNLOAD EVIDENCE JSON**.
+   `PASSED`, tap **エビデンス JSON をダウンロード**.
 
 ---
 
@@ -102,5 +100,5 @@ anything was injected; what MAP-005 judges is the *excess* over that baseline.
 
 ## Exporting
 
-**DOWNLOAD EVIDENCE JSON** writes `phase10-real-device-<verdict>-<timestamp>.json`. Commit it
+**エビデンス JSON をダウンロード** writes `phase10-real-device-<verdict>-<timestamp>.json`. Commit it
 under `docs/phase10/evidence/` with a screenshot of the screen at the moment of export.

@@ -201,7 +201,7 @@ try {
   await climbTo(page, 6, { log: (n) => console.log(`[p6] phase ${n} running`) });
   // Phase Lock, on the control a person would use. Phase 5 cannot pass on this leg (Rule 004),
   // so the door to Phase 6 must be shut and must say why.
-  const gate = await expectLocked(page, 6, 'GO TO RELATIVE POSE');
+  const gate = await expectLocked(page, 6, '相対姿勢へ進む');
   console.log(`[p6] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({
@@ -222,8 +222,8 @@ try {
   // API: reaching past the DOM is how Phase 3's leg twice certified a screen whose button had
   // become unpressable while the engine behind it answered perfectly well (§H.5).
   const confirmRunning = await pressStart(page, '#start-pose', {
-    idle: 'START POSE RECOVERY',
-    busy: 'RECOVERING',
+    idle: '姿勢復元開始',
+    busy: '復元中',
   });
 
   await page.waitForFunction(

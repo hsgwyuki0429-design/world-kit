@@ -120,11 +120,10 @@ export function renderPhase3Screen(
 
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Features']),
+      el('h1', {}, ['特徴点']),
       el('p', {}, [
-        'Phase 3 — Shi-Tomasi corners on the pyramid Phase 2 builds. Each point is one ' +
-          'corner in one image; nothing follows a point from frame to frame yet, and nothing ' +
-          'spatial is produced.',
+        'Phase 3 — Phase 2 が作るピラミッド上の Shi-Tomasi コーナー。各点は1枚の画像の中の' +
+          '1つのコーナーです。まだ点をフレーム間で追ってはおらず、空間的なものも作っていません。',
       ]),
     ]),
   );
@@ -143,11 +142,10 @@ export function renderPhase3Screen(
 
   root.append(
     navigationSection(
-      { index: 2, label: 'BACK TO PIPELINE', onClick: handlers.onBack },
+      { index: 2, label: 'フレームパイプラインへ戻る', onClick: handlers.onBack },
       {
         index: 4,
-        name: 'OPTICAL FLOW TRACKING',
-        goLabel: 'GO TO TRACKING',
+        name: 'オプティカルフロー追跡',
         phase: vm.phase4,
         canEnter: vm.canEnterPhase4,
         implemented: vm.phase4Implemented,
@@ -178,24 +176,24 @@ function renderPreview(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLEleme
       ]),
       el('p', { class: 'footnote' }, [
         s.detections > 0
-          ? `${s.count} corners drawn at the positions the detector reported, on the ` +
-            `${s.detectWidth}×${s.detectHeight} level-${s.detectLevel} image. Radius and ` +
-            'colour follow each corner’s measured quality; §51 forbids drawing points ' +
-            'anywhere but where they were found.'
-          : 'Waiting for the first detection.',
+          ? `${s.detectWidth}×${s.detectHeight} の level-${s.detectLevel} 画像上に、` +
+            `検出器が報告した位置そのままで ${s.count} 個のコーナーを描いています。` +
+            '半径と色は各コーナーの実測品質に従います。§51 は、見つかった場所以外に' +
+            '点を描くことを禁じています。'
+          : '最初の検出を待っています。',
       ]),
     );
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'DETECTION NOT STARTED';
+              ? 'カメラを要求中…'
+              : '検出は未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -209,20 +207,20 @@ function renderPreview(vm: Phase3ViewModel, handlers: Phase3Handlers): HTMLEleme
         class: 'primary',
         id: 'start-detection',
         disabled: vm.opening || vm.running,
-        textContent: vm.running ? 'DETECTING' : vm.opening ? 'REQUESTING…' : 'START DETECTION',
+        textContent: vm.running ? '検出中' : vm.opening ? '要求中…' : '特徴点検出開始',
         onclick: handlers.onStart,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-detection',
         disabled: !vm.running,
-        textContent: 'STOP',
+        textContent: '停止',
         onclick: handlers.onStop,
       } as never),
     ]),
   );
 
-  return card('Camera and detected corners', children);
+  return card('カメラと検出されたコーナー', children);
 }
 
 function renderPopulation(vm: Phase3ViewModel): HTMLElement {
@@ -235,34 +233,35 @@ function renderPopulation(vm: Phase3ViewModel): HTMLElement {
         : 's-AVAILABLE';
   const countClass = s.count >= FEATURE_MIN ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED';
 
-  return card('Population', [
+  return card('特徴点の数', [
     el('div', { class: 'stat-grid' }, [
-      stat('Features', s.detections > 0 ? String(s.count) : null, countClass),
-      stat('State', s.detections > 0 ? s.state.replace(/_/g, ' ') : null, stateClass),
-      stat('Target', String(FEATURE_TARGET)),
-      stat('Cell quota', s.quota > 0 ? String(s.quota) : null),
-      stat('Cells occupied', s.detections > 0 ? `${s.occupiedCells} / ${GRID_COLS * GRID_ROWS}` : null),
-      stat('Largest cell', s.detections > 0 ? `${Math.round(s.maxCellShare * 1000) / 10}%` : null),
-      stat('Detections', String(s.detections)),
-      stat('Detect cost', s.detections > 0 ? `${s.meanDetectCostMs} ms` : null,
+      stat('特徴点', s.detections > 0 ? String(s.count) : null, countClass),
+      stat('状態', s.detections > 0 ? s.state.replace(/_/g, ' ') : null, stateClass),
+      stat('目標', String(FEATURE_TARGET)),
+      stat('セルあたりの上限', s.quota > 0 ? String(s.quota) : null),
+      stat('使われたセル', s.detections > 0 ? `${s.occupiedCells} / ${GRID_COLS * GRID_ROWS}` : null),
+      stat('最大のセル', s.detections > 0 ? `${Math.round(s.maxCellShare * 1000) / 10}%` : null),
+      stat('検出回数', String(s.detections)),
+      stat('検出コスト', s.detections > 0 ? `${s.meanDetectCostMs} ms` : null,
         s.meanDetectCostMs >= 0 && s.meanDetectCostMs <= DETECT_BUDGET_MS ? 's-AVAILABLE' : ''),
-      stat('Refills', String(s.refills.length)),
-      stat('Quota breaches', String(s.quotaBreaches), s.quotaBreaches > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('Over maximum', String(s.overMaxFrames), s.overMaxFrames > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('State mismatches', String(s.stateMismatches), s.stateMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
+      stat('補充', String(s.refills.length)),
+      stat('上限の超過', String(s.quotaBreaches), s.quotaBreaches > 0 ? 's-PERMISSION_DENIED' : ''),
+      stat('最大数の超過', String(s.overMaxFrames), s.overMaxFrames > 0 ? 's-PERMISSION_DENIED' : ''),
+      stat('状態の不一致', String(s.stateMismatches), s.stateMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
     ]),
     el('p', { class: 'footnote' }, [
-      `§11's ladder: below 500 top up, below 200 urgently, below ${FEATURE_MIN} report LOW ` +
-        'FEATURE COUNT, below 80 TRACKING DEGRADED. The state shown is a function of the ' +
-        'count shown — they cannot disagree, and a frame where they did would be counted above.',
+      `§11 の段階: 500 未満で補充、200 未満で緊急に補充、${FEATURE_MIN} 未満で LOW ` +
+        'FEATURE COUNT、80 未満で TRACKING DEGRADED。上に出ている状態は、上に出ている' +
+        '個数から導かれます。両者が食い違うことはあり得ず、食い違ったフレームがあれば' +
+        '「状態の不一致」に数えられます。',
     ]),
     ...(s.refills.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Recent refills']),
+          el('p', { class: 'group-title' }, ['最近の補充']),
           ...s.refills.slice(-5).map((r) =>
             el('div', { class: 'cap-row' }, [
               el('span', { class: 'cap-label' }, [`${r.urgency} · ${r.texture}`]),
-              el('span', { class: 'cap-method' }, [r.exhausted ? 'exhausted' : 'recovered']),
+              el('span', { class: 'cap-method' }, [r.exhausted ? '候補が尽きた' : '回復した']),
               el('span', { class: 'cap-state' }, [`${r.countBefore} → ${r.countAfter}`]),
             ]),
           ),
@@ -278,31 +277,31 @@ function renderScene(vm: Phase3ViewModel): HTMLElement {
       el('span', { class: 'cap-label' }, [label]),
       el('span', { class: 'cap-method' }, [c.frames > 0 ? `∇ ${c.medianGradient}` : '']),
       el('span', { class: `cap-state ${c.frames > 0 ? 's-AVAILABLE' : ''}` }, [
-        c.frames > 0 ? `${c.frames} frames · median ${c.medianCount}` : 'none yet',
+        c.frames > 0 ? `${c.frames} フレーム · 中央値 ${c.medianCount}` : 'まだなし',
       ]),
     ]);
 
-  return card('Scene', [
+  return card('シーン', [
     el('p', { class: 'footnote', style: 'margin-bottom:8px' } as never, [
-      `Each frame is classified by its own mean gradient magnitude: at or above ` +
-        `${TEXTURE_RICH_FLOOR} it has structure, at or below ${TEXTURE_POOR_CEILING} it is ` +
-        'blank, and between the two it is judged by neither test. That is measured from the ' +
-        'image — pointing the camera somewhere is not the same as saying what it saw.',
+      `各フレームは自分の平均勾配の大きさで分類されます。${TEXTURE_RICH_FLOOR} 以上なら` +
+        `構造あり、${TEXTURE_POOR_CEILING} 以下なら平坦、その中間はどちらのテストでも` +
+        '判定しません。これは画像から計測しています。カメラをどこに向けたかと、' +
+        'カメラが何を見たかは別のことです。',
     ]),
-    row('Texture-rich (FEAT-001)', s.textureRich),
-    row('Texture-poor (FEAT-002)', s.texturePoor),
-    row('Ambiguous', s.textureAmbiguous),
+    row('構造のある面（FEAT-001）', s.textureRich),
+    row('平坦な面（FEAT-002）', s.texturePoor),
+    row('どちらとも言えない', s.textureAmbiguous),
     el('div', { class: 'stat-grid', style: 'margin-top:10px' } as never, [
-      stat('Current ∇', s.detections > 0 ? String(s.meanGradient) : null),
-      stat('Class', s.detections > 0 ? s.texture.replace('TEXTURE_', '') : null),
-      stat('Detect level', s.detections > 0 ? String(s.detectLevel) : null),
-      stat('Detect size', s.detectWidth > 0 ? `${s.detectWidth}×${s.detectHeight}` : null),
+      stat('いまの ∇', s.detections > 0 ? String(s.meanGradient) : null),
+      stat('分類', s.detections > 0 ? s.texture.replace('TEXTURE_', '') : null),
+      stat('検出レベル', s.detections > 0 ? String(s.detectLevel) : null),
+      stat('検出サイズ', s.detectWidth > 0 ? `${s.detectWidth}×${s.detectHeight}` : null),
     ]),
     ...(s.texturePoor.frames === 0
       ? [
           el('p', { class: 'footnote' }, [
-            'FEAT-002 needs a blank surface. Point the camera at one for a couple of seconds ' +
-              'and back — the same movement makes FEAT-004 exercise the refill ladder.',
+            'FEAT-002 には平坦な面が必要です。2秒ほどそちらに向けてから戻してください。' +
+              '同じ動きが FEAT-004 の補充の段階も動かします。',
           ]),
         ]
       : []),
@@ -313,26 +312,26 @@ function renderProvenance(vm: Phase3ViewModel): HTMLElement {
   const s = vm.stats;
   const ok = s.medianAboveChance >= MIN_CONTRAST_ABOVE_CHANCE;
   const cal = s.level0Calibration;
-  return card('Are these real corners?', [
+  return card('これは本当にコーナーか？', [
     el('div', { class: 'stat-grid' }, [
       stat(
-        'Above chance',
+        '偶然を上回る割合',
         s.contrastSamples > 0 ? `${Math.round(s.medianAboveChance * 1000) / 10}%` : null,
         s.contrastSamples > 0 ? (ok ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : '',
       ),
-      stat('Samples', s.contrastSamples > 0 ? String(s.contrastSamples) : null),
-      stat('Grid comparisons', s.grid.samples > 0 ? String(s.grid.samples) : null),
+      stat('サンプル数', s.contrastSamples > 0 ? String(s.contrastSamples) : null),
+      stat('グリッドの比較回数', s.grid.samples > 0 ? String(s.grid.samples) : null),
       // §51: the overlay must sit on the picture, and on a phone that is not the same claim
       // as the contrast statistic above — which is computed in the worker on the worker's
       // own buffer and so cannot see a rotated one.
       stat(
-        'Overlay matches video',
+        '重ね描きと映像の一致',
         vm.alignment
           ? !vm.alignment.measurable
-            ? 'not measurable — no local texture in this frame'
+            ? '計測不能 — このフレームには局所的な模様がありません'
             : vm.alignment.best === 'identity'
-              ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
-              : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
+              ? `一致 · 偶然の ${vm.alignment.identityOverRandom.toFixed(1)} 倍`
+              : `不一致 · ${vm.alignment.best} のほうが ${vm.alignment.bestOverIdentity.toFixed(1)} 倍よく合う`
           : null,
         vm.alignment
           ? !vm.alignment.measurable
@@ -344,37 +343,37 @@ function renderProvenance(vm: Phase3ViewModel): HTMLElement {
           : '',
       ),
       stat(
-        'Clustering',
+        '偏り',
         s.grid.samples > 0
           ? `${Math.round(s.grid.medianGridded * 1000) / 10}% vs ${Math.round(s.grid.medianUngridded * 1000) / 10}%`
           : null,
       ),
     ]),
     el('p', { class: 'footnote' }, [
-      'Above chance is the probability that a detected position has more local texture than ' +
-        'a seeded-random position in the same frame. A detector emitting coordinates ' +
-        'unrelated to the image scores 50% exactly, by construction — so the distance from ' +
-        `50% measures the detector rather than the scene. FEAT-001 needs ${Math.round(MIN_CONTRAST_ABOVE_CHANCE * 100)}%.`,
+      '「偶然を上回る割合」は、検出された位置が、同じフレーム内の乱数で選んだ位置より' +
+        '局所的な模様を多く持っている確率です。画像と無関係な座標を出す検出器は、' +
+        '構造上ちょうど 50% になります。つまり 50% からの隔たりが、シーンではなく' +
+        `検出器を測っていることになります。FEAT-001 は ${Math.round(MIN_CONTRAST_ABOVE_CHANCE * 100)}% を要求します。`,
     ]),
     el('p', { class: 'footnote' }, [
-      'Overlay matches video is measured on this thread, from this element: the page reads ' +
-        'the video itself and scores the drawn positions against each rotation, flip and ' +
-        'transpose. Identity has to win. The check above it cannot see this — it runs in ' +
-        'the worker on the worker’s own buffer, so a buffer rotated against the screen ' +
-        'scores just as well. If this says NO the acquisition route is abandoned rather ' +
-        'than the drawing corrected, because Phase 4 reads the same positions.',
+      '「重ね描きと映像の一致」は、このスレッドで、この要素から計測しています。' +
+        'ページが映像そのものを読み、描かれた位置を回転・反転・転置のそれぞれと突き合わせて' +
+        '採点します。恒等変換が勝たなければいけません。1つ上の検査はこれを見られません。' +
+        'あちらはワーカーが自分のバッファ上で走らせるので、画面に対して回転したバッファでも' +
+        '同じ点が取れてしまうからです。ここが「不一致」なら、描画を直すのではなく取得経路を' +
+        '捨てます。Phase 4 が同じ位置を読むからです。',
     ]),
     el('p', { class: 'footnote' }, [
-      'Clustering compares the largest single-cell share with the 8×6 quota against an ' +
-        'ungridded selection over the same candidates on the same frame. A scene that would ' +
-        'have spread evenly anyway shows no difference, which is the point.',
+      '「偏り」は、8×6 の上限を課したときの最大セル占有率を、同じフレームの同じ候補から' +
+        '上限なしで選んだ場合と比べたものです。もともと均等に散らばるシーンでは差が出ません。' +
+        'それがこの比較の狙いです。',
     ]),
     ...(cal
       ? [
           el('p', { class: 'footnote' }, [
-            `Level-0 calibration: detecting at ${cal.width}×${cal.height} would have cost ` +
-              `${cal.detectMs} ms and found ${cal.features} features, measured once on this ` +
-              `device. Detection runs at level ${s.detectLevel} for ${s.meanDetectCostMs} ms.`,
+            `level-0 での較正: ${cal.width}×${cal.height} で検出すると ${cal.detectMs} ms かかり、` +
+              `${cal.features} 個の特徴点が見つかっていました（この端末で1回だけ計測）。` +
+              `実際の検出は level ${s.detectLevel} で ${s.meanDetectCostMs} ms です。`,
           ]),
         ]
       : []),

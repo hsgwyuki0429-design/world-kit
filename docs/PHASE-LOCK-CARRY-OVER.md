@@ -90,20 +90,20 @@ pose solver all still have to be running when you get there. What the carry-over
 requirement to make each of those phases *pass* on the way past — not the walk itself. In
 practice that is one tap per screen, in order, going forward:
 
-| Screen | Tap |
+| 画面 | タップするもの |
 | --- | --- |
-| SCAN (Phase 0) | *(runs by itself)* |
-| CAMERA CAPTURE | `START CAMERA` |
-| PIPELINE | `START PIPELINE` |
-| FEATURES | `START DETECTION` |
-| TRACKING | `START TRACKING` |
-| GEOMETRIC VERIFICATION | `START VERIFICATION` |
-| RELATIVE POSE | `START POSE RECOVERY` |
-| IMU SUPPORT / FUSION | `START FUSION` |
-| KEYFRAME SYSTEM | `START KEYFRAMES` |
-| TRIANGULATION | `START TRIANGULATION` |
+| 環境チェック（Phase 0） | *(自動で走ります)* |
+| カメラ取得 | `カメラ開始` |
+| フレームパイプライン | `パイプライン開始` |
+| 特徴点検出 | `特徴点検出開始` |
+| オプティカルフロー追跡 | `追跡開始` |
+| 幾何検証 | `幾何検証開始` |
+| 相対姿勢 | `姿勢復元開始` |
+| IMU 統合 | `IMU 統合開始` |
+| キーフレーム | `キーフレーム開始` |
+| 三角測量 | `三角測量開始` |
 
-Go forward with the `GO TO …` buttons only. `BACK TO …` stops the stage you came from, which is
+Go forward with the `… へ進む` buttons only. `… へ戻る` stops the stage you came from, which is
 what it is for and not what you want here.
 
 **Earning the first pass.** A carried pass has to have been a pass. Each phase still needs its own
@@ -118,6 +118,11 @@ NOT_STARTED in this run — carried over: phase 6 PASSED on a REAL_DEVICE run at
 exists because an enterable button in front of a phase reading `NOT_STARTED` is otherwise
 indistinguishable from a Phase Lock that has failed open — and the tester is told, in every one of
 these guides, to stop and report exactly that (Rule 002, §H.5).
+
+The chrome around those values is Japanese and the values themselves are not: a locked control
+reads `<画面名> — ロック中`, and `NOT_STARTED`, `PASSED` and `REAL_DEVICE` are the engine's own
+words, the ones the evidence bundle is written in. `src/core/controlLabels.ts` holds the word a
+locked control has to contain, because CAP-0011 looks for it.
 
 ## Clearing it
 

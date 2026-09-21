@@ -3,20 +3,20 @@
 One run, about four minutes, on the iPhone in Safari over HTTPS.
 
 **Phases 1–6 have to have passed on this build — not necessarily in this session.** A phase that
-reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
-loads, so you do not re-run them to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`,
-`START VERIFICATION`, `START POSE RECOVERY` — using the `GO TO …` buttons, because `BACK TO …`
-stops the stage you came from. The Phase Lock in front of the IMU SUPPORT / FUSION screen stays
-closed until Phase 6 has `PASSED` on this device on this build, and each screen's button says
-which of the two things is missing when it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始` —
+using the `… へ進む` buttons, because `… へ戻る` stops the stage you came from. The Phase Lock
+in front of the 「IMU 統合」 screen stays closed until Phase 6 has `PASSED` on this device on
+this build, and each screen's button says which of the two things is missing when it is
+disabled.
 
 **Grant motion access when iOS asks.** Unlike Phase 6, a refusal here does not merely hold the
 phase at `TESTING` — it puts the run into the case v3 §68's pass condition is *about*, and
@@ -54,19 +54,19 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
 
 ## The run
 
-1. Open the app and walk forward to the IMU SUPPORT / FUSION screen, tapping `START CAMERA`,
-   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`,
-   `START POSE RECOVERY` on the way. A phase that already passed on this build keeps its door
-   open; one that has not still has to pass here, as its own guide describes.
-2. From the RELATIVE POSE screen, tap **GO TO IMU SUPPORT / FUSION**. Leave pose recovery
+1. Open the app and walk forward to the 「IMU 統合」 screen, tapping
+   `カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`
+   on the way. A phase that already passed on this build keeps its door open; one that has not
+   still has to pass here, as its own guide describes.
+2. From the 「相対姿勢」画面, tap **IMU 統合へ進む**. Leave pose recovery
    running — Phase 7 adopts the live solver and changes nothing about how it recovers a pose.
-3. **Before tapping anything, check the button says `START FUSION` and is tappable.**
-   If it already reads `FUSING` and is greyed out, stop and report it. Six stages are already
+3. **Before tapping anything, check the button says `IMU 統合開始` and is tappable.**
+   If it already reads `統合中` and is greyed out, stop and report it. Six stages are already
    live when this screen opens — camera, pipeline, detector, tracker, verifier, pose — so a
    control derived from any of them is already pressed and there is nothing you can start. That
    is the shape of the two defects Phase 3 shipped in a row (§H.5); this screen is the fifth
    written to avoid it.
-4. Tap **START FUSION** and grant motion access when iOS asks.
+4. Tap **IMU 統合開始** and grant motion access when iOS asks.
    - Under **Sensors**, `acceleration`, `accelerationIncludingGravity` and `rotationRate` should
      all read `ARRIVING`, with a *Measured rate* near 60 Hz.
    - **Mode** should move from `VISION_ONLY` to `FUSED` within a second or two.
@@ -101,7 +101,7 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
 8. **Turn steadily for another 60 seconds** so the bias estimate finishes converging and the
    innovation median settles.
 
-9. When the verdict panel shows what you want, tap **DOWNLOAD EVIDENCE JSON** — the verdict is
+9. When the verdict panel shows what you want, tap **エビデンス JSON をダウンロード** — the verdict is
    in the filename — and screenshot the screen.
 
 ---

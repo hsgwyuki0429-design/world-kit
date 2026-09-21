@@ -125,7 +125,7 @@ try {
 
   // Phase Lock, on the control a person would use. Phase 6 cannot pass on this leg (Rule 004),
   // so the door to Phase 7 must be shut and must say why.
-  const gate = await expectLocked(page, 7, 'GO TO IMU SUPPORT / FUSION');
+  const gate = await expectLocked(page, 7, 'IMU 統合へ進む');
   console.log(`[p7] Phase Lock holds: ${gate.text}`);
 
   // IMU-002's fifth criterion needs a *before*: Phase 6's own figures with Phase 7 not running
@@ -144,8 +144,8 @@ try {
   // API: reaching past the DOM is how Phase 3's leg twice certified a screen whose button had
   // become unpressable while the engine behind it answered perfectly well (§H.5).
   const confirmFusing = await pressStart(page, '#start-fusion', {
-    idle: 'START FUSION',
-    busy: 'FUSING',
+    idle: 'IMU 統合開始',
+    busy: '統合中',
   });
 
   await page.waitForFunction(

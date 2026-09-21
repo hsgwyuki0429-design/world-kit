@@ -152,13 +152,12 @@ export function renderPhase6Screen(
   root.replaceChildren();
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Relative Pose']),
+      el('h1', {}, ['相対姿勢']),
       el('p', {}, [
-        'Phase 6 — the camera’s rotation and the direction it moved in, decomposed from the ' +
-          'geometry Phase 5 verified. Direction only: a monocular camera has no absolute scale, ' +
-          'so everything here is in LOCAL UNITS and nothing downstream may read 1 as a metre. ' +
-          'No map is kept — the points triangulated here exist only to check which way the ' +
-          'camera was facing.',
+        'Phase 6 — Phase 5 が検証した幾何から、カメラの回転と、動いた「向き」を分解します。' +
+          '向きだけです。単眼カメラには絶対スケールがないので、ここはすべて LOCAL UNITS で、' +
+          '下流のどこも 1 をメートルと読んではいけません。地図は保持しません。' +
+          'ここで三角測量した点は、カメラがどちらを向いていたかを確かめるためだけに存在します。',
       ]),
     ]),
   );
@@ -180,10 +179,10 @@ export function renderPhase6Screen(
   );
   root.append(
     navigationSection(
-      { index: 5, label: 'BACK TO VERIFICATION', onClick: handlers.onBack },
+      { index: 5, label: '幾何検証へ戻る', onClick: handlers.onBack },
       {
         index: 7,
-        name: 'IMU SUPPORT / FUSION',
+        name: 'IMU 統合',
         phase: vm.phase7,
         canEnter: vm.canEnterPhase7,
         implemented: vm.phase7Implemented,
@@ -209,25 +208,25 @@ function renderPreview(vm: Phase6ViewModel, handlers: Phase6Handlers): HTMLEleme
       ]),
       el('p', { class: 'footnote' }, [
         s.poseFrames > 0
-          ? 'Nothing about the pose is drawn on the picture. A rotation and a translation ' +
-            'direction belong to the camera, not to any point on screen, and there is no depth ' +
-            'here to mark — the triangulated points exist only to decide which way the camera ' +
-            'was facing and are not kept.'
+          ? '姿勢については何も画像の上に描いていません。回転と並進の向きはカメラのもので、' +
+            '画面上のどの点のものでもありませんし、ここには印を付けるべき深度もありません。' +
+            '三角測量した点は、カメラがどちらを向いていたかを決めるためだけのもので、' +
+            '保持もしていません。'
           : vm.running
-            ? 'Waiting for the first recovered pose.'
-            : 'Verification is live. Pose recovery has not been started.',
+            ? '最初の姿勢の復元を待っています。'
+            : '検証は動作中です。姿勢の復元はまだ開始されていません。',
       ]),
     );
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
+              ? 'カメラを要求中…'
               : 'POSE RECOVERY NOT STARTED';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
@@ -244,19 +243,19 @@ function renderPreview(vm: Phase6ViewModel, handlers: Phase6Handlers): HTMLEleme
         // §H.5, for the fourth time and from the one predicate. Everything below this screen —
         // camera, pipeline, detector, tracker, verifier — is already live when it opens.
         disabled: vm.opening || vm.running,
-        textContent: vm.running ? 'RECOVERING' : vm.opening ? 'REQUESTING…' : 'START POSE RECOVERY',
+        textContent: vm.running ? '復元中' : vm.opening ? '要求中…' : '姿勢復元開始',
         onclick: handlers.onStart,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-pose',
         disabled: !vm.running,
-        textContent: 'STOP',
+        textContent: '停止',
         onclick: handlers.onStop,
       } as never),
     ]),
   );
-  return card('Camera and tracked correspondences', children);
+  return card('カメラと追跡中の対応点', children);
 }
 
 /** POSE-005 — the gate. Nothing else here distinguishes a solver from a constant. */
@@ -267,58 +266,56 @@ function renderInjection(vm: Phase6ViewModel): HTMLElement {
   const followed = enough && s.medianInjectedDeg >= 0 && off <= INJECTION_TOLERANCE_DEG;
   const controlOk = enough && s.medianControlDeg >= 0 && s.medianControlDeg <= MAX_CONTROL_ROTATION_DEG;
 
-  return card('Does the pose follow a rotation it was not told about?', [
+  return card('教えていない回転に姿勢は追従するか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Camera turned by', `${INJECTED_ROTATION_DEG}°`),
-      stat('Pose moved by', deg(s.medianInjectedDeg),
+      stat('カメラを回した角度', `${INJECTED_ROTATION_DEG}°`),
+      stat('姿勢が動いた角度', deg(s.medianInjectedDeg),
         enough ? (followed ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Control moved by', deg(s.medianControlDeg),
+      stat('対照群が動いた角度', deg(s.medianControlDeg),
         enough ? (controlOk ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Samples', enough ? String(s.injectionSamples) : `${s.injectionSamples} / ${MIN_INJECTION_SAMPLES}`),
-      stat('Inlier drift', `${pct(s.medianInjectedInlierDrift)} · control ${pct(s.medianControlInlierDrift)}`,
+      stat('サンプル数', enough ? String(s.injectionSamples) : `${s.injectionSamples} / ${MIN_INJECTION_SAMPLES}`),
+      stat('インライアの変動', `${pct(s.medianInjectedInlierDrift)} · 対照群 ${pct(s.medianControlInlierDrift)}`,
         s.medianInjectedInlierDrift > 0.1 ? 's-PERMISSION_DENIED' : ''),
-      stat('Planar flips', `${s.injectionPlanarFlips} · control ${s.controlPlanarFlips}`,
+      stat('平面判定の反転', `${s.injectionPlanarFlips} · 対照群 ${s.controlPlanarFlips}`,
         s.injectionSamples > 0 && s.injectionPlanarFlips / s.injectionSamples > 0.1
           ? 's-PERMISSION_DENIED' : ''),
     ]),
     el('p', { class: 'footnote' }, [
-      `On a sample of frames the harness applies a ${INJECTED_ROTATION_DEG}° camera rotation to ` +
-        'the second view — `K·Rⱼ·K⁻¹`, which is exactly what would have been seen had the phone ' +
-        'turned that far — and re-runs the whole chain, model fit included, on a set handed over ' +
-        'with no marking. The solver never learns Rⱼ, and cannot optimise against this number.',
+      `一部のフレームで、ハーネスが2つ目の視点に ${INJECTED_ROTATION_DEG}° のカメラ回転を` +
+        '適用します（`K·Rⱼ·K⁻¹`。端末をその角度だけ回したら見えたはずのもの、そのものです）。' +
+        'そして印を付けずに渡した集合に対して、モデルの当てはめも含めて全工程を走らせ直します。' +
+        'ソルバは Rⱼ を知ることができず、この数値に合わせて最適化することもできません。',
     ]),
     el('p', { class: 'footnote' }, [
-      '"Control moved by" is the same correspondences, unmodified, refitted with a different ' +
-        'seed. Both numbers are the measurement: a solver returning a constant reports 0° for ' +
-        'the first, and one returning noise reports a large number for the second.',
+      '「対照群が動いた角度」は、同じ対応点を一切いじらず、別の種で当てはめ直したものです。' +
+        '計測は2つの数値で成り立ちます。定数を返すソルバは1つ目が 0° になり、' +
+        'ノイズを返すソルバは2つ目が大きくなります。',
     ]),
     el('p', { class: 'footnote' }, [
-      'This is the only figure in Phase 6 a stage returning the same pose on every frame could ' +
-        'not produce. Such a stage has a valid rotation matrix, a unit translation, a small ' +
-        'reprojection error and a *perfect* temporal stability — better than a working solver’s ' +
-        '— and it scores exactly 0.00° here. v3 §67 states the condition in one line: ' +
-        'Poseが計算結果により変化.',
+      'Phase 6 の中で、毎フレーム同じ姿勢を返すだけのステージが作れない数値はこれだけです。' +
+        'そのステージは正しい回転行列と単位並進を持ち、再投影誤差も小さく、時間的な安定性は' +
+        '*完璧*です — まともなソルバより良いほどに。そしてここではちょうど 0.00° になります。' +
+        'v3 §67 はその条件を一行で書いています: Poseが計算結果により変化。',
     ]),
     el('p', { class: 'footnote' }, [
-      'Inlier drift and planar flips carry the control’s own figures beside them, and that is ' +
-        'the point of showing them. The *exact* epipolar geometry maps exactly under an ' +
-        'image-space rotation — `b′ᵀ(Hⱼ⁻ᵀF)a = bᵀFa` — but the inlier test is a **pixel ' +
-        'threshold**, and a Sampson distance is not invariant under a projective map of one ' +
-        'image, so a correspondence sitting on 1.5 px can cross. What the control drifts is what ' +
-        'refitting the same data costs; what the injection drifts beyond that is the question.',
+      'インライアの変動と平面判定の反転に対照群の値を並べてあるのが、これを出す理由です。' +
+        '*厳密な*エピポーラ幾何は画像空間の回転の下で厳密に写ります（`b′ᵀ(Hⱼ⁻ᵀF)a = bᵀFa`）。' +
+        'しかしインライア判定は**画素単位の閾値**で、Sampson 距離は片方の画像の射影変換の下で' +
+        '不変ではないので、1.5 px ぎりぎりにいる対応点は境界を跨ぎ得ます。対照群の変動は' +
+        '「同じデータを当てはめ直すだけで生じる分」であり、注入側がそれをどれだけ超えるかが問いです。',
     ]),
     ...(s.injections.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Recent injections']),
+          el('p', { class: 'group-title' }, ['最近の注入']),
           ...s.injections.slice(-4).map((inj) =>
             el('div', { class: 'cap-row' }, [
-              el('span', { class: 'cap-label' }, [`${inj.requestedDeg}° asked`]),
+              el('span', { class: 'cap-label' }, [`指示 ${inj.requestedDeg}°`]),
               el('span', { class: 'cap-method' }, [
-                `${deg(inj.recoveredDeg)} moved · control ${deg(inj.controlDeg)}`,
+                `実測 ${deg(inj.recoveredDeg)} · 対照群 ${deg(inj.controlDeg)}`,
               ]),
               el('span', {
                 class: `cap-state ${Math.abs(inj.recoveredDeg - inj.requestedDeg) <= INJECTION_TOLERANCE_DEG ? 's-AVAILABLE' : 's-PERMISSION_DENIED'}`,
-              }, [`${inj.inliersBefore} → ${inj.inliersAfter} inliers`]),
+              }, [`インライア ${inj.inliersBefore} → ${inj.inliersAfter}`]),
             ]),
           ),
         ]
@@ -335,52 +332,51 @@ function renderGyro(vm: Phase6ViewModel): HTMLElement {
     s.medianRotationDisagreementDeg >= 0 &&
     s.medianRotationDisagreementDeg <= Math.max(ROTATION_AGREEMENT_DEG, 0.3 * s.medianGyroRotationDeg);
 
-  return card('Does the camera agree with the gyroscope?', [
+  return card('カメラはジャイロと一致しているか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Camera says', deg(s.medianVisualRotationDeg)),
-      stat('Gyroscope says', s.gyroAvailable ? deg(s.medianGyroRotationDeg) : 'not available',
+      stat('カメラの言い分', deg(s.medianVisualRotationDeg)),
+      stat('ジャイロの言い分', s.gyroAvailable ? deg(s.medianGyroRotationDeg) : '利用できません',
         s.gyroAvailable ? '' : 's-PERMISSION_REQUIRED'),
-      stat('Disagreement', deg(s.medianRotationDisagreementDeg),
+      stat('食い違い', deg(s.medianRotationDisagreementDeg),
         enough ? (agreeing ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Comparable frames', enough
-        ? `${s.rotationSamples} of ${s.rotationComparisons}`
+      stat('比較できたフレーム', enough
+        ? `${s.rotationComparisons} 中 ${s.rotationSamples}`
         : `${s.rotationSamples} / ${MIN_JUDGED_FRAMES}`),
-      stat('Frames agreeing', pct(s.rotationAgreementRate),
+      stat('一致したフレームの割合', pct(s.rotationAgreementRate),
         s.rotationAgreementRate > 1
           ? 's-PERMISSION_DENIED'
           : s.rotationAgreementRate >= MIN_ROTATION_AGREEMENT_RATE ? 's-AVAILABLE' : ''),
-      stat('This frame', s.poseFrames > 0 ? deg(s.rotationDeg) : null),
+      stat('このフレーム', s.poseFrames > 0 ? deg(s.rotationDeg) : null),
     ]),
     el('p', { class: 'footnote' }, [
       s.gyroAvailable
-        ? `The gyroscope's rotation is integrated over the same interval the pose spans — anchor ` +
-          'to now — by composing the rotation vector properly rather than integrating |ω|, which ' +
-          'is the total path and would over-read on any wobble. The solver never sees it: it is a ' +
-          'different sensor on a different thread.'
+        ? 'ジャイロの回転は、姿勢が張るのと同じ区間（アンカーから現在まで）で積分しています。' +
+          '|ω| を積分するのではなく回転ベクトルを正しく合成しています。|ω| の積分は経路長の合計に' +
+          'なるので、少しでも揺れると過大に読み取ってしまいます。ソルバはこれを見ません。' +
+          '別のスレッド上の別のセンサーです。'
         : s.gyroReason ||
-          'Without the gyroscope there is no instrument independent of the pose solver that can ' +
-            'say how far the camera actually turned, so POSE-002 reports PENDING with that ' +
-            'reason instead of being judged. This is why Phase 6 cannot pass off the device.',
+          'ジャイロがないと、カメラが実際にどれだけ回ったかを姿勢ソルバと独立に言える計測器が' +
+            'ありません。そのため POSE-002 は判定せず、その理由を添えて PENDING を報告します。' +
+            'Phase 6 が実機でしか合格できないのはこのためです。',
     ]),
     el('p', { class: 'footnote' }, [
-      'Every figure here is over the **retained window** — §56 bounds what a twenty-minute ' +
-        'session may keep — and "comparable frames" is that window beside the total ever ' +
-        'compared. They are shown together because they came apart once: an agreement counter ' +
-        'that kept climbing over a denominator that stopped at 400 reported 232.3% agreeing on ' +
-        'the device, and a rate above 100% is not a rate.',
+      'ここの数値はすべて**保持ウィンドウ**の範囲のものです（§56 が20分のセッションで' +
+        '保持してよい量を制限しています）。「比較できたフレーム」は、そのウィンドウの値を' +
+        'これまでに比較した総数と並べたものです。並べているのは、一度これが乖離したからです。' +
+        '分母が 400 で止まったまま一致カウンタだけが増え続け、実機で「一致率 232.3%」を' +
+        '報告しました。100% を超える比率は、比率ではありません。',
     ]),
     el('p', { class: 'footnote' }, [
-      `Only frames where the gyroscope measured at least ${MIN_COMPARABLE_ROTATION_DEG}° are ` +
-        'compared. An agreement between two zeros is not an agreement — a phone held still gives ' +
-        '0° from both instruments, and a stage returning a constant identity rotation matches it ' +
-        'perfectly.',
+      `比較するのは、ジャイロが ${MIN_COMPARABLE_ROTATION_DEG}° 以上を測ったフレームだけです。` +
+        'ゼロとゼロの一致は一致ではありません。静止させた端末は両方の計測器から 0° を出し、' +
+        '恒等回転を返し続けるだけのステージはそれに完璧に一致してしまいます。',
     ]),
     el('p', { class: 'footnote' }, [
-      'Angles only, never axes. `rotationRate` is expressed in the device’s frame and the ' +
-        'camera’s differs from it by a fixed rotation nobody here has measured; a rotation angle ' +
-        'is invariant under that change of basis and an axis is not. And v3 §19 lists ' +
-        '`IMU consistency` among the pose confidence inputs — this phase withholds it precisely ' +
-        'so that this comparison means something.',
+      '比べるのは角度だけで、軸は比べません。`rotationRate` は端末の座標系で表されており、' +
+        'カメラの座標系とは誰もまだ測っていない固定回転の分だけ違います。回転角はその基底変換の' +
+        '下で不変ですが、軸はそうではありません。また v3 §19 は姿勢信頼度の入力に ' +
+        '`IMU consistency` を挙げていますが、このフェーズはまさにこの比較が意味を持つように' +
+        'それを保留しています。',
     ]),
   ]);
 }
@@ -394,32 +390,32 @@ function renderPose(vm: Phase6ViewModel): HTMLElement {
         ? 's-PERMISSION_REQUIRED'
         : 's-PERMISSION_DENIED';
 
-  return card('This frame (v3 §15)', [
+  return card('このフレーム（v3 §15）', [
     el('div', { class: 'stat-grid' }, [
-      stat('State', s.poseFrames > 0 ? s.state : null, stateClass),
-      stat('From', s.source ?? (s.poseFrames > 0 ? 'nothing' : null)),
-      stat('Rotation', deg(s.rotationDeg)),
-      stat('Translation', vec(s.translation) ?? (s.poseFrames > 0 ? 'none' : null)),
-      stat('Scale', s.scale, s.scale === 'LOCAL_UNITS' ? 's-AVAILABLE' : 's-PERMISSION_DENIED'),
-      stat('In front of both', s.correspondences > 0
+      stat('状態', s.poseFrames > 0 ? s.state : null, stateClass),
+      stat('由来', s.source ?? (s.poseFrames > 0 ? 'なし' : null)),
+      stat('回転', deg(s.rotationDeg)),
+      stat('並進', vec(s.translation) ?? (s.poseFrames > 0 ? 'なし' : null)),
+      stat('スケール', s.scale, s.scale === 'LOCAL_UNITS' ? 's-AVAILABLE' : 's-PERMISSION_DENIED'),
+      stat('両カメラの前方にある点', s.correspondences > 0
         ? `${s.pointsInFront} / ${s.correspondences}` : null,
         s.correspondences > 0 && s.pointsInFront / s.correspondences >= MIN_CHEIRALITY_FRACTION
           ? 's-AVAILABLE' : ''),
-      stat('Reprojection', px(s.reprojectionErrorPx),
+      stat('再投影誤差', px(s.reprojectionErrorPx),
         s.reprojectionErrorPx >= 0 && s.reprojectionErrorPx <= MAX_REPROJECTION_PX ? 's-AVAILABLE' : ''),
-      stat('Parallax left by R', px(s.rotationOnlyResidualPx)),
-      stat('Ambiguous', s.ambiguous ? 'yes' : 'no', s.ambiguous ? 's-PERMISSION_REQUIRED' : ''),
-      stat('Frames', String(s.poseFrames)),
-      stat('State mismatches', String(s.stateMismatches),
+      stat('R で説明できない視差', px(s.rotationOnlyResidualPx)),
+      stat('曖昧', s.ambiguous ? 'はい' : 'いいえ', s.ambiguous ? 's-PERMISSION_REQUIRED' : ''),
+      stat('フレーム数', String(s.poseFrames)),
+      stat('状態の不一致', String(s.stateMismatches),
         s.stateMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
       stat(
-        'Overlay matches video',
+        '重ね描きと映像の一致',
         vm.alignment
           ? !vm.alignment.measurable
-            ? 'not measurable — no local texture in this frame'
+            ? '計測不能 — このフレームには局所的な模様がありません'
             : vm.alignment.best === 'identity'
-              ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
-              : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
+              ? `一致 · 偶然の ${vm.alignment.identityOverRandom.toFixed(1)} 倍`
+              : `不一致 · ${vm.alignment.best} のほうが ${vm.alignment.bestOverIdentity.toFixed(1)} 倍よく合う`
           : null,
         vm.alignment
           ? !vm.alignment.measurable
@@ -431,35 +427,34 @@ function renderPose(vm: Phase6ViewModel): HTMLElement {
           : '',
       ),
     ]),
-    el('p', { class: 'footnote' }, [s.stateReason || 'Pose recovery has not run.']),
+    el('p', { class: 'footnote' }, [s.stateReason || '姿勢の復元はまだ走っていません。']),
     el('p', { class: 'footnote' }, [
-      `"Parallax left by R" is what rotation alone cannot explain, measured on the ` +
-        'correspondences rather than read off the decomposition: `K·R·K⁻¹` predicts where every ' +
-        `point would be if the camera had only turned, and the median distance to where it ` +
-        `actually is *is* the parallax a translation accounts for. At or under ` +
-        `${PURE_ROTATION_PARALLAX_PX} px — §13’s acceptable forward/backward band — there is ` +
-        'nothing left for a translation to explain, and none is reported.',
+      '「R で説明できない視差」は、回転だけでは説明できない分です。分解の結果から読むのではなく' +
+        '対応点の上で測っています。`K·R·K⁻¹` は、カメラが回っただけならそれぞれの点が' +
+        'どこにあるはずかを予測し、実際の位置までの距離の中央値が、まさに並進が説明する視差です。' +
+        `${PURE_ROTATION_PARALLAX_PX} px 以下 — §13 の往復誤差の許容帯 — なら、並進が説明すべき` +
+        'ものは何も残っておらず、並進は報告されません。',
     ]),
     ...(s.cheirality.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Candidates, and how many points each put in front']),
+          el('p', { class: 'group-title' }, ['候補と、それぞれが前方に置いた点の数']),
           ...s.cheirality.map((c) =>
             el('div', { class: 'cap-row' }, [
               el('span', { class: 'cap-label' }, [
-                `#${c.candidate}${c.candidate === s.chosen ? ' ← chosen' : ''}`,
+                `#${c.candidate}${c.candidate === s.chosen ? ' ← 採用' : ''}`,
               ]),
               el('span', { class: 'cap-method' }, [deg(c.rotationDeg)]),
               el('span', { class: `cap-state ${c.candidate === s.chosen ? 's-AVAILABLE' : ''}` }, [
-                `${c.inFront} in front of both cameras`,
+                `両カメラの前方に ${c.inFront} 点`,
               ]),
             ]),
           ),
           el('p', { class: 'footnote' }, [
-            'All of them, not just the winner. Decomposing an Essential matrix gives four ' +
-              'candidates and exactly one places the scene in front of both cameras; showing ' +
-              'only the chosen one would make the decision an assertion. A homography gives up ' +
-              'to eight, and the ones cheirality cannot separate are a genuine ambiguity that ' +
-              'needs a third view — reported, never tie-broken.',
+            '勝った候補だけでなく全部出しています。基本行列の分解は4つの候補を与え、' +
+              'そのうちちょうど1つだけがシーンを両カメラの前方に置きます。採用したものだけを' +
+              '見せると、その判断は発見ではなく主張になります。ホモグラフィは最大8つを与え、' +
+              '前方性で分離できないものは3つ目の視点を要する本物の曖昧さです。' +
+              '報告はしますが、こちらで勝手に決着させることはしません。',
           ]),
         ]
       : []),
@@ -471,59 +466,57 @@ function renderPlanar(vm: Phase6ViewModel): HTMLElement {
   const lowered = s.planarTranslationNotLowered === 0 &&
     s.medianPlanarUnseparated > s.medianNonPlanarUnseparated;
 
-  return card('Planar scene handling (v3 §16)', [
+  return card('平面シーンの扱い（v3 §16）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Planar frames posed', String(s.planarPosedFrames),
+      stat('姿勢が出た平面フレーム', String(s.planarPosedFrames),
         s.planarPosedFrames >= MIN_JUDGED_FRAMES ? 's-AVAILABLE' : ''),
-      stat('Non-planar frames posed', String(s.nonPlanarPosedFrames),
+      stat('姿勢が出た非平面フレーム', String(s.nonPlanarPosedFrames),
         s.nonPlanarPosedFrames >= MIN_JUDGED_FRAMES ? 's-AVAILABLE' : ''),
-      stat('Planar via Essential', String(s.planarFromEssential),
+      stat('平面なのに基本行列経由', String(s.planarFromEssential),
         s.planarFromEssential > 0 ? 's-PERMISSION_DENIED' : 's-AVAILABLE'),
-      stat('Unseparated candidates, planar', s.medianPlanarUnseparated >= 0
+      stat('分離できない候補（平面）', s.medianPlanarUnseparated >= 0
         ? String(s.medianPlanarUnseparated) : null, lowered ? 's-AVAILABLE' : ''),
-      stat('...and with depth', s.medianNonPlanarUnseparated >= 0
+      stat('…奥行きがある場合', s.medianNonPlanarUnseparated >= 0
         ? String(s.medianNonPlanarUnseparated) : null),
-      stat('Not lowered', String(s.planarTranslationNotLowered),
+      stat('下げそこねた回数', String(s.planarTranslationNotLowered),
         s.planarTranslationNotLowered > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('Translation confidence', s.medianPlanarTranslationConfidence >= 0
-        ? `${s.medianPlanarTranslationConfidence} planar · ${s.medianNonPlanarTranslationConfidence} with depth`
+      stat('並進の信頼度', s.medianPlanarTranslationConfidence >= 0
+        ? `平面 ${s.medianPlanarTranslationConfidence} · 奥行きあり ${s.medianNonPlanarTranslationConfidence}`
         : null),
-      stat('Ambiguous frames', String(s.ambiguousFrames)),
+      stat('曖昧なフレーム', String(s.ambiguousFrames)),
     ]),
     el('p', { class: 'footnote' }, [
-      'A planar scene is decomposed from the homography, never from the Essential matrix. An E ' +
-        'fitted to a plane is degenerate: it still decomposes, and the pose it yields looks ' +
-        'entirely reasonable. That is the failure v3 §16 exists to prevent, and it is invisible ' +
-        'to every other number on this screen.',
+      '平面シーンはホモグラフィから分解します。基本行列からは決して分解しません。' +
+        '平面に当てはめた E は退化しています。それでも分解はできてしまい、出てくる姿勢は' +
+        '一見まったく妥当に見えます。v3 §16 が防ごうとしているのがその失敗で、' +
+        'この画面の他のどの数値からも見えません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The lowered translation confidence is **counted, not chosen**. A homography ' +
-        'decomposition leaves a genuine two-fold ambiguity that two views cannot resolve, so ' +
-        'where cheirality could not separate k candidates the translation is one of k equally ' +
-        'supported answers and the term is 1/k — generically a half on a plane. Nothing is ' +
-        'assumed about planes; the candidates are counted, and the counts are the two figures ' +
-        'above.',
+      '並進の信頼度を下げるのは**数えた結果であって、決め打ちではありません**。' +
+        'ホモグラフィの分解には、2視点では解けない本物の2重の曖昧さが残ります。' +
+        '前方性で k 個の候補を分離できなかった場合、並進は同じだけ支持される k 個の答えの' +
+        '1つなので、その項は 1/k になります。平面では一般に 1/2 です。平面について何かを' +
+        '仮定してはいません。候補を数えているだけで、その数が上の2つの数値です。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The two confidence figures are **reported, not compared across classes**. Each is the ' +
-        'minimum over several terms: on a plane the binding term is the penalty (a half, every ' +
-        'time), and on a scene with depth it is whatever else was worst — often the feature ' +
-        'count. Two runs of the automated leg on identical code disagreed about which was ' +
-        'lower, because the comparison was measuring the population and not the planar ' +
-        'handling. What is judged is the mechanism: every planar frame lowered, and the ' +
-        'ambiguity found where a plane produces one.',
+      '2つの信頼度の数値は**報告するだけで、種類をまたいで比較しません**。どちらも複数の項の' +
+        '最小値です。平面では効いている項はペナルティ（毎回 1/2）で、奥行きのあるシーンでは' +
+        'それ以外で一番悪かった項 — 多くは特徴点の数 — です。同一コードでの自動レグ2回が' +
+        'どちらが低いかで食い違ったことがありますが、それはこの比較が平面の扱いではなく' +
+        '特徴点の母数を測っていたからです。判定しているのは仕組みのほうです。' +
+        'すべての平面フレームで下げたか、そして平面が生む曖昧さをちゃんと見つけたか。',
     ]),
   ]);
 }
 
 function renderConfidence(vm: Phase6ViewModel): HTMLElement {
   const s = vm.stats;
-  return card('Pose confidence (v3 §19)', [
+  return card('姿勢の信頼度（v3 §19）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Overall', s.poseFrames > 0 ? String(s.confidence) : null),
-      stat('Rotation', s.poseFrames > 0 ? String(s.rotationConfidence) : null),
-      stat('Translation', s.poseFrames > 0 ? String(s.translationConfidence) : null),
-      stat('Median over the run', s.medianConfidence >= 0 ? String(s.medianConfidence) : null),
+      stat('全体', s.poseFrames > 0 ? String(s.confidence) : null),
+      stat('回転', s.poseFrames > 0 ? String(s.rotationConfidence) : null),
+      stat('並進', s.poseFrames > 0 ? String(s.translationConfidence) : null),
+      stat('実行全体の中央値', s.medianConfidence >= 0 ? String(s.medianConfidence) : null),
     ]),
     ...(s.confidenceTerms.length > 0
       ? s.confidenceTerms.map((t) =>
@@ -533,16 +526,16 @@ function renderConfidence(vm: Phase6ViewModel): HTMLElement {
             el('span', { class: 'cap-state' }, [t.note]),
           ]),
         )
-      : [el('p', { class: 'empty' }, ['No pose yet.'])]),
+      : [el('p', { class: 'empty' }, ['まだ姿勢がありません。'])]),
     el('p', { class: 'footnote' }, [
-      'The **minimum** over its terms, not the average. v3 §19 ends with a prohibition — ' +
-        '不確実なPoseは強制的に高confidenceにしない — and an average is exactly how an uncertain ' +
-        'pose acquires a high confidence: five comfortable terms carry one bad one and the ' +
-        'number comes out reassuring. Every term is shown so it can be taken apart.',
+      '各項の平均ではなく**最小値**です。v3 §19 は禁止で終わっています — ' +
+        '不確実なPoseは強制的に高confidenceにしない — そして平均こそが、不確実な姿勢が' +
+        '高い信頼度を得る経路そのものです。余裕のある5つの項が悪い1つを担いで、' +
+        '安心できる数字が出てしまいます。分解できるように全項を表示しています。',
     ]),
     ...(s.confidenceWithheld.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Withheld, by name']),
+          el('p', { class: 'group-title' }, ['保留した項と、その理由']),
           ...s.confidenceWithheld.map((w) => el('p', { class: 'footnote' }, [w])),
         ]
       : []),
@@ -552,31 +545,31 @@ function renderConfidence(vm: Phase6ViewModel): HTMLElement {
 function renderIntrinsics(vm: Phase6ViewModel): HTMLElement {
   const s = vm.stats;
   const k = s.intrinsics;
-  return card('Camera intrinsics — INTRINSICS: ESTIMATED (v3 §15)', [
+  return card('カメラ内部パラメータ — INTRINSICS: ESTIMATED（v3 §15）', [
     el('div', { class: 'stat-grid' }, [
       stat('fx, fy', k ? `${Math.round(k.fx)}, ${Math.round(k.fy)}` : null),
       stat('cx, cy', k ? `${Math.round(k.cx)}, ${Math.round(k.cy)}` : null),
-      stat('Frame', k ? `${k.width} × ${k.height}` : null),
-      stat('Assumed FOV', `${NOMINAL_FOV_DEG}° across the long edge`, 's-PERMISSION_REQUIRED'),
-      stat('±20% moves rotation by', deg(s.medianSensitivityRotationDeg)),
-      stat('...and translation by', deg(s.medianSensitivityTranslationDeg)),
+      stat('フレーム', k ? `${k.width} × ${k.height}` : null),
+      stat('仮定した画角', `長辺方向 ${NOMINAL_FOV_DEG}°`, 's-PERMISSION_REQUIRED'),
+      stat('±20% で回転が動く量', deg(s.medianSensitivityRotationDeg)),
+      stat('…並進が動く量', deg(s.medianSensitivityTranslationDeg)),
     ]),
     el('p', { class: 'footnote' }, [
-      'v3 §15 gives the matrix and, in the same breath, what to do when it cannot be obtained: ' +
-        '**INTRINSICS: ESTIMATED**. It cannot be obtained. Safari exposes no focal length, no ' +
-        'sensor size and no lens identifier; the device reports a label, a resolution and ' +
-        'nothing about optics, and nobody is going to print a chessboard to play a ball game.',
+      'v3 §15 は行列を示すと同時に、それが得られない場合どうするかも書いています — ' +
+        '**INTRINSICS: ESTIMATED**。実際、得られません。Safari は焦点距離もセンサーサイズも' +
+        'レンズの識別子も公開しません。端末が返すのはラベルと解像度だけで、光学については何も' +
+        'ありません。ボール遊びのためにチェッカーボードを印刷する人もいません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'So the two figures on the right are the honest half of being allowed to say that: the ' +
-        'same pose recomputed with `f` scaled ±20 %, and how far it moved. What barely moves ' +
-        'does not depend on the guess; what moves does. A nominal field of view stated without ' +
-        'them would be a guess with a number attached.',
+      'なので右の2つの数値が、そう言うことを許される代わりの、正直なほうの半分です。' +
+        '同じ姿勢を `f` を ±20 % 変えて計算し直し、どれだけ動いたかを示しています。' +
+        'ほとんど動かないものはこの推測に依存しておらず、動くものは依存しています。' +
+        'これを添えずに公称画角だけを言うのは、数字を付けた当て推量です。',
     ]),
     el('p', { class: 'footnote' }, [
-      '§H.0: K is recomputed on every frame rather than read once at open. Rotating the device ' +
-        'swaps the frame dimensions on the same track — 1280×720 ↔ 720×1280 — and fx, fy, cx ' +
-        'and cy all change with them.',
+      '§H.0: K は開いたときに1回読むのではなく、毎フレーム計算し直します。端末を回すと' +
+        '同じトラックのままフレームの縦横が入れ替わり（1280×720 ↔ 720×1280）、' +
+        'fx, fy, cx, cy がすべてそれに伴って変わるからです。',
     ]),
   ]);
 }
@@ -585,26 +578,25 @@ function renderCost(vm: Phase6ViewModel): HTMLElement {
   const s = vm.stats;
   const total = s.meanPoseMs >= 0 && vm.verifyMs >= 0 ? s.meanPoseMs + vm.verifyMs : -1;
   const within = total >= 0 && total <= POSE_PIPELINE_BUDGET_MS;
-  return card('Cost (§H’s budget)', [
+  return card('コスト（§H の予算）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Pose recovery', s.meanPoseMs >= 0 ? `${s.meanPoseMs} ms` : null),
-      stat('Phase 5 RANSAC', vm.verifyMs >= 0 ? `${vm.verifyMs} ms` : null),
-      stat('Together', total >= 0 ? `${Math.round(total * 1000) / 1000} ms` : null,
+      stat('姿勢の復元', s.meanPoseMs >= 0 ? `${s.meanPoseMs} ms` : null),
+      stat('Phase 5 の RANSAC', vm.verifyMs >= 0 ? `${vm.verifyMs} ms` : null),
+      stat('合計', total >= 0 ? `${Math.round(total * 1000) / 1000} ms` : null,
         total >= 0 ? (within ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Budget', `${POSE_PIPELINE_BUDGET_MS} ms`),
-      stat('Samples', String(s.poseCostSamples)),
-      stat('Frames with a pose', String(s.posedFrames)),
+      stat('予算', `${POSE_PIPELINE_BUDGET_MS} ms`),
+      stat('サンプル数', String(s.poseCostSamples)),
+      stat('姿勢の出たフレーム', String(s.posedFrames)),
     ]),
     el('p', { class: 'footnote' }, [
-      `§H budgets "RANSAC (E/H) + pose recovery" as **one** ${POSE_PIPELINE_BUDGET_MS} ms line, ` +
-        'so the sum is what is measured against it rather than this phase claiming a fresh ' +
-        'allowance for itself. Phase 5’s device run already spent 3.45 ms of it.',
+      `§H は「RANSAC (E/H) + 姿勢復元」を**1本の** ${POSE_PIPELINE_BUDGET_MS} ms として` +
+        '計上しています。なのでこのフェーズが自分用の新しい枠を主張するのではなく、' +
+        '合計をその予算と突き合わせます。Phase 5 の実機実行ですでに 3.45 ms を使っています。',
     ]),
     el('p', { class: 'footnote' }, [
-      'POSE-006 is advisory for the reason §34 gives — correctness before performance — and ' +
-        'because §H.4 records that a device budget cannot be adjudicated off the device. Both ' +
-        'models are still fitted on every judged frame and both decompositions still run; v3 §16 ' +
-        'is not skipped to save time.',
+      'POSE-006 が参考扱いなのは、§34 の理由 — 性能より正しさ — と、§H.4 が「端末の予算は' +
+        '端末の外では裁定できない」と記録しているからです。判定フレームでは依然として両方の' +
+        'モデルを当てはめ、両方の分解を走らせます。時間短縮のために v3 §16 を飛ばすことはしません。',
     ]),
   ]);
 }

@@ -109,7 +109,7 @@ try {
 
   await climbTo(page, 9, { log: (n) => console.log(`[p9] phase ${n} running`) });
 
-  const gate = await expectLocked(page, 9, 'GO TO TRIANGULATION');
+  const gate = await expectLocked(page, 9, '三角測量へ進む');
   console.log(`[p9] Phase Lock holds: ${gate.text}`);
 
   keyframesBefore = await page.evaluate(() => window.__SPATIAL_DEBUG__.getKeyframeStats());
@@ -122,8 +122,8 @@ try {
   }
 
   const confirmTriangulating = await pressStart(page, '#start-triangulation', {
-    idle: 'START TRIANGULATION',
-    busy: 'TRIANGULATING',
+    idle: '三角測量開始',
+    busy: '三角測量中',
   });
 
   await page.waitForFunction(
