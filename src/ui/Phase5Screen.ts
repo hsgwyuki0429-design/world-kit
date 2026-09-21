@@ -68,6 +68,8 @@ export interface Phase5ViewModel {
   readonly canEnterPhase6: boolean;
   readonly phase6Implemented: boolean;
   readonly phase6BlockedReason: string;
+  /** Why an open lock is open, when an earlier page load opened it (`PhaseRegistry.lockNote`). */
+  readonly phase6LockNote: string;
   readonly cameraState: CameraState;
   /**
    * Whether the camera is delivering — which is NOT whether verification is running.
@@ -204,6 +206,7 @@ export function renderPhase5Screen(
         canEnter: vm.canEnterPhase6,
         implemented: vm.phase6Implemented,
         blockedReason: vm.phase6BlockedReason,
+        lockNote: vm.phase6LockNote,
         onClick: handlers.onEnterPhase6,
       },
     ),

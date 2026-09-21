@@ -43,6 +43,8 @@ export interface Phase10ViewModel {
   readonly canEnterPhase11: boolean;
   readonly phase11Implemented: boolean;
   readonly phase11BlockedReason: string;
+  /** Why an open lock is open, when an earlier page load opened it (`PhaseRegistry.lockNote`). */
+  readonly phase11LockNote: string;
   readonly cameraState: CameraState;
   readonly trackLive: boolean;
   readonly opening: boolean;
@@ -105,6 +107,7 @@ export function renderPhase10Screen(
         canEnter: vm.canEnterPhase11,
         implemented: vm.phase11Implemented,
         blockedReason: vm.phase11BlockedReason,
+        lockNote: vm.phase11LockNote,
         onClick: handlers.onEnterPhase11,
       },
     ),

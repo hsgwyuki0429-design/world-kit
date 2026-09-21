@@ -30,7 +30,13 @@ export function testsSection(
   results: readonly TestResult[],
 ): HTMLElement {
   if (results.length === 0) {
-    return card('Tests', [el('p', { class: 'empty' }, ['Not run yet.'])]);
+    // The reason is shown here too, empty though the card is, because one thing it can say is
+    // that this phase's pass was carried over from an earlier page load — and the moment that
+    // matters most is arrival, before anything has run and while the door ahead already looks
+    // open for no visible reason.
+    const children: (Node | string)[] = [el('p', { class: 'empty' }, ['Not run yet.'])];
+    if (phase.reason) children.push(el('p', { class: 'verdict-reason' }, [phase.reason]));
+    return card('Tests', children);
   }
   const counts = {
     pass: results.filter((r) => r.verdict === Verdict.PASS).length,
@@ -132,6 +138,12 @@ export interface NavigationNext {
   readonly canEnter: boolean;
   readonly implemented: boolean;
   readonly blockedReason: string;
+  /**
+   * Why an *open* door is open, when this session did not watch the predecessor pass —
+   * `PhaseRegistry.lockNote`. Empty in the ordinary case, and empty while the door is shut,
+   * which is `blockedReason`'s job.
+   */
+  readonly lockNote?: string;
   readonly onClick: () => void;
 }
 
@@ -154,6 +166,16 @@ export function navigationSection(back: NavigationBack, next: NavigationNext): H
     : !next.canEnter
       ? next.blockedReason
       : `Phase ${next.index} is ${next.phase.state}.`;
+  const footnotes: HTMLElement[] = [el('p', { class: 'footnote' }, [note])];
+  // Rule 002: an enterable button in front of a phase whose predecessor reads NOT_STARTED is
+  // indistinguishable from a Phase Lock that has failed open, and the tester is told to stop
+  // and report exactly that. So when the lock was opened by an earlier page load, the control
+  // says so beside itself rather than leaving the screen to be read as a defect.
+  if (open && next.lockNote) {
+    footnotes.push(
+      el('p', { class: 'footnote', id: `phase${next.index}-lock-note` }, [next.lockNote]),
+    );
+  }
 
   return card('Navigation', [
     el('div', { class: 'button-row' }, [
@@ -171,6 +193,6 @@ export function navigationSection(back: NavigationBack, next: NavigationNext): H
         onclick: next.onClick,
       } as never),
     ]),
-    el('p', { class: 'footnote' }, [note]),
+    ...footnotes,
   ]);
 }

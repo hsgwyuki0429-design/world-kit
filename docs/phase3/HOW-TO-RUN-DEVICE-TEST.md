@@ -2,11 +2,20 @@
 
 One run, about four minutes, on the iPhone in Safari over HTTPS.
 
-**Phases 1 and 2 have to pass first, in this same session.** The registry starts fresh on
-every page load, so the Phase Lock in front of the FEATURES screen is closed until Phase 2
-reaches `PASSED` on this device now. In practice: Phase 1's granted run, then Phase 2's
-pipeline run, then this. Each screen's button says which of the two things is missing when
-it is disabled.
+**Phases 1 and 2 have to have passed on this build — not necessarily in this session.** A phase
+that reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
+a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
+the doors are shut again and you do run the chain: a pass is evidence about the code that produced
+it.
+
+**The stages still have to be started, and that is the part that costs you anything.** The lock
+and the pipeline are different things. Walk forward through the screens and tap one control on
+each — `START CAMERA`, `START PIPELINE` — using the `GO TO …` buttons, because `BACK TO …` stops
+the stage you came from. The Phase Lock in front of the FEATURES screen stays closed until Phase 2
+has `PASSED` on this device on this build, and each screen's button says which of the two things
+is missing when it is disabled.
 
 The one thing to have ready before you start: **a surface with structure and a blank one,
 both within reach**. A bookshelf, a patterned rug, a keyboard, a brick wall — anything with
@@ -17,7 +26,9 @@ camera at each of them.
 
 ## The run
 
-1. Get Phase 1 and Phase 2 to `PASSED` as their own guides describe.
+1. Open the app and walk forward to the FEATURES screen, tapping `START CAMERA`, `START PIPELINE`
+   on the way. A phase that already passed on this build keeps its door open; one that has not
+   still has to pass here, as its own guide describes.
 2. From the pipeline screen, tap **GO TO FEATURE DETECTION**. Leave the pipeline running —
    Phase 3 adopts it rather than reopening the camera, and turns off any injected load.
 3. **Before tapping anything, check the button says `START DETECTION` and is tappable.**
