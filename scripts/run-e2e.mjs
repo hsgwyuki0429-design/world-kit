@@ -58,7 +58,7 @@ try {
   // still on the page, the shell loaded but the engine did not — the silent black-page
   // failure this check exists to make loud.
   const bootNoticeVisible = await page.evaluate(() =>
-    document.body.textContent?.includes('The application did not start') ?? false,
+    document.body.textContent?.includes('アプリケーションが起動しませんでした') ?? false,
   );
   if (bootNoticeVisible) throw new Error('boot-failure notice still present after start');
 
@@ -80,7 +80,7 @@ try {
   console.log('[e2e] tapping the sensor probe (CAP-0004 / CAP-0005)…');
   await page.click('#probe-sensors');
   await page.waitForFunction(
-    () => document.getElementById('probe-sensors')?.textContent?.includes('RE-PROBE'),
+    () => document.getElementById('probe-sensors')?.textContent?.includes('再確認'),
     undefined,
     { timeout: 20000 },
   );

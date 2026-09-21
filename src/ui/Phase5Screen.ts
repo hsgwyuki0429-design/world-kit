@@ -172,13 +172,12 @@ export function renderPhase5Screen(
 
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Geometric Verification']),
+      el('h1', {}, ['幾何検証']),
       el('p', {}, [
-        'Phase 5 — a fundamental matrix and a homography fitted by RANSAC over the ' +
-          'correspondences Phase 4 tracks, and the inlier set that survives. Still nothing ' +
-          'spatial: no pose is decomposed, no depth is triangulated, no metric scale exists. ' +
-          'What this phase produces is a verdict on whether a two-view geometry explains the ' +
-          'motion at all.',
+        'Phase 5 — Phase 4 が追った対応点に対して RANSAC で基礎行列とホモグラフィを当てはめ、' +
+          '生き残ったインライア集合を出します。まだ空間的なものはありません。姿勢は分解せず、' +
+          '深度も三角測量せず、メートル単位のスケールも存在しません。このフェーズが出すのは、' +
+          '「そもそも2視点の幾何でこの動きを説明できるのか」という判定です。',
       ]),
     ]),
   );
@@ -198,10 +197,10 @@ export function renderPhase5Screen(
   );
   root.append(
     navigationSection(
-      { index: 4, label: 'BACK TO TRACKING', onClick: handlers.onBack },
+      { index: 4, label: 'オプティカルフロー追跡へ戻る', onClick: handlers.onBack },
       {
         index: 6,
-        name: 'RELATIVE POSE',
+        name: '相対姿勢',
         phase: vm.phase6,
         canEnter: vm.canEnterPhase6,
         implemented: vm.phase6Implemented,
@@ -230,25 +229,26 @@ function renderPreview(vm: Phase5ViewModel, handlers: Phase5Handlers): HTMLEleme
       ]),
       el('p', { class: 'footnote' }, [
         s.verifiedFrames > 0
-          ? `${s.correspondences} of these points also survive in the anchor frame ` +
-            `${s.anchorAge >= 0 ? `${s.anchorAge} frames back` : 'not yet taken'}, and it is ` +
-            'those pairs — not the points on screen — that RANSAC judged.'
+          ? `これらの点のうち ${s.correspondences} 個は、` +
+            `${s.anchorAge >= 0 ? `${s.anchorAge} フレーム前の` : 'まだ取られていない'}` +
+            'アンカーフレームにも残っています。RANSAC が判定したのは、画面上の点ではなく' +
+            'その対応の組のほうです。'
           : vm.running
-            ? 'Waiting for the first verified frame.'
-            : 'Tracking is live. Verification has not been started.',
+            ? '最初の検証フレームを待っています。'
+            : '追跡は動作中です。検証はまだ開始されていません。',
       ]),
     );
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'VERIFICATION NOT STARTED';
+              ? 'カメラを要求中…'
+              : '検証は未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -266,20 +266,20 @@ function renderPreview(vm: Phase5ViewModel, handlers: Phase5Handlers): HTMLEleme
         // screen whose pipeline, detection and tracking are all already live, so any predicate
         // built from those would render this control as pressed before anyone pressed it.
         disabled: vm.opening || vm.running,
-        textContent: vm.running ? 'VERIFYING' : vm.opening ? 'REQUESTING…' : 'START VERIFICATION',
+        textContent: vm.running ? '検証中' : vm.opening ? '要求中…' : '幾何検証開始',
         onclick: handlers.onStart,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-verification',
         disabled: !vm.running,
-        textContent: 'STOP',
+        textContent: '停止',
         onclick: handlers.onStop,
       } as never),
     ]),
   );
 
-  return card('Camera and tracked correspondences', children);
+  return card('カメラと追跡中の対応点', children);
 }
 
 function renderVerdict(vm: Phase5ViewModel): HTMLElement {
@@ -291,37 +291,37 @@ function renderVerdict(vm: Phase5ViewModel): HTMLElement {
         ? 's-PERMISSION_REQUIRED'
         : 's-PERMISSION_DENIED';
 
-  return card('This frame (v3 §14)', [
+  return card('このフレーム（v3 §14）', [
     el('div', { class: 'stat-grid' }, [
-      stat('State', s.verifiedFrames > 0 ? s.state : null, stateClass),
-      stat('Model', s.model ?? (s.verifiedFrames > 0 ? 'none' : null)),
-      stat('Correspondences', s.verifiedFrames > 0 ? String(s.correspondences) : null,
+      stat('状態', s.verifiedFrames > 0 ? s.state : null, stateClass),
+      stat('モデル', s.model ?? (s.verifiedFrames > 0 ? 'なし' : null)),
+      stat('対応点', s.verifiedFrames > 0 ? String(s.correspondences) : null,
         s.correspondences >= MIN_CORRESPONDENCES ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
-      stat('Inliers', s.verifiedFrames > 0 ? String(s.inliers) : null,
+      stat('インライア', s.verifiedFrames > 0 ? String(s.inliers) : null,
         s.inliers >= MIN_INLIERS ? 's-AVAILABLE' : ''),
-      stat('Inlier ratio', pct(s.inlierRatio),
+      stat('インライア比', pct(s.inlierRatio),
         s.inlierRatio >= USABLE_INLIER_RATIO ? 's-AVAILABLE' : ''),
-      stat('Baseline', px(s.baselinePx),
+      stat('基線長', px(s.baselinePx),
         s.baselinePx >= MIN_BASELINE_PX ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
-      stat('Anchor age', s.anchorAge >= 0 ? `${s.anchorAge} frames` : null),
-      stat('Re-anchors', String(s.reAnchors)),
-      stat('Verified frames', `${s.judgedFrames} judged / ${s.verifiedFrames}`),
-      stat('State mismatches', String(s.stateMismatches),
+      stat('アンカーの古さ', s.anchorAge >= 0 ? `${s.anchorAge} フレーム` : null),
+      stat('再アンカー', String(s.reAnchors)),
+      stat('検証フレーム', `判定 ${s.judgedFrames} / ${s.verifiedFrames}`),
+      stat('状態の不一致', String(s.stateMismatches),
         s.stateMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('Degenerate', String(s.degenerateFrames)),
-      stat('Partition faults', String(s.partitionFaults),
+      stat('退化', String(s.degenerateFrames)),
+      stat('分割の不整合', String(s.partitionFaults),
         s.partitionFaults > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('Model without verdict', String(s.modelWithoutVerdict),
+      stat('判定なしのモデル', String(s.modelWithoutVerdict),
         s.modelWithoutVerdict > 0 ? 's-PERMISSION_DENIED' : ''),
       // §51 and §H.7: a correspondence is two positions in the acquired buffer's frame.
       stat(
-        'Overlay matches video',
+        '重ね描きと映像の一致',
         vm.alignment
           ? !vm.alignment.measurable
-            ? 'not measurable — no local texture in this frame'
+            ? '計測不能 — このフレームには局所的な模様がありません'
             : vm.alignment.best === 'identity'
-              ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
-              : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
+              ? `一致 · 偶然の ${vm.alignment.identityOverRandom.toFixed(1)} 倍`
+              : `不一致 · ${vm.alignment.best} のほうが ${vm.alignment.bestOverIdentity.toFixed(1)} 倍よく合う`
           : null,
         vm.alignment
           ? !vm.alignment.measurable
@@ -335,34 +335,33 @@ function renderVerdict(vm: Phase5ViewModel): HTMLElement {
     ]),
     el('p', { class: 'footnote' }, [
       s.stateReason ||
-        'The state is a pure function of the five measured inputs beside it, computed in one ' +
-          'place. The mismatch counter re-derives it from the same numbers and counts any ' +
-          'frame where the two answers differ.',
+        '状態は、隣にある5つの実測値だけから決まり、1か所で計算されます。' +
+          '「状態の不一致」は同じ数値から状態を導き直し、答えが食い違ったフレームを数えます。',
     ]),
     el('p', { class: 'footnote' }, [
-      `A frame is judged only once it clears ${MIN_CORRESPONDENCES} correspondences and ` +
-        `${MIN_BASELINE_PX} px of baseline. Below the baseline floor the two views are very ` +
-        'nearly the same view: every model fits, the inlier ratio is near 1.00, and it means ' +
-        'nothing. That is why this phase holds a verification anchor tens of frames back ' +
-        'rather than verifying consecutive frames — frame to frame the camera moves a few ' +
-        `pixels, and the anchor is re-taken when the two views drift past ${MAX_BASELINE_PX} px ` +
-        'and stop sharing enough scene to be one geometry.',
+      `フレームが判定されるのは、対応点 ${MIN_CORRESPONDENCES} 個と基線長 ${MIN_BASELINE_PX} px を` +
+        '満たしてからです。基線長がその下限を下回ると、2つの視点はほとんど同じ視点になります。' +
+        'どんなモデルでも当てはまり、インライア比は 1.00 近くになり、そして何の意味もありません。' +
+        'このフェーズが連続フレームではなく数十フレーム前の検証アンカーを保持しているのは' +
+        'そのためです。フレーム間ではカメラは数 px しか動かないので、2つの視点が' +
+        `${MAX_BASELINE_PX} px を超えて離れ、1つの幾何と言えるだけの共通部分を失った時点で` +
+        'アンカーを取り直します。',
     ]),
     ...(s.goodBlockedBy.length > 0
       ? [
-          el('p', { class: 'group-title' }, [`Why not ${VerificationState.GOOD}`]),
+          el('p', { class: 'group-title' }, [`${VerificationState.GOOD} にならない理由`]),
           ...s.goodBlockedBy.map((why) =>
             el('div', { class: 'cap-row' }, [
-              el('span', { class: 'cap-label' }, ['v3 §14 conjunct']),
+              el('span', { class: 'cap-label' }, ['v3 §14 の条件']),
               el('span', { class: 'cap-state' }, [why]),
             ]),
           ),
           el('p', { class: 'footnote' }, [
-            `v3 §14 makes GOOD two conditions here — inliers >= ${GOOD_INLIERS} and ratio >= ` +
-              `${GOOD_INLIER_RATIO} — and §33 adds a third, a reprojection error <= 2.0 px, ` +
-              'which needs the pose Phase 6 has not been written to produce. So the tracking ' +
-              'state on the previous screen still cannot reach GOOD; this screen’s GOOD is v3 ' +
-              '§14’s verification verdict and it is not the same claim.',
+            `ここでの GOOD は v3 §14 の2条件 — インライア ${GOOD_INLIERS} 以上、比 ` +
+              `${GOOD_INLIER_RATIO} 以上 — です。§33 はさらに3つ目として再投影誤差 2.0 px 以下を` +
+              '課しますが、それには Phase 6 が出す姿勢が要ります。なので前の画面の追跡状態は' +
+              'まだ GOOD に到達できません。この画面の GOOD は v3 §14 の検証判定であって、' +
+              '同じ主張ではありません。',
           ]),
         ]
       : []),
@@ -379,59 +378,57 @@ function renderInjection(vm: Phase5ViewModel): HTMLElement {
   const advantage =
     s.medianCleanRejection > 0 ? s.medianInjectedRecall / s.medianCleanRejection : Infinity;
 
-  return card('Does RANSAC actually reject outliers?', [
+  return card('RANSAC は本当に外れ値を弾いているか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Injected outliers rejected', pct(s.medianInjectedRecall),
+      stat('仕込んだ外れ値の棄却率', pct(s.medianInjectedRecall),
         enough ? (recallOk ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Untouched rejected', pct(s.medianCleanRejection),
+      stat('無傷の点の棄却率', pct(s.medianCleanRejection),
         enough ? (cleanOk ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Advantage', enough
-        ? (Number.isFinite(advantage) ? `${advantage.toFixed(1)}×` : 'no untouched rejected')
+      stat('差', enough
+        ? (Number.isFinite(advantage) ? `${advantage.toFixed(1)} 倍` : '無傷の棄却はゼロ')
         : null,
         enough ? (advantage >= INJECTION_ADVANTAGE ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Inliers surviving', num(s.medianSurvivingInliers),
+      stat('残ったインライア', num(s.medianSurvivingInliers),
         s.medianSurvivingInliers >= MIN_INLIERS ? 's-AVAILABLE' : ''),
-      stat('Samples', enough
+      stat('サンプル数', enough
         ? String(s.injectionSamples)
         : `${s.injectionSamples} / ${MIN_INJECTION_SAMPLES}`),
-      stat('Displacement', `${OUTLIER_INJECTION_PX} px`),
+      stat('ずらした量', `${OUTLIER_INJECTION_PX} px`),
     ]),
     el('p', { class: 'footnote' }, [
-      `On a sample of frames the harness takes the real correspondence set, displaces ` +
-        `${Math.round(OUTLIER_INJECTION_FRACTION * 100)}% of the targets by ` +
-        `${OUTLIER_INJECTION_PX} px in seeded directions, and hands the result to the verifier ` +
-        'with no marking of which it touched. "Injected outliers rejected" is how many of its ' +
-        'own outliers came back rejected. The verifier never sees this number and cannot ' +
-        'optimise against it.',
+      `一部のフレームで、ハーネスが本物の対応点の集合を取り、そのうち ` +
+        `${Math.round(OUTLIER_INJECTION_FRACTION * 100)}% の行き先を、種を固定した方向へ ` +
+        `${OUTLIER_INJECTION_PX} px ずらし、どれをいじったかを伏せたまま検証器に渡します。` +
+        '「仕込んだ外れ値の棄却率」は、そのうち何割が棄却されて返ってきたかです。' +
+        '検証器はこの数値を見ることができず、これに合わせて最適化することもできません。',
     ]),
     el('p', { class: 'footnote' }, [
-      `${OUTLIER_INJECTION_PX} px is ` +
-        `${Math.round(OUTLIER_INJECTION_PX / RANSAC_THRESHOLD_PX)}× the ` +
-        `${RANSAC_THRESHOLD_PX} px inlier threshold, so the injected points are outliers by ` +
-        'construction: no correct two-view model can accept them. And the second number is ' +
-        'shown beside the first because recall alone is satisfied perfectly by rejecting ' +
-        'everything — the pair is the measurement, either one alone is not.',
+      `${OUTLIER_INJECTION_PX} px はインライア閾値 ${RANSAC_THRESHOLD_PX} px の ` +
+        `${Math.round(OUTLIER_INJECTION_PX / RANSAC_THRESHOLD_PX)} 倍なので、仕込んだ点は` +
+        '構造上かならず外れ値です。正しい2視点モデルがそれを受け入れることはあり得ません。' +
+        '2つ目の数値を隣に並べているのは、棄却率だけなら「全部棄却する」で満点になるからです。' +
+        '2つ揃って初めて計測になり、片方だけでは計測になりません。',
     ]),
     el('p', { class: 'footnote' }, [
-      'This is the only figure in Phase 5 a stage that returned every correspondence as an ' +
-        `inlier could not produce. v3 §14’s four thresholds — ${MIN_INLIERS} inliers, ratio ` +
-        `${USABLE_INLIER_RATIO}, ${GOOD_INLIERS} inliers, ratio ${GOOD_INLIER_RATIO} — are all ` +
-        'satisfied *perfectly* by accepting everything, because the inlier count is then the ' +
-        'correspondence count and the ratio is exactly 1.00. That stage scores 0.0% here.',
+      'Phase 5 の中で、すべての対応点をインライアとして返すだけのステージが作れない数値は' +
+        `これだけです。v3 §14 の4つの閾値 — インライア ${MIN_INLIERS}、比 ${USABLE_INLIER_RATIO}、` +
+        `インライア ${GOOD_INLIERS}、比 ${GOOD_INLIER_RATIO} — は、全部受け入れれば*完璧に*` +
+        '満たされます。インライア数が対応点数と等しくなり、比はちょうど 1.00 になるからです。' +
+        'そのステージはここで 0.0% を取ります。',
     ]),
     ...(s.injections.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Recent injections']),
+          el('p', { class: 'group-title' }, ['最近の注入']),
           ...s.injections.slice(-4).map((inj) =>
             el('div', { class: 'cap-row' }, [
-              el('span', { class: 'cap-label' }, [`${inj.injected} injected`]),
+              el('span', { class: 'cap-label' }, [`仕込み ${inj.injected}`]),
               el('span', { class: 'cap-method' }, [
-                `${inj.injectedRejected} rejected · ${inj.cleanRejected}/${inj.clean} clean`,
+                `棄却 ${inj.injectedRejected} · 無傷 ${inj.cleanRejected}/${inj.clean}`,
               ]),
               el('span', {
                 class: `cap-state ${inj.injectedRecall >= MIN_OUTLIER_RECALL ? 's-AVAILABLE' : 's-PERMISSION_DENIED'}`,
               }, [
-                `${pct(inj.injectedRecall)} recall · ${inj.survivingInliers} survive · ${inj.state}`,
+                `棄却率 ${pct(inj.injectedRecall)} · 残存 ${inj.survivingInliers} · ${inj.state}`,
               ]),
             ]),
           ),
@@ -446,68 +443,69 @@ function renderTexture(vm: Phase5ViewModel): HTMLElement {
     el('div', { class: 'cap-row' }, [
       el('span', { class: 'cap-label' }, [label]),
       el('span', { class: 'cap-method' }, [
-        c.frames > 0 ? `${c.medianCorrespondences} corr · ${c.medianInliers} in` : '',
+        c.frames > 0 ? `対応 ${c.medianCorrespondences} · インライア ${c.medianInliers}` : '',
       ]),
       el('span', { class: `cap-state ${c.frames >= MIN_JUDGED_FRAMES ? 's-AVAILABLE' : ''}` }, [
         c.frames > 0
-          ? `${c.frames} frames (${c.judged} judged) · ${c.unverified} UNVERIFIED, ` +
-            `${c.usable} USABLE, ${c.good} GOOD`
-          : 'none yet',
+          ? `${c.frames} フレーム（判定 ${c.judged}）· UNVERIFIED ${c.unverified}、` +
+            `USABLE ${c.usable}、GOOD ${c.good}`
+          : 'まだなし',
       ]),
     ]);
 
-  return card('By scene texture (GEO-001, GEO-002)', [
+  return card('シーンの模様ごと（GEO-001、GEO-002）', [
     el('p', { class: 'footnote', style: 'margin-bottom:8px' } as never, [
-      'The class comes from the frame’s own mean gradient magnitude, measured by the same ' +
-        'classifier Phase 3 used — never from what the camera was pointed at. GEO-001 asks ' +
-        'that a rich scene produce a large consistent inlier set; GEO-002 asks that a poor one ' +
-        'produce UNVERIFIED rather than a ratio computed over four points.',
+      '分類はフレーム自身の平均勾配の大きさから決まり、Phase 3 と同じ分類器で測っています。' +
+        'カメラをどこに向けたかは関係しません。GEO-001 は、模様のあるシーンで大きく一貫した' +
+        'インライア集合が出ることを求めます。GEO-002 は、平坦なシーンで、4点から計算した比では' +
+        'なく UNVERIFIED が出ることを求めます。',
     ]),
-    row('TEXTURE_RICH (GEO-001)', s.textureRich),
-    row('TEXTURE_POOR (GEO-002)', s.texturePoor),
+    row('TEXTURE_RICH（GEO-001）', s.textureRich),
+    row('TEXTURE_POOR（GEO-002）', s.texturePoor),
     el('div', { class: 'stat-grid', style: 'margin-top:10px' } as never, [
-      stat('Median inliers', num(s.medianInliers),
+      stat('インライア中央値', num(s.medianInliers),
         s.medianInliers >= MIN_INLIERS ? 's-AVAILABLE' : ''),
-      stat('Median ratio', pct(s.medianInlierRatio),
+      stat('比の中央値', pct(s.medianInlierRatio),
         s.medianInlierRatio >= USABLE_INLIER_RATIO ? 's-AVAILABLE' : ''),
-      stat('Median baseline', px(s.medianBaselinePx)),
-      stat('Median spread', px(s.medianSpreadPx),
+      stat('基線長の中央値', px(s.medianBaselinePx)),
+      stat('広がりの中央値', px(s.medianSpreadPx),
         s.medianSpreadPx >= DEGENERATE_SPREAD_PX ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
     ]),
     el('p', { class: 'footnote' }, [
-      `Spread is the inlier set’s own spatial extent, and it is here because a ratio can clear ` +
-        `every bar on a set too clustered to determine a model. Under ${DEGENERATE_SPREAD_PX} px ` +
-        'the configuration is reported degenerate rather than verified.',
+      `「広がり」はインライア集合自身の空間的な広がりです。これを出しているのは、` +
+        'モデルを決められないほど1か所に固まった集合でも、比のほうはすべての基準を' +
+        `通過してしまえるからです。${DEGENERATE_SPREAD_PX} px 未満のときは、検証済みではなく` +
+        '退化として報告します。',
     ]),
   ]);
 }
 
 function renderPlanar(vm: Phase5ViewModel): HTMLElement {
   const s = vm.stats;
-  return card('Planar scene handling (v3 §16)', [
+  return card('平面シーンの扱い（v3 §16）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Both models fitted', s.bothModelsFitted > 0
-        ? `${s.bothModelsFitted} frames` : null,
+      stat('両モデルを当てはめた', s.bothModelsFitted > 0
+        ? `${s.bothModelsFitted} フレーム` : null,
         s.bothModelsFitted >= MIN_JUDGED_FRAMES ? 's-AVAILABLE' : ''),
-      stat('Planar', String(s.planarFrames), s.planarFrames > 0 ? 's-AVAILABLE' : ''),
-      stat('Non-planar', String(s.nonPlanarFrames), s.nonPlanarFrames > 0 ? 's-AVAILABLE' : ''),
-      stat('Median F inliers', num(s.medianFundamentalInliers)),
-      stat('Median H inliers', num(s.medianHomographyInliers)),
-      stat('Planar mismatches', String(s.planarMismatches),
+      stat('平面', String(s.planarFrames), s.planarFrames > 0 ? 's-AVAILABLE' : ''),
+      stat('非平面', String(s.nonPlanarFrames), s.nonPlanarFrames > 0 ? 's-AVAILABLE' : ''),
+      stat('F のインライア中央値', num(s.medianFundamentalInliers)),
+      stat('H のインライア中央値', num(s.medianHomographyInliers)),
+      stat('平面判定の不一致', String(s.planarMismatches),
         s.planarMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
     ]),
     el('p', { class: 'footnote' }, [
-      'Both models are fitted on every judged frame, never one skipped as an optimisation. ' +
-        'The fundamental matrix is the weaker constraint and normally admits at least as many ' +
-        'points, so the homography reaching it is the signal that the scene is a plane. Both ' +
-        'counts are shown because the decision is the comparison between them: showing only ' +
-        'the winner would make PLANAR an assertion rather than a finding.',
+      '判定するフレームでは必ず両方のモデルを当てはめます。最適化と称して片方を飛ばすことは' +
+        'しません。基礎行列のほうが制約が弱く、普通は少なくとも同じだけの点を受け入れるので、' +
+        'ホモグラフィがそこに追いついたことが「このシーンは平面だ」という合図になります。' +
+        '両方の数を出しているのは、判断が両者の比較そのものだからです。勝ったほうだけを' +
+        '見せると、PLANAR は発見ではなく主張になってしまいます。',
     ]),
     el('p', { class: 'footnote' }, [
-      'v3 §16 requires this because an Essential matrix decomposed from a planar scene is ' +
-        'degenerate and yields a pose that looks entirely reasonable. Phase 6 lowers ' +
-        'translation confidence on these frames; this phase’s job is to identify them ' +
-        'honestly, including saying when a run never produced one of the two cases.',
+      'v3 §16 がこれを求めるのは、平面シーンから分解した基本行列が退化していて、しかも' +
+        '一見まったく妥当に見える姿勢を出してしまうからです。Phase 6 はそういうフレームで' +
+        '並進の信頼度を下げます。このフェーズの仕事は、それを正直に見分けることです。' +
+        '一方の場合が一度も出なかった実行については、出なかったと言うことも含めて。',
     ]),
   ]);
 }
@@ -515,31 +513,29 @@ function renderPlanar(vm: Phase5ViewModel): HTMLElement {
 function renderCost(vm: Phase5ViewModel): HTMLElement {
   const s = vm.stats;
   const within = s.meanVerifyMs >= 0 && s.meanVerifyMs <= GEO_BUDGET_MS;
-  return card('Cost (§H’s budget)', [
+  return card('コスト（§H の予算）', [
     el('div', { class: 'stat-grid' }, [
       stat('RANSAC', s.meanVerifyMs >= 0 ? `${s.meanVerifyMs} ms` : null,
         s.meanVerifyMs >= 0 ? (within ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Budget', `${GEO_BUDGET_MS} ms`),
-      stat('Samples', s.verifyCostSamples >= MIN_COST_SAMPLES
+      stat('予算', `${GEO_BUDGET_MS} ms`),
+      stat('サンプル数', s.verifyCostSamples >= MIN_COST_SAMPLES
         ? String(s.verifyCostSamples)
         : `${s.verifyCostSamples} / ${MIN_COST_SAMPLES}`),
-      stat('At', num(s.medianCorrespondences)),
-      stat('Capped frames', String(s.cappedFrames),
+      stat('その時の対応点数', num(s.medianCorrespondences)),
+      stat('反復上限に達したフレーム', String(s.cappedFrames),
         s.cappedFrames > 0 ? 's-PERMISSION_REQUIRED' : ''),
-      stat('Inlier threshold', `${RANSAC_THRESHOLD_PX} px`),
+      stat('インライア閾値', `${RANSAC_THRESHOLD_PX} px`),
     ]),
     el('p', { class: 'footnote' }, [
-      'A capped frame is one where RANSAC exhausted its iteration limit before reaching its ' +
-        'confidence target — the reported ratio there is whatever the last sample gave rather ' +
-        'than an estimate with a probability behind it. The count is shown rather than the cap ' +
-        'being raised until it disappears, because how often it binds is a property of the ' +
-        'scene worth knowing.',
+      '「反復上限に達したフレーム」とは、RANSAC が目標の確度に届く前に反復回数を使い切った' +
+        'フレームです。そこで報告される比は、確率的な裏付けのある推定ではなく、最後のサンプルが' +
+        'たまたま返した値です。上限を消えるまで引き上げるのではなく回数を表示しているのは、' +
+        'それがどれだけ頻繁に効いているかがシーンの性質として知る価値があるからです。',
     ]),
     el('p', { class: 'footnote' }, [
-      `GEO-005 is advisory: §34 ranks correctness above performance, so both models are still ` +
-        `fitted on every judged frame even when the mean is over ${GEO_BUDGET_MS} ms, and the ` +
-        'measured cost of doing the specified work is reported rather than the work being ' +
-        'reduced until it fits.',
+      `GEO-005 は参考扱いです。§34 は性能より正しさを上に置くので、平均が ${GEO_BUDGET_MS} ms を` +
+        '超えていても判定フレームでは両方のモデルを当てはめ続け、指定どおりの作業の実測コストを' +
+        'そのまま報告します。収まるまで作業を削ることはしません。',
     ]),
   ]);
 }

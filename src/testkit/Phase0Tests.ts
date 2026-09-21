@@ -11,6 +11,7 @@
  */
 
 import { CapabilityState, DetectionMethod, PhaseState, Verdict } from '../core/types';
+import { LOCKED_LABEL, NOT_IMPLEMENTED_LABEL } from '../core/controlLabels';
 import type {
   CapabilityMatrix,
   CapabilityRecord,
@@ -510,10 +511,13 @@ const CAP_0011: Phase0Test = {
     }
     // A disabled control still has to tell the truth about *why* it is disabled.
     if (shouldBeDisabled) {
-      const label = ctx.ui.startScanLabel.toUpperCase();
+      // The words come from `controlLabels`, which the screen renders from too. A grader that
+      // kept its own copy would report a control as silent about its reason on the day the
+      // wording changed, while the phone was stating it plainly — see that file.
+      const label = ctx.ui.startScanLabel;
       const statesReason =
-        (!phase1Implemented && label.includes('NOT IMPLEMENTED')) ||
-        (!canEnter1 && (label.includes('LOCKED') || label.includes('BLOCKED')));
+        (!phase1Implemented && label.includes(NOT_IMPLEMENTED_LABEL)) ||
+        (!canEnter1 && label.includes(LOCKED_LABEL));
       if (!statesReason) {
         problems.push(
           `the disabled control's label "${ctx.ui.startScanLabel}" does not state why it ` +

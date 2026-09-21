@@ -168,7 +168,7 @@ try {
   await climbTo(page, 5, { log: (n) => console.log(`[p5] phase ${n} running`) });
   // Phase Lock, on the control a person would use. Phase 4 cannot pass on this leg (Rule 004),
   // so the door to Phase 5 must be shut and must say why.
-  const gate = await expectLocked(page, 5, 'GO TO GEOMETRIC VERIFICATION');
+  const gate = await expectLocked(page, 5, '幾何検証へ進む');
   console.log(`[p5] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({
@@ -188,8 +188,8 @@ try {
   // debug API: reaching past the DOM is how Phase 3's leg twice certified a screen whose
   // button had become unpressable while the engine behind it answered perfectly well (§H.5).
   const confirmRunning = await pressStart(page, '#start-verification', {
-    idle: 'START VERIFICATION',
-    busy: 'VERIFYING',
+    idle: '幾何検証開始',
+    busy: '検証中',
   });
 
   await page.waitForFunction(

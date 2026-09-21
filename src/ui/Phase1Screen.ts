@@ -65,8 +65,8 @@ export function renderPhase1Screen(
 
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Scan']),
-      el('p', {}, ['Phase 1 — Camera Capture. Nothing spatial is produced yet.']),
+      el('h1', {}, ['スキャン']),
+      el('p', {}, ['Phase 1 — カメラ取得。まだ空間的なものは何も作っていません。']),
     ]),
   );
 
@@ -83,10 +83,10 @@ export function renderPhase1Screen(
 
   root.append(
     navigationSection(
-      { index: 0, label: 'BACK TO CAPABILITY', onClick: handlers.onBack },
+      { index: 0, label: '環境チェックへ戻る', onClick: handlers.onBack },
       {
         index: 2,
-        name: 'FRAME PIPELINE',
+        name: 'フレームパイプライン',
         phase: vm.phase2,
         canEnter: vm.canEnterPhase2,
         implemented: vm.phase2Implemented,
@@ -118,14 +118,14 @@ function renderPreview(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLEleme
     const failure = vm.openResult?.failure ?? null;
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'CAMERA NOT STARTED';
+              ? 'カメラを要求中…'
+              : 'カメラは未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -134,7 +134,7 @@ function renderPreview(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLEleme
     if (failure) {
       children.push(
         el('p', { class: 'locked-note' }, [`${failure.errorName}: ${failure.message}`]),
-        el('p', { class: 'footnote' }, [`Recovery: ${failure.recovery}`]),
+        el('p', { class: 'footnote' }, [`復旧: ${failure.recovery}`]),
       );
     }
   }
@@ -145,20 +145,20 @@ function renderPreview(vm: Phase1ViewModel, handlers: Phase1Handlers): HTMLEleme
         class: 'primary',
         id: 'start-camera',
         disabled: vm.opening || vm.trackLive,
-        textContent: vm.trackLive ? 'CAMERA LIVE' : vm.opening ? 'REQUESTING…' : 'START CAMERA',
+        textContent: vm.trackLive ? 'カメラ動作中' : vm.opening ? '要求中…' : 'カメラ開始',
         onclick: handlers.onStartCamera,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-camera',
         disabled: !vm.trackLive,
-        textContent: 'STOP CAMERA',
+        textContent: 'カメラ停止',
         onclick: handlers.onStopCamera,
       } as never),
     ]),
   );
 
-  return card('Camera', children);
+  return card('カメラ', children);
 }
 
 function renderOverlayStats(vm: Phase1ViewModel): HTMLElement {
@@ -170,33 +170,34 @@ function renderOverlayStats(vm: Phase1ViewModel): HTMLElement {
   const captureClass =
     s.observedMs >= REQUIRED_CAPTURE_MS ? 's-AVAILABLE' : s.frameCount > 0 ? 's-PERMISSION_REQUIRED' : '';
 
-  return card('Measured', [
+  return card('計測値', [
     el('div', { class: 'stat-grid' }, [
-      stat('State', vm.cameraState, vm.trackLive ? 's-AVAILABLE' : 's-UNAVAILABLE'),
-      stat('Resolution', settings ? `${settings.width}×${settings.height}` : null),
-      stat('Facing', settings?.facingMode ?? null),
-      stat('Track fps', settings && settings.frameRate > 0 ? String(settings.frameRate) : null),
-      stat('Frames', s.frameCount > 0 ? String(s.frameCount) : null),
-      stat('Delivered fps', s.frameCount > 1 ? String(s.meanFps) : null),
-      stat('Continuous', s.frameCount > 0 ? `${secondsHeld.toFixed(1)} / ${target} s` : null, captureClass),
-      stat('Longest gap', s.frameCount > 1 ? `${s.maxGapMs} ms` : null),
-      stat('Image Δ max', s.sampleCount > 0 ? String(s.madMax) : null),
-      stat('Noise floor', s.sampleCount > 0 ? String(s.madMedian) : null),
-      stat('Luma range', s.sampleCount > 0 ? `${s.lumaMin}–${s.lumaMax}` : null),
-      stat('Rotations', String(s.orientationChanges)),
+      stat('状態', vm.cameraState, vm.trackLive ? 's-AVAILABLE' : 's-UNAVAILABLE'),
+      stat('解像度', settings ? `${settings.width}×${settings.height}` : null),
+      stat('向き', settings?.facingMode ?? null),
+      stat('トラックの fps', settings && settings.frameRate > 0 ? String(settings.frameRate) : null),
+      stat('フレーム数', s.frameCount > 0 ? String(s.frameCount) : null),
+      stat('実測 fps', s.frameCount > 1 ? String(s.meanFps) : null),
+      stat('連続', s.frameCount > 0 ? `${secondsHeld.toFixed(1)} / ${target} s` : null, captureClass),
+      stat('最長の途切れ', s.frameCount > 1 ? `${s.maxGapMs} ms` : null),
+      stat('画像変化 Δ 最大', s.sampleCount > 0 ? String(s.madMax) : null),
+      stat('ノイズ下限', s.sampleCount > 0 ? String(s.madMedian) : null),
+      stat('輝度の範囲', s.sampleCount > 0 ? `${s.lumaMin}–${s.lumaMax}` : null),
+      stat('回転回数', String(s.orientationChanges)),
     ]),
     el('p', { class: 'footnote' }, [
       s.frameCount > 0
-        ? `Frame source: ${s.source}. Sampling costs ${s.sampleCostMsMean} ms per sample at ` +
-          '4 Hz on a 64×48 buffer — verification instrumentation, not the Phase 2 pipeline.'
-        : 'No frames observed yet. Every field above shows a dash until it has a measurement.',
+        ? `フレームの供給元: ${s.source}。サンプリングは 64×48 のバッファに 4 Hz で` +
+          `1 サンプルあたり ${s.sampleCostMsMean} ms。これは検証用の計測であって、` +
+          'Phase 2 のパイプラインではありません。'
+        : 'まだフレームを観測していません。上の各項目は、計測できるまでダッシュのままです。',
     ]),
     ...(s.wasEverHidden
       ? [
           el('p', { class: 'evidence-warning' }, [
-            `The page was backgrounded ${s.hiddenCount} time(s). Frame callbacks stop while ` +
-              'hidden, so this run cannot demonstrate 30 s of continuous capture. Stop and ' +
-              'restart the camera without leaving the app.',
+            `ページが ${s.hiddenCount} 回バックグラウンドに回りました。隠れている間は` +
+              'フレームコールバックが止まるので、この実行では 30 秒の連続取得を示せません。' +
+              'アプリから離れずに、カメラを止めて開始し直してください。',
           ]),
         ]
       : []),
@@ -208,34 +209,34 @@ function renderScenarios(vm: Phase1ViewModel): HTMLElement {
     el('div', { class: 'cap-row' }, [
       el('span', { class: 'cap-label' }, [label]),
       el('span', { class: 'cap-method' }, [
-        entry ? (entry.observedDirectly ? 'THIS RUN' : 'CARRIED') : '',
+        entry ? (entry.observedDirectly ? 'この実行' : '前回から引き継ぎ') : '',
       ]),
       el('span', { class: `cap-state ${entry ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'}` }, [
-        entry ? 'OBSERVED' : 'NOT YET',
+        entry ? '観測済み' : 'まだ',
       ]),
     ]);
 
-  return card('Permission scenarios', [
+  return card('許可のシナリオ', [
     el('p', { class: 'footnote', style: 'margin-bottom:8px' } as never, [
-      'Granted and denied cannot both happen in one session, and neither may be inferred ' +
-        'from the other — so Phase 1 needs two runs.',
+      '「許可」と「拒否」は1回のセッションで両方は起こせず、一方から他方を推測することも' +
+        'できません。そのため Phase 1 には2回の実行が必要です。',
     ]),
-    row('Permission granted (CAM-001)', vm.granted),
-    row('Permission denied (CAM-002)', vm.denied),
+    row('許可した場合（CAM-001）', vm.granted),
+    row('拒否した場合（CAM-002）', vm.denied),
     ...(vm.denied === null
       ? [
           el('p', { class: 'footnote' }, [
-            'To exercise the denial: Safari → the ăA menu → Website Settings → Camera → Deny, ' +
-              'then reload this page and press START CAMERA.',
+            '拒否のほうを試すには、Safari の ăA メニュー → Web サイトの設定 → カメラ → 拒否、' +
+              'としてからこのページを再読み込みし、「カメラ開始」を押してください。',
           ]),
         ]
       : []),
     ...(vm.granted?.observedDirectly === false || vm.denied?.observedDirectly === false
       ? [
           el('p', { class: 'footnote' }, [
-            'A scenario marked CARRIED was observed in an earlier run of this same build and ' +
-              'origin, and is stored locally. It is a convenience for testing — the ' +
-              'repository requires a committed bundle that observed it directly.',
+            '「前回から引き継ぎ」と付いたシナリオは、同じビルド・同じオリジンでの以前の実行で' +
+              '観測されたもので、端末内に保存されています。これはテストを楽にするためのもので、' +
+              'リポジトリ側は、そのシナリオを直接観測したバンドルのコミットを要求します。',
           ]),
         ]
       : []),

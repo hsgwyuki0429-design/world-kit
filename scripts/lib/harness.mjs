@@ -193,7 +193,10 @@ export async function expectLocked(page, phase, label) {
     const b = document.getElementById(`go-to-phase${n}`);
     return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
   }, phase);
-  if (gate.disabled !== true || !String(gate.text).includes('LOCKED')) {
+  // The word comes from `src/core/controlLabels.ts`, which the screen renders from. It is
+  // duplicated here rather than imported because this file is a plain .mjs script outside the
+  // TypeScript build; `audits.test.ts` pins the two together so they cannot drift apart.
+  if (gate.disabled !== true || !String(gate.text).includes('ロック中')) {
     throw new Error(
       `${label} should be locked on this leg — Phase ${phase - 1} is TESTING, not PASSED — but ` +
         `it reads ${JSON.stringify(gate.text)} (disabled ${gate.disabled}). Rule 005.`,

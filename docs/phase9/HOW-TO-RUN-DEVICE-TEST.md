@@ -3,20 +3,20 @@
 One run, about three minutes, on the iPhone in Safari over HTTPS.
 
 **Phases 1–8 have to have passed on this build — not necessarily in this session.** A phase that
-reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
-loads, so you do not re-run them to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`,
-`START VERIFICATION`, `START POSE RECOVERY`, `START FUSION`, `START KEYFRAMES` — using the
-`GO TO …` buttons, because `BACK TO …` stops the stage you came from. The Phase Lock in front of
-the TRIANGULATION screen stays closed until Phase 8 has `PASSED` on this device on this build, and
-each screen's button says which of the two things is missing when it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`、`IMU 統合開始`、`キーフレーム開始`
+— using the `… へ進む` buttons, because `… へ戻る` stops the stage you came from. The Phase Lock
+in front of the 「三角測量」 screen stays closed until Phase 8 has `PASSED` on this device on
+this build, and each screen's button says which of the two things is missing when it is
+disabled.
 
 What to have ready:
 
@@ -52,16 +52,15 @@ into one frame.
 
 ## The run
 
-1. Open the app and walk forward to the TRIANGULATION screen, tapping `START CAMERA`,
-   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`,
-   `START POSE RECOVERY`, `START FUSION`, `START KEYFRAMES` on the way. A phase that already
-   passed on this build keeps its door open; one that has not still has to pass here, as its own
-   guide describes.
-2. From the KEYFRAME SYSTEM screen, tap **GO TO TRIANGULATION**. Leave the store running — Phase 9
+1. Open the app and walk forward to the 「三角測量」 screen, tapping
+   `カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`、`IMU 統合開始`、`キーフレーム開始`
+   on the way. A phase that already passed on this build keeps its door open; one that has not
+   still has to pass here, as its own guide describes.
+2. From the 「キーフレーム」画面, tap **三角測量へ進む**. Leave the store running — Phase 9
    relates each new keyframe to the one before it and changes nothing about how they are chosen.
-3. **Before tapping anything, check the button says `START TRIANGULATION` and is tappable.**
-   If it already reads `TRIANGULATING` and is greyed out, stop and report it (§H.5).
-4. Tap **START TRIANGULATION**.
+3. **Before tapping anything, check the button says `三角測量開始` and is tappable.**
+   If it already reads `三角測量中` and is greyed out, stop and report it (§H.5).
+4. Tap **三角測量開始**.
 5. **Walk sideways past the scene**, slowly, keeping both the near things and the far things in
    frame. Watch *The last pair*: `TRIANGULATED`, with a point count that is a fraction of the
    shared observations rather than all of them.
@@ -70,7 +69,7 @@ into one frame.
 7. Walk again. Keep going for a minute or so, so both injections run several times each: they are
    sampled one batch in six.
 8. Watch the tests card. When TRI-001 through TRI-007 all read `PASS` and the verdict head reads
-   `PASSED`, tap **DOWNLOAD EVIDENCE JSON**.
+   `PASSED`, tap **エビデンス JSON をダウンロード**.
 
 ---
 
@@ -94,7 +93,7 @@ into one frame.
 **Every pair comes back `REFUSED — the pair verified nothing`.** The two keyframes are too close
 together for a two-view geometry (under 15 px of median displacement). That should not happen
 while Phase 8 is inserting on 30 px, so it means the store is inserting on the heartbeat rather
-than on displacement — check the KEYFRAME SYSTEM screen.
+than on displacement — check the 「キーフレーム」画面.
 
 **Every pair comes back `ROTATION_ONLY`.** The camera is turning rather than moving. That is the
 correct refusal and it is what TRI-003 is about, but a whole run of it decides nothing else —
@@ -113,5 +112,5 @@ possible constant depth would have scored on the same set. On the automated leg 
 
 ## Exporting
 
-**DOWNLOAD EVIDENCE JSON** writes `phase9-real-device-<verdict>-<timestamp>.json`. Commit it under
+**エビデンス JSON をダウンロード** writes `phase9-real-device-<verdict>-<timestamp>.json`. Commit it under
 `docs/phase9/evidence/` together with a screenshot of the screen at the moment of export.

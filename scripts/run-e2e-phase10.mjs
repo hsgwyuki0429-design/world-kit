@@ -99,7 +99,7 @@ try {
 
   await climbTo(page, 10, { log: (n) => console.log(`[p10] phase ${n} running`) });
 
-  const gate = await expectLocked(page, 10, 'GO TO LANDMARK MAP');
+  const gate = await expectLocked(page, 10, 'ランドマーク地図へ進む');
   console.log(`[p10] Phase Lock holds: ${gate.text}`);
 
   triangulationBefore = await page.evaluate(() =>
@@ -115,8 +115,8 @@ try {
   }
 
   const confirmMapping = await pressStart(page, '#start-landmarks', {
-    idle: 'START LANDMARK MAP',
-    busy: 'MAPPING',
+    idle: 'ランドマーク地図開始',
+    busy: '地図を作成中',
   });
 
   await page.waitForFunction(

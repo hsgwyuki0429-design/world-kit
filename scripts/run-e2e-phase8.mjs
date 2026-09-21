@@ -121,7 +121,7 @@ try {
   // screen with seven live stages behind it, because that is how Phase 7 passes.
   await climbTo(page, 8, { log: (n) => console.log(`[p8] phase ${n} running`) });
 
-  const gate = await expectLocked(page, 8, 'GO TO KEYFRAME SYSTEM');
+  const gate = await expectLocked(page, 8, 'キーフレームへ進む');
   console.log(`[p8] Phase Lock holds: ${gate.text}`);
 
   fusionBefore = await page.evaluate(() => window.__SPATIAL_DEBUG__.getFusionStats());
@@ -136,8 +136,8 @@ try {
   // Press the control a person presses. There is deliberately no `startKeyframes()` in the debug
   // API, for the reason §H.5 records at length.
   const confirmKeeping = await pressStart(page, '#start-keyframes', {
-    idle: 'START KEYFRAMES',
-    busy: 'KEEPING',
+    idle: 'キーフレーム開始',
+    busy: '保管中',
   });
 
   await page.waitForFunction(

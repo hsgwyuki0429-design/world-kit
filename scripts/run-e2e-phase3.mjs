@@ -104,9 +104,9 @@ try {
     const b = document.getElementById('start-detection');
     return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
   });
-  if (before.disabled !== false || before.text !== 'START DETECTION') {
+  if (before.disabled !== false || before.text !== '特徴点検出開始') {
     throw new Error(
-      `START DETECTION is not pressable on arrival: label ${JSON.stringify(before.text)}, ` +
+      `the start control is not pressable on arrival: label ${JSON.stringify(before.text)}, ` +
         `disabled ${before.disabled}. The screen is reporting a detection state the engine ` +
         'is not in, and a person could not start the run at all',
     );
@@ -121,7 +121,7 @@ try {
     const b = document.getElementById('start-detection');
     return { text: b?.textContent ?? null, disabled: b?.disabled ?? null };
   });
-  if (after.text !== 'DETECTING' || after.disabled !== true) {
+  if (after.text !== '検出中' || after.disabled !== true) {
     throw new Error(
       `detection is running but the control says ${JSON.stringify(after.text)} ` +
         `(disabled ${after.disabled}) — the control and the engine disagree (Rule 002)`,

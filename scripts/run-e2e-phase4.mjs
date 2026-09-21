@@ -168,7 +168,7 @@ try {
   });
   // Phase Lock, on the control a person would use. Phase 3 cannot pass on this leg (Rule 004),
   // so the door to Phase 4 must be shut and must say why.
-  const gate = await expectLocked(page, 4, 'GO TO TRACKING');
+  const gate = await expectLocked(page, 4, 'オプティカルフロー追跡へ進む');
   console.log(`[p4] Phase Lock holds: ${gate.text}`);
 
   const handover = await page.evaluate(() => ({
@@ -188,8 +188,8 @@ try {
   // debug API: reaching past the DOM is how Phase 3's leg missed a button that had become
   // *unpressable* while the engine behind it was perfectly reachable, twice.
   const confirmRunning = await pressStart(page, '#start-tracking', {
-    idle: 'START TRACKING',
-    busy: 'TRACKING',
+    idle: '追跡開始',
+    busy: '追跡中',
   });
 
   await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getFlowStats().flowFrames > 0, undefined, {

@@ -5,6 +5,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 function runAudit(script: string, target: string): { code: number; out: string } {
@@ -71,5 +72,30 @@ describe('audit-architecture', () => {
   it('passes over the real src/ tree', () => {
     const r = runAudit('scripts/audit-architecture.mjs', 'src');
     expect(r.code).toBe(0);
+  });
+});
+
+/**
+ * The one string the automated legs and the screen both have to spell the same way.
+ *
+ * `expectLocked` reads the live button text and looks for the word a closed Phase Lock puts in
+ * it (Rule 002, Rule 005). The screen writes that word from `controlLabels.ts`, but the leg is a
+ * plain `.mjs` script outside the TypeScript build and cannot import it, so it carries a copy.
+ *
+ * A drift between the two is not silent — `expectLocked` throws when the label does not contain
+ * the word, so the leg goes red. What it is, is *late and expensive*: the legs are eleven minutes
+ * of CI and they run after `npm test`, so a one-word rename is found by a Playwright timeout on a
+ * built bundle rather than by a string comparison that takes a millisecond. This test is the
+ * millisecond version.
+ *
+ * The genuinely quiet failure of the same rename is in `controlLabels.ts`: CAP-0011 hunting for a
+ * word nobody displays any more would have reported a control as failing to state its reason
+ * while it stated it perfectly well, on the device, as a Phase 0 failure.
+ */
+describe('the locked-control vocabulary', () => {
+  it('is spelled the same in the screen and in the automated leg', async () => {
+    const { LOCKED_LABEL } = await import('../../src/core/controlLabels');
+    const harness = readFileSync('scripts/lib/harness.mjs', 'utf-8');
+    expect(harness).toContain(`includes('${LOCKED_LABEL}')`);
   });
 });

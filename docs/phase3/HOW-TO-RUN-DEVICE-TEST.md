@@ -3,19 +3,19 @@
 One run, about four minutes, on the iPhone in Safari over HTTPS.
 
 **Phases 1 and 2 have to have passed on this build — not necessarily in this session.** A phase
-that reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
-page loads, so you do not re-run them to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+that reached `PASSED` on this phone, on the build the page is serving, keeps its door open
+across page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA`, `START PIPELINE` — using the `GO TO …` buttons, because `BACK TO …` stops
-the stage you came from. The Phase Lock in front of the FEATURES screen stays closed until Phase 2
-has `PASSED` on this device on this build, and each screen's button says which of the two things
-is missing when it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始`、`パイプライン開始` — using the `… へ進む` buttons, because `… へ戻る` stops the
+stage you came from. The Phase Lock in front of the 「特徴点検出」 screen stays closed until
+Phase 2 has `PASSED` on this device on this build, and each screen's button says which of the
+two things is missing when it is disabled.
 
 The one thing to have ready before you start: **a surface with structure and a blank one,
 both within reach**. A bookshelf, a patterned rug, a keyboard, a brick wall — anything with
@@ -26,16 +26,16 @@ camera at each of them.
 
 ## The run
 
-1. Open the app and walk forward to the FEATURES screen, tapping `START CAMERA`, `START PIPELINE`
-   on the way. A phase that already passed on this build keeps its door open; one that has not
-   still has to pass here, as its own guide describes.
-2. From the pipeline screen, tap **GO TO FEATURE DETECTION**. Leave the pipeline running —
+1. Open the app and walk forward to the 「特徴点検出」 screen, tapping
+   `カメラ開始`、`パイプライン開始` on the way. A phase that already passed on this build keeps
+   its door open; one that has not still has to pass here, as its own guide describes.
+2. From 「フレームパイプライン」画面, tap **特徴点検出へ進む**. Leave the pipeline running —
    Phase 3 adopts it rather than reopening the camera, and turns off any injected load.
-3. **Before tapping anything, check the button says `START DETECTION` and is tappable.**
-   If it already reads `DETECTING` and is greyed out, stop and report it — the screen is
+3. **Before tapping anything, check the button says `特徴点検出開始` and is tappable.**
+   If it already reads `検出中` and is greyed out, stop and report it — the screen is
    claiming a state the engine is not in and there is nothing you can press. That is the
    02:35 defect on 2026-08-22; it is fixed, and this is the check that it stayed fixed.
-4. Tap **START DETECTION**. Corners appear on the preview within a second.
+4. Tap **特徴点検出開始**. Corners appear on the preview within a second.
    - **If *Detections* stays at 0 while the button reads DETECTING, stop and report it.**
      That is the 01:57 defect from the same day — the button was pressable but inert.
    - **Check they land on things.** Circles should sit on edges, corners, text, the join
@@ -55,7 +55,7 @@ camera at each of them.
      emergency one. Watch *Refills* climb.
 7. **Point back at the textured surface** and hold for another 20 seconds, so the population
    recovers and the comparison FEAT-002 makes has both halves.
-8. When the verdict panel shows what you want, tap **DOWNLOAD EVIDENCE JSON** — the verdict
+8. When the verdict panel shows what you want, tap **エビデンス JSON をダウンロード** — the verdict
    is in the filename — and screenshot the screen.
 
 ---

@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { CapabilityState, DetectionMethod, PhaseState, Verdict } from '../../src/core/types';
+import { LOCKED_LABEL, NOT_IMPLEMENTED_LABEL } from '../../src/core/controlLabels';
 import type { CapabilityMatrix, CapabilityRecord, JsonValue } from '../../src/core/types';
 import { PhaseRegistry } from '../../src/core/PhaseRegistry';
 import { runPhase0Tests } from '../../src/testkit/Phase0Tests';
@@ -113,7 +114,7 @@ function healthyMatrix(overrides: Overrides = {}): CapabilityMatrix {
 
 const LOCKED_UI: UiStateSnapshot = {
   startScanDisabled: true,
-  startScanLabel: 'START SCAN — LOCKED',
+  startScanLabel: `スキャン開始 — ${LOCKED_LABEL}`,
 };
 
 function ctx(matrix: CapabilityMatrix, ui: UiStateSnapshot = LOCKED_UI): Phase0Context {
@@ -351,12 +352,12 @@ describe('CAP-0010 matrix integrity', () => {
 
 describe('CAP-0011 UI must agree with the engine', () => {
   it('fails when the UI offers START SCAN while the registry forbids Phase 1', () => {
-    const ui: UiStateSnapshot = { startScanDisabled: false, startScanLabel: 'START SCAN' };
+    const ui: UiStateSnapshot = { startScanDisabled: false, startScanLabel: 'スキャン開始' };
     expect(verdictOf(healthyMatrix(), 'CAP-0011', ui)).toBe(Verdict.FAIL);
   });
 
   it('fails when a disabled control hides the reason it is disabled', () => {
-    const ui: UiStateSnapshot = { startScanDisabled: true, startScanLabel: 'START SCAN' };
+    const ui: UiStateSnapshot = { startScanDisabled: true, startScanLabel: 'スキャン開始' };
     expect(verdictOf(healthyMatrix(), 'CAP-0011', ui)).toBe(Verdict.FAIL);
   });
 
@@ -376,15 +377,15 @@ describe('missing records fail closed', () => {
   });
 });
 
-describe('START SCAN control label (Rule 002)', () => {
-  it('is disabled and says LOCKED while Phase Lock holds', async () => {
+describe('the start control’s label (Rule 002)', () => {
+  it('is disabled and says so while Phase Lock holds', async () => {
     const { startScanState } = await import('../../src/ui/Phase0Screen');
     const s = startScanState(false, {
       index: 0, name: 'Environment / Capability', state: PhaseState.TESTING,
       reason: 'CAP-0004 pending', updatedAt: 1,
     });
     expect(s.disabled).toBe(true);
-    expect(s.label).toContain('LOCKED');
+    expect(s.label).toContain(LOCKED_LABEL);
     expect(s.note).toContain('Rule 005');
   });
 
@@ -395,7 +396,7 @@ describe('START SCAN control label (Rule 002)', () => {
       reason: 'all required tests PASS on a real device', updatedAt: 1,
     });
     expect(s.disabled).toBe(false);
-    expect(s.label).toBe('START SCAN');
+    expect(s.label).toBe('スキャン開始');
   });
 
   it('the control is disabled exactly when entry is forbidden or the phase is unbuilt', async () => {
@@ -413,7 +414,12 @@ describe('START SCAN control label (Rule 002)', () => {
       const shouldBeDisabled = !canEnter || !isPhaseImplemented(1);
       expect(s.disabled).toBe(shouldBeDisabled);
       if (shouldBeDisabled) {
-        expect(s.label.toUpperCase()).toMatch(/LOCKED|NOT IMPLEMENTED/);
+        // The words themselves live in `controlLabels`, so this asserts the invariant rather
+        // than a wording the screen is free to change without telling anyone.
+        expect(
+          s.label.includes(LOCKED_LABEL) || s.label.includes(NOT_IMPLEMENTED_LABEL),
+          s.label,
+        ).toBe(true);
       }
     }
   });

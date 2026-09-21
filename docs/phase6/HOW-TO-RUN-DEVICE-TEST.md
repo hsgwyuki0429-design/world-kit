@@ -3,19 +3,19 @@
 One run, about five minutes, on the iPhone in Safari over HTTPS.
 
 **Phases 1–5 have to have passed on this build — not necessarily in this session.** A phase that
-reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
-loads, so you do not re-run them to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`
-— using the `GO TO …` buttons, because `BACK TO …` stops the stage you came from. The Phase Lock
-in front of the RELATIVE POSE screen stays closed until Phase 5 has `PASSED` on this device on
-this build, and each screen's button says which of the two things is missing when it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始` — using the
+`… へ進む` buttons, because `… へ戻る` stops the stage you came from. The Phase Lock in front of
+the 「相対姿勢」 screen stays closed until Phase 5 has `PASSED` on this device on this build,
+and each screen's button says which of the two things is missing when it is disabled.
 
 **Grant motion access when iOS asks.** Phase 6 cannot pass without it, and the reason is worth
 knowing before you start rather than after: **POSE-002 is the only test in this phase that
@@ -53,19 +53,19 @@ POSE-002 its rotation and POSE-004 its trap.
 
 ## The run
 
-1. Open the app and walk forward to the RELATIVE POSE screen, tapping `START CAMERA`,
-   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION` on the way. A phase
-   that already passed on this build keeps its door open; one that has not still has to pass here,
-   as its own guide describes.
-2. From the GEOMETRIC VERIFICATION screen, tap **GO TO RELATIVE POSE**. Leave verification
+1. Open the app and walk forward to the 「相対姿勢」 screen, tapping
+   `カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始` on the way. A
+   phase that already passed on this build keeps its door open; one that has not still has to
+   pass here, as its own guide describes.
+2. From the 「幾何検証」画面, tap **相対姿勢へ進む**. Leave verification
    running — Phase 6 adopts the live verifier and its anchor rather than restarting anything.
-3. **Before tapping anything, check the button says `START POSE RECOVERY` and is tappable.**
-   If it already reads `RECOVERING` and is greyed out, stop and report it. Five stages are
+3. **Before tapping anything, check the button says `姿勢復元開始` and is tappable.**
+   If it already reads `復元中` and is greyed out, stop and report it. Five stages are
    already live when this screen opens — camera, pipeline, detector, tracker, verifier — so a
    control derived from any of them is already pressed and there is nothing you can start. That
    is the shape of the two defects Phase 3 shipped in a row (§H.5); this screen is the fourth
    written to avoid it.
-4. Tap **START POSE RECOVERY** and grant motion access when iOS asks.
+4. Tap **姿勢復元開始** and grant motion access when iOS asks.
    - Under **Does the pose follow a rotation it was not told about?**, *Samples* starts counting.
      **This is the panel that carries the phase.**
    - If **Gyroscope says** reads "not available", motion access was denied. Reload and grant it.
@@ -103,7 +103,7 @@ POSE-002 its rotation and POSE-004 its trap.
 9. **Go back to the depth scene and walk sideways for another 30 seconds**, so the injection
    sampler collects enough measurements on frames that have a full pose.
 
-10. When the verdict panel shows what you want, tap **DOWNLOAD EVIDENCE JSON** — the verdict is
+10. When the verdict panel shows what you want, tap **エビデンス JSON をダウンロード** — the verdict is
     in the filename — and screenshot the screen.
 
 ---

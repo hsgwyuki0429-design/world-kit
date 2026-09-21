@@ -3,20 +3,20 @@
 One run, about three minutes, on the iPhone in Safari over HTTPS.
 
 **Phases 1–7 have to have passed on this build — not necessarily in this session.** A phase that
-reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
-loads, so you do not re-run them to get here. See
-[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
-a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
-the doors are shut again and you do run the chain: a pass is evidence about the code that produced
-it.
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across
+page loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock,
+not a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new
+code, the doors are shut again and you do run the chain: a pass is evidence about the code that
+produced it.
 
 **The stages still have to be started, and that is the part that costs you anything.** The lock
-and the pipeline are different things. Walk forward through the screens and tap one control on
-each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`,
-`START VERIFICATION`, `START POSE RECOVERY`, `START FUSION` — using the `GO TO …` buttons, because
-`BACK TO …` stops the stage you came from. The Phase Lock in front of the KEYFRAME SYSTEM screen
-stays closed until Phase 7 has `PASSED` on this device on this build, and each screen's button
-says which of the two things is missing when it is disabled.
+and the pipeline are different things. Walk forward through the screens, one tap on each —
+`カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`、`IMU 統合開始`
+— using the `… へ進む` buttons, because `… へ戻る` stops the stage you came from. The Phase Lock
+in front of the 「キーフレーム」 screen stays closed until Phase 7 has `PASSED` on this device
+on this build, and each screen's button says which of the two things is missing when it is
+disabled.
 
 What to have ready:
 
@@ -57,18 +57,18 @@ of image motion. The screen shows what it currently reads.
 
 ## The run
 
-1. Open the app and walk forward to the KEYFRAME SYSTEM screen, tapping `START CAMERA`,
-   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`,
-   `START POSE RECOVERY`, `START FUSION` on the way. A phase that already passed on this build
-   keeps its door open; one that has not still has to pass here, as its own guide describes.
-2. From the IMU SUPPORT / FUSION screen, tap **GO TO KEYFRAME SYSTEM**. Leave the fusion running
+1. Open the app and walk forward to the 「キーフレーム」 screen, tapping
+   `カメラ開始`、`パイプライン開始`、`特徴点検出開始`、`追跡開始`、`幾何検証開始`、`姿勢復元開始`、`IMU 統合開始`
+   on the way. A phase that already passed on this build keeps its door open; one that has not
+   still has to pass here, as its own guide describes.
+2. From the 「IMU 統合」画面, tap **キーフレームへ進む**. Leave the fusion running
    — Phase 8 adopts the live stack and changes nothing about how a pose is recovered or fused.
-3. **Before tapping anything, check the button says `START KEYFRAMES` and is tappable.**
-   If it already reads `KEEPING` and is greyed out, stop and report it. Seven stages are live
+3. **Before tapping anything, check the button says `キーフレーム開始` and is tappable.**
+   If it already reads `保管中` and is greyed out, stop and report it. Seven stages are live
    when this screen opens, so a control derived from any of them is already pressed and there is
    nothing you can start. That is the shape of the two defects Phase 3 shipped in a row (§H.5);
    this screen is the sixth written to avoid it.
-4. Tap **START KEYFRAMES**.
+4. Tap **キーフレーム開始**.
 5. **Walk slowly along the scene for about forty seconds**, keeping it in frame. Under
    *v3 §20's conditions* you should see `DISPLACEMENT` firing, and the store filling.
 6. **Stop and hold still for ten seconds.** Watch the top panel:
@@ -80,7 +80,7 @@ of image motion. The screen shows what it currently reads.
 8. Keep going until *Held* reaches **30 / 30** and *Evictions* is non-zero. KEY-003 cannot be
    decided by a run that never reached the bound.
 9. Watch the tests card. When KEY-001 through KEY-006 all read `PASS` and the verdict head reads
-   `PASSED`, tap **DOWNLOAD EVIDENCE JSON**.
+   `PASSED`, tap **エビデンス JSON をダウンロード**.
 
 ---
 
@@ -101,7 +101,7 @@ of image motion. The screen shows what it currently reads.
 
 ## If something reads wrong
 
-**`START KEYFRAMES` is greyed out on arrival.** Report it; do not work around it. See step 3.
+**`キーフレーム開始` is greyed out on arrival.** Report it; do not work around it. See step 3.
 
 **Nothing is inserted at all.** Check *Shared with the last* on the conditions card. Below 20 the
 view cannot be half of a pair and the selector refuses it — that is `TOO_FEW_OBSERVATIONS`, and it
@@ -121,7 +121,7 @@ in this build. See KEY-005 and the panel beneath it.
 
 ## Exporting
 
-**DOWNLOAD EVIDENCE JSON** writes `phase8-real-device-<verdict>-<timestamp>.json`. Commit it under
+**エビデンス JSON をダウンロード** writes `phase8-real-device-<verdict>-<timestamp>.json`. Commit it under
 `docs/phase8/evidence/` together with a screenshot of the screen at the moment of export.
 
 A `TESTING` export is worth committing too. It records what was still `PENDING` and why, and the

@@ -151,11 +151,11 @@ export function renderPhase4Screen(
 
   root.append(
     el('header', { class: 'hero' }, [
-      el('h1', {}, ['Tracking']),
+      el('h1', {}, ['追跡']),
       el('p', {}, [
-        'Phase 4 — pyramidal Lucas-Kanade over the pyramid Phase 2 builds, following the ' +
-          'corners Phase 3 finds. Features have a history here for the first time. Nothing ' +
-          'spatial is produced: there is no pose, no depth and no geometry yet.',
+        'Phase 4 — Phase 2 が作るピラミッド上でのピラミッド型 Lucas-Kanade。Phase 3 が見つけた' +
+          'コーナーを追います。ここで初めて特徴点が履歴を持ちます。空間的なものはまだ何も' +
+          '作っていません。姿勢も、深度も、幾何もありません。',
       ]),
     ]),
   );
@@ -174,10 +174,10 @@ export function renderPhase4Screen(
   );
   root.append(
     navigationSection(
-      { index: 3, label: 'BACK TO FEATURES', onClick: handlers.onBack },
+      { index: 3, label: '特徴点検出へ戻る', onClick: handlers.onBack },
       {
         index: 5,
-        name: 'GEOMETRIC VERIFICATION',
+        name: '幾何検証',
         phase: vm.phase5,
         canEnter: vm.canEnterPhase5,
         implemented: vm.phase5Implemented,
@@ -206,24 +206,24 @@ function renderPreview(vm: Phase4ViewModel, handlers: Phase4Handlers): HTMLEleme
       ]),
       el('p', { class: 'footnote' }, [
         s.flowFrames > 0
-          ? `${s.tracked} filled dots are points carried from the previous frame; ` +
-            `${s.redetected} rings are points detection added this frame because §11's ladder ` +
-            'asked it to. A frame that is all rings is a frame the tracker kept nothing from, ' +
-            'however high the total.'
-          : 'Waiting for the first tracked frame.',
+          ? `塗りつぶしの点 ${s.tracked} 個は前のフレームから引き継いだ点です。` +
+            `輪だけの点 ${s.redetected} 個は、§11 の段階が求めたのでこのフレームで検出が` +
+            '追加した点です。すべてが輪のフレームは、合計がいくら多くても、' +
+            '追跡が何も保てなかったフレームです。'
+          : '最初の追跡フレームを待っています。',
       ]),
     );
   } else {
     const message =
       vm.cameraState === CameraState.PERMISSION_DENIED
-        ? 'CAMERA PERMISSION DENIED'
+        ? 'カメラの許可が拒否されました'
         : vm.cameraState === CameraState.UNAVAILABLE
-          ? 'CAMERA UNAVAILABLE'
+          ? 'カメラを利用できません'
           : vm.cameraState === CameraState.ENDED
-            ? 'CAMERA ENDED — the track was stopped, most likely by another app'
+            ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
-              ? 'REQUESTING CAMERA…'
-              : 'TRACKING NOT STARTED';
+              ? 'カメラを要求中…'
+              : '追跡は未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),
@@ -239,20 +239,20 @@ function renderPreview(vm: Phase4ViewModel, handlers: Phase4Handlers): HTMLEleme
         // Rule 002, and the exact shape of the defect Phase 3 shipped twice: this drives the
         // label AND `disabled`, so it reads the one `running` predicate and nothing else.
         disabled: vm.opening || vm.running,
-        textContent: vm.running ? 'TRACKING' : vm.opening ? 'REQUESTING…' : 'START TRACKING',
+        textContent: vm.running ? '追跡中' : vm.opening ? '要求中…' : '追跡開始',
         onclick: handlers.onStart,
       } as never),
       el('button', {
         class: 'secondary',
         id: 'stop-tracking',
         disabled: !vm.running,
-        textContent: 'STOP',
+        textContent: '停止',
         onclick: handlers.onStop,
       } as never),
     ]),
   );
 
-  return card('Camera and tracked corners', children);
+  return card('カメラと追跡中のコーナー', children);
 }
 
 function renderPopulation(vm: Phase4ViewModel): HTMLElement {
@@ -264,57 +264,55 @@ function renderPopulation(vm: Phase4ViewModel): HTMLElement {
         ? 's-PERMISSION_REQUIRED'
         : 's-AVAILABLE';
 
-  return card('Population and state (§33)', [
+  return card('特徴点の数と状態（§33）', [
     el('div', { class: 'stat-grid' }, [
-      stat('Tracked', s.flowFrames > 0 ? String(s.tracked) : null,
+      stat('追跡中', s.flowFrames > 0 ? String(s.tracked) : null,
         s.tracked >= DEGRADED_FEATURES ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
-      stat('Redetected', s.flowFrames > 0 ? String(s.redetected) : null),
-      stat('Total', s.flowFrames > 0 ? String(s.total) : null),
-      stat('State', s.flowFrames > 0 ? s.state : null, stateClass),
-      stat('Longest track', s.maxTrackLength > 0 ? `${s.maxTrackLength} frames` : null),
-      stat('Median age', s.medianAge >= 0 ? `${s.medianAge} frames` : null),
-      stat('FB error', px(s.medianFbErrorPx),
+      stat('再検出', s.flowFrames > 0 ? String(s.redetected) : null),
+      stat('合計', s.flowFrames > 0 ? String(s.total) : null),
+      stat('状態', s.flowFrames > 0 ? s.state : null, stateClass),
+      stat('最長の軌跡', s.maxTrackLength > 0 ? `${s.maxTrackLength} フレーム` : null),
+      stat('追跡年齢の中央値', s.medianAge >= 0 ? `${s.medianAge} フレーム` : null),
+      stat('往復誤差', px(s.medianFbErrorPx),
         s.medianFbErrorPx >= 0 && s.medianFbErrorPx <= FB_ACCEPTABLE_PX ? 's-AVAILABLE' : ''),
-      stat('§13 bands', s.flowFrames > 0
-        ? `${s.fbAcceptable} ok · ${s.fbReduced} reduced · ${s.fbRejected} rejected`
+      stat('§13 の区分', s.flowFrames > 0
+        ? `許容 ${s.fbAcceptable} · 信頼度低下 ${s.fbReduced} · 棄却 ${s.fbRejected}`
         : null),
-      stat('Failed frames', String(s.consecutiveFailedFrames),
+      stat('連続失敗フレーム', String(s.consecutiveFailedFrames),
         s.consecutiveFailedFrames > 0 ? 's-PERMISSION_REQUIRED' : ''),
-      stat('State mismatches', String(s.stateMismatches),
+      stat('状態の不一致', String(s.stateMismatches),
         s.stateMismatches > 0 ? 's-PERMISSION_DENIED' : ''),
-      stat('Geometry changes', String(s.geometryChanges)),
-      stat('Refill offered', s.medianDetectionOffered >= 0
-        ? `${s.medianDetectionOffered} − ${s.medianDeclinedTooClose} already tracked` : null),
-      stat('Out of solver reach', s.medianDeclinedOutOfReach >= 0
+      stat('解像度の変更', String(s.geometryChanges)),
+      stat('補充の候補', s.medianDetectionOffered >= 0
+        ? `${s.medianDetectionOffered} − 既に追跡中 ${s.medianDeclinedTooClose}` : null),
+      stat('ソルバの届かない位置', s.medianDeclinedOutOfReach >= 0
         ? String(s.medianDeclinedOutOfReach) : null),
     ]),
     el('p', { class: 'footnote' }, [
-      'Tracked and redetected are separate numbers on purpose. §11’s refill ladder tops the ' +
-        'population back up when it falls, so a total near target is compatible with a tracker ' +
-        'that lost every point — every survival figure in this phase is computed from the ' +
-        'tracked count alone.',
+      '「追跡中」と「再検出」を分けてあるのは意図的です。§11 の補充の段階は数が減ると' +
+        '母数を戻すので、合計が目標付近でも、追跡がすべての点を失っている状態と両立します。' +
+        'このフェーズの生存率はどれも「追跡中」の数だけから計算しています。',
     ]),
     el('p', { class: 'footnote' }, [
       s.stateReason ||
-        'The state is a pure function of the measured counts, computed in one place. The ' +
-          'mismatch counter above re-derives it from the same inputs and counts any frame ' +
-          'where the two answers differ.',
+        '状態は実測の個数だけから決まり、1か所で計算されます。上の「状態の不一致」は' +
+          '同じ入力から状態を導き直し、答えが食い違ったフレームを数えています。',
     ]),
     ...(s.goodBlockedBy.length > 0
       ? [
-          el('p', { class: 'group-title' }, [`Why not ${TrackingState.GOOD}`]),
+          el('p', { class: 'group-title' }, [`${TrackingState.GOOD} にならない理由`]),
           ...s.goodBlockedBy.map((why) =>
             el('div', { class: 'cap-row' }, [
-              el('span', { class: 'cap-label' }, ['§33 conjunct']),
+              el('span', { class: 'cap-label' }, ['§33 の条件']),
               el('span', { class: 'cap-state' }, [why]),
             ]),
           ),
           el('p', { class: 'footnote' }, [
-            `§33 makes GOOD three conditions — features >= ${GOOD_FEATURES}, inlier ratio ` +
-              '>= 0.50 and reprojection error <= 2.0 px. Phase 4 can measure the first. The ' +
-              'other two are Phase 5’s and Phase 6’s, they have not been written, and a null ' +
-              'fails its conjunct — so GOOD is unreachable here rather than being claimed on ' +
-              'one condition out of three.',
+            `§33 は GOOD を3つの条件で定めています — 特徴点 ${GOOD_FEATURES} 以上、` +
+              'インライア比 0.50 以上、再投影誤差 2.0 px 以下。Phase 4 が測れるのは最初の1つ' +
+              'だけです。残りの2つは Phase 5 と Phase 6 のもので、未実装のあいだ null は' +
+              'その条件を満たしません。3つのうち1つだけで GOOD を名乗るのではなく、' +
+              'ここでは GOOD に到達できないようにしてあります。',
           ]),
         ]
       : []),
@@ -327,27 +325,27 @@ function renderCrossCheck(vm: Phase4ViewModel): HTMLElement {
   const agreeing = enough && s.medianShiftDisagreementPx >= 0 &&
     s.medianShiftDisagreementPx <= Math.max(2.0, 0.35 * s.medianMeasuredShiftPx);
 
-  return card('Do the points follow the image?', [
+  return card('点は本当に画像を追っているか？', [
     el('div', { class: 'stat-grid' }, [
-      stat('Tracker says', px(s.medianTrackedDisplacementPx)),
-      stat('Image says', px(s.medianMeasuredShiftPx)),
+      stat('追跡器の言い分', px(s.medianTrackedDisplacementPx)),
+      stat('画像の言い分', px(s.medianMeasuredShiftPx)),
       stat(
-        'Disagreement',
+        '食い違い',
         px(s.medianShiftDisagreementPx),
         enough ? (agreeing ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : '',
       ),
-      stat('Cross-checks', enough ? String(s.shiftCheckCount) : `${s.shiftCheckCount} / ${MIN_SHIFT_SAMPLES}`),
-      stat('Frames agreeing', pct(s.shiftAgreementRate)),
+      stat('突き合わせ回数', enough ? String(s.shiftCheckCount) : `${s.shiftCheckCount} / ${MIN_SHIFT_SAMPLES}`),
+      stat('一致したフレームの割合', pct(s.shiftAgreementRate)),
       // §51 and §H.7: the overlay must sit on the picture. Phase 4 consumes the same
       // positions, so a rotated acquisition route corrupts every displacement above.
       stat(
-        'Overlay matches video',
+        '重ね描きと映像の一致',
         vm.alignment
           ? !vm.alignment.measurable
-            ? 'not measurable — no local texture in this frame'
+            ? '計測不能 — このフレームには局所的な模様がありません'
             : vm.alignment.best === 'identity'
-              ? `yes · ${vm.alignment.identityOverRandom.toFixed(1)}× chance`
-              : `NO · ${vm.alignment.best} fits ${vm.alignment.bestOverIdentity.toFixed(1)}× better`
+              ? `一致 · 偶然の ${vm.alignment.identityOverRandom.toFixed(1)} 倍`
+              : `不一致 · ${vm.alignment.best} のほうが ${vm.alignment.bestOverIdentity.toFixed(1)} 倍よく合う`
           : null,
         vm.alignment
           ? !vm.alignment.measurable
@@ -360,25 +358,22 @@ function renderCrossCheck(vm: Phase4ViewModel): HTMLElement {
       ),
     ]),
     el('p', { class: 'footnote' }, [
-      '"Image says" is measured by an integer sum-of-absolute-differences translation search ' +
-        'on the pyramid’s top level. It shares no code with the Lucas-Kanade solver, it never ' +
-        'reads the feature list, and it keeps its own copy of the previous frame. A tracker ' +
-        'that simply returned the points it was given would report 0 here — with a *perfect* ' +
-        'forward/backward error, because both directions would agree — and this comparison is ' +
-        'the only thing on the screen that could tell.',
+      '「画像の言い分」は、ピラミッド最上位での整数値の差分絶対値和による平行移動探索で' +
+        '測っています。Lucas-Kanade ソルバとコードを共有せず、特徴点のリストを一切読まず、' +
+        '前フレームのコピーを自分で持っています。渡された点をそのまま返すだけの追跡器は' +
+        'ここで 0 を報告します。しかも往復誤差は*完璧*になります（両方向が一致するので）。' +
+        'それを見抜けるのは、この画面ではこの比較だけです。',
     ]),
     el('p', { class: 'footnote' }, [
-      'The tolerance is max(2.0 px, 35% of the measured shift): the search is integer-valued ' +
-        'on a level a quarter of level 0’s width, so its own resolution is 4 level-0 pixels, ' +
-        'and requiring the tracker to match it more precisely than that would be requiring it ' +
-        'to reproduce the crudeness.',
+      '許容範囲は max(2.0 px, 実測シフトの 35%) です。探索は level 0 の 1/4 の幅の階層で' +
+        '整数値で行うため、探索自身の分解能が level 0 換算で 4 px あります。それより細かく' +
+        '一致しろと追跡器に求めるのは、粗さのほうを再現しろと求めることになります。',
     ]),
     el('p', { class: 'footnote' }, [
-      'Overlay matches video is measured on this thread from the video element itself, scored ' +
-        'against each rotation, flip and transpose. If it says NO the acquisition route is ' +
-        'abandoned rather than the drawing corrected — Phase 4 measures displacements in the ' +
-        'buffer’s frame, so a corrected overlay over a rotated buffer would be a working-looking ' +
-        'screen on wrong numbers.',
+      '「重ね描きと映像の一致」は、このスレッドで映像要素そのものから計測し、回転・反転・' +
+        '転置のそれぞれと突き合わせて採点します。「不一致」なら、描画を直すのではなく取得経路を' +
+        '捨てます。Phase 4 は変位をバッファの座標系で測るので、回転したバッファの上に' +
+        '直した重ね描きを載せると、画面は正常に見えるのに数値だけが誤っている状態になります。',
     ]),
   ]);
 }
@@ -391,66 +386,63 @@ function renderMotion(vm: Phase4ViewModel): HTMLElement {
       el('span', { class: 'cap-method' }, [c.frames > 0 ? px(c.medianDisplacementPx) : '']),
       el('span', { class: `cap-state ${c.framesSeen > 0 ? 's-AVAILABLE' : ''}` }, [
         c.frames > 0
-          ? `${c.framesSeen} frames (${c.frames} judged) · ${pct(c.medianSurvival)} survive · ` +
-            `FB ${px(c.medianFbErrorPx)}`
+          ? `${c.framesSeen} フレーム（判定 ${c.frames}）· 生存 ${pct(c.medianSurvival)} · ` +
+            `往復誤差 ${px(c.medianFbErrorPx)}`
           : c.framesSeen > 0
-            ? `${c.framesSeen} frames, none with points to follow`
-            : 'none yet',
+            ? `${c.framesSeen} フレーム。追える点のあるものはなし`
+            : 'まだなし',
       ]),
     ]);
 
-  return card('Scene motion, measured', [
+  return card('シーンの動き（実測）', [
     el('p', { class: 'footnote', style: 'margin-bottom:8px' } as never, [
-      `Every frame is classified from the image, never from what the phone was asked to do: ` +
-        `under ${STATIC_SHIFT_PX} level-0 px of measured shift is static, over ` +
-        `${FAST_SHIFT_PX} px is fast, a dark or wholesale-changed frame is occluded. A run ` +
-        'where someone believes they held the phone still and a run where the tracker ignored ' +
-        'the image produce the same numbers unless the scene is measured separately.',
+      `各フレームは、端末に何をするよう指示したかではなく、画像から分類されます。` +
+        `実測シフトが level-0 換算で ${STATIC_SHIFT_PX} px 未満なら静止、${FAST_SHIFT_PX} px を` +
+        '超えれば急速移動、暗いか全面が入れ替わったフレームは遮断です。「静止させたつもり」の' +
+        '実行と、追跡器が画像を無視した実行は、シーンを別に計測しないかぎり同じ数値になります。',
     ]),
-    row('静止 (FLOW-001)', s.staticFrames),
-    row('ゆっくり横移動 (FLOW-002)', s.slowFrames),
-    row('急速移動 (FLOW-004)', s.fastFrames),
-    row('Camera遮断 (FLOW-005)', s.occludedFrames),
+    row('静止（FLOW-001）', s.staticFrames),
+    row('ゆっくり横移動（FLOW-002）', s.slowFrames),
+    row('急速移動（FLOW-004）', s.fastFrames),
+    row('カメラ遮断（FLOW-005）', s.occludedFrames),
     el('div', { class: 'stat-grid', style: 'margin-top:10px' } as never, [
-      stat('This frame', s.flowFrames > 0 ? s.frameMotion : null),
-      stat('Measured shift', s.lastSceneShift ? px(s.lastSceneShift.magnitude0) : null),
-      stat('Search confidence', s.lastSceneShift ? String(s.lastSceneShift.confidence) : null),
-      stat('Indeterminate', String(s.indeterminateFrames)),
+      stat('このフレーム', s.flowFrames > 0 ? s.frameMotion : null),
+      stat('実測シフト', s.lastSceneShift ? px(s.lastSceneShift.magnitude0) : null),
+      stat('探索の確度', s.lastSceneShift ? String(s.lastSceneShift.confidence) : null),
+      stat('判定不能', String(s.indeterminateFrames)),
     ]),
-    el('p', { class: 'group-title' }, ['ゆっくり回転 (FLOW-003)']),
+    el('p', { class: 'group-title' }, ['ゆっくり回転（FLOW-003）']),
     el('div', { class: 'stat-grid' }, [
-      stat('Gyroscope', s.gyroAvailable ? 'delivering rotationRate' : 'not available',
+      stat('ジャイロ', s.gyroAvailable ? 'rotationRate を受信中' : '利用できません',
         s.gyroAvailable ? 's-AVAILABLE' : 's-PERMISSION_REQUIRED'),
-      stat('Rotating frames', s.gyroAvailable ? String(s.rotatingFrames) : null),
-      stat('Median rotation', s.medianRotationDeg >= 0
+      stat('回転中のフレーム', s.gyroAvailable ? String(s.rotatingFrames) : null),
+      stat('回転量の中央値', s.medianRotationDeg >= 0
         ? `${s.medianRotationDeg}° / ${ROTATION_WINDOW_MS} ms` : null),
-      stat('Field spread', s.medianSpreadRotating >= 0
-        ? `${px(s.medianSpreadRotating)} turning vs ${px(s.medianSpreadTranslating)} panning`
+      stat('動きのばらつき', s.medianSpreadRotating >= 0
+        ? `回転時 ${px(s.medianSpreadRotating)} / 平行移動時 ${px(s.medianSpreadTranslating)}`
         : null),
     ]),
     el('p', { class: 'footnote' }, [
       s.gyroAvailable
-        ? `A frame counts as rotating when the gyroscope integrates at least ${ROTATING_DEG}° ` +
-          `over the previous ${ROTATION_WINDOW_MS} ms — a second instrument, independent of ` +
-          'both the tracker and the image. A rotation moves image corners by different ' +
-          'amounts and a translation does not, so the spread across the 8×6 grid is the ' +
-          'measurable difference between the two.'
+        ? `直前の ${ROTATION_WINDOW_MS} ms でジャイロの積分が ${ROTATING_DEG}° 以上になった` +
+          'フレームを回転中とみなします。追跡器とも画像とも独立した、2つ目の計測器です。' +
+          '回転は画像のコーナーを場所ごとに異なる量だけ動かし、平行移動はそうしません。' +
+          'だから 8×6 グリッド上のばらつきが、両者の計測可能な差になります。'
         : s.gyroReason ||
-          'Without the gyroscope there is no independent way to know a frame was rotating ' +
-            'rather than translating, so FLOW-003 reports PENDING with that reason instead of ' +
-            'being judged.',
+          'ジャイロがないと、そのフレームが平行移動ではなく回転だったことを独立に知る手段が' +
+            'ありません。そのため FLOW-003 は判定せず、その理由を添えて PENDING を報告します。',
     ]),
     ...(s.occlusions.length > 0
       ? [
-          el('p', { class: 'group-title' }, ['Occlusion episodes']),
+          el('p', { class: 'group-title' }, ['遮断のエピソード']),
           ...s.occlusions.slice(-4).map((e) =>
             el('div', { class: 'cap-row' }, [
-              el('span', { class: 'cap-label' }, [`${e.frames} frames dark`]),
+              el('span', { class: 'cap-label' }, [`暗転 ${e.frames} フレーム`]),
               el('span', { class: 'cap-method' }, [
-                e.msToLost >= 0 ? `LOST in ${e.msToLost} ms` : 'never LOST',
+                e.msToLost >= 0 ? `${e.msToLost} ms で LOST` : 'LOST にならず',
               ]),
               el('span', { class: `cap-state ${e.recovered ? 's-AVAILABLE' : 's-PERMISSION_DENIED'}` }, [
-                e.recovered ? `recovered after ${e.recoveredAfterMs} ms` : 'did not recover',
+                e.recovered ? `${e.recoveredAfterMs} ms 後に回復` : '回復せず',
               ]),
             ]),
           ),
@@ -462,28 +454,28 @@ function renderMotion(vm: Phase4ViewModel): HTMLElement {
 function renderCost(vm: Phase4ViewModel): HTMLElement {
   const s = vm.stats;
   const within = s.meanFlowMs >= 0 && s.meanFlowMs <= FLOW_BUDGET_MS;
-  return card('Cost (§12’s parameters, §H’s budget)', [
+  return card('コスト（§12 のパラメータ、§H の予算）', [
     el('div', { class: 'stat-grid' }, [
-      stat('LK solve', s.meanFlowMs >= 0 ? `${s.meanFlowMs} ms` : null,
+      stat('LK の求解', s.meanFlowMs >= 0 ? `${s.meanFlowMs} ms` : null,
         s.meanFlowMs >= 0 ? (within ? 's-AVAILABLE' : 's-PERMISSION_DENIED') : ''),
-      stat('Budget', `${FLOW_BUDGET_MS} ms`),
-      stat('At', s.meanTrackedPoints >= 0 ? `${s.meanTrackedPoints} points` : null),
-      stat('Scene search', s.meanShiftMs >= 0 ? `${s.meanShiftMs} ms` : null),
-      stat('Window', `${LK_WINDOW}×${LK_WINDOW}`),
-      stat('Levels', String(LK_LEVELS)),
-      stat('Iterations', `max ${LK_MAX_ITERATIONS}`),
-      stat('Epsilon', String(LK_EPSILON)),
+      stat('予算', `${FLOW_BUDGET_MS} ms`),
+      stat('その時の点数', s.meanTrackedPoints >= 0 ? `${s.meanTrackedPoints} 点` : null),
+      stat('シーン探索', s.meanShiftMs >= 0 ? `${s.meanShiftMs} ms` : null),
+      stat('窓サイズ', `${LK_WINDOW}×${LK_WINDOW}`),
+      stat('階層数', String(LK_LEVELS)),
+      stat('反復回数', `最大 ${LK_MAX_ITERATIONS}`),
+      stat('収束閾値', String(LK_EPSILON)),
     ]),
     el('p', { class: 'footnote' }, [
-      `§12 fixes these four parameters and they are not reduced to fit the budget. FLOW-006 is ` +
-        'advisory for exactly that reason: §34 ranks correctness above performance, so the ' +
-        'measured cost of the specified configuration is reported — including when it is over ' +
-        `${FLOW_BUDGET_MS} ms — rather than the configuration being changed until it fits.`,
+      `§12 はこの4つのパラメータを固定しており、予算に合わせて削ることはしません。` +
+        'FLOW-006 が参考扱いなのはまさにそのためです。§34 は性能より正しさを上に置くので、' +
+        `指定どおりの構成の実測コストを — ${FLOW_BUDGET_MS} ms を超えていても — そのまま` +
+        '報告します。収まるまで構成をいじることはしません。',
     ]),
     el('p', { class: 'footnote' }, [
-      `Survival on a slow frame must reach ${Math.round(MIN_SURVIVAL_SLOW * 100)}%, and §13 ` +
-        `grades every round trip: at or under ${FB_ACCEPTABLE_PX} px acceptable, up to ` +
-        `${FB_REDUCED_PX} px reduced confidence, above that rejected and dropped.`,
+      `ゆっくりの動きでの生存率は ${Math.round(MIN_SURVIVAL_SLOW * 100)}% に達する必要があります。` +
+        `§13 は往復ごとに等級を付けます: ${FB_ACCEPTABLE_PX} px 以下なら許容、` +
+        `${FB_REDUCED_PX} px までは信頼度低下、それを超えると棄却して捨てます。`,
     ]),
   ]);
 }
