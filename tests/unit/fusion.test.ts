@@ -10,7 +10,8 @@
  *     a body-frame increment is right-multiplied.   q ← q ⊗ δq
  *     the gyroscope reports ω_true + b_true, in the body frame.
  *     gravity in the body frame is R(q)ᵀ · worldDown.
- *     the visual relative rotation over [a, t] is conj(q(a)) ⊗ q(t).
+ *     Phase 6's pose over [a, t] is `R_now←anchor` — conj(q(t)) ⊗ q(a), and *not* its
+ *     inverse, which is what this file built for a month. See the last test below.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -58,6 +59,13 @@ import {
 } from '../../src/fusion/handEye';
 import type { HandEyePair } from '../../src/fusion/handEye';
 import { Verdict } from '../../src/core/types';
+import { Rng } from '../../src/core/Rng';
+import { apply3x3, invert3x3, multiply3x3, transpose3x3 } from '../../src/geometry/linalg';
+import { intrinsicsFor, matrixOf, projectRay } from '../../src/geometry/intrinsics';
+import type { Intrinsics } from '../../src/geometry/intrinsics';
+import { recoverPose } from '../../src/geometry/pose';
+import { GeometricModel } from '../../src/geometry/twoView';
+import type { Correspondence } from '../../src/geometry/twoView';
 import type { TestResult } from '../../src/core/types';
 import { CameraState } from '../../src/capture/CameraSource';
 
@@ -120,6 +128,66 @@ describe('the conventions this file rests on', () => {
     const q = betweenVectors([0, 0, 1], [0, 0, -1]);
     const moved = rotate(q, [0, 0, 1]);
     expect(moved[2] ?? 0).toBeCloseTo(-1, 9);
+  });
+
+  it('builds the visual pose the way Phase 6 emits it, asked of Phase 6 itself', () => {
+    // **The test this file did not have, and the defect of 2026-09-21 is what it cost.**
+    //
+    // `runStage` has to hand `FusionStage` the quaternion a real Phase 6 would, and it had been
+    // deriving it from its own two attitudes instead: `conj(anchorQ) ⊗ cameraQ`, which carries a
+    // ray of the *current* view back into the *anchor's*. `recoverPose` produces the other
+    // direction — `b = π(K (R X + t))` with the world in the anchor's frame, so `R` carries the
+    // anchor's ray into the current view.
+    //
+    // The fixture and the stage agreed with each other and neither had asked the solver, so the
+    // suite passed on a convention the device never sends. On the phone the pairs came out
+    // mutually inconsistent — 99.5° of residual over 21 pairs — while every angle-only check in
+    // the project stayed green, because the two orderings are conjugates and a conjugate keeps
+    // the angle. This asserts the fixture's formula against `recoverPose`'s own output, so the
+    // agreement is with Phase 6 rather than with itself.
+    const K = intrinsicsFor(1280, 720) as Intrinsics;
+    const anchorQ = normalise(fromRotationVector([0.2, -0.5, 0.3]));
+    const cameraQ = normalise(multiply(anchorQ, fromRotationVector([0.05, 0.09, -0.04])));
+
+    // What the fixture claims Phase 6 would report, from the two attitudes.
+    const claimed = normalise(multiply(conjugate(cameraQ), anchorQ));
+
+    // The same two views, put to the solver. The world is expressed in the anchor's frame, so
+    // the rotation between the views is `claimed` as a matrix and the baseline is the anchor's
+    // small sideways move, seen in the current view.
+    const r = toMatrix(claimed);
+    const t = [0.3, 0.02, 0.05];
+    const points: Correspondence[] = [];
+    const rng = new Rng(0x9e11);
+    while (points.length < 80) {
+      const X = [(rng.next() - 0.5) * 4, (rng.next() - 0.5) * 3, 3 + rng.next() * 6];
+      const a = projectRay(K, X);
+      const xc = apply3x3(r, X);
+      const b = projectRay(K, [
+        (xc[0] ?? 0) + (t[0] ?? 0),
+        (xc[1] ?? 0) + (t[1] ?? 0),
+        (xc[2] ?? 0) + (t[2] ?? 0),
+      ]);
+      if (!a || !b) continue;
+      if (a.x < 0 || a.x > K.width || a.y < 0 || a.y > K.height) continue;
+      if (b.x < 0 || b.x > K.width || b.y < 0 || b.y > K.height) continue;
+      points.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y });
+    }
+    const ki = invert3x3(matrixOf(K)) as number[];
+    const skew = [0, -(t[2] ?? 0), t[1] ?? 0, t[2] ?? 0, 0, -(t[0] ?? 0), -(t[1] ?? 0), t[0] ?? 0, 0];
+    const fundamental = multiply3x3(multiply3x3(transpose3x3(ki), multiply3x3(skew, r)), ki);
+    const out = recoverPose({
+      points,
+      inliers: points.map((_, i) => i),
+      model: GeometricModel.FUNDAMENTAL,
+      matrix: fundamental,
+      planar: false,
+      intrinsics: K,
+    });
+    expect(out.quaternion).not.toBeNull();
+    expect(angleBetweenDeg(out.quaternion as Quat, claimed)).toBeLessThan(0.1);
+    // ...and it is *not* the inverse, which is the form that passed here for a month.
+    expect(angleBetweenDeg(out.quaternion as Quat, conjugate(claimed))).toBeGreaterThan(5);
   });
 
   it('and no Euler conversion exists to be tempted by (§18)', async () => {
@@ -649,10 +717,16 @@ function runStage(o: RunOptions = {}): Run {
         }
         // Vision may recover nothing on this frame — and the re-anchor beside it is still true.
         // The stage is told either way, exactly as `main.ts` tells it.
+        //
+        // `conj(cameraQ) ⊗ anchorQ` and not its inverse: that is `R_now←anchor`, the direction
+        // `recoverPose` actually produces, asserted against the solver by the last convention
+        // test above rather than assumed here. Building it the other way round is the defect of
+        // 2026-09-21 — it made this file agree with `FusionStage` about a pose no device sends,
+        // and cost four device sessions.
         pose =
           random() < noPoseRate
             ? noPoseReport(poseFrames)
-            : poseReport(normalise(multiply(conjugate(anchorQ), cameraQ)), poseFrames);
+            : poseReport(normalise(multiply(conjugate(cameraQ), anchorQ)), poseFrames);
         stage.notePose(pose, reAnchored, ms);
       }
     }

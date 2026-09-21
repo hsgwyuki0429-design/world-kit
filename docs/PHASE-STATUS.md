@@ -20,7 +20,7 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 4 | Optical Flow Tracking | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed. |
 | 5 | Geometric Verification | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 4/4 required + 2/2 advisory. Evidence committed. |
 | 6 | Relative Pose | **PASSED** | iPhone / iOS 18.7 / Safari 26.6 / HTTPS. 5/5 required + 2/2 advisory. Evidence committed — with one criterion recorded as unexercised, see below. |
-| 7 | IMU Support / Fusion | TESTING | Built. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
+| 7 | IMU Support / Fusion | TESTING | Built. Three device runs found three engine defects; the third (2026-09-21 13:01) found the visual pose entering the filter inverted. The automated leg **decides IMU-002** — v3 §68's own pass condition — plus IMU-006 and IMU-009 every build. IMU-001/003/004/005/007 are `PENDING`: headless Chromium has no IMU. Awaiting the device run. |
 | 8 | Keyframe System | TESTING | Built. The automated leg **decides all six required records** — the instruments are a still segment and a metronome, and the harness makes both. Awaiting the device run. |
 | 9 | Triangulation | TESTING | Built. The automated leg **decides all seven required records** — both gates are injections the harness builds. Awaiting the device run. |
 | 10 | Landmark Map | TESTING | Built. The automated leg **decides all seven required records** — the instruments are the map's own memory and an injection the harness builds. Awaiting the device run. |
@@ -1408,6 +1408,64 @@ it and are unaffected.
 the other for a denied one, and this run reports IMU-002 `PENDING` for the right reason: *a run
 with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
 Phase 1 did — see its row, which passed *across two runs covering both permission scenarios*.
+
+### 2026-09-21: the visual pose was handed to the filter pointing the other way round
+
+`phase7-real-device-TESTING-2026-09-21T13-01-38-542Z.json`, on `9284f89` — the first build
+carrying `MAX_HAND_EYE_RESIDUAL_DEG`. It refused, and the refusal is what found the defect
+underneath:
+
+```
+handEye: calibrated false | pairs 21 | residualDeg 99.499 | axisSpread 0.0291
+rejections: offered 40, tooSmall 9, angleDisagrees 10
+mode VISION_ONLY, fusedFrames 0, fusionFrames 6106
+```
+
+**A large residual cannot be the tester's fault.** The natural reading — the phone was turned
+about too few axes — was tested on the fixture and is wrong. Varying only the axis wobble, with
+a correct correspondence and Phase 6's own 2° of visual noise:
+
+| wobble | axisSpread | residual | outcome |
+| --- | --- | --- | --- |
+| 0.02 | 0.0000 | — | refused by the spread floor |
+| 0.2 | 0.0029 | — | refused by the spread floor |
+| 0.5 | 0.0178 | — | refused by the spread floor |
+| 1.0 | 0.0687 | **2.6°** | accepted |
+
+There is no setting in between. A degenerate set is refused by `axisSpread` *before* a fit is
+attempted, and the instant the spread clears the floor the residual is small. Large residuals
+were reproducible only by making the two halves of each pair inconsistent — mirrored, 51.6° to
+123.8°; inverted, 59.4°. So the pairs were not one turn seen by two instruments, and no amount of
+turning the phone differently would have fixed it.
+
+**They were inverted.** `recoverPose` fixes its convention in the arithmetic and in
+`pose.test.ts`: the world is expressed in the anchor's frame and the second view is
+`b = π(K (R X + t))`, so `pose.quaternion` carries a ray of the **anchor** into the **current
+view** — `R_now←anchor`. `FusionStage` composed `step = conj(lastVisualQ) ⊗ q`, which is correct
+only for the opposite direction. On Phase 6's actual output it yields
+`q_prev* (q_now q_prev*) q_prev`: the **conjugate** of the true increment.
+
+A conjugate has the same angle and a rotated axis, and that is the whole reason this survived
+three device sessions. Every angle-only instrument in the project passed while it was wrong —
+POSE-002 agreed with the gyroscope to a median of 1.4°, and `PAIR_ANGLE_TOLERANCE`, which
+compares the two halves of a pair by angle, accepted them. Only a fit over the axes can see it,
+and until that morning nothing consulted the fit's residual.
+
+**The unit fixture agreed with the stage about a pose no device sends.** `runStage` derived its
+visual pose from its own two attitudes as `conj(anchorQ) ⊗ cameraQ` — `R_anchor←now`, the stage's
+convention rather than the solver's — and so asserted `residualDeg < 15` on data the phone never
+produces. This is the shape of 2026-08-29's trap exactly: *all three signals lived in one frame
+by construction*. Emitting Phase 6's convention instead, **16 of that file's 69 tests fail and
+the calibration refuses**, which is what the phone reported. With the inversion corrected at the
+boundary, all 70 pass.
+
+The fixture no longer decides the convention for itself: a new test builds correspondences from
+two attitudes, puts them to `recoverPose`, and asserts the formula `runStage` uses against the
+solver's own output — and that it is *not* the inverse, which is the form that passed here for a
+month. A fixture that agrees only with the code it is testing proves nothing, and this one had
+been the reason four device sessions were spent on an engine defect.
+
+**No threshold moved.** One quaternion is inverted where the pose enters the stage.
 
 ### 2026-09-21: the Phase Lock was asking for something Rule 005 does not say
 

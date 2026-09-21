@@ -448,12 +448,49 @@ export class FusionStage {
       }
       return;
     }
-    const q = normalise([
-      pose.quaternion[0] ?? 1,
-      pose.quaternion[1] ?? 0,
-      pose.quaternion[2] ?? 0,
-      pose.quaternion[3] ?? 0,
-    ]);
+    // **Phase 6's rotation points the other way round from the one this stage composes.**
+    //
+    // `recoverPose` fixes its convention forward, in `pose.test.ts` and in the arithmetic
+    // itself: the world is expressed in the anchor's frame and the second view is
+    // `b = π(K (R X + t))`, so `R` — and therefore `pose.quaternion` — carries a ray of the
+    // *anchor* into the *current* view. `R_now←anchor`.
+    //
+    // Everything downstream of here is written the other way about, and has to be. The
+    // gyroscope's half of a pair is integrated as `pendingGyroQ ⊗ δ_body`, which is an
+    // attitude: it carries a vector of the *current* body frame back into the frame the
+    // interval started in. For `estimateHandEye` to be solving `Δ_c = X Δ_d X⁻¹` — one turn
+    // seen by two instruments — the camera's half must be the same direction of travel, and
+    // for `pendingQ = pendingQ ⊗ step` to compose an interval at all, `step` must be
+    // `R_prev←now` rather than its inverse.
+    //
+    // So the pose is inverted once, here at the boundary, and the stage below keeps one
+    // convention throughout.
+    //
+    // What it cost to find: composing `conjugate(lastVisualQ) ⊗ q` on Phase 6's actual output
+    // gives `q_prev* (q_now q_prev*) q_prev` — the conjugate of the true increment. A
+    // conjugate has the **same angle** and a **rotated axis**, so every angle-only instrument
+    // in the project passed while this was wrong: POSE-002 agreed with the gyroscope to 1.4°
+    // median, and `PAIR_ANGLE_TOLERANCE` — which compares the two halves of a pair by angle —
+    // accepted the pairs it was handed. Only the fit saw it. The device run of
+    // 2026-09-21 13:01 offered 40 pairs, kept 21, and the best rotation over them still left
+    // the axes **99.5°** apart; two unrelated axes average 90°, so the pairs were relating the
+    // frames barely more than chance. `MAX_HAND_EYE_RESIDUAL_DEG` had been added that morning
+    // and is what made this visible rather than fusible.
+    //
+    // `fusion.test.ts` hid it for as long as it existed, in the way 2026-08-29 already
+    // records: its fixture derived the visual pose as `conjugate(anchorQ) ⊗ cameraQ`, which is
+    // `R_anchor←now` — the stage's convention, not Phase 6's. The fixture and the stage agreed
+    // with each other about a thing neither had checked against the solver. It emits Phase 6's
+    // convention now, and with it — and without this line — sixteen of that file's tests fail
+    // and the calibration refuses, which is exactly what the phone reported.
+    const q = conjugate(
+      normalise([
+        pose.quaternion[0] ?? 1,
+        pose.quaternion[1] ?? 0,
+        pose.quaternion[2] ?? 0,
+        pose.quaternion[3] ?? 0,
+      ]),
+    );
     this.lastPoseAt = at;
 
     if (reAnchored || !this.lastVisualQ || this.lastVisualAt < 0) {
