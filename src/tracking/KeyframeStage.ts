@@ -280,9 +280,7 @@ export class KeyframeStage {
     if (input.verification?.reAnchored ?? false) {
       this.reAnchorsSinceKeyframe++;
       if (this.epochBaseQ && this.lastPoseQ) {
-        this.carried = normalise(
-          multiply(this.carried, multiply(conjugate(this.epochBaseQ), this.lastPoseQ)),
-        );
+        this.carried = normalise(multiply(epochIncrement(this.epochBaseQ, this.lastPoseQ), this.carried));
         this.droppedIncrements++;
       }
       // Both are cleared, so the next pose to arrive — whenever it arrives — establishes the new
@@ -324,7 +322,7 @@ export class KeyframeStage {
   /** The total since the last keyframe: closed epochs, plus the open one. */
   private rotationSinceKeyframe(): Quat {
     if (!this.epochBaseQ || !this.lastPoseQ) return this.carried;
-    return normalise(multiply(this.carried, multiply(conjugate(this.epochBaseQ), this.lastPoseQ)));
+    return normalise(multiply(epochIncrement(this.epochBaseQ, this.lastPoseQ), this.carried));
   }
 
   /**
@@ -427,6 +425,30 @@ export class KeyframeStage {
 }
 
 /** Median displacement of the features a keyframe and the current view share, level-0 px. */
+/**
+ * The camera's rotation from the view `base` was measured in to the view `now` was.
+ *
+ * **The side matters, and it is not the side this file used until 2026-09-21.** Phase 6 reports
+ * `R_now←anchor` — `recoverPose` expresses the world in the anchor's frame and projects the
+ * second view as `b = π(K (R X + t))`, so its quaternion carries a ray of the *anchor* into the
+ * *current view*. Two such poses against one anchor therefore compose as `q_now ⊗ q_base*`, and
+ * `q_base* ⊗ q_now` — what stood here — is that rotation's **conjugate**: the same angle about
+ * an axis turned by `q_base`.
+ *
+ * Nothing that reads only the angle could see the difference, which is why it survived: the
+ * `ROTATION` trigger, KEY-002's comparison and Phase 9's TRI-006 all compare angles. What it
+ * did reach is `quaternionFromPrevious`, which every keyframe carries into the evidence with an
+ * axis that was wrong, and the composition across anchor epochs, where conjugating each
+ * increment by a different rotation does not compose back into the conjugate of the total — so
+ * the accumulated *angle* drifted too, by about 1.4 % of it on a fixture of ordinary turns.
+ *
+ * `FusionStage` had the same defect on the same day and paid for it in four device sessions
+ * (`docs/PHASE-STATUS.md`); this is the other place that composes Phase 6's poses.
+ */
+function epochIncrement(base: Quat, now: Quat): Quat {
+  return normalise(multiply(now, conjugate(base)));
+}
+
 function medianSharedDisplacement(
   keyframe: Keyframe,
   observations: readonly KeyframeObservation[],

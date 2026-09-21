@@ -72,12 +72,12 @@ of image motion. The screen shows what it currently reads.
 5. **Walk slowly along the scene for about forty seconds**, keeping it in frame. Under
    *v3 §20's conditions* you should see `DISPLACEMENT` firing, and the store filling.
 6. **Stop and hold still for ten seconds.** Watch the top panel:
-   - *Static decisions* climbs;
-   - *This selector kept* should stay put, or gain a single `HEARTBEAT`;
-   - *A metronome would have* climbs steadily. The ratio is the number this phase is about.
+   - *静止時の判断* climbs;
+   - *この選択器が残した数* should stay put, or gain a single `HEARTBEAT`;
+   - *メトロノームなら残した数* climbs steadily. The ratio is the number this phase is about.
 7. **Walk again for another forty seconds**, and turn through a corner if you have room — that is
    what gets `ROTATION` to fire alongside `DISPLACEMENT`.
-8. Keep going until *Held* reaches **30 / 30** and *Evictions* is non-zero. KEY-003 cannot be
+8. Keep going until *保持中* reaches **30 / 30** and *破棄* is non-zero. KEY-003 cannot be
    decided by a run that never reached the bound.
 9. Watch the tests card. When KEY-001 through KEY-006 all read `PASS` and the verdict head reads
    `PASSED`, tap **エビデンス JSON をダウンロード**.
@@ -103,11 +103,11 @@ of image motion. The screen shows what it currently reads.
 
 **`キーフレーム開始` is greyed out on arrival.** Report it; do not work around it. See step 3.
 
-**Nothing is inserted at all.** Check *Shared with the last* on the conditions card. Below 20 the
+**Nothing is inserted at all.** Check *前回と共有している点* on the conditions card. Below 20 the
 view cannot be half of a pair and the selector refuses it — that is `TOO_FEW_OBSERVATIONS`, and it
 means the tracker has lost its population rather than that the selector is wrong.
 
-**The static ratio stays at `—`.** *Static decisions* is still short of fifteen. Hold the phone
+**The static ratio stays at `—`.** *静止時の判断* is still short of fifteen. Hold the phone
 against something; a hand-held "still" often reads `SLOW`, which is Phase 4 telling you the truth
 about your hand rather than a fault.
 

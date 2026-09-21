@@ -50,7 +50,7 @@ walk-past of the surface, is what builds the baseline. Turning on the spot does 
 changes what the camera sees without changing where it sees it from, and no amount of it makes a
 two-view geometry recoverable.
 
-*Baseline* on screen tells you whether you are giving it enough. Under 15 px the frame is
+*基線長* on screen tells you whether you are giving it enough. Under 15 px the frame is
 refused and says so.
 
 ---
@@ -71,28 +71,28 @@ refused and says so.
    can start. That is the shape of the two defects Phase 3 shipped in a row (§H.5), and this
    screen is the third one written to avoid it.
 4. Tap **幾何検証開始**.
-   - *Verified frames* starts counting immediately. *Judged* counts the subset that cleared the
+   - *検証フレーム* starts counting immediately. *Judged* counts the subset that cleared the
      correspondence and baseline floors — it will sit at 0 until you move.
 
 5. **Point at the flat textured surface and walk slowly sideways past it for about 30 seconds**,
    keeping roughly the same distance. A deliberate slide, not a sweep.
-   - *Baseline* climbs past 15 px and *State* starts reporting `USABLE`, then `GOOD` if the
+   - *基線長* climbs past 15 px and *状態* starts reporting `USABLE`, then `GOOD` if the
      surface is rich enough.
-   - Under **Planar scene handling**, *Planar* counts up. A flat wall is a plane and the
+   - Under **平面シーンの扱い（v3 §16）**, *平面* counts up. A flat wall is a plane and the
      homography should be winning.
-   - Under **Does RANSAC actually reject outliers?**, *Samples* counts up. **This is the panel
+   - Under **RANSAC は本当に外れ値を弾いているか？**, *サンプル数* counts up. **This is the panel
      that carries the phase** — see below.
 
 6. **Point into the depth in the room and walk sideways again for about 30 seconds.** A corner
    where two walls meet, or a doorway with something visible well beyond it. You want things at
    clearly different distances in the same frame.
-   - *Non-planar* counts up under **Planar scene handling**. It needs frames of both kinds:
+   - *非平面* counts up under **平面シーンの扱い（v3 §16）**. It needs frames of both kinds:
      GEO-004 reports `PENDING` rather than passing if the run only ever saw one.
-   - *Median F inliers* should now be visibly above *Median H inliers*. On the flat wall they
+   - *F のインライア中央値* should now be visibly above *H のインライア中央値*. On the flat wall they
      were close together.
 
 7. **Point at the blank wall for about 15 seconds** and move as before.
-   - Under **By scene texture**, *TEXTURE_POOR* counts up. It needs 15 frames.
+   - Under **シーンの模様ごと（GEO-001、GEO-002）**, *TEXTURE_POOR* counts up. It needs 15 frames.
    - Every one of those frames should report `UNVERIFIED`. **A `USABLE` on a blank wall is a
      failure**, not a nice surprise: there is nothing there to verify.
 
@@ -108,14 +108,14 @@ refused and says so.
 
 | Panel | What it should say |
 | --- | --- |
-| **Does RANSAC actually reject outliers?** | *Injected outliers rejected* ≥ 90%, *Untouched rejected* ≤ 30%, over 10+ samples |
-| **Does RANSAC actually reject outliers?** | *Advantage* ≥ 3× — the paired form, so rejecting at random cannot pass |
-| **This frame** | *State mismatches* **0**, *Partition faults* **0**, *Model without verdict* **0** |
-| **This frame** | *Baseline* comfortably over 15 px while you are moving |
-| **Planar scene handling** | both *Planar* and *Non-planar* non-zero; *Planar mismatches* **0** |
-| **By scene texture** | *TEXTURE_POOR* frames present and all of them `UNVERIFIED` |
-| **Cost** | *RANSAC* against the 6 ms budget, with the correspondence count beside it |
-| **This frame** | *Overlay matches video* — see below |
+| **RANSAC は本当に外れ値を弾いているか？** | *仕込んだ外れ値の棄却率* ≥ 90%, *無傷の点の棄却率* ≤ 30%, over 10+ samples |
+| **RANSAC は本当に外れ値を弾いているか？** | *差* ≥ 3× — the paired form, so rejecting at random cannot pass |
+| **このフレーム（v3 §14）** | *状態の不一致* **0**, *分割の不整合* **0**, *判定なしのモデル* **0** |
+| **このフレーム（v3 §14）** | *基線長* comfortably over 15 px while you are moving |
+| **平面シーンの扱い（v3 §16）** | both *平面* and *非平面* non-zero; *平面判定の不一致* **0** |
+| **シーンの模様ごと（GEO-001、GEO-002）** | *TEXTURE_POOR* frames present and all of them `UNVERIFIED` |
+| **コスト（§H の予算）** | *RANSAC* against the 6 ms budget, with the correspondence count beside it |
+| **このフレーム（v3 §14）** | *重ね描きと映像の一致* — see below |
 
 ### The one number that carries the phase
 

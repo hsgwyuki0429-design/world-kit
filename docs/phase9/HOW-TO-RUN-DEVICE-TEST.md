@@ -62,7 +62,7 @@ into one frame.
    If it already reads `三角測量中` and is greyed out, stop and report it (§H.5).
 4. Tap **三角測量開始**.
 5. **Walk sideways past the scene**, slowly, keeping both the near things and the far things in
-   frame. Watch *The last pair*: `TRIANGULATED`, with a point count that is a fraction of the
+   frame. Watch *直近の組*: `TRIANGULATED`, with a point count that is a fraction of the
    shared observations rather than all of them.
 6. **Stand still and turn** for a few seconds. The pairs should come back `REFUSED` with
    *a camera that only turned determines no depth* — that is the phase working, not failing.
@@ -99,7 +99,7 @@ than on displacement — check the 「キーフレーム」画面.
 correct refusal and it is what TRI-003 is about, but a whole run of it decides nothing else —
 walk sideways.
 
-**Points are accepted but the count is tiny.** Look at *What was refused, and why*. A large
+**Points are accepted but the count is tiny.** Look at *何を、なぜ拒否したか*. A large
 `LOW_PARALLAX` count on a scene with depth means the camera is barely moving; a large
 `HIGH_REPROJECTION` count means the correspondences are being matched across something that moved.
 

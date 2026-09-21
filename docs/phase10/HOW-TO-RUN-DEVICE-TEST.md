@@ -51,10 +51,10 @@ reported ±24.5°, so there is no global datum to align to.
 3. **Before tapping anything, check the button says `ランドマーク地図開始` and is tappable.**
    If it already reads `地図を作成中` and is greyed out, stop and report it (§H.5).
 4. Tap **ランドマーク地図開始**.
-5. **Walk slowly along the scene**, as for Phase 9. Watch *The map*: landmarks appear as
+5. **Walk slowly along the scene**, as for Phase 9. Watch *地図*: landmarks appear as
    candidates and turn confirmed once three views have seen them.
 6. **Walk back the way you came**, slowly. This is the part that matters: it is what gets a
-   landmark seen five times, which is what *Convergence* needs, and it is what fills the held-out
+   landmark seen five times, which is what *収束* needs, and it is what fills the held-out
    prediction panel.
 7. Keep going for two or three minutes, so the injection runs several times — it is sampled one
    batch in four, and only over points the map already holds.
@@ -92,7 +92,7 @@ nothing survives long enough to be seen five times.
 **The held-out panel stays at `0 / 15`.** Nothing has been seen from a keyframe it was not
 computed from. Walk back over ground you have already covered.
 
-**`Untouched, rejected` is high but the `Excess` is small.** That is the expected shape. The gate
+**`無傷の点の棄却率` is high but the `超過分` is small.** That is the expected shape. The gate
 compares two estimates of one point and refuses the tail of their disagreement whether or not
 anything was injected; what MAP-005 judges is the *excess* over that baseline.
 

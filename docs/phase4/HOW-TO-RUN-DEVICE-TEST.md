@@ -46,44 +46,44 @@ the phase at `TESTING`.)
    - Points appear on the preview within a second. **Filled green dots are points being
      followed; amber rings are points detection has just replaced.** A screen that is all
      rings is a screen where the tracker is keeping nothing, however high the total.
-   - **If *Tracked* stays at 0 while the button reads TRACKING, stop and report it.**
+   - **If *追跡中* stays at 0 while the button reads `追跡中`, stop and report it.**
 
-5. **静止 — hold the phone as still as you can for about 15 seconds**, pointed at the textured
+5. **静止** — **hold the phone as still as you can for about 15 seconds**, pointed at the textured
    surface. Rest it on something if you can.
-   - *静止 (FLOW-001)* under **Scene motion** counts up. It needs 15 frames.
+   - *静止* (FLOW-001) under **Scene motion** counts up. It needs 15 frames.
    - The frames are classified from the image, not from your intention: a frame counts as
      static when the independent scene-shift search measures under 1 px of motion. If the
      count is not rising, you are moving more than you think.
-   - *Tracked* should stay near its value and *State* should read `TRACKING`.
+   - *追跡中* should stay near its value and *状態* should read `TRACKING`.
 
-6. **ゆっくり横移動 — pan slowly sideways for about 20 seconds**, keeping the same distance
+6. **ゆっくり横移動** — **pan slowly sideways for about 20 seconds**, keeping the same distance
    from the surface. Slowly: a comfortable, deliberate slide, not a sweep.
-   - *ゆっくり横移動 (FLOW-002)* counts up, and so does *Cross-checks* under **Do the points
+   - *ゆっくり横移動* (FLOW-002) counts up, and so does *突き合わせ回数* under **Do the points
      follow the image?**
-   - **This is the panel that carries the phase.** *Tracker says* and *Image says* should
-     track each other, and *Disagreement* should stay small and green. If *Tracker says* sits
-     near 0 while *Image says* does not, the tracker is not following the picture and the run
+   - **This is the panel that carries the phase.** *追跡器の言い分* and *画像の言い分* should
+     track each other, and *食い違い* should stay small and green. If *追跡器の言い分* sits
+     near 0 while *画像の言い分* does not, the tracker is not following the picture and the run
      should fail — that is the whole point of the comparison.
 
 7. **ゆっくり回転 — turn the phone slowly about its own axis for about 20 seconds**, staying
    pointed at the surface. Turning, not sliding: the two are different measurements and the
    gyroscope tells them apart.
-   - *Rotating frames* counts up; it needs 15. *Median rotation* should read a few degrees.
-   - *Field spread* should show a larger number while turning than while panning. A rotation
+   - *回転中のフレーム* counts up; it needs 15. *回転量の中央値* should read a few degrees.
+   - *動きのばらつき* should show a larger number while turning than while panning. A rotation
      moves the corners of the image by different amounts and a translation does not.
-   - If **Gyroscope** reads "not available", motion access was denied. Reload and grant it.
+   - If **ジャイロ** reads "not available", motion access was denied. Reload and grant it.
 
 8. **急速移動 — sweep the phone quickly across the scene, three or four times.**
-   - *急速移動 (FLOW-004)* needs 15 frames. Fast means more than 12 px of image motion in one
+   - *急速移動* (FLOW-004) needs 15 frames. Fast means more than 12 px of image motion in one
      frame, which is over half the 21 px tracking window.
-   - *Tracked* should fall sharply and *State* should reach `DEGRADED`. **That is the pass**:
+   - *追跡中* should fall sharply and *状態* should reach `DEGRADED`. **That is the pass**:
      §65 asks for the transition, not for success. A survival figure that does not budge under
      motion the window cannot span means the numbers are not coming from the image.
 
 9. **Camera遮断 — cover the lens completely with a finger for about two seconds, then
    uncover it.** Do it twice.
-   - *State* must reach `LOST` within a second, and the population must come back afterwards.
-   - **Occlusion episodes** appears under **Scene motion** with the time to `LOST` and the
+   - *状態* must reach `LOST` within a second, and the population must come back afterwards.
+   - **遮断のエピソード** appears under **Scene motion** with the time to `LOST` and the
      recovery for each one.
 
 10. **Point back at the textured surface** and hold for another 15 seconds so the population
@@ -98,16 +98,16 @@ the phase at `TESTING`.)
 
 | Panel | What it should say |
 | --- | --- |
-| **Do the points follow the image?** | *Disagreement* small and green, over 10+ cross-checks |
-| **Population and state** | *Tracked* and *Redetected* both shown; *State mismatches* **0** |
-| **Population and state** | *Why not GOOD* naming `inlierRatio` and `reprojectionError` — those are Phases 5 and 6, and a run that reached `GOOD` reached it by dropping two of §33's three conditions |
+| **点は本当に画像を追っているか？** | *食い違い* small and green, over 10+ cross-checks |
+| **特徴点の数と状態（§33）** | *追跡中* and *再検出* both shown; *状態の不一致* **0** |
+| **特徴点の数と状態（§33）** | *Why not GOOD* naming `inlierRatio` and `reprojectionError` — those are Phases 5 and 6, and a run that reached `GOOD` reached it by dropping two of §33's three conditions |
 | **Scene motion** | all four classes with frames in them, and at least one occlusion episode that recovered |
-| **Do the points follow the image?** | *Overlay matches video* — see below |
-| **Cost** | *LK solve* against the 14 ms budget, with the point count beside it |
+| **点は本当に画像を追っているか？** | *重ね描きと映像の一致* — see below |
+| **コスト（§12 のパラメータ、§H の予算）** | *LK の求解* against the 14 ms budget, with the point count beside it |
 
 ### The overlay orientation, carried over from Phase 3
 
-*Overlay matches video* is the probe added at the end of Phase 3, after the report that the
+*重ね描きと映像の一致* is the probe added at the end of Phase 3, after the report that the
 drawn corners lined up in landscape and were rotated in portrait. It matters more here than it
 did there: Phase 4 measures every displacement in the acquired buffer's frame, so a buffer
 turned against the screen makes every number on this screen wrong while every average-based
