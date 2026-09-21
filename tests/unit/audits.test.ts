@@ -8,9 +8,9 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-function runAudit(script: string, target: string): { code: number; out: string } {
+function runAudit(script: string, ...targets: string[]): { code: number; out: string } {
   try {
-    const out = execFileSync('node', [script, target], { encoding: 'utf-8', stdio: 'pipe' });
+    const out = execFileSync('node', [script, ...targets], { encoding: 'utf-8', stdio: 'pipe' });
     return { code: 0, out };
   } catch (err) {
     const e = err as { status?: number; stdout?: string; stderr?: string };
@@ -72,6 +72,34 @@ describe('audit-architecture', () => {
   it('passes over the real src/ tree', () => {
     const r = runAudit('scripts/audit-architecture.mjs', 'src');
     expect(r.code).toBe(0);
+  });
+});
+
+/**
+ * The guides are the tester's instrument, and an instrument may not name a word the phone does
+ * not show. The fixture plants one reference of each kind the audit has to tell apart.
+ */
+describe('audit-guide-labels', () => {
+  it('reports a guide that names a label no screen renders any more', () => {
+    const r = runAudit('scripts/audit-guide-labels.mjs', 'tests/fixtures/guide-ui', 'tests/fixtures/guide-docs');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('消えたラベル');
+    // ...and only that one. A control built from a phase name and a fixed tail is a real label
+    // that appears nowhere in the source as one string, and `… へ進む` is a shape, not a label.
+    expect(r.out).toContain('1 NOT ON ANY SCREEN');
+    expect(r.out).not.toContain('特徴点検出へ進む');
+    expect(r.out).not.toContain('検出回数');
+  });
+
+  it('passes over the real guides and the real screens', () => {
+    // This is the direction that can be checked without guessing: the guides quote the labels
+    // in Japanese, so every such quotation is a label and has to still exist. The drift it was
+    // written after ran the other way — 169 quotations of the English labels the screens had
+    // until they were translated — and that one is not mechanically separable from prose, so
+    // it stays a review matter. Any future rename lands in this direction.
+    const r = runAudit('scripts/audit-guide-labels.mjs');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('all present in src/ui');
   });
 });
 

@@ -36,23 +36,23 @@ camera at each of them.
    claiming a state the engine is not in and there is nothing you can press. That is the
    02:35 defect on 2026-08-22; it is fixed, and this is the check that it stayed fixed.
 4. Tap **特徴点検出開始**. Corners appear on the preview within a second.
-   - **If *Detections* stays at 0 while the button reads DETECTING, stop and report it.**
+   - **If *検出回数* stays at 0 while the button reads `検出中`, stop and report it.**
      That is the 01:57 defect from the same day — the button was pressable but inert.
    - **Check they land on things.** Circles should sit on edges, corners, text, the join
      between objects — not scattered evenly across a blank area. That is what FEAT-001
      measures numerically, and it is what the screenshot records.
 5. **Point at the textured surface and hold, moving slowly, for about 40 seconds.**
-   - *Texture-rich* under **Scene** counts up. FEAT-001 needs 15 frames and 10 contrast
+   - *Texture-rich* under **シーン** counts up. FEAT-001 needs 15 frames and 10 contrast
      samples.
-   - *Above chance* under **Are these real corners?** should sit well above 75 %. If it
+   - *偶然を上回る割合* under **これは本当にコーナーか？** should sit well above 75 %. If it
      hovers near 50 %, the detector is not finding structure and the phase should fail.
-   - *Features* should sit in the hundreds. *Cells occupied* should be most of 48.
+   - *特徴点* should sit in the hundreds. *使われたセル* should be most of 48.
 6. **Point at the blank wall for about 20 seconds.**
    - *Texture-poor* counts up; FEAT-002 needs 15 frames.
-   - *Features* should collapse — tens, not hundreds — and *State* should change to
+   - *特徴点* should collapse — tens, not hundreds — and *状態* should change to
      `LOW FEATURE COUNT` and then `TRACKING DEGRADED`.
    - This also drives FEAT-004: the count falling below 500 triggers a refill, below 200 an
-     emergency one. Watch *Refills* climb.
+     emergency one. Watch *補充* climb.
 7. **Point back at the textured surface** and hold for another 20 seconds, so the population
    recovers and the comparison FEAT-002 makes has both halves.
 8. When the verdict panel shows what you want, tap **エビデンス JSON をダウンロード** — the verdict
@@ -78,7 +78,7 @@ the texture did, no cell over quota, and `forwardBackwardError` / `reprojectionE
 | Observation | Meaning |
 | --- | --- |
 | Features number in the low hundreds rather than 800 | The 8×6 quota is a hard cap: with 48 cells and a quota of 17, a scene whose texture is confined to part of the frame cannot reach the target. That is the grid preventing concentration, which is what §11 asks it to do. |
-| *Cells occupied* below 48 on a partly blank scene | Correct — there is nothing to find in the blank cells. |
+| *使われたセル* below 48 on a partly blank scene | Correct — there is nothing to find in the blank cells. |
 | Detection runs at level 1, not level 0 | Deliberate, and the run measures the alternative: the panel reports what level 0 would have cost on this device. |
 | A refill marked *exhausted* | The relaxed pass found no further candidates, so the frame genuinely had nothing left. That is a scene with no corners in it, not a mechanism that failed. |
 | FEAT-003 `PENDING` with "too sparse for the quota to bind" | The scene never crowded a cell, so the grid had nothing to do and the comparison says nothing. Point the camera at something with dense detail. |
@@ -87,10 +87,10 @@ the texture did, no cell over quota, and `forwardBackwardError` / `reprojectionE
 
 | Observation | Meaning |
 | --- | --- |
-| *Above chance* near 50 % | The detected positions are no more textured than random ones. The points are not on image structure, which is the one thing this phase exists to establish. |
+| *偶然を上回る割合* near 50 % | The detected positions are no more textured than random ones. The points are not on image structure, which is the one thing this phase exists to establish. |
 | The count holding near target on a blank wall | The output does not depend on the image. |
-| *State mismatches* above zero | The state shown and the count shown disagree — the UI and engine have diverged (Rule 002). |
-| *Quota breaches* above zero | The 8×6 cap did not hold. |
+| *状態の不一致* above zero | The state shown and the count shown disagree — the UI and engine have diverged (Rule 002). |
+| *上限の超過* above zero | The 8×6 cap did not hold. |
 
 ## What Phase 3 does not do
 

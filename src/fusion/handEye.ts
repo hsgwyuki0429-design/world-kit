@@ -386,12 +386,25 @@ export function estimateHandEye(
       axisSpread,
       residualDeg,
       rejections,
+      // **What this refusal must not say is "move differently".**
+      //
+      // It said exactly that until 2026-09-21, and it cost a device session: the tester was
+      // told to mix the axes when the pairs were being built wrong by this engine. The advice
+      // also contradicts what was measured for `MAX_HAND_EYE_RESIDUAL_DEG` — a set too
+      // collinear to determine `x` is refused by `axisSpread` *before* a fit is attempted, and
+      // the moment the spread clears that floor a correct correspondence fits to about 2.6°,
+      // at Phase 6's own visual noise. There is no way of holding the phone that produces a
+      // large residual out of pairs that are one motion seen twice. A large residual means the
+      // two halves are *not* one motion — which is the engine's fault, not the tester's, and
+      // the defect found on that date (the visual pose entering inverted) was exactly that.
       reason:
         `the best fit over ${axes.length} pairs still leaves the axes ` +
         `${residualDeg.toFixed(1)}° apart, against the ${MAX_HAND_EYE_RESIDUAL_DEG}° a fit may ` +
         'have — two unrelated axes average 90°, so this one relates the frames barely more than ' +
-        'chance would. The turns agreed about how far the phone went and not about which way: ' +
-        'turn about different axes rather than spinning on the spot — mix yaw with pitch and roll',
+        'chance would. The axes cleared the spread floor, so the turns did carry enough ' +
+        'information to determine the rotation and no rotation fits them: the gyroscope’s half ' +
+        'and the camera’s half of these pairs are not the same motion. That is not something a ' +
+        'different way of moving the phone can fix — export this bundle and report it',
     };
   }
 

@@ -37,6 +37,15 @@ import { KeyframeSession } from '../../src/tracking/KeyframeSession';
 import { runPhase8Tests } from '../../src/testkit/Phase8Tests';
 import type { KeyframeReport, PoseReport, TrackingFlow, VerificationReport } from '../../src/tracking/trackingMessages';
 import { PoseState } from '../../src/geometry/pose';
+import {
+  angleBetweenDeg,
+  angleDeg,
+  conjugate,
+  fromRotationVector,
+  multiply,
+  normalise,
+} from '../../src/fusion/quat';
+import type { Quat } from '../../src/fusion/quat';
 
 const W = 640;
 const H = 480;
@@ -504,5 +513,128 @@ describe('a metronome wearing this phase’s labels', () => {
 
   it('fails KEY-001: its reasons do not follow from its own inputs', () => {
     expect(verdictsFor(reports).get('KEY-001')).toBe(Verdict.FAIL);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Which way round the stage composes Phase 6's poses — asked of Phase 6's convention.
+ *
+ * `advanceRotation` accumulates the camera's turn since the last keyframe, and until
+ * 2026-09-21 it composed `conj(base) ⊗ now`, which is the **conjugate** of the rotation Phase 6
+ * actually describes. A conjugate keeps the angle, so everything else in this file passed: the
+ * run fixture above feeds an identity quaternion on every frame, and the `ROTATION` trigger,
+ * KEY-002 and Phase 9's TRI-006 all read angles. What the side does reach is the **axis**,
+ * which every keyframe carries into the evidence as `quaternionFromPrevious`, and the
+ * composition across anchor epochs, where conjugating each increment by a different rotation
+ * does not compose back into the conjugate of the total — so the angle moves as well.
+ *
+ * Both tests drive the real stage with poses built the way `recoverPose` produces them
+ * (`R_now←anchor` = `conj(q_now) ⊗ q_anchor`, asserted against the solver itself in
+ * `fusion.test.ts`), and compare what the stage accumulated against the attitudes the fixture
+ * was built from. `FusionStage` had this defect on the same day and four device sessions went
+ * into finding it; nothing in this phase would have noticed at all.
+ */
+describe('KeyframeStage — the side it composes Phase 6’s poses on', () => {
+  /** Phase 6's own convention: a ray of the anchor, carried into the current view. */
+  const phase6 = (anchor: Quat, now: Quat): Quat => normalise(multiply(conjugate(now), anchor));
+  const truthBetween = (from: Quat, to: Quat): Quat => normalise(multiply(conjugate(to), from));
+
+  interface Driven {
+    readonly stage: KeyframeStage;
+    readonly reports: readonly KeyframeReport[];
+    readonly attitudes: readonly Quat[];
+  }
+
+  /**
+   * @param stepDeg  per-frame turn, about an axis that is not the fixture's starting one
+   * @param reAnchorAt frames where Phase 5 re-takes its anchor. The attitude is held across
+   *   each of them, so the increment the stage discards there is the identity and the truth
+   *   stays exact — a re-anchor over a moving camera really does lose that interval, which
+   *   `droppedIncrements` reports and which is not what these tests are about.
+   */
+  function drive(frames: number, stepDeg: number, reAnchorAt: readonly number[] = []): Driven {
+    const stage = new KeyframeStage();
+    const reports: KeyframeReport[] = [];
+    const attitudes: Quat[] = [];
+    // **The axis has to move.** A camera turned about one fixed axis makes the two orderings
+    // agree exactly — `q_b* ⊗ q_n` and `q_n ⊗ q_b*` differ by a conjugation, and conjugating a
+    // rotation by one about its own axis leaves it alone. The first version of this fixture
+    // did that and passed under both, which is the same shape of mistake as the fixture these
+    // tests exist to replace. A hand-held phone's axis moves; so does this one's.
+    let attitude: Quat = normalise(fromRotationVector([0.35, -0.2, 0.1]));
+    let anchor: Quat = attitude;
+    for (let i = 0; i < frames; i++) {
+      const reAnchored = reAnchorAt.includes(i);
+      if (!reAnchored) {
+        const rad = (stepDeg * Math.PI) / 180;
+        attitude = normalise(
+          multiply(
+            attitude,
+            fromRotationVector([
+              rad * Math.cos(0.7 * i),
+              rad * Math.cos(0.41 * i + 1.1),
+              rad * Math.cos(0.23 * i + 2.3),
+            ]),
+          ),
+        );
+      }
+      attitudes.push(attitude);
+      if (reAnchored) anchor = attitude;
+      const population = Array.from({ length: 120 }, (_, id) => ({
+        id,
+        x0: 40 + (id % 10) * 20,
+        y0: 40 + Math.floor(id / 10) * 15,
+      }));
+      reports.push(
+        stage.process({
+          at: i * 50,
+          frameIndex: i + 1,
+          tracker: {
+            getPopulation: () => population as never,
+            getFrameIndex: () => i + 1,
+          },
+          width: W,
+          height: H,
+          pose: { ...poseReport(), quaternion: [...phase6(anchor, attitude)] },
+          verification: { ...verificationReport(), reAnchored },
+          flow: flowReport('SLOW'),
+        }),
+      );
+    }
+    return { stage, reports, attitudes };
+  }
+
+  it('stores the rotation Phase 6 described, axis and all, not its conjugate', () => {
+    // Turned far enough for the ROTATION condition to insert a second keyframe, which is the
+    // one that carries a `quaternionFromPrevious` — the first has nothing to be relative to.
+    const { stage, reports, attitudes } = drive(60, 2.0);
+    const first = reports.findIndex((r) => r.inserted);
+    const second = reports.findIndex((r, i) => i > first && r.inserted);
+    expect(second).toBeGreaterThan(first);
+    const kf = stage.keyframes()[1];
+    expect(kf?.droppedIncrements).toBe(0);
+    const q = kf?.quaternionFromPrevious;
+    expect(q).not.toBeNull();
+    const truth = truthBetween(attitudes[first] as Quat, attitudes[second] as Quat);
+    // The angle agrees on either side — which is exactly why the axis had to be asserted.
+    expect(kf?.rotationFromPreviousDeg).toBeCloseTo(angleDeg(truth), 2);
+    expect(angleBetweenDeg(q as Quat, truth)).toBeLessThan(0.01);
+  });
+
+  it('composes two anchor epochs in an order that survives the join', () => {
+    // Under the ROTATION threshold throughout, so one keyframe is taken and everything after it
+    // accumulates. Composed on the wrong side the total is not the conjugate of the truth
+    // either — each increment was conjugated by a different rotation — so the angle itself is
+    // wrong, and this is the case that shows it without needing the stored quaternion.
+    const { reports, attitudes } = drive(30, 0.6, [15]);
+    const last = reports[reports.length - 1];
+    expect(last?.droppedIncrements).toBe(1);
+    expect(last?.totalInserted).toBe(1);
+    const first = reports.findIndex((r) => r.inserted);
+    const truth = truthBetween(attitudes[first] as Quat, attitudes[attitudes.length - 1] as Quat);
+    expect(angleDeg(truth)).toBeGreaterThan(1);
+    expect(last?.input.rotationDeg).toBeCloseTo(angleDeg(truth), 2);
   });
 });

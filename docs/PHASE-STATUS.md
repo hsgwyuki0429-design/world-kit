@@ -1409,6 +1409,66 @@ the other for a denied one, and this run reports IMU-002 `PENDING` for the right
 with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
 Phase 1 did — see its row, which passed *across two runs covering both permission scenarios*.
 
+### 2026-09-21: an audit of the app against itself
+
+Four contradictions, found by reading the app against its own documents rather than by a device
+run. None of them moved a threshold; one of them was the same defect as the entry below, in the
+other place that composes a pose.
+
+**The guides named 169 labels the screens no longer show.** The interface was translated that
+morning; the eleven device guides were not. `*Measured rate*`, `*Verified frames*`,
+`**INJECT LOAD**`, `` `DETECTING` `` — 169 references across nine guides, of which four were
+*"stop and report it"* checks whose condition could no longer be read off the phone at all. That
+is CAP-0011's failure aimed at the human instead of the grader: an instrument written against a
+word nobody displays any more.
+
+The replacements were not chosen by hand. The screens' label constructors were extracted from
+the pre-translation commit and from the current one and aligned by position — all eleven screens
+line up exactly, giving 337 old→new pairs with no ambiguity inside any one file — and the guides
+were rewritten from that mapping. `scripts/audit-guide-labels.mjs` now checks the direction that
+*can* be checked mechanically: every Japanese span a guide quotes must exist in `src/ui`. 336
+references, all present, with a fixture tree that plants one of each case it has to tell apart.
+
+**The Phase 7 guide asked for the one motion the calibration refuses.** It said *"turn slowly on
+the spot for about 90 seconds"*, and `handEye.ts` has said since it was written that a single
+axis leaves the extrinsic undetermined — `AXIS_SPREAD_FLOOR` exists to refuse exactly that. The
+two device runs that reached a fit cleared the floor by 3.6× and 1.5×, which is as close to
+refused as a fitted run can be. The tester was following the instruction. It now asks for yaw
+mixed with pitch and roll, and says why.
+
+**The residual refusal told the tester to move differently.** The message added that morning
+ended *"turn about different axes rather than spinning on the spot"* — advice that contradicts
+the measurement in the entry below it: a set too collinear to determine `x` is refused by the
+spread floor *before* a fit is attempted, and past that floor a correct correspondence fits to
+about 2.6°. There is no way of holding a phone that produces a large residual out of pairs that
+are one motion seen twice. It now says what a large residual actually means — that the two
+halves are not the same motion — and asks for the bundle.
+
+**`KeyframeStage` composed Phase 6's poses on the same wrong side as `FusionStage`.** The fix
+below was made in the fusion stage; this is the other place. The angle is unaffected within an
+anchor epoch, which is why nothing caught it: the `ROTATION` trigger, KEY-002 and TRI-006 all
+read angles. What it reached is the axis of `quaternionFromPrevious`, which every keyframe
+carries into the evidence, and the composition across epochs, where the accumulated angle moves
+too — 1.8368° against a true 1.8644° on the fixture.
+
+The fixture for that took two attempts and the first one is worth recording: it turned the
+camera about a **single axis**, under which the two orderings agree *exactly* — conjugating a
+rotation by one about its own axis leaves it alone — so both tests passed under the defect. That
+is the same shape of mistake as the fixture in the entry below, made while fixing it. The axis
+moves now, and both tests fail on the old ordering: 0.71° of axis error on one, 0.03° of angle on
+the other.
+
+**Checked and clean:** all 189 numeric constants against every TEST-PLAN that names them; the
+remaining quaternion compositions (`orientationEkf`, `gyroRotation`, `landmarks.poseBFor`); the
+nine start controls the guides tell the tester to tap. One untranslated string was left in
+`Phase6Screen` and now reads 「姿勢復元は未起動です」 like its four siblings.
+
+**Not acted on.** `verdictOnThinEvidence` (GEO-002) is structurally always 0 —
+`deriveVerificationState` cannot return a verdict on evidence that thin — and its own comment says it is a tripwire
+for that function being bypassed rather than a measurement. It reads in Phase 5's record as
+though it measured something, and whether that wording should change is a judgement about what
+GEO-002 claims, not a defect to fix quietly.
+
 ### 2026-09-21: the visual pose was handed to the filter pointing the other way round
 
 `phase7-real-device-TESTING-2026-09-21T13-01-38-542Z.json`, on `9284f89` — the first build

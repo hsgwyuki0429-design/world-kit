@@ -64,7 +64,7 @@ context, and CAP-0001 will correctly fail.
      `PENDING` is never rounded up to `PASS`.
    - If you deny permission, that is still a determined capability: the tests pass and the
      engine records that it must run vision-only.
-3. Read the **PHASE 0 VERDICT** panel. It will show `PASSED`, `TESTING` or `FAILED`, and
+3. Read the **Phase 0 の判定** panel. It will show `PASSED`, `TESTING` or `FAILED`, and
    the reason.
 4. Tap **エビデンス JSON をダウンロード — PASSED**. The button names the verdict it is about to
    export, and so does the filename.
@@ -72,7 +72,7 @@ context, and CAP-0001 will correctly fail.
    **Export after the tap, not before.** Exporting while CAP-0004/0005 are still `PENDING`
    produces a `…-TESTING-….json` that cannot pass the phase. If a yellow warning is showing
    above the export buttons, the sensor probe has not completed — go back to step 2. (Also
-   available: **エビデンス JSON をコピー**, or expand *Show evidence JSON* and select it by hand.)
+   available: **エビデンス JSON をコピー**, or expand *エビデンス JSON を表示* and select it by hand.)
 5. Take a screenshot of the screen.
 
 ## Committing the evidence (§60)

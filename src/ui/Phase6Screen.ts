@@ -227,7 +227,7 @@ function renderPreview(vm: Phase6ViewModel, handlers: Phase6Handlers): HTMLEleme
             ? 'カメラが終了しました — トラックが停止されました。別のアプリによる可能性が高いです'
             : vm.opening
               ? 'カメラを要求中…'
-              : 'POSE RECOVERY NOT STARTED';
+              : '姿勢復元は未起動です';
     children.push(
       el('div', { class: 'preview-frame empty', id: 'preview-empty' }, [
         el('div', { class: 'preview-message' }, [message]),

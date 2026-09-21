@@ -67,32 +67,52 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
    is the shape of the two defects Phase 3 shipped in a row (§H.5); this screen is the fifth
    written to avoid it.
 4. Tap **IMU 統合開始** and grant motion access when iOS asks.
-   - Under **Sensors**, `acceleration`, `accelerationIncludingGravity` and `rotationRate` should
-     all read `ARRIVING`, with a *Measured rate* near 60 Hz.
-   - **Mode** should move from `VISION_ONLY` to `FUSED` within a second or two.
-   - If **Mode** stays `VISION_ONLY` and Sensors reads `ABSENT`, motion access was denied.
+   - Under **センサー**, `acceleration`, `accelerationIncludingGravity` and `rotationRate` should
+     all read `受信中`, with a *実測レート* near 60 Hz.
+   - **モード** should move from `VISION_ONLY` to `FUSED` within a second or two.
+   - If **モード** stays `VISION_ONLY` and **センサー** reads `来ていません`, motion access was denied.
      Reload and grant it — the run will otherwise decide only IMU-002.
 
-5. **Turn slowly on the spot for about 90 seconds**, staying pointed at the textured scene.
-   ゆっくり回転, as Phase 6 asked, and for longer.
-   - Under **Does the filter find a bias it was not told about?**, *Samples* starts counting once
+5. **Turn slowly for about 90 seconds, and turn about more than one axis**, staying pointed at
+   the textured scene. ゆっくり回転, as Phase 6 asked, for longer, and *not only* the yaw that
+   phase asked for: sweep left and right, then tilt the phone up and down, then roll it about
+   the lens axis, and keep mixing the three.
+
+   **This is not a preference, it is what the calibration can and cannot solve.** The gyroscope
+   reports in the phone's frame and Phase 6's poses are in the camera's; the fixed rotation
+   between them is estimated from turns seen by both. A turn about a single axis leaves that
+   rotation undetermined — every further turn *about that same axis* fits the pairs equally
+   well — so `AXIS_SPREAD_FLOOR` refuses a pan outright and nothing fuses. This guide asked for
+   a turn on the spot until 2026-09-21, and the two device runs that reached a fit at all came
+   back with an axis spread of **0.0711** and **0.0291** against a floor of **0.02** — clearing
+   it by 3.6× and by 1.5×, which is as close to refused as a run can be while still being
+   fitted. The third never reached the twelve pairs a fit needs at all. The instruction was the
+   shape the refusal exists for.
+   - Watch **端末 → カメラ**. It reads the pair count against the twelve a fit needs until
+     there are enough of them, then the count with the residual beside it. Once it turns green the extrinsic is known and **モード**
+     can leave `VISION_ONLY`.
+   - If it stays refused with a message about the axis spread, mix the axes harder. If it
+     refuses with a **large residual** instead, that is not something you can fix by moving
+     differently — the two halves of each pair are not the same motion, which is an engine
+     defect. Stop and report it with the bundle.
+   - Under **教えていないバイアスをフィルタは見つけるか？**, *サンプル数* starts counting once
      ten visual updates have been applied — which takes about ten seconds of steady turning,
      because each update spans a second. **This is the panel that carries the phase.**
-   - *Difference recovered* should settle within 1 °/s of 3 °/s, and *Off the injected axis*
+   - *復元できた差* should settle within 1 °/s of 3 °/s, and *仕込んだ軸からのずれ*
      under 25°.
-   - Under **Vision against the gyroscope**, *Prediction was off by* should sit well inside
-     *Tolerance*, and *Exactly zero* should stay at **0**.
+   - Under **視覚とジャイロの突き合わせ**, *予測のずれ* should sit well inside
+     *許容範囲*, and *ちょうどゼロ* should stay at **0**.
 
    Keep turning. The bias estimate improves with the *total time*, and a minute of steady motion
    resolves it far better than three bursts of twenty seconds — an increment cannot be formed
    across a re-anchor, so stopping and starting throws intervals away.
 
 6. **Cover the lens with your thumb for about 4 seconds, while still turning.** Then uncover it.
-   - **Mode** should go to `DEAD_RECKONING` after half a second, and *Propagated for* should
+   - **モード** should go to `DEAD_RECKONING` after half a second, and *外挿の継続時間* should
      count up in milliseconds.
    - The **fused confidence** should fall the whole time and never rise.
-   - Past 3000 ms, **Usable** should read `NO`.
-   - When you uncover the lens, *Reconvergence* records how far the two instruments had drifted
+   - Past 3000 ms, **使用可能** should read `NO`.
+   - When you uncover the lens, *復帰時のずれ* records how far the two instruments had drifted
      apart. A number there is the point — a filter that snapped back silently would be hiding
      the one moment its instruments disagreed most.
 
@@ -110,15 +130,15 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
 
 | Panel | What it should say |
 | --- | --- |
-| **Does the filter find a bias it was not told about?** | *Difference recovered* within 1 °/s of 3 °/s, over 10+ samples |
-| **Does the filter find a bias it was not told about?** | *Off the injected axis* under 25° |
-| **Vision against the gyroscope** | *Prediction was off by* inside *Tolerance*; *Exactly zero* **0** |
-| **Vision against the gyroscope** | *Gravity disagreement* under 10° |
-| **Mode** | `FUSED` for 15+ frames; *Propagated for* non-zero between poses |
-| **Mode** | 15+ open-loop frames, *Longest gap* over 3000 ms, *Usable* `NO` past it |
-| **Position** | `UNAVAILABLE`, *Records with a position* **0**, and a drift figure beside it |
-| **Confidence** | *Fused* at or below *Phase 6's*; *Above its worst term* **0** |
-| **Sensors** | all three channels `ARRIVING`, measured rate recorded |
+| **教えていないバイアスをフィルタは見つけるか？** | *復元できた差* within 1 °/s of 3 °/s, over 10+ samples |
+| **教えていないバイアスをフィルタは見つけるか？** | *仕込んだ軸からのずれ* under 25° |
+| **視覚とジャイロの突き合わせ** | *予測のずれ* inside *許容範囲*; *ちょうどゼロ* **0** |
+| **視覚とジャイロの突き合わせ** | *重力の食い違い* under 10° |
+| **モード** | `FUSED` for 15+ frames; *外挿の継続時間* non-zero between poses |
+| **モード** | 15+ open-loop frames, *最長の途切れ* over 3000 ms, *使用可能* `NO` past it |
+| **位置** | `UNAVAILABLE`, *位置を持つ記録* **0**, and a drift figure beside it |
+| **信頼度（v3 §19、7つの入力すべて）** | *統合後* at or below *Phase 6's*; *最悪の項を上回った回数* **0** |
+| **センサー** | all three channels `受信中`, measured rate recorded |
 
 ### The number that carries the phase
 

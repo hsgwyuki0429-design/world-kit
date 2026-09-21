@@ -29,24 +29,24 @@ missing when it is disabled.
      grayscale the worker built. **Check that it moves when the preview moves.** That is
      the same thing FRAME-002 measures numerically, and it is what the screenshot records.
 4. **Hold it for at least 35 seconds, moving the phone, without leaving Safari.**
-   - *Unstressed run* counts up to 30.0 s. FRAME-001 stays `PENDING` until it fills.
+   - *負荷なしの連続* counts up to 30.0 s. FRAME-001 stays `PENDING` until it fills.
    - Leaving the app stops frame callbacks and fails the window. Repeat rather than excuse.
    - Keep moving: FRAME-002 needs the scene itself to vary, or agreement between the worker
-     and the camera proves nothing. *Δ luma median* should stay near zero while the scene
+     and the camera proves nothing. *輝度差 Δ 中央値* should stay near zero while the scene
      changes — that pairing is the whole point.
 5. **Rotate the phone** once, then back (FRAME-006).
-   - *Source* should change, e.g. 1280×720 → 720×1280, and *Processing* should follow it
+   - *入力* should change, e.g. 1280×720 → 720×1280, and *処理解像度* should follow it
      within a frame.
-6. Tap **INJECT LOAD** (FRAME-003, FRAME-004).
+6. Tap **負荷を注入する** (FRAME-003, FRAME-004).
    - The button is refused with a message until the pipeline has measured its own baseline
      — a few seconds of normal running. That is deliberate: the load level is computed from
      the measured cost of one pyramid build on *this* device rather than being a number
      written into the source.
-   - Watch *Tier* step down: 960×540@30 → 960×540@20 → 640×360@20, each move listed under
-     *Adaptation* with the latency that caused it and the effect it had.
+   - Watch *段* step down: 960×540@30 → 960×540@20 → 640×360@20, each move listed under
+     *適応* with the latency that caused it and the effect it had.
    - Give it about **25 seconds**. FRAME-003 needs a step that lowers the resolution, not
      only the rate.
-7. Tap **STOP INJECTED LOAD** and wait about **30 seconds**.
+7. Tap **負荷の注入を止める** and wait about **30 seconds**.
    - The controller climbs back one step or more. Recovery is deliberately slow — it waits
      out an eight-second cooldown after the last downward step and then needs three
      consecutive windows comfortably inside the next tier's budget.
@@ -75,8 +75,8 @@ upscaled.
 
 | Observation | Meaning |
 | --- | --- |
-| *Paced out* is large | The target rate is below the camera rate, so the scheduler declined those frames. That is the pacing working, not a drop. |
-| *Backpressured* is non-zero | The worker was still busy with the previous frame. Also by design; only *Lost* counts against FRAME-001. |
+| *間引き* is large | The target rate is below the camera rate, so the scheduler declined those frames. That is the pacing working, not a drop. |
+| *詰まりで見送り* is non-zero | The worker was still busy with the previous frame. Also by design; only *消失* counts against FRAME-001. |
 | Delivered fps sits at the target rather than the camera rate | Correct. The pipeline paces to the tier, and the controller judges delivery against whichever of target and camera rate is lower. |
 | Route reads `VIDEO_FRAME` and the other two say "not reached" | The first route worked, so the ladder stopped there. The others are the declared fallbacks. |
 | The tier climbs to `HIGH 1280x720@30` on its own | The device measured itself comfortably inside the budget. `HIGH` is reachable by recovery; it is never entered before the pipeline has measured itself. |
@@ -86,8 +86,8 @@ upscaled.
 
 | Observation | Meaning |
 | --- | --- |
-| *Δ luma median* is not near zero | The worker's image is not the camera's image. This is the one measurement Phase 2 exists to make, and it fails the phase. |
-| *Lost* is more than 2 % of admitted | Frames were handed to the worker and never came back. |
+| *輝度差 Δ 中央値* is not near zero | The worker's image is not the camera's image. This is the one measurement Phase 2 exists to make, and it fails the phase. |
+| *消失* is more than 2 % of admitted | Frames were handed to the worker and never came back. |
 | A downward step with no load injected | The device could not hold its tier unaided. It still passes FRAME-003 — degrading is what the ladder is for — but it is surfaced separately because it means something quite different from a stress-induced step. |
 | The pyramid panel shows a problem | A level's byte length does not match the image it claims to hold. |
 

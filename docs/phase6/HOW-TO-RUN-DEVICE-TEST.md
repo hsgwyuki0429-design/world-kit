@@ -66,38 +66,38 @@ POSE-002 its rotation and POSE-004 its trap.
    is the shape of the two defects Phase 3 shipped in a row (§H.5); this screen is the fourth
    written to avoid it.
 4. Tap **姿勢復元開始** and grant motion access when iOS asks.
-   - Under **Does the pose follow a rotation it was not told about?**, *Samples* starts counting.
+   - Under **教えていない回転に姿勢は追従するか？**, *サンプル数* starts counting.
      **This is the panel that carries the phase.**
-   - If **Gyroscope says** reads "not available", motion access was denied. Reload and grant it.
+   - If **ジャイロの言い分** reads "not available", motion access was denied. Reload and grant it.
 
 5. **Point into the depth in the room and walk slowly sideways for about 45 seconds.** A corner
    where two walls meet, or a doorway with something well beyond it. You want things at clearly
    different distances in the same frame.
-   - *State* reads `POSE` and *Translation* shows a unit vector.
-   - Under **Planar scene handling**, *Non-planar frames posed* counts up. It needs 15.
-   - *In front of both* should stay near 100%, and *Reprojection* under 2 px.
+   - *状態* reads `POSE` and *並進* shows a unit vector.
+   - Under **平面シーンの扱い（v3 §16）**, *姿勢が出た非平面フレーム* counts up. It needs 15.
+   - *両カメラの前方にある点* should stay near 100%, and *再投影誤差* under 2 px.
 
 6. **Point at the flat textured surface and walk sideways past it for about 45 seconds.**
-   - *Planar frames posed* counts up. It needs 15.
-   - *From* should read `HOMOGRAPHY` on these frames — **never `FUNDAMENTAL`**. An Essential
+   - *姿勢が出た平面フレーム* counts up. It needs 15.
+   - *由来* should read `HOMOGRAPHY` on these frames — **never `FUNDAMENTAL`**. An Essential
      matrix decomposed from a plane is degenerate and gives a pose that looks entirely
      reasonable, which is the whole reason v3 §16 exists.
-   - *Translation confidence, planar* should be **below** *...and with depth*. A half is the
+   - Under *並進の信頼度*, the `平面` figure should be **below** the `奥行きあり` one. A half is the
      usual value, and it is not a fudge: a homography leaves two equally supported answers that
      two views cannot separate, so the translation is worth one of two.
-   - *Ambiguous* frames are expected here and are not an error — they are that ambiguity, said
+   - *曖昧* frames are expected here and are not an error — they are that ambiguity, said
      out loud rather than tie-broken.
 
-7. **ゆっくり回転 — turn slowly on the spot for about 45 seconds**, staying pointed at the
+7. **ゆっくり回転** — **turn slowly on the spot for about 45 seconds**, staying pointed at the
    textured scene. **Turning, not stepping.** Pivot around the phone as best you can.
-   - *State* should read `ROTATION_ONLY` and *Translation* should read `none`.
+   - *状態* should read `ROTATION_ONLY` and *並進* should read `none`.
    - **If a translation vector appears while you are turning on the spot, that is the failure
      POSE-004 exists for.** Report it.
-   - *Comparable frames* under the gyroscope panel counts up — it needs 15 — and *Camera says*
-     and *Gyroscope says* should track each other.
+   - *比較できたフレーム* under the gyroscope panel counts up — it needs 15 — and *カメラの言い分*
+     and *ジャイロの言い分* should track each other.
 
 8. **Point at a blank wall for about 15 seconds** and keep moving.
-   - *State* reads `NO_POSE`. Phase 5 declines these frames and Phase 6 must decline them too —
+   - *状態* reads `NO_POSE`. Phase 5 declines these frames and Phase 6 must decline them too —
      not even a rotation.
 
 9. **Go back to the depth scene and walk sideways for another 30 seconds**, so the injection
@@ -112,14 +112,14 @@ POSE-002 its rotation and POSE-004 its trap.
 
 | Panel | What it should say |
 | --- | --- |
-| **Does the pose follow a rotation it was not told about?** | *Pose moved by* within 2° of 8°, *Control moved by* under 1.5°, over 10+ samples |
-| **Does the pose follow a rotation it was not told about?** | *Inlier drift* and *Planar flips* both **0** |
-| **Does the camera agree with the gyroscope?** | *Disagreement* small and green over 15+ comparable frames, ≥ 60% agreeing |
-| **This frame** | *Scale* reads `LOCAL_UNITS`; *State mismatches* **0** |
-| **Planar scene handling** | *Planar via Essential* **0**; planar translation confidence below non-planar |
+| **教えていない回転に姿勢は追従するか？** | *姿勢が動いた角度* within 2° of 8°, *対照群が動いた角度* under 1.5°, over 10+ samples |
+| **教えていない回転に姿勢は追従するか？** | *インライアの変動* and *平面判定の反転* both **0** |
+| **カメラはジャイロと一致しているか？** | *食い違い* small and green over 15+ comparable frames, ≥ 60% agreeing |
+| **このフレーム** | *スケール* reads `LOCAL_UNITS`; *状態の不一致* **0** |
+| **平面シーンの扱い（v3 §16）** | *平面なのに基本行列経由* **0**; planar translation confidence below non-planar |
 | **Camera intrinsics** | `INTRINSICS: ESTIMATED`, with the ±20% sensitivity beside it |
-| **Cost** | *Together* against the 6 ms §H budgets for RANSAC **and** pose recovery as one line |
-| **This frame** | *Overlay matches video* — as in Phases 3–5 |
+| **コスト（§H の予算）** | *合計* against the 6 ms §H budgets for RANSAC **and** pose recovery as one line |
+| **このフレーム** | *重ね描きと映像の一致* — as in Phases 3–5 |
 
 ### The two numbers that carry the phase
 
