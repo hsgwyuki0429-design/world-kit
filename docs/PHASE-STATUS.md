@@ -1315,6 +1315,80 @@ filter go from **0.645** to **0.077**, and the run calibrates.
 entirely, so a `NO_POSE` report with a live re-anchor beside it did not exist in this file.
 `noPoseRate` builds them now, at the device's own 49%.
 
+### 2026-09-21: the calibration returned a rotation it had just measured to be wrong
+
+Two runs on `beaa4fd`, the first build the device had ever loaded carrying the `pendingGyroQ` and
+`reAnchored` corrections. They settle the 2026-09-05 lead and open a new one.
+
+**The corrections work.** The first run
+(`phase7-real-device-TESTING-2026-09-21T10-45-04-445Z.json`) shows the two instruments agreeing
+where they never had:
+
+| | 2026-09-05 | 2026-09-21 |
+| --- | --- | --- |
+| pairs lost to the angle filter | 65 of 111 = **0.586** | 7 of 19 = **0.368** |
+| median camera/gyroscope disagreement | — | **1.4°**, against a 3° band |
+
+The retained comparisons read `visual 10.702° / gyro 10.492°`, `12.020 / 11.795`, `4.596 / 5.002`.
+The interval the two halves span is the same interval at last. That run reached 8 usable pairs of
+the 12 needed and stopped at 35 s of fusion, so it held at `TESTING` on run length alone.
+
+**The second run calibrated, and the calibration was meaningless.**
+`phase7-real-device-FAILED-2026-09-21T12-01-22-284Z.json`:
+
+```
+handEye: calibrated true, pairs 12, axisSpread 0.0711, residualDeg 88.129
+gyroBias: [-10.165, -1.772, -7.758]  →  12.9 °/s
+gravity:  fused against measured, median 23.19°, over the 10° IMU-004 allows
+innovation: median 5.00° against a median visual increment of 2.01°
+```
+
+`residualDeg` is the median angle between `x · n_d` and `n_c` after the fit. At 88.13° the
+estimate carries the device axes essentially orthogonal to their camera partners — which is to
+say nowhere near them. **The field's own doc calls it "the residual a fabricated `x` cannot make
+small".** It was computed, displayed on the screen, recorded in the bundle, and asserted under
+15° by two unit tests — and the engine never compared it against anything. `estimateHandEye`
+returned a rotation it had just measured to be wrong, and the caller fused on it.
+
+Everything downstream is the 2026-08-29 chain again, from a different cause. The bias state
+absorbed the standing disagreement the wrong extrinsic creates and reads 12.9 °/s on a platform
+that already bias-corrects `rotationRate`. The innovation is **larger than the rotation it was
+predicting** — 5.00° against 2.01° — so the filter predicts worse than predicting nothing, the
+same signature as that run's 11.78° against 4.78°. IMU-004 fails on the gravity.
+
+**Why the existing guard did not catch it.** `axisSpread` was 0.0711 against a floor of 0.02, so
+it passed. That test asks whether the turns covered enough of the sphere to *determine* `x`; it
+does not ask whether the `x` that came out *fits*. Only the second question is answerable after
+the solve, and only the residual answers it. A set can clear the spread floor and still admit no
+rotation between the two frames — which is what a phone turned on the spot produces, because the
+axes then agree about how far it went and not about which way.
+
+**The floor sits between two measured populations.** On this file's own fixture, driven through a
+known `x`, twelve seeds each:
+
+| visual noise | median residual | worst of twelve |
+| --- | --- | --- |
+| 0° | 0.00° | 0.00° |
+| 2° — Phase 6's own band | 2.90° | 3.76° |
+| 6° — twice the band | 8.01° | 10.76° |
+| 8° | 10.60° | 14.15° |
+
+and with the camera axes replaced by turns of the same angle about independently drawn axes, so
+that no rotation relates the two sets: **64.5° to 86.6°**. Two axes with nothing relating them
+average 90°, so that second population needs no tolerance to interpret — it is what "no fit
+exists" scores. Anything between 15° and 64° separates the two identically;
+`MAX_HAND_EYE_RESIDUAL_DEG` is 20, which leaves a factor of about three of margin on each side.
+The device's 88.13° is above every meaningless fixture measured.
+
+**No threshold moved.** A refusal was added where a number was already being computed for it, and
+it can only refuse a calibration, never admit one. The refusal carries `residualDeg` now — a
+refusal that does not say how far off it was sends the tester back for another device session to
+find out — and the screen shows it on both paths.
+
+**This is the third Phase 7 device finding that was the engine rather than the instrument**, and
+the second in which a quantity existed to catch something and nothing consulted it. The first was
+`hasImu` meaning two things at once; this one is a check that was never a check.
+
 ### The bundle can name the build it came from
 
 Twice in one day the question that mattered was *which build produced this*, and twice the

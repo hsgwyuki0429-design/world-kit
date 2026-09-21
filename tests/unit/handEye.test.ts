@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { Rng } from '../../src/core/Rng';
 import {
   AXIS_SPREAD_FLOOR,
+  MAX_HAND_EYE_RESIDUAL_DEG,
   MIN_HAND_EYE_PAIRS,
   estimateHandEye,
   rotateByHandEye,
@@ -53,6 +54,28 @@ function pairsThrough(x: Quat, axes: readonly (readonly number[])[], noiseDeg = 
       (rng.next() - 0.5) * 2 * noiseDeg,
     );
     return { device, camera: normalise(multiply(clean, wobble)) };
+  });
+}
+
+/**
+ * Pairs whose two instruments agree about *how far* the phone turned and not about *which way*.
+ *
+ * This is the device's own case rather than an invented one. The 2026-09-21 run's retained
+ * comparisons show the camera and the gyroscope agreeing about the angle of the same turn to a
+ * median of 1.4°, which is what gets a pair past `PAIR_ANGLE_TOLERANCE` — and then produce a fit
+ * whose axes are 88.13° from their partners. Shuffling whole camera quaternions instead would
+ * disturb the angles too, and the pairs would be taken by the angle filter before the fit ever
+ * ran; the first draft of this test did exactly that and proved nothing about the residual.
+ */
+function agreeingAnglesWrongAxes(seed: number): HandEyePair[] {
+  const rng = new Rng(seed);
+  return spreadAxes(40, seed).map((axis) => {
+    const deg = 6 + rng.next() * 18;
+    const device = turn(axis, deg);
+    // Same angle, an axis drawn independently: no single rotation can carry one set onto the
+    // other, and every pair still says the two instruments measured the same amount of turning.
+    const camera = turn([rng.next() - 0.5, rng.next() - 0.5, rng.next() - 0.5], deg);
+    return { device, camera };
   });
 }
 
@@ -130,6 +153,51 @@ describe('what the estimator refuses', () => {
       const throughImposter = normalise(multiply(multiply(imposter, p.device), conjugate(imposter)));
       expect(angleBetweenDeg(throughTruth, throughImposter)).toBeLessThan(1e-6);
     }
+  });
+
+  /**
+   * The check the estimator had and did not use.
+   *
+   * `residualDeg` is the median angle between `x · n_d` and `n_c` after the fit, and the field's
+   * own doc calls it "the residual a fabricated `x` cannot make small". It was computed,
+   * displayed, recorded — and never compared against anything, so `estimateHandEye` returned a
+   * rotation it had just measured to be wrong. The device run of 2026-09-21 reported
+   * `calibrated: true` at a residual of 88.13°, the filter's bias state absorbed the resulting
+   * standing disagreement at 12.9 °/s, and IMU-004 failed on a fused gravity 23.19° from the
+   * measured one.
+   *
+   * The two cases below are the two populations the floor sits between, measured rather than
+   * argued — see `MAX_HAND_EYE_RESIDUAL_DEG`.
+   */
+  it('refuses a fit that does not fit, however well the axes are spread', () => {
+    const out = estimateHandEye(agreeingAnglesWrongAxes(21));
+
+    expect(out.rotation).toBeNull();
+    if (out.rotation) return;
+    // Refused by neither of the two filters that existed before: it cleared both.
+    expect(out.pairs).toBeGreaterThanOrEqual(MIN_HAND_EYE_PAIRS);
+    expect(out.axisSpread).toBeGreaterThan(AXIS_SPREAD_FLOOR);
+    expect(out.rejections.angleDisagrees).toBe(0);
+    // Two axes with nothing relating them average 90°, which is the scale this is read against.
+    expect(out.residualDeg).toBeGreaterThan(45);
+    expect(out.reason).toContain('apart');
+  });
+
+  it('says how far off the fit was, so a refusal can be read without a second device run', () => {
+    const out = estimateHandEye(agreeingAnglesWrongAxes(33));
+    if (out.rotation) throw new Error('expected a refusal');
+    expect(out.reason).toContain(out.residualDeg.toFixed(1));
+    expect(out.reason).toContain(String(MAX_HAND_EYE_RESIDUAL_DEG));
+  });
+
+  it('still admits a genuinely noisy fit — the floor refuses nothing that works', () => {
+    // Twice Phase 6's own 3° agreement band on the visual rotation. The fixture measures a
+    // median residual of about 8° here, and the worst of twelve seeds is 10.76°.
+    const out = estimateHandEye(pairsThrough(trueX, spreadAxes(40, 9), 6.0, 5));
+    expect(out.rotation).not.toBeNull();
+    if (!out.rotation) return;
+    expect(out.residualDeg).toBeLessThan(MAX_HAND_EYE_RESIDUAL_DEG);
+    expect(angleBetweenDeg(out.rotation, trueX)).toBeLessThan(15);
   });
 
   it('refuses before it has enough pairs, rather than fitting four points', () => {

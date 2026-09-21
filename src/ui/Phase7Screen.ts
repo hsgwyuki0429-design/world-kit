@@ -47,6 +47,7 @@ import {
   MAX_PROPAGATION_MS,
   VISUAL_UPDATE_INTERVAL_MS,
 } from '../tracking/FusionStage';
+import { MAX_HAND_EYE_RESIDUAL_DEG, MIN_HAND_EYE_PAIRS } from '../fusion/handEye';
 import type { FusionStats } from '../tracking/fusionStats';
 import { BAD, OK, card, deg, el, stat, vec } from './dom';
 import { evidenceSection, navigationSection, testsSection } from './phaseSections';
@@ -216,7 +217,14 @@ function renderInjection(vm: Phase7ViewModel): HTMLElement {
       stat('仕込んだ方向', vec(s.injectionAxis)),
       stat(
         '端末 → カメラ',
-        s.handEye.calibrated ? `${s.handEye.pairs} 組 · ${deg(s.handEye.residualDeg)}` : null,
+        // The residual is shown on the refusal path too. A refusal that only says "not
+        // calibrated" sends the tester back for another device session to find out how far off
+        // it was; the run of 2026-09-21 needed exactly that number and it was not on the screen.
+        s.handEye.calibrated
+          ? `${s.handEye.pairs} 組 · 残差 ${deg(s.handEye.residualDeg)}`
+          : s.handEye.residualDeg >= 0
+            ? `${s.handEye.pairs} 組 · 残差 ${deg(s.handEye.residualDeg)} — 大きすぎます`
+            : `${s.handEye.pairs} / ${MIN_HAND_EYE_PAIRS} 組`,
         s.handEye.calibrated ? OK : BAD,
       ),
     ]),
@@ -225,8 +233,8 @@ function renderInjection(vm: Phase7ViewModel): HTMLElement {
         ? 'ジャイロは**端末**の座標系で報告し、Phase 6 の姿勢は**カメラ**の座標系にあります。' +
           '両者は固定の回転だけ違っていて、それをこのフェーズが測るまで誰も測っていませんでした。' +
           `いまは ${s.handEye.pairs} 組の回転 — 両方の計測器が見た同じ1回の回転 — から推定して` +
-          `おり、軸の残差の中央値は ${deg(s.handEye.residualDeg)}、軸の広がりは ` +
-          `${s.handEye.axisSpread} です。これが判るまで、何も統合しません。`
+          `おり、軸の残差の中央値は ${deg(s.handEye.residualDeg)}（${MAX_HAND_EYE_RESIDUAL_DEG}° ` +
+          `まで）、軸の広がりは ${s.handEye.axisSpread} です。これが判るまで、何も統合しません。`
         : `**統合していません。** ${s.handEye.reason}。ジャイロは端末の座標系で報告し、` +
           'Phase 6 の姿勢はカメラの座標系にあります。両者のあいだの回転を測るまで、' +
           'それらを正直に合成する方法はありません。恒等回転は中立な既定値ではなく、' +
