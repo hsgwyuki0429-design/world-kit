@@ -2,9 +2,21 @@
 
 One run, about three minutes, on the iPhone in Safari over HTTPS.
 
-**Phases 1–7 have to pass first, in this same session.** The registry starts fresh on every page
-load, so the Phase Lock in front of the KEYFRAME SYSTEM screen is closed until Phase 7 reaches
-`PASSED` on this device now.
+**Phases 1–7 have to have passed on this build — not necessarily in this session.** A phase that
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
+loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
+a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
+the doors are shut again and you do run the chain: a pass is evidence about the code that produced
+it.
+
+**The stages still have to be started, and that is the part that costs you anything.** The lock
+and the pipeline are different things. Walk forward through the screens and tap one control on
+each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`,
+`START VERIFICATION`, `START POSE RECOVERY`, `START FUSION` — using the `GO TO …` buttons, because
+`BACK TO …` stops the stage you came from. The Phase Lock in front of the KEYFRAME SYSTEM screen
+stays closed until Phase 7 has `PASSED` on this device on this build, and each screen's button
+says which of the two things is missing when it is disabled.
 
 What to have ready:
 
@@ -45,7 +57,10 @@ of image motion. The screen shows what it currently reads.
 
 ## The run
 
-1. Get Phases 1–7 to `PASSED` as their own guides describe.
+1. Open the app and walk forward to the KEYFRAME SYSTEM screen, tapping `START CAMERA`,
+   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`,
+   `START POSE RECOVERY`, `START FUSION` on the way. A phase that already passed on this build
+   keeps its door open; one that has not still has to pass here, as its own guide describes.
 2. From the IMU SUPPORT / FUSION screen, tap **GO TO KEYFRAME SYSTEM**. Leave the fusion running
    — Phase 8 adopts the live stack and changes nothing about how a pose is recovered or fused.
 3. **Before tapping anything, check the button says `START KEYFRAMES` and is tappable.**

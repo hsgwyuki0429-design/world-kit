@@ -18,6 +18,7 @@ import type {
   TestResult,
 } from './core/types';
 import { PhaseRegistry, PHASE_NAMES, isPhaseImplemented } from './core/PhaseRegistry';
+import { PhasePassLedger } from './core/PhasePassLedger';
 import { Rng } from './core/Rng';
 import { CapabilityDetector, collectDeviceInfo } from './capture/CapabilityDetector';
 import { probeMotionSensors } from './capture/MotionCapabilityProbe';
@@ -68,6 +69,7 @@ import {
 import type { AlignmentReading } from './debug/OverlayAlignmentProbe';
 import { logger } from './debug/Logger';
 import {
+  BUILD_COMMIT,
   buildEvidenceBundle,
   determineLeg,
   evidenceFilename,
@@ -129,6 +131,13 @@ type Screen =
 class Phase0App {
   private readonly root: HTMLElement;
   private readonly registry = new PhaseRegistry();
+  /**
+   * Passes this device recorded in an earlier page load, on this same build.
+   *
+   * Constructed before anything runs because the Phase Lock it opens has to be open before the
+   * first render, or the tester sees a locked door blink open a moment later.
+   */
+  private readonly passLedger = new PhasePassLedger(BUILD_COMMIT);
   private detector = new CapabilityDetector();
 
   private matrix: CapabilityMatrix | null = null;
@@ -153,7 +162,7 @@ class Phase0App {
   private screen: Screen = 'phase0';
   private readonly camera = new CameraSource();
   private readonly monitor = new FrameIntegrityMonitor();
-  private readonly ledger = new ScenarioLedger(APP_VERSION);
+  private readonly ledger = new ScenarioLedger(APP_VERSION, BUILD_COMMIT);
   private phase1Results: TestResult[] = [];
   private phase1Bundle: EvidenceBundle | null = null;
   private cameraOpening = false;
@@ -333,6 +342,10 @@ class Phase0App {
   }
 
   async start(): Promise<void> {
+    // Before anything else, and before the first render: a door that opens a moment after the
+    // screen appears reads as a Phase Lock misfiring, which is a thing the tester is told to
+    // stop and report.
+    this.restoreCarriedPasses();
     // Registered once, on the source rather than on a track: `CameraSource` keeps its
     // listener set across opens, so subscribing per open would add a listener every time
     // the camera was started and fire the Phase 1 handler from a Phase 2 session.
@@ -347,6 +360,49 @@ class Phase0App {
     });
     this.render();
     await this.detect();
+  }
+
+  /**
+   * Re-open the Phase Lock on passes this device recorded in earlier page loads.
+   *
+   * Ascending, and through `carryOver`, which walks Rule 005's chain itself: a stored pass for
+   * phase 6 with nothing stored for phase 5 is refused rather than stepped over. Every accepted
+   * and every refused pass is logged, because a lock that opens has to be able to say what
+   * opened it — and because a refusal is the more interesting of the two. The commonest one
+   * will be a build that moved: the pass is pinned to the commit that produced it, so the first
+   * load after a deploy carries nothing, which is correct and worth seeing in the log rather
+   * than wondering about on the phone.
+   */
+  private restoreCarriedPasses(): void {
+    const refusal = this.passLedger.refusalReason();
+    if (refusal !== null) {
+      logger.info(PHASE, 'PhasePassLedger', 'no phase pass can be carried into this session', {
+        reason: refusal,
+        buildCommit: BUILD_COMMIT,
+      });
+      return;
+    }
+    const accepted: number[] = [];
+    const refused: { phase: number; why: string }[] = [];
+    for (const pass of this.passLedger.carried()) {
+      if (this.registry.carryOver(pass.phase, pass)) accepted.push(pass.phase);
+      else {
+        refused.push({
+          phase: pass.phase,
+          why:
+            this.registry.blockedReason(pass.phase) ||
+            'the phase already has a verdict in this session, which is better evidence',
+        });
+      }
+    }
+    logger.info(PHASE, 'PhasePassLedger', 'phase passes carried in from earlier page loads', {
+      buildCommit: BUILD_COMMIT,
+      accepted,
+      refused,
+      note:
+        'A carried pass opens the Phase Lock and sets no verdict. Each phase still reports ' +
+        'what this session measured, and still needs a committed real-device bundle (Rule 004).',
+    });
   }
 
   private async detect(): Promise<void> {
@@ -398,6 +454,7 @@ class Phase0App {
     this.render();
 
     const previous = this.registry.get(PHASE).state;
+    const carriedBefore = this.registry.carriedPass(PHASE) !== null;
     const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
 
     this.results = this.runTests(readUiSnapshot());
@@ -425,6 +482,10 @@ class Phase0App {
       this.registry.setState(PHASE, PhaseState.FAILED, reason);
       this.buildEvidence(PhaseState.FAILED, reason);
     }
+
+    this.recordPassOutcome(
+      PHASE, settled.state, leg, settled.reason, settled.passCount, carriedBefore,
+    );
 
     const next = this.registry.get(PHASE).state;
     if (previous !== next) {
@@ -566,6 +627,7 @@ class Phase0App {
       phase0: this.registry.get(0),
       phase1: this.registry.get(1),
       canEnterPhase1: this.registry.canEnter(1),
+      phase1LockNote: this.registry.lockNote(1),
       matrix: this.matrix,
       results: this.results,
       device: this.device,
@@ -589,6 +651,7 @@ class Phase0App {
           canEnterPhase11: this.registry.canEnter(PHASE11),
           phase11Implemented: isPhaseImplemented(PHASE11),
           phase11BlockedReason: this.registry.blockedReason(PHASE11),
+          phase11LockNote: this.registry.lockNote(PHASE11),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -619,6 +682,7 @@ class Phase0App {
           canEnterPhase10: this.registry.canEnter(PHASE10),
           phase10Implemented: isPhaseImplemented(PHASE10),
           phase10BlockedReason: this.registry.blockedReason(PHASE10),
+          phase10LockNote: this.registry.lockNote(PHASE10),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -649,6 +713,7 @@ class Phase0App {
           canEnterPhase9: this.registry.canEnter(PHASE9),
           phase9Implemented: isPhaseImplemented(PHASE9),
           phase9BlockedReason: this.registry.blockedReason(PHASE9),
+          phase9LockNote: this.registry.lockNote(PHASE9),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -679,6 +744,7 @@ class Phase0App {
           canEnterPhase8: this.registry.canEnter(PHASE8),
           phase8Implemented: isPhaseImplemented(PHASE8),
           phase8BlockedReason: this.registry.blockedReason(PHASE8),
+          phase8LockNote: this.registry.lockNote(PHASE8),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -710,6 +776,7 @@ class Phase0App {
           canEnterPhase7: this.registry.canEnter(PHASE7),
           phase7Implemented: isPhaseImplemented(PHASE7),
           phase7BlockedReason: this.registry.blockedReason(PHASE7),
+          phase7LockNote: this.registry.lockNote(PHASE7),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -748,6 +815,7 @@ class Phase0App {
           canEnterPhase6: this.registry.canEnter(PHASE6),
           phase6Implemented: isPhaseImplemented(PHASE6),
           phase6BlockedReason: this.registry.blockedReason(PHASE6),
+          phase6LockNote: this.registry.lockNote(PHASE6),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -784,6 +852,7 @@ class Phase0App {
           canEnterPhase5: this.registry.canEnter(PHASE5),
           phase5Implemented: isPhaseImplemented(PHASE5),
           phase5BlockedReason: this.registry.blockedReason(PHASE5),
+          phase5LockNote: this.registry.lockNote(PHASE5),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -821,6 +890,7 @@ class Phase0App {
           canEnterPhase4: this.registry.canEnter(PHASE4),
           phase4Implemented: isPhaseImplemented(PHASE4),
           phase4BlockedReason: this.registry.blockedReason(PHASE4),
+          phase4LockNote: this.registry.lockNote(PHASE4),
           cameraState: this.camera.getState(),
           trackLive: this.camera.isLive(),
           opening: this.cameraOpening,
@@ -866,6 +936,7 @@ class Phase0App {
           canEnterPhase3: this.registry.canEnter(PHASE3),
           phase3Implemented: isPhaseImplemented(PHASE3),
           phase3BlockedReason: this.registry.blockedReason(PHASE3),
+          phase3LockNote: this.registry.lockNote(PHASE3),
         },
         {
           onStartCamera: () => void this.onStartPipeline(),
@@ -897,6 +968,7 @@ class Phase0App {
           canEnterPhase2: this.registry.canEnter(PHASE2),
           phase2Implemented: isPhaseImplemented(PHASE2),
           phase2BlockedReason: this.registry.blockedReason(PHASE2),
+          phase2LockNote: this.registry.lockNote(PHASE2),
         },
         {
           onStartCamera: () => void this.onStartCamera(),
@@ -1099,6 +1171,44 @@ class Phase0App {
   }
 
   /**
+   * Keep the cross-run ledger in step with what this session decided about a phase.
+   *
+   * Only two outcomes touch it, and the asymmetry is the point. A PASS is offered to the ledger,
+   * which stores it only if it is a real-device one (Rule 004 — nothing else is a pass). A FAIL
+   * erases whatever was stored, because a phase that fails now did not pass earlier in any sense
+   * that should open a door, and a record left behind would re-open it on the next reload.
+   * `TESTING` does neither: it says this session has not finished measuring, which is not news
+   * about an earlier run.
+   */
+  private recordPassOutcome(
+    index: number,
+    state: PhaseState,
+    leg: EvidenceLeg,
+    reason: string,
+    passCount: number,
+    carriedBefore: boolean,
+  ): void {
+    if (state === PhaseState.PASSED) this.passLedger.record(index, leg, reason, passCount);
+    else if (state === PhaseState.FAILED) {
+      this.passLedger.forget(index);
+      // Loudly, because of what it costs: dropping a carried pass re-locks every phase after
+      // this one, so a tester who was three screens further on is suddenly back at a closed
+      // door, and the reason has to be findable rather than inferred from the doors moving.
+      // `carriedBefore` is read by the caller before the verdict is applied — `setState` drops
+      // the carried pass itself, so by the time this runs the registry has forgotten there was
+      // one.
+      if (carriedBefore) {
+        logger.warn(index, 'PhasePassLedger', 'a carried-over pass was dropped by a FAIL here', {
+          reason,
+          consequence:
+            'every phase after this one is locked again, and this phase has to pass on the ' +
+            'device once more before they re-open',
+        });
+      }
+    }
+  }
+
+  /**
    * Grade a phase's results, record the verdict, and rebuild its evidence bundle.
    *
    * Seven copies of this said the same thing. **Nothing here decides anything**: the verdict
@@ -1116,9 +1226,13 @@ class Phase0App {
     buildEvidence: (verdict: PhaseState, reason: string) => void,
   ): void {
     const previous = this.registry.get(index).state;
+    const carriedBefore = this.registry.carriedPass(index) !== null;
     const leg = this.leg?.leg ?? EvidenceLeg.DESKTOP_DEV;
     const evaluation = PhaseRegistry.evaluate(results, leg);
     this.registry.applyEvaluation(index, evaluation);
+    this.recordPassOutcome(
+      index, evaluation.state, leg, evaluation.reason, evaluation.passCount, carriedBefore,
+    );
     const next = this.registry.get(index).state;
     if (previous !== next) {
       logger.info(index, 'App', `phase ${index}: ${previous} -> ${next}`, {

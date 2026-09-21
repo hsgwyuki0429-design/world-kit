@@ -2,10 +2,20 @@
 
 One run, about four minutes, on the iPhone in Safari over HTTPS.
 
-**Phases 1–4 have to pass first, in this same session.** The registry starts fresh on every page
-load, so the Phase Lock in front of the GEOMETRIC VERIFICATION screen is closed until Phase 4
-reaches `PASSED` on this device now. Each screen's button says which phase is missing when it is
-disabled.
+**Phases 1–4 have to have passed on this build — not necessarily in this session.** A phase that
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
+loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
+a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
+the doors are shut again and you do run the chain: a pass is evidence about the code that produced
+it.
+
+**The stages still have to be started, and that is the part that costs you anything.** The lock
+and the pipeline are different things. Walk forward through the screens and tap one control on
+each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING` — using the `GO TO …`
+buttons, because `BACK TO …` stops the stage you came from. The Phase Lock in front of the
+GEOMETRIC VERIFICATION screen stays closed until Phase 4 has `PASSED` on this device on this
+build, and each screen's button says which of the two things is missing when it is disabled.
 
 What Phase 5 needs from the room is different from what Phase 4 needed, and it is the reason
 this run has a shape of its own:
@@ -47,7 +57,10 @@ refused and says so.
 
 ## The run
 
-1. Get Phases 1–4 to `PASSED` as their own guides describe.
+1. Open the app and walk forward to the GEOMETRIC VERIFICATION screen, tapping `START CAMERA`,
+   `START PIPELINE`, `START DETECTION`, `START TRACKING` on the way. A phase that already passed
+   on this build keeps its door open; one that has not still has to pass here, as its own guide
+   describes.
 2. From the TRACKING screen, tap **GO TO GEOMETRIC VERIFICATION**. Leave tracking running —
    Phase 5 adopts the live tracker rather than restarting anything, and turns off any injected
    load.

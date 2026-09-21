@@ -11,6 +11,15 @@
  * false` and shown with the age and origin of what it rests on, and the repository's gate
  * (`tests/unit/committedEvidence.test.ts`) ignores the ledger entirely — it requires
  * committed bundles that observed each scenario directly. Convenience here; proof there.
+ *
+ * **The build pin was inert until Phase 7.** `get` has always refused an observation from a
+ * different build, and has never once refused one: it compared `appVersion`, which is
+ * `package.json`'s and has read `0.1.0` since Phase 0. A guard that cannot fire is not a guard,
+ * and this one was carrying an observation about one engine onto the screen of another — the
+ * failure this project has already paid for, when a stalled deploy left a phone measuring
+ * week-old instruments. It compares `buildCommit` as well now, which does change per build.
+ * A stored observation from before this change has no commit to pin and is dropped, which
+ * costs one tester one repeat of the two permission scenarios.
  */
 
 import { describeError, toJsonSafe } from '../core/validate';
@@ -25,6 +34,8 @@ export interface ScenarioObservation {
   readonly at: number;
   readonly origin: string;
   readonly appVersion: string;
+  /** The commit the observing build came from — the pin `appVersion` could not be. */
+  readonly buildCommit: string;
   readonly detail: string;
 }
 
@@ -36,11 +47,13 @@ export interface LedgerEntry extends ScenarioObservation {
 
 export class ScenarioLedger {
   private readonly appVersion: string;
+  private readonly buildCommit: string;
   private readonly thisRun = new Map<PermissionScenario, ScenarioObservation>();
   private loadError: string | null = null;
 
-  constructor(appVersion: string) {
+  constructor(appVersion: string, buildCommit: string) {
     this.appVersion = appVersion;
+    this.buildCommit = buildCommit;
   }
 
   /** Record something actually seen in this run, and persist it for the next one. */
@@ -50,6 +63,7 @@ export class ScenarioLedger {
       at: Date.now(),
       origin: location.origin,
       appVersion: this.appVersion,
+      buildCommit: this.buildCommit,
       detail,
     };
     this.thisRun.set(scenario, obs);
@@ -61,7 +75,9 @@ export class ScenarioLedger {
    *
    * Stored observations are ignored unless they come from the same build and the same
    * origin: a result carried over from a different version of the code is evidence about
-   * that version, not this one.
+   * that version, not this one. `buildCommit` is what makes that check able to fire — and a
+   * build that cannot name itself carries nothing, because `unknown` matches `unknown` across
+   * arbitrarily different builds.
    */
   get(scenario: PermissionScenario): LedgerEntry | null {
     const direct = this.thisRun.get(scenario);
@@ -70,6 +86,8 @@ export class ScenarioLedger {
     const stored = this.readStored()[scenario];
     if (!stored) return null;
     if (stored.appVersion !== this.appVersion) return null;
+    if (stored.buildCommit !== this.buildCommit) return null;
+    if (this.buildCommit === 'unknown' || this.buildCommit.length === 0) return null;
     if (stored.origin !== location.origin) return null;
     return { ...stored, observedDirectly: false, ageMs: Date.now() - stored.at };
   }
@@ -117,6 +135,7 @@ export class ScenarioLedger {
     return toJsonSafe({
       storageKey: STORAGE_KEY,
       appVersion: this.appVersion,
+      buildCommit: this.buildCommit,
       granted: this.get('GRANTED'),
       denied: this.get('DENIED'),
       storageError: this.loadError,
@@ -137,6 +156,7 @@ function isObservation(v: unknown): v is ScenarioObservation {
     Number.isFinite(o['at']) &&
     typeof o['origin'] === 'string' &&
     typeof o['appVersion'] === 'string' &&
+    typeof o['buildCommit'] === 'string' &&
     typeof o['detail'] === 'string'
   );
 }

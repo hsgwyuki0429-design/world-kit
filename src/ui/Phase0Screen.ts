@@ -27,6 +27,8 @@ export interface Phase0ViewModel {
   readonly phase0: PhaseInfo;
   readonly phase1: PhaseInfo;
   readonly canEnterPhase1: boolean;
+  /** Why an open lock is open, when an earlier page load opened it (`PhaseRegistry.lockNote`). */
+  readonly phase1LockNote: string;
   readonly matrix: CapabilityMatrix | null;
   readonly results: readonly TestResult[];
   readonly device: DeviceInfo | null;
@@ -65,6 +67,7 @@ const GROUP_ORDER: CapabilityGroup[] = [
 export function startScanState(
   canEnterPhase1: boolean,
   phase0: PhaseInfo,
+  lockNote = '',
 ): { disabled: boolean; label: string; note: string } {
   const implemented = isPhaseImplemented(1);
   if (!canEnterPhase1) {
@@ -86,7 +89,10 @@ export function startScanState(
         'opening a screen that cannot do anything.',
     };
   }
-  return { disabled: false, label: 'START SCAN', note: '' };
+  // Open, and normally with nothing to add. The exception is a lock opened by a pass this
+  // device recorded in an earlier page load: Phase 0 then reads TESTING beside an enterable
+  // control, which is what a Phase Lock failing open would also look like (Rule 002).
+  return { disabled: false, label: 'START SCAN', note: lockNote };
 }
 
 export function renderPhase0Screen(
@@ -117,7 +123,7 @@ export function renderPhase0Screen(
 }
 
 function renderPrimary(vm: Phase0ViewModel, handlers: Phase0Handlers): HTMLElement {
-  const scan = startScanState(vm.canEnterPhase1, vm.phase0);
+  const scan = startScanState(vm.canEnterPhase1, vm.phase0, vm.phase1LockNote);
   const button = el('button', {
     class: 'primary',
     id: 'start-scan',

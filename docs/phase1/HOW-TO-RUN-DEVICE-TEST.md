@@ -4,8 +4,10 @@ Phase 1 needs **two runs**, because the granted and denied permission paths cann
 happen in one session and neither may be inferred from the other. Together they take about
 three minutes.
 
-Open the published site on the iPhone in Safari, exactly as for Phase 0. Phase 0 must
-already read `PASSED` on the device, or the START SCAN control stays locked.
+Open the published site on the iPhone in Safari, exactly as for Phase 0. Phase 0 must have passed
+on this device on this build, or the START SCAN control stays locked — a pass from an earlier page
+load counts, which is what lets these two runs be two page loads rather than two of everything
+(see [`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md)).
 
 ---
 

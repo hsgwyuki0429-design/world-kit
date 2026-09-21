@@ -1335,6 +1335,52 @@ the other for a denied one, and this run reports IMU-002 `PENDING` for the right
 with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
 Phase 1 did — see its row, which passed *across two runs covering both permission scenarios*.
 
+### 2026-09-21: the Phase Lock was asking for something Rule 005 does not say
+
+Four device attempts at Phase 7, and every one of them cost six phases that had already passed on
+the same phone. `PhaseRegistry` is constructed fresh on every page load, so `canEnter(N)` was
+reading *"phase N-1 is PASSED right now, in this session"* — and the second half of that sentence
+is not in Rule 005. The bill for it was about twenty minutes of held motion before Phase 9 could
+be reached at all, forfeited by a reload, a backgrounded tab, or a Phase 7 run that ended
+`TESTING`, which is what a run that is diagnosing something ends as.
+
+Re-passing Phase 4 for the ninth time makes Phase 7's evidence rarer, not better. So a pass now
+carries across page loads: `PhasePassLedger` stores it, `PhaseRegistry.carryOver` hands it to the
+lock on the next load, and `docs/PHASE-LOCK-CARRY-OVER.md` is the whole account.
+
+**It carries a lock, not a verdict**, and every property that matters follows from that one line.
+A carried phase reads `NOT_STARTED`, then whatever this session measures. No test result moves,
+no `overallVerdict` moves, and `committedEvidence.test.ts` keeps re-deriving each bundle's verdict
+from its own results — so the thing a carry-over cannot do is put a pass into a file. What it
+does put into every bundle the session exports is the carry-over itself, as a `stateTransitions`
+entry naming the build, the origin, the age and the words *this session has not re-measured it*.
+
+The five refusals are where the design lives, and each has a test rather than a paragraph:
+
+| Refused | Why |
+| --- | --- |
+| a different build | a pass is evidence about the code that produced it |
+| a build that cannot name itself | `unknown` matches `unknown`, so a pin that accepts it is not a pin |
+| a different origin | same reasoning, different axis |
+| anything but a `REAL_DEVICE` PASS | Rule 004 — nothing else was a pass |
+| a gap in the chain | Rule 005 is a chain; `canEnter` walks it rather than reading one slot |
+
+A FAIL in this session drops the stored pass outright. `TESTING` does not, and that asymmetry is
+the one judgement call in the change: `TESTING` means *this session has not finished measuring*,
+which is not news about an earlier run — and treating it as a contradiction would revoke the
+carry-over the instant the tester started the stack the next phase needs, which is every time.
+
+**The fix found a second inert guard on the way.** `ScenarioLedger` has refused a carried-over
+permission observation from a different build since Phase 1, and had never once refused one: it
+compared `appVersion`, which is `package.json`'s `0.1.0`. It compares `buildCommit` now. A guard
+that cannot fire is not a guard, and this one had been quietly showing an observation about one
+engine on the screen of another.
+
+**What the carry-over does not do is start the stages.** The lock and the pipeline are different
+things: Phase 7 fuses what the live stack produces, so camera, pipeline, detector, tracker,
+verifier and pose still have to be running when the screen opens. That is one tap per screen on
+the way forward, and the guides now say so in place of "get Phases 1–6 to PASSED first".
+
 ### The first automated leg in this project that decides a required test
 
 v3 §68's pass condition for this phase is unusual among the per-phase tables in being about

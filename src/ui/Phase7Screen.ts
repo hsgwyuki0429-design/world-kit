@@ -57,6 +57,8 @@ export interface Phase7ViewModel {
   readonly canEnterPhase8: boolean;
   readonly phase8Implemented: boolean;
   readonly phase8BlockedReason: string;
+  /** Why an open lock is open, when an earlier page load opened it (`PhaseRegistry.lockNote`). */
+  readonly phase8LockNote: string;
   readonly cameraState: CameraState;
   /** The camera is delivering — which is NOT whether fusion is running (§H.5). */
   readonly trackLive: boolean;
@@ -128,6 +130,7 @@ export function renderPhase7Screen(
         canEnter: vm.canEnterPhase8,
         implemented: vm.phase8Implemented,
         blockedReason: vm.phase8BlockedReason,
+        lockNote: vm.phase8LockNote,
         onClick: handlers.onEnterPhase8,
       },
     ),

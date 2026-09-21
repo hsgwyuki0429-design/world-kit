@@ -2,9 +2,20 @@
 
 One run, about five minutes, on the iPhone in Safari over HTTPS.
 
-**Phases 1–5 have to pass first, in this same session.** The registry starts fresh on every page
-load, so the Phase Lock in front of the RELATIVE POSE screen is closed until Phase 5 reaches
-`PASSED` on this device now.
+**Phases 1–5 have to have passed on this build — not necessarily in this session.** A phase that
+reached `PASSED` on this phone, on the build the page is serving, keeps its door open across page
+loads, so you do not re-run them to get here. See
+[`docs/PHASE-LOCK-CARRY-OVER.md`](../PHASE-LOCK-CARRY-OVER.md) for what that carries — a lock, not
+a verdict — and what it refuses. If the build has moved since, a deploy or a reload onto new code,
+the doors are shut again and you do run the chain: a pass is evidence about the code that produced
+it.
+
+**The stages still have to be started, and that is the part that costs you anything.** The lock
+and the pipeline are different things. Walk forward through the screens and tap one control on
+each — `START CAMERA`, `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION`
+— using the `GO TO …` buttons, because `BACK TO …` stops the stage you came from. The Phase Lock
+in front of the RELATIVE POSE screen stays closed until Phase 5 has `PASSED` on this device on
+this build, and each screen's button says which of the two things is missing when it is disabled.
 
 **Grant motion access when iOS asks.** Phase 6 cannot pass without it, and the reason is worth
 knowing before you start rather than after: **POSE-002 is the only test in this phase that
@@ -42,7 +53,10 @@ POSE-002 its rotation and POSE-004 its trap.
 
 ## The run
 
-1. Get Phases 1–5 to `PASSED` as their own guides describe.
+1. Open the app and walk forward to the RELATIVE POSE screen, tapping `START CAMERA`,
+   `START PIPELINE`, `START DETECTION`, `START TRACKING`, `START VERIFICATION` on the way. A phase
+   that already passed on this build keeps its door open; one that has not still has to pass here,
+   as its own guide describes.
 2. From the GEOMETRIC VERIFICATION screen, tap **GO TO RELATIVE POSE**. Leave verification
    running — Phase 6 adopts the live verifier and its anchor rather than restarting anything.
 3. **Before tapping anything, check the button says `START POSE RECOVERY` and is tappable.**

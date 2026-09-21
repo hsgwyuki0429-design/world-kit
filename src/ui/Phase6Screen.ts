@@ -61,6 +61,8 @@ export interface Phase6ViewModel {
   readonly canEnterPhase7: boolean;
   readonly phase7Implemented: boolean;
   readonly phase7BlockedReason: string;
+  /** Why an open lock is open, when an earlier page load opened it (`PhaseRegistry.lockNote`). */
+  readonly phase7LockNote: string;
   readonly cameraState: CameraState;
   /** The camera is delivering — which is NOT whether pose recovery is running (§H.5). */
   readonly trackLive: boolean;
@@ -186,6 +188,7 @@ export function renderPhase6Screen(
         canEnter: vm.canEnterPhase7,
         implemented: vm.phase7Implemented,
         blockedReason: vm.phase7BlockedReason,
+        lockNote: vm.phase7LockNote,
         onClick: handlers.onEnterPhase7,
       },
     ),

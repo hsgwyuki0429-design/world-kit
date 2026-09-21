@@ -41,6 +41,8 @@ export interface Phase1ViewModel {
   readonly canEnterPhase2: boolean;
   readonly phase2Implemented: boolean;
   readonly phase2BlockedReason: string;
+  /** Why an open lock is open, when an earlier page load opened it (`PhaseRegistry.lockNote`). */
+  readonly phase2LockNote: string;
 }
 
 export interface Phase1Handlers {
@@ -89,6 +91,7 @@ export function renderPhase1Screen(
         canEnter: vm.canEnterPhase2,
         implemented: vm.phase2Implemented,
         blockedReason: vm.phase2BlockedReason,
+        lockNote: vm.phase2LockNote,
         onClick: handlers.onEnterPhase2,
       },
     ),

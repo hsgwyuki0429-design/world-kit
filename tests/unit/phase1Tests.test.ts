@@ -48,7 +48,8 @@ function stats(over: Partial<FrameStats> = {}): FrameStats {
 function entry(over: Partial<LedgerEntry> = {}): LedgerEntry {
   return {
     scenario: 'GRANTED', at: Date.now(), origin: 'https://example.test',
-    appVersion: '0.1.0', detail: 'detail', observedDirectly: true, ageMs: 0,
+    appVersion: '0.1.0', buildCommit: 'af28a62', detail: 'detail',
+    observedDirectly: true, ageMs: 0,
     ...over,
   };
 }
