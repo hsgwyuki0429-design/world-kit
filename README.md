@@ -179,9 +179,10 @@ These are results, not pending work, and they are not softened anywhere in the U
   the phase.
 - **Phase Lock is code.** `PhaseRegistry` refuses entry to phase N+1 until N has `PASSED`,
   and a regression re-locks everything downstream.
-- **The UI cannot outrun the engine.** START SCAN is disabled and states *which* of the two
-  reasons applies — Phase Lock, or Phase 1 simply not being written yet. `CAP-0011` reads
-  the live DOM and fails if the control and the registry disagree.
+- **The UI cannot outrun the engine.** The start control is disabled and states *which* of
+  the two reasons applies — Phase Lock, or Phase 1 simply not being written yet. `CAP-0011`
+  reads the live DOM and fails if the control and the registry disagree. The interface is in
+  Japanese; the words it is checked against live in `src/core/controlLabels.ts`.
 - **`Math.random` is banned in `src/`** and enforced by `scripts/audit-fake-data.mjs`, along
   with time-driven coverage, time-driven confidence and hard-coded floor/wall geometry. A
   seeded `Rng` exists for the sampling RANSAC will legitimately need.
