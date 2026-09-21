@@ -104,6 +104,36 @@ export const MIN_HAND_EYE_PAIRS = 12;
  */
 export const AXIS_SPREAD_FLOOR = 0.02;
 
+/**
+ * The largest median axis residual a fit may have and still be offered, in degrees.
+ *
+ * `residualDeg` was computed, displayed, recorded and never once consulted. Its own doc below
+ * says it is "the residual a fabricated `x` cannot make small" — a description of a check — and
+ * nothing checked it. The device run of 2026-09-21 returned `calibrated: true` on a fit whose own
+ * measured residual was **88.13°**: the estimate carried the device axes essentially orthogonal
+ * to their camera partners, which is to say nowhere near them.
+ *
+ * The floor sits in a gap between two measured populations rather than at a number anyone chose.
+ * On this file's own fixture, driven through a known `x`, twelve seeds each:
+ *
+ * | visual noise | median residual | worst of twelve |
+ * | --- | --- | --- |
+ * | 0° | 0.00° | 0.00° |
+ * | 2° (Phase 6's band) | 2.90° | 3.76° |
+ * | 6° (twice the band) | 8.01° | 10.76° |
+ * | 8° | 10.60° | 14.15° |
+ *
+ * and with the camera axes shuffled so no rotation relates the two sets at all: **64.5° to
+ * 86.6°**. Two axes drawn without any relationship are 90° apart on average, so that second
+ * population is not a measurement of a bad fit — it is what "no fit exists" scores, and it needs
+ * no tolerance to interpret. Anything between 15° and 64° separates the two identically; 20° is
+ * taken because it leaves a factor of about three of margin on each side, and both sides are
+ * measured rather than argued.
+ *
+ * This is the stricter direction: it can only refuse a calibration, never admit one.
+ */
+export const MAX_HAND_EYE_RESIDUAL_DEG = 20;
+
 /** One interval, seen by both instruments. */
 export interface HandEyePair {
   /** The gyroscope's net rotation over the interval, in the device frame. */
@@ -165,6 +195,14 @@ export interface HandEyeRefusal {
   readonly rotation: null;
   readonly pairs: number;
   readonly axisSpread: number;
+  /**
+   * The residual of the fit that was refused, or `-1` where the refusal came before a fit.
+   *
+   * A refusal that does not carry the number it refused on cannot be read from a phone. The
+   * 2026-09-21 device run refused nothing and shipped an 88° fit; the run after it needs to be
+   * able to say "refused, and here is how far off it was" without a second device session.
+   */
+  readonly residualDeg: number;
   readonly reason: string;
   /** Which filter took the pairs that did not contribute. */
   readonly rejections: HandEyeRejections;
@@ -245,6 +283,7 @@ export function estimateHandEye(
       rotation: null,
       pairs: axes.length,
       axisSpread: 0,
+      residualDeg: -1,
       rejections,
       // Which filter took the rest, in the reason itself: a run that stalls here is read from a
       // phone, and "below the 12 this needs" alone does not say what to do differently.
@@ -273,6 +312,7 @@ export function estimateHandEye(
       rotation: null,
       pairs: axes.length,
       axisSpread: 0,
+      residualDeg: -1,
       rejections,
       reason: 'no weighted axes',
     };
@@ -286,6 +326,7 @@ export function estimateHandEye(
       rotation: null,
       pairs: axes.length,
       axisSpread,
+      residualDeg: -1,
       rejections,
       reason:
         `the turns share an axis — spread ${axisSpread.toFixed(4)} against the ` +
@@ -333,6 +374,26 @@ export function estimateHandEye(
   const residuals = axes.map((a) => angleBetweenAxesDeg(rotateVector(rotation, a.device), a.camera));
   residuals.sort((p, q) => p - q);
   const residualDeg = residuals[Math.floor(residuals.length / 2)] ?? -1;
+
+  // The fit has to fit. `axisSpread` asked whether these turns *could* determine `x`; this asks
+  // whether the `x` that came out actually carries the device axes onto their camera partners,
+  // and only the second question is answerable after the solve. A set can clear the spread floor
+  // and still admit no rotation between the two frames — that is what the device produced.
+  if (residualDeg > MAX_HAND_EYE_RESIDUAL_DEG) {
+    return {
+      rotation: null,
+      pairs: axes.length,
+      axisSpread,
+      residualDeg,
+      rejections,
+      reason:
+        `the best fit over ${axes.length} pairs still leaves the axes ` +
+        `${residualDeg.toFixed(1)}° apart, against the ${MAX_HAND_EYE_RESIDUAL_DEG}° a fit may ` +
+        'have — two unrelated axes average 90°, so this one relates the frames barely more than ' +
+        'chance would. The turns agreed about how far the phone went and not about which way: ' +
+        'turn about different axes rather than spinning on the spot — mix yaw with pitch and roll',
+    };
+  }
 
   return { rotation, pairs: axes.length, axisSpread, residualDeg, rejections };
 }
@@ -389,6 +450,7 @@ export const NO_HAND_EYE: HandEyeRefusal = {
   rotation: null,
   pairs: 0,
   axisSpread: 0,
+  residualDeg: -1,
   rejections: NO_REJECTIONS,
   reason: 'no rotation pairs have been offered yet',
 };
