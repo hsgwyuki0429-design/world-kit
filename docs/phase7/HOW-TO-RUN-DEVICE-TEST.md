@@ -73,8 +73,8 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
    - If **モード** stays `VISION_ONLY` and **センサー** reads `来ていません`, motion access was denied.
      Reload and grant it — the run will otherwise decide only IMU-002.
 
-5. **Turn slowly for about 90 seconds, and turn about more than one axis**, staying pointed at
-   the textured scene. ゆっくり回転, as Phase 6 asked, for longer, and *not only* the yaw that
+5. **Turn for about four minutes, about more than one axis, and never stop moving**, staying
+   pointed at the textured scene. ゆっくり回転, as Phase 6 asked, for longer, and *not only* the yaw that
    phase asked for: sweep left and right, then tilt the phone up and down, then roll it about
    the lens axis, and keep mixing the three.
 
@@ -88,9 +88,33 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
    it by 3.6× and by 1.5×, which is as close to refused as a run can be while still being
    fitted. The third never reached the twelve pairs a fit needs at all. The instruction was the
    shape the refusal exists for.
+
+   **Why four minutes rather than ninety seconds.** A pair is one second of turning with Phase
+   5's verification anchor holding across the whole of it, and that anchor is re-taken far more
+   often than once a second: the run of 2026-09-22 re-anchored **384 times in under three
+   minutes**, a mean anchor life of about half a second, so most seconds are cut in half and
+   thrown away. It offered **15 pairs in 128 seconds of fusion** — one per eight and a half
+   seconds, against the one per second the interval would suggest — and 7 of them survived the
+   angle filters, against the 12 a fit needs. At that rate twelve usable pairs takes between
+   three and four minutes of continuous motion. Nothing is wrong when the count climbs slowly;
+   it climbs slowly.
+
+   **Keep each second worth about 5° to 15°.** Both filters that reject a pair are about the
+   size of the turn in it, and they squeeze from opposite sides:
+   - Under 1° in a second and the turn carries no axis at all — `MIN_PAIR_ROTATION_DEG`. Four of
+     that run's fifteen went this way, which is what a pause looks like in this record.
+   - The two halves must agree about the angle to within **25 %** — `PAIR_ANGLE_TOLERANCE`, a
+     *relative* test, which is far harsher on a small turn than POSE-002's 3° floor: a 2° turn
+     has to agree within half a degree, while a 10° turn is allowed two and a half. Another four
+     went this way, on a run whose camera and gyroscope agreed to a median of **0.71°** — so
+     they were not disagreeing instruments, they were turns too small for the fraction.
+
+   So: continuous, unhurried, and definitely turning — not a sweep followed by a pause, and not
+   a flick. A flick also costs the anchor, which costs the whole second.
+
    - Watch **端末 → カメラ**. It reads the pair count against the twelve a fit needs until
-     there are enough of them, then the count with the residual beside it. Once it turns green the extrinsic is known and **モード**
-     can leave `VISION_ONLY`.
+     there are enough of them, then the count with the residual beside it. Once it turns green
+     the extrinsic is known and **モード** can leave `VISION_ONLY`.
    - If it stays refused with a message about the axis spread, mix the axes harder. If it
      refuses with a **large residual** instead, that is not something you can fix by moving
      differently — the two halves of each pair are not the same motion, which is an engine
