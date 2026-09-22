@@ -187,6 +187,12 @@ export interface HandEyeEstimate {
    * `x` cannot make small: it is measured against axes the estimator was not free to choose.
    */
   readonly residualDeg: number;
+  /**
+   * The same fit with the camera axes negated — the parity probe, and never something to fuse
+   * through. Smaller than `residualDeg` means the two frames are related by a reflection rather
+   * than a rotation, which is an engine defect on one side or the other. `-1` before a fit.
+   */
+  readonly mirroredResidualDeg: number;
   /** Which filter took the pairs that did not contribute. */
   readonly rejections: HandEyeRejections;
 }
@@ -203,6 +209,8 @@ export interface HandEyeRefusal {
    * able to say "refused, and here is how far off it was" without a second device session.
    */
   readonly residualDeg: number;
+  /** The parity probe — see `HandEyeEstimate`. `-1` where no fit was attempted. */
+  readonly mirroredResidualDeg: number;
   readonly reason: string;
   /** Which filter took the pairs that did not contribute. */
   readonly rejections: HandEyeRejections;
@@ -284,6 +292,7 @@ export function estimateHandEye(
       pairs: axes.length,
       axisSpread: 0,
       residualDeg: -1,
+      mirroredResidualDeg: -1,
       rejections,
       // Which filter took the rest, in the reason itself: a run that stalls here is read from a
       // phone, and "below the 12 this needs" alone does not say what to do differently.
@@ -313,6 +322,7 @@ export function estimateHandEye(
       pairs: axes.length,
       axisSpread: 0,
       residualDeg: -1,
+      mirroredResidualDeg: -1,
       rejections,
       reason: 'no weighted axes',
     };
@@ -327,6 +337,7 @@ export function estimateHandEye(
       pairs: axes.length,
       axisSpread,
       residualDeg: -1,
+      mirroredResidualDeg: -1,
       rejections,
       reason:
         `the turns share an axis — spread ${axisSpread.toFixed(4)} against the ` +
@@ -335,14 +346,104 @@ export function estimateHandEye(
     };
   }
 
-  // Wahba's problem, by Davenport's q-method. B is the weighted correlation of the two axis
-  // sets; K is the symmetric 4×4 whose largest eigenvector is the quaternion that carries the
-  // device axes onto the camera ones.
+  const fit = fitAxes(axes, 1);
+  const rotation = fit.rotation;
+  const residualDeg = fit.residualDeg;
+
+  // **And the same fit against the camera axes negated** — the parity probe.
+  //
+  // Nothing here can use a mirrored fit: `−R` is not a rotation and there is no honest way to
+  // fuse through one. What it is, is the one measurement that separates the two ways a large
+  // residual can happen, which a device run of 2026-09-22 left undecided for a whole session.
+  //
+  // If the two halves are one motion seen twice in two frames related by a rotation, the
+  // proper fit is small. If the two frames are related by a *reflection* — one side's axis sign
+  // inverted, one component negated, an image delivered with its rows flipped — then no
+  // rotation fits, every angle still agrees (a reflection preserves the angle of a rotation),
+  // and the *mirrored* fit is the small one. And if neither is small, the pairs are not one
+  // motion at all: the two halves span different intervals.
+  //
+  // So the number below turns "96° and we do not know why" into one of three named causes, and
+  // costs one more 4×4 eigendecomposition on at most 240 pairs.
+  const mirroredResidualDeg = fitAxes(axes, -1).residualDeg;
+
+  // The fit has to fit. `axisSpread` asked whether these turns *could* determine `x`; this asks
+  // whether the `x` that came out actually carries the device axes onto their camera partners,
+  // and only the second question is answerable after the solve. A set can clear the spread floor
+  // and still admit no rotation between the two frames — that is what the device produced.
+  if (residualDeg > MAX_HAND_EYE_RESIDUAL_DEG) {
+    // Which of the three causes it is, from the probe rather than from a guess. The wording
+    // matters: the first two are this engine's to fix and the third is the only one a tester
+    // can affect, and a refusal that blamed the tester for the first cost a device session on
+    // 2026-09-21.
+    const mirroredFits = mirroredResidualDeg <= MAX_HAND_EYE_RESIDUAL_DEG;
+    const cause = mirroredFits
+      ? `the same pairs fit to ${mirroredResidualDeg.toFixed(1)}° with the camera axes ` +
+        'negated, so the two frames are related by a **reflection**, not a rotation — one ' +
+        "side's axis sign is inverted (a sensor axis, or an image delivered mirrored). No " +
+        'rotation can fit that and none is invented here'
+      : `negating the camera axes leaves ${mirroredResidualDeg.toFixed(1)}°, so this is not a ` +
+        'reflection either: the two halves are not the same motion. Either they span different ' +
+        'intervals, or one of them is not the rotation it is labelled as';
+    return {
+      rotation: null,
+      pairs: axes.length,
+      axisSpread,
+      residualDeg,
+      mirroredResidualDeg,
+      rejections,
+      // **What this refusal must not say is "move differently".**
+      //
+      // It said exactly that until 2026-09-21, and it cost a device session: the tester was
+      // told to mix the axes when the pairs were being built wrong by this engine. The advice
+      // also contradicts what was measured for `MAX_HAND_EYE_RESIDUAL_DEG` — a set too
+      // collinear to determine `x` is refused by `axisSpread` *before* a fit is attempted, and
+      // the moment the spread clears that floor a correct correspondence fits to about 2.6°,
+      // at Phase 6's own visual noise. There is no way of holding the phone that produces a
+      // large residual out of pairs that are one motion seen twice.
+      reason:
+        `the best fit over ${axes.length} pairs still leaves the axes ` +
+        `${residualDeg.toFixed(1)}° apart, against the ${MAX_HAND_EYE_RESIDUAL_DEG}° a fit may ` +
+        'have — two unrelated axes average 90°, so this one relates the frames barely more than ' +
+        `chance would. The axes cleared the spread floor (${axisSpread.toFixed(4)}), so the ` +
+        `turns did carry enough information to determine the rotation. ${cause}. Export this ` +
+        'bundle and report it — a different way of moving the phone cannot change any of this',
+    };
+  }
+
+  return {
+    rotation,
+    pairs: axes.length,
+    axisSpread,
+    residualDeg,
+    mirroredResidualDeg,
+    rejections,
+  };
+}
+
+/**
+ * Wahba's problem over the axis pairs, by Davenport's q-method.
+ *
+ * `B` is the weighted correlation of the two axis sets; `K` is the symmetric 4×4 whose largest
+ * eigenvector is the quaternion carrying the device axes onto the camera ones. `symmetricEigen`
+ * is the same Jacobi routine Phase 5's eight-point solver uses.
+ *
+ * `cameraSign` is `+1` for the fit that can be used and `−1` for the parity probe, which asks
+ * the same question of the camera axes negated. The probe exists because a reflection between
+ * the two frames produces a large residual *and* perfect angle agreement, so no other
+ * instrument in the project can see one.
+ */
+function fitAxes(axes: readonly AxisPair[], cameraSign: 1 | -1): {
+  readonly rotation: Quat;
+  readonly residualDeg: number;
+} {
   const b = new Array<number>(9).fill(0);
   for (const a of axes) {
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
-        b[i * 3 + j] = (b[i * 3 + j] ?? 0) + a.weightDeg * (a.camera[i] ?? 0) * (a.device[j] ?? 0);
+        b[i * 3 + j] =
+          (b[i * 3 + j] ?? 0) +
+          a.weightDeg * cameraSign * (a.camera[i] ?? 0) * (a.device[j] ?? 0);
       }
     }
   }
@@ -370,45 +471,14 @@ export function estimateHandEye(
   // `symmetricEigen` returns ascending, so the largest is last — the maximum of Wahba's gain.
   const v = kEig.vectors[3] ?? [1, 0, 0, 0];
   const rotation = normalise([v[0] ?? 1, v[1] ?? 0, v[2] ?? 0, v[3] ?? 0] as Quat);
-
-  const residuals = axes.map((a) => angleBetweenAxesDeg(rotateVector(rotation, a.device), a.camera));
+  const residuals = axes.map((a) =>
+    angleBetweenAxesDeg(
+      rotateVector(rotation, a.device),
+      a.camera.map((c) => cameraSign * c),
+    ),
+  );
   residuals.sort((p, q) => p - q);
-  const residualDeg = residuals[Math.floor(residuals.length / 2)] ?? -1;
-
-  // The fit has to fit. `axisSpread` asked whether these turns *could* determine `x`; this asks
-  // whether the `x` that came out actually carries the device axes onto their camera partners,
-  // and only the second question is answerable after the solve. A set can clear the spread floor
-  // and still admit no rotation between the two frames — that is what the device produced.
-  if (residualDeg > MAX_HAND_EYE_RESIDUAL_DEG) {
-    return {
-      rotation: null,
-      pairs: axes.length,
-      axisSpread,
-      residualDeg,
-      rejections,
-      // **What this refusal must not say is "move differently".**
-      //
-      // It said exactly that until 2026-09-21, and it cost a device session: the tester was
-      // told to mix the axes when the pairs were being built wrong by this engine. The advice
-      // also contradicts what was measured for `MAX_HAND_EYE_RESIDUAL_DEG` — a set too
-      // collinear to determine `x` is refused by `axisSpread` *before* a fit is attempted, and
-      // the moment the spread clears that floor a correct correspondence fits to about 2.6°,
-      // at Phase 6's own visual noise. There is no way of holding the phone that produces a
-      // large residual out of pairs that are one motion seen twice. A large residual means the
-      // two halves are *not* one motion — which is the engine's fault, not the tester's, and
-      // the defect found on that date (the visual pose entering inverted) was exactly that.
-      reason:
-        `the best fit over ${axes.length} pairs still leaves the axes ` +
-        `${residualDeg.toFixed(1)}° apart, against the ${MAX_HAND_EYE_RESIDUAL_DEG}° a fit may ` +
-        'have — two unrelated axes average 90°, so this one relates the frames barely more than ' +
-        'chance would. The axes cleared the spread floor, so the turns did carry enough ' +
-        'information to determine the rotation and no rotation fits them: the gyroscope’s half ' +
-        'and the camera’s half of these pairs are not the same motion. That is not something a ' +
-        'different way of moving the phone can fix — export this bundle and report it',
-    };
-  }
-
-  return { rotation, pairs: axes.length, axisSpread, residualDeg, rejections };
+  return { rotation, residualDeg: residuals[Math.floor(residuals.length / 2)] ?? -1 };
 }
 
 /**
@@ -464,6 +534,7 @@ export const NO_HAND_EYE: HandEyeRefusal = {
   pairs: 0,
   axisSpread: 0,
   residualDeg: -1,
+  mirroredResidualDeg: -1,
   rejections: NO_REJECTIONS,
   reason: 'no rotation pairs have been offered yet',
 };

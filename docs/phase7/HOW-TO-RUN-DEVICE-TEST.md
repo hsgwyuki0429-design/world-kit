@@ -115,10 +115,14 @@ resulting drift is on the screen. A refusal with a number behind it is a finding
    - Watch **端末 → カメラ**. It reads the pair count against the twelve a fit needs until
      there are enough of them, then the count with the residual beside it. Once it turns green
      the extrinsic is known and **モード** can leave `VISION_ONLY`.
-   - If it stays refused with a message about the axis spread, mix the axes harder. If it
-     refuses with a **large residual** instead, that is not something you can fix by moving
-     differently — the two halves of each pair are not the same motion, which is an engine
-     defect. Stop and report it with the bundle.
+   - If it stays refused with a message about the axis spread, mix the axes harder.
+   - If it refuses with a **large residual** instead, nothing you do with the phone can change
+     it, and the screen now says which of the two engine-side causes it is: the footnote refits
+     the same pairs with the axes reversed and prints both numbers. *Reversed fits better* means
+     the two frames are related by a mirror rather than a rotation — one side's axis sign is
+     inverted. *Neither fits* means the two halves are not the same motion. Either way: export
+     the bundle and report it. It now carries the last 24 pairs as axes and angles, so the next
+     question can be answered from the file rather than from another session on the phone.
    - Under **教えていないバイアスをフィルタは見つけるか？**, *サンプル数* starts counting once
      ten visual updates have been applied — which takes about ten seconds of steady turning,
      because each update spans a second. **This is the panel that carries the phase.**

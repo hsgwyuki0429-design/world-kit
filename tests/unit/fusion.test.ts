@@ -963,6 +963,8 @@ function passThroughRun(o: { deadReckoner?: boolean } = {}): Run {
         pairs: 40,
         axisSpread: 0.3,
         residualDeg: 0.5,
+        mirroredResidualDeg: 88,
+        samples: [],
         reason: 'measured from paired rotations',
         uncalibratedSamples: 0,
         rejections: { offered: 40, tooSmall: 0, tooLarge: 0, angleDisagrees: 0, noAxis: 0 },

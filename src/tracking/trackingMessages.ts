@@ -435,6 +435,14 @@ export interface HandEyeReport {
   readonly pairs: number;
   readonly axisSpread: number;
   readonly residualDeg: number;
+  /**
+   * The same fit with the camera axes negated, or `-1` where no fit ran — the parity probe.
+   *
+   * Never a rotation to fuse through: it says which of the two engine-side causes of a large
+   * residual this is. Smaller than `residualDeg` means the two frames are related by a
+   * reflection rather than a rotation; both large means the halves are not the same motion.
+   */
+  readonly mirroredResidualDeg: number;
   readonly reason: string;
   /** IMU samples that arrived before the extrinsic was known and so were not fused. */
   readonly uncalibratedSamples: number;
@@ -444,6 +452,29 @@ export interface HandEyeReport {
    * `pairs` alone cannot say why a run stalled — see `fusion/handEye.ts`'s `HandEyeRejections`.
    */
   readonly rejections: HandEyeRejections;
+  /**
+   * The last few pairs as the fit sees them — two axes and two angles each.
+   *
+   * A bundle that refuses at 96° and carries only the summary cannot be re-analysed: every
+   * question about *which* half is wrong needs the pairs themselves, and each one costs another
+   * device session to ask. Eight numbers per pair, bounded, and no sensor data beyond what the
+   * calibration already reduced them to.
+   */
+  readonly samples: readonly HandEyePairRecord[];
+}
+
+/** One offered pair, reduced to what a reader can re-fit offline. */
+export interface HandEyePairRecord {
+  /** Interval the pair spans, ms since the run began. */
+  readonly from: number;
+  readonly to: number;
+  readonly deviceDeg: number;
+  readonly cameraDeg: number;
+  /** Unit axes in each instrument's own frame, rounded to four places. */
+  readonly deviceAxis: readonly number[];
+  readonly cameraAxis: readonly number[];
+  /** Empty when the pair was used, or the filter that took it. */
+  readonly rejected: string;
 }
 
 export interface FusionReport {

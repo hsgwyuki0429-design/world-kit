@@ -59,14 +59,23 @@ import {
   conjugate,
   fromRotationVector,
   normalise,
+  toRotationVector,
+  unit,
 } from '../fusion/quat';
 import type { Quat } from '../fusion/quat';
-import { MIN_HAND_EYE_PAIRS, NO_HAND_EYE, estimateHandEye, rotateByHandEye } from '../fusion/handEye';
+import {
+  MIN_HAND_EYE_PAIRS,
+  NO_HAND_EYE,
+  axisPairFrom,
+  estimateHandEye,
+  rotateByHandEye,
+} from '../fusion/handEye';
 import type { HandEyeEstimate, HandEyePair, HandEyeRefusal } from '../fusion/handEye';
 import { PoseState } from '../geometry/pose';
 import type {
   ConfidenceTermRecord,
   FusionReport,
+  HandEyePairRecord,
   ImuSample,
   PoseReport,
 } from './trackingMessages';
@@ -168,6 +177,16 @@ export const MAX_HAND_EYE_PAIRS = 240;
 /** How many new pairs must arrive before the 4×4 eigenproblem is solved again. */
 export const HAND_EYE_RESOLVE_EVERY = 10;
 
+/**
+ * How many pairs travel in the report as axes and angles, for a reader holding only the bundle.
+ *
+ * Twenty-four is two runs' worth of the 12 a fit needs — enough to refit offline and to try the
+ * questions a summary cannot answer (is one side reflected, is the pairing offset by an
+ * interval) without spending a device session on each one. Bounded because a report is written
+ * on every frame.
+ */
+export const RECORDED_PAIRS = 24;
+
 export class FusionStage {
   private readonly main = new OrientationEkf();
   /** IMU-005's twin: the same everything, with a known bias added to the gyroscope. */
@@ -193,6 +212,7 @@ export class FusionStage {
   private pendingGyroQ: Quat = IDENTITY;
   private readonly handEyePairs: HandEyePair[] = [];
   private handEye: HandEyeEstimate | HandEyeRefusal = NO_HAND_EYE;
+  private readonly pairRecords: HandEyePairRecord[] = [];
   /** Pair count at the last solve, so the estimate is not re-solved on every visual update. */
   private handEyeSolvedAt = 0;
   /** IMU samples that arrived while the extrinsic was still unknown and so were not fused. */
@@ -294,6 +314,37 @@ export class FusionStage {
    * update, because Davenport's method is a 4×4 eigenproblem and the answer does not move
    * measurably for one more pair out of a hundred.
    */
+  /**
+   * Keep the last few pairs as two axes and two angles, for a reader with only the bundle.
+   *
+   * The refusal already says *that* no rotation fits and, since the parity probe, *which kind*
+   * of wrongness it is. What it cannot say is which of the two instruments is the wrong one —
+   * and answering that from a summary line costs another device session per question asked.
+   * These are the numbers the fit itself works from, so anything the fit could have concluded
+   * can be re-derived offline: refit them, negate one side, shift the pairing by an interval.
+   *
+   * Bounded at `RECORDED_PAIRS`, and no more revealing than the calibration's own inputs: a
+   * rotation axis and an angle over an interval this bundle already reports.
+   */
+  private recordPair(device: Quat, camera: Quat, at: number): void {
+    const from = this.pendingSince >= 0 ? this.pendingSince : at;
+    const axes = axisPairFrom({ device, camera });
+    const axisOf = (q: Quat): number[] => {
+      const v = unit(toRotationVector(q));
+      return v ? v.map((c) => round(c, 4)) : [0, 0, 0];
+    };
+    this.pairRecords.push({
+      from: round(from, 1),
+      to: round(at, 1),
+      deviceDeg: round(angleDeg(device), 3),
+      cameraDeg: round(angleDeg(camera), 3),
+      deviceAxis: axisOf(device),
+      cameraAxis: axisOf(camera),
+      rejected: 'rejected' in axes ? axes.rejected : '',
+    });
+    while (this.pairRecords.length > RECORDED_PAIRS) this.pairRecords.shift();
+  }
+
   private solveHandEyeIfDue(): void {
     const n = this.handEyePairs.length;
     if (n < MIN_HAND_EYE_PAIRS) return;
@@ -529,6 +580,7 @@ export class FusionStage {
       // what IMU-002 forbids. The pair is still worth keeping — while the extrinsic is unknown
       // this is the *only* path by which it becomes known, and the filter is uninitialised
       // precisely because it is unknown.
+      this.recordPair(this.pendingGyroQ, this.pendingQ, at);
       this.handEyePairs.push({ device: this.pendingGyroQ, camera: this.pendingQ });
       while (this.handEyePairs.length > MAX_HAND_EYE_PAIRS) this.handEyePairs.shift();
       this.pendingGyroQ = IDENTITY;
@@ -543,6 +595,7 @@ export class FusionStage {
     // One interval, seen twice: by the gyroscope in the device's frame and by Phase 6 in the
     // camera's. The pair is offered to the calibration whether or not the filter is running,
     // because until it *has* run the filter is not running for want of this.
+    this.recordPair(this.pendingGyroQ, increment, at);
     this.handEyePairs.push({ device: this.pendingGyroQ, camera: increment });
     while (this.handEyePairs.length > MAX_HAND_EYE_PAIRS) this.handEyePairs.shift();
     this.pendingGyroQ = IDENTITY;
@@ -680,6 +733,11 @@ export class FusionStage {
         // what to do differently — which is what the device run of 2026-09-05 did for eleven
         // minutes.
         rejections: this.handEye.rejections,
+        mirroredResidualDeg:
+          'mirroredResidualDeg' in this.handEye
+            ? round(this.handEye.mirroredResidualDeg, 3)
+            : -1,
+        samples: this.pairRecords.map((p) => ({ ...p })),
       },
       imuConsistency: imuTerm ? imuTerm.value : -1,
       confidence: overall,

@@ -242,6 +242,26 @@ function renderInjection(vm: Phase7ViewModel): HTMLElement {
           `較正のために読んだサンプルは ${s.handEye.uncalibratedSamples} 件で、` +
           'いずれも姿勢には使っていません。',
     ]),
+    // The parity probe, on the screen, because a 96° refusal that does not name its cause sends
+    // the tester back for another session to find out — which is what 2026-09-22 cost. A
+    // reflection and two different motions look identical in every other number this phase
+    // reports, and neither is something the tester can fix by moving differently.
+    ...(s.handEye.residualDeg > MAX_HAND_EYE_RESIDUAL_DEG && s.handEye.mirroredResidualDeg >= 0
+      ? [
+          el('p', { class: 'footnote' }, [
+            `軸を反転させて同じ当てはめをすると残差は ${deg(s.handEye.mirroredResidualDeg)} です` +
+              `（そのままだと ${deg(s.handEye.residualDeg)}）。` +
+              (s.handEye.mirroredResidualDeg <= MAX_HAND_EYE_RESIDUAL_DEG
+                ? '**反転させたほうが合う** — 2つの座標系は回転ではなく**鏡像**の関係にあり、' +
+                  'どちらか一方の軸の符号が逆です。回転では絶対に合わせられないので、' +
+                  'これはエンジンの欠陥です。**動かし方では直りません。** ' +
+                  'このバンドルを書き出して報告してください。'
+                : '**どちらも合いません** — 鏡像でもないということは、ペアの両側が' +
+                  '同じ運動ではありません（別の区間を測っている、など）。' +
+                  'これもエンジンの欠陥です。バンドルを書き出して報告してください。'),
+          ]),
+        ]
+      : []),
     el('p', { class: 'footnote' }, [
       `同じ視覚姿勢と同じジャイロの上で、2つのフィルタを走らせます。片方には、見せる前に` +
         `すべてのサンプルに一定の ${GYRO_BIAS_INJECTION_DPS} °/s を足しておきます。` +
