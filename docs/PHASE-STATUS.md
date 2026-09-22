@@ -1409,6 +1409,96 @@ the other for a denied one, and this run reports IMU-002 `PENDING` for the right
 with a live gyroscope cannot decide it*. Phase 7 therefore needs two device bundles, the way
 Phase 1 did — see its row, which passed *across two runs covering both permission scenarios*.
 
+### 2026-09-22 (2): the inversion was not the whole of it, and the refusal could not say what was
+
+`phase7-real-device-TESTING-2026-09-22T03-43-52-276Z.json`, on `66664bc`. The guide's new
+instruction worked — four minutes of mixed-axis turning produced **32 pairs offered, 14 usable**
+and an axis spread of **0.1801**, six times the previous run's and nine times the floor — so for
+the first time on this build a fit actually ran. It came back at **96.4°**.
+
+```
+handEye: pairs 14 of 32 | axisSpread 0.1801 | residualDeg 96.442
+POSE-002: median disagreement 0.55°, agreement 0.99
+reAnchors 172, mode VISION_ONLY, fusedFrames 0
+```
+
+**So the inverted-pose fix did not cure the device.** It was a real defect — the convention was
+wrong against `recoverPose` and the unit fixture proved it — but it was not this one. Both
+orderings have now been measured on a phone: `conj(prev) ⊗ now` gave 99.5° and `now ⊗ conj(prev)`
+gives 96.4°.
+
+**That pair of results is itself the finding.** The two orderings differ by a conjugation, and if
+either had been right the residual would have been small. Both landing in the nineties says the
+mismatch is not *which way round* the composition goes. What survives is a quantity no rotation
+can absorb: a **reflection** between the two frames — a negated sensor axis, one component with
+the wrong sign, an image delivered mirrored — which preserves the angle of every rotation, so
+`PAIR_ANGLE_TOLERANCE` passes it, POSE-002 agrees to 0.55°, and only a fit over the axes sees it.
+The other survivor is that the two halves span different intervals, which a smoothly turning
+phone would also hide from an angle test.
+
+Those two call for opposite fixes and nothing in the bundle could tell them apart, so the
+instrument now can:
+
+- **The parity probe.** `estimateHandEye` fits the same axes a second time with the camera set
+  negated. It can only ever refuse — `−R` is not a rotation and nothing fuses through the
+  mirrored fit — and the number separates the two causes in one reading: mirrored small means a
+  reflection, both large means the halves are not one motion. On the fixture, correct pairs give
+  2.6° proper against **>60°** mirrored, and pairs with one side inverted give the reverse.
+- **The refusal names the cause** instead of saying only that no rotation fitted, and says in
+  both branches that moving the phone differently cannot change it. The screen prints both
+  numbers under the tile.
+- **The bundle carries the last 24 pairs** as two axes, two angles and the interval they span —
+  `RECORDED_PAIRS`. Every remaining question about *which* half is wrong (refit it, negate one
+  side, shift the pairing by an interval) is now answerable from the file. Each such question
+  had been costing a device session.
+
+No threshold moved, and no calibration was admitted that would not have been admitted before.
+
+### 2026-09-22: the corrections hold, and the pairs are being starved
+
+`phase7-real-device-TESTING-2026-09-22T02-56-40-928Z.json`, on `66664bc` — the first build
+carrying the inverted-pose fix. Nothing in it contradicts that fix, and nothing in it exercises
+it either: the calibration never ran, because it was handed 7 usable pairs of the 12 it needs.
+
+```
+handEye: calibrated false | pairs 7 of 15 offered | axisSpread 0 | residualDeg -1
+rejections: tooSmall 4, angleDisagrees 4, tooLarge 0, noAxis 0
+mode VISION_ONLY, fusionFrames 2035, fusedFrames 0
+POSE-002: visual 6.009° / gyro 6.212°, median disagreement 0.71°, agreement 0.9325
+```
+
+**The supply, not the quality.** A pair is one second of turning with Phase 5's anchor holding
+across the whole of it. This run **re-anchored 384 times** over about 176 s of verification — a
+mean anchor life near half a second — so most one-second intervals are cut before they close. It
+offered **15 pairs in 128 s of fusion**, one per 8.5 s against the one per second the interval
+implies, and an exponential anchor life with that mean puts about 11 % of epochs past a second,
+which is the same order. The instrument is not broken; it is being asked for twelve samples of
+something that arrives every eight seconds, in ninety seconds.
+
+**Why the eight that were offered and rejected were rejected, and what it says.** Four carried
+under 1° in their second (`MIN_PAIR_ROTATION_DEG`) — a pause. The other four failed
+`PAIR_ANGLE_TOLERANCE`, which is **relative**: 25 % of the turn. On a run where the camera and
+the gyroscope agreed about the same turn to a median of **0.71°**, a rejection for disagreement
+is not two instruments disagreeing — it is a turn small enough that 25 % of it is less than the
+noise. A 2° turn must agree within 0.5°; a 10° turn is allowed 2.5°. The remedy is a larger turn
+per second, not a steadier hand.
+
+So the guide now asks for **four minutes of continuous motion at roughly 5–15° per second**,
+with the arithmetic in it, rather than ninety seconds. No threshold moved, and none should: the
+angle filters are what make a pair worth fitting, and the interval is what makes the increment
+large enough to carry an axis.
+
+**What is still unknown.** Whether the inverted-pose fix produces a small residual on a device.
+`residualDeg` is `-1` here because no fit was attempted, so the question the last three runs
+raised is still open, and the next run is the one that answers it.
+
+**The option not taken.** A pair is discarded whenever its epoch ends before 1000 ms, and the
+epochs are short for reasons Phase 5 owns. Forming a pair from a shorter epoch — keeping every
+angle filter exactly as it is, since duration is not what makes a pair trustworthy — would
+multiply the supply several-fold. That is a change to what the instrument accepts, on a phase
+that is trying to pass, which is the shape this project refuses to make on its own initiative.
+It is recorded here, and it waits for a run that shows four minutes is not enough.
+
 ### 2026-09-21: an audit of the app against itself
 
 Four contradictions, found by reading the app against its own documents rather than by a device

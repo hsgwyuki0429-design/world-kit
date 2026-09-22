@@ -221,3 +221,59 @@ describe('what the estimator refuses', () => {
     expect(angleBetweenDeg(out.rotation, trueX)).toBeLessThan(3);
   });
 });
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The parity probe — which of the three causes of a large residual this is.
+ *
+ * A device run on 2026-09-22 refused at **96.4°** with the axes well spread (0.1801) and the
+ * camera and gyroscope agreeing about the same turn to a median of **0.55°**. The refusal could
+ * say that no rotation fitted; it could not say *why*, and the two live explanations call for
+ * opposite fixes. Either the two frames are related by a reflection — a negated sensor axis, an
+ * image delivered mirrored — in which case no rotation exists to be found and the angles agree
+ * anyway, because a reflection preserves the angle of a rotation. Or the two halves are not the
+ * same motion, in which case they span different intervals.
+ *
+ * Fitting the same axes with the camera set negated separates them in one number, and it can
+ * only ever refuse: `−R` is not a rotation and nothing fuses through the mirrored fit.
+ */
+describe('the parity probe — a reflection is not a rotation', () => {
+  const trueX = normalise(multiply(turn([0, 0, 1], 90), turn([1, 0, 0], 180)));
+
+  it('says a correct correspondence is not mirrored', () => {
+    const out = estimateHandEye(pairsThrough(trueX, spreadAxes(30), 2));
+    expect(out.rotation).not.toBeNull();
+    expect(out.residualDeg).toBeLessThan(MAX_HAND_EYE_RESIDUAL_DEG);
+    // The mirrored fit of data that really is related by a rotation is hopeless, which is what
+    // makes the probe a discriminator rather than a coin toss.
+    expect(out.mirroredResidualDeg).toBeGreaterThan(60);
+  });
+
+  it('names a reflection when one side’s axes are negated', () => {
+    // Every camera half inverted: same angle, axis reversed — exactly what a negated sensor
+    // axis triple or a mirrored image produces, and what `PAIR_ANGLE_TOLERANCE` cannot see.
+    const mirrored = pairsThrough(trueX, spreadAxes(30), 2).map((p) => ({
+      device: p.device,
+      camera: conjugate(p.camera),
+    }));
+    const out = estimateHandEye(mirrored);
+    expect(out.rotation).toBeNull();
+    if (out.rotation) return;
+    expect(out.residualDeg).toBeGreaterThan(MAX_HAND_EYE_RESIDUAL_DEG);
+    expect(out.mirroredResidualDeg).toBeLessThan(MAX_HAND_EYE_RESIDUAL_DEG);
+    expect(out.reason).toContain('reflection');
+    // ...and it never suggests moving the phone differently, which is the mistake this
+    // message was written to stop making.
+    expect(out.reason).not.toMatch(/mix|different axes|spinning/);
+  });
+
+  it('says it is not a reflection either when the halves are different motions', () => {
+    const out = estimateHandEye(agreeingAnglesWrongAxes(0x5150));
+    expect(out.rotation).toBeNull();
+    if (out.rotation) return;
+    expect(out.residualDeg).toBeGreaterThan(MAX_HAND_EYE_RESIDUAL_DEG);
+    expect(out.mirroredResidualDeg).toBeGreaterThan(MAX_HAND_EYE_RESIDUAL_DEG);
+    expect(out.reason).toContain('not the same motion');
+  });
+});
