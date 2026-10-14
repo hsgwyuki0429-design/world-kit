@@ -26,6 +26,32 @@
  *    project them through its own code path and say whether what it draws lands where the
  *    tracker sees it (VIEW-001).
  *
+ * ## When a track breaks: re-linking
+ *
+ * A landmark is known to the map only by the id of the track that made it. On a phone in a hand,
+ * tracks break all the time — a blur, an occlusion, a glance away — and the point comes back as a
+ * new detection with a new id that no landmark has. Left alone, the map's landmarks fall out of
+ * view one broken track at a time until fewer than `MIN_LOCALIZATION_INLIERS` remain, and the
+ * pose is lost although the camera is looking at the mapped room. So:
+ *
+ *  - **On a localized frame**, every live point that is not a landmark is checked against the
+ *    landmarks no live point carries, projected through the accepted pose. A point within
+ *    `RELINK_RADIUS_PX` of exactly one of them — the next nearest at least twice as far and past
+ *    the radius, and no other point claiming the same landmark — is a candidate, and becomes that
+ *    landmark when it has been the same landmark's candidate on `RELINK_CONFIRM_FRAMES`
+ *    consecutive localized frames. Points the map never held are most of what a tracker follows,
+ *    and one of them lands near *some* landmark's projection by chance a few times in a hundred;
+ *    a chance alignment of points at different depths comes apart as soon as the camera moves.
+ *  - **On a frame with too few**, the same search runs through the last accepted pose, after
+ *    voting for the image shift between the projections and the points (`RECOVERY_SEARCH_PX`):
+ *    a turn of the camera moves the whole image, so the true pairs agree on one shift and chance
+ *    pairs scatter. The pose is then solved and held to **every** bar a normal frame is, and only
+ *    pairs within `INLIER_PX` of the accepted pose are kept.
+ *
+ * The pairs are handed to the tracker (`FlowTracker.relabel`), so from the next frame on the
+ * point carries the landmark's id to every stage — this one, the keyframes, and the map's
+ * registration, whose shared landmarks are what keeps the map from being redefined.
+ *
  * No DOM and no worker globals — only `performance.now()`, which exists in both.
  */
 
@@ -33,7 +59,7 @@ import { intrinsicsFor } from '../geometry/intrinsics';
 import type { Intrinsics } from '../geometry/intrinsics';
 import { multiply3x3, transpose3x3 } from '../geometry/linalg';
 import { rotationAngleDeg } from '../geometry/rotation';
-import { OUTLIER_PX, cameraCenter, refinePose, transformPoint } from '../geometry/pnp';
+import { INLIER_PX, OUTLIER_PX, cameraCenter, refinePose, transformPoint } from '../geometry/pnp';
 import type { CameraPose, PnpCorrespondence, PnpResult } from '../geometry/pnp';
 import type { KeyframePose, Landmark } from '../mapping/landmarks';
 import { LandmarkState } from '../mapping/landmarks';
@@ -67,6 +93,20 @@ const PROJECTION_SAMPLES = 24;
 const SUPPORT_SATURATION = 60;
 /** Image spread at which the distribution term saturates, as a fraction of the shorter edge. */
 const SPREAD_SATURATION = 0.35;
+/**
+ * How near a live point must sit to a landmark's projection, through an accepted pose, to be
+ * re-linked to it: the band an accepted pose's median must be inside.
+ */
+export const RELINK_RADIUS_PX = MAX_LOCALIZATION_MEDIAN_PX;
+/** Consecutive localized frames a candidate re-link must hold before the point takes the landmark's id. */
+export const RELINK_CONFIRM_FRAMES = 3;
+/**
+ * How far the image may have moved since the last accepted pose for recovery to find it: about
+ * ten degrees of turn at this field of view. Past it, recovery waits for the camera to come back.
+ */
+export const RECOVERY_SEARCH_PX = 80;
+/** The shift histogram's bin. Wider than the relink radius, so one true shift lands in one or two bins. */
+const SHIFT_BIN_PX = 4;
 
 export const LocalizationState = {
   /** The map holds too little to localize against. */
@@ -104,9 +144,16 @@ export interface LocalizationStageInput {
 export class LocalizationStage {
   private frames = 0;
   private localizedFrames = 0;
+  /** The last accepted pose in this epoch — a start for the solve, and recovery's prediction. */
   private previous: { pose: CameraPose; epoch: number } | null = null;
   private sentVersion = -1;
   private sentEpoch = -1;
+  private relinkedTotal = 0;
+  private recoveredTotal = 0;
+  /** This frame's re-links, `[live id, landmark id]`, for the tracker. Empty unless the pose was accepted. */
+  private relabels: [number, number][] = [];
+  /** Candidate re-links waiting out `RELINK_CONFIRM_FRAMES`: live id → landmark and run length. */
+  private pending = new Map<number, { landmarkId: number; frames: number }>();
 
   reset(): void {
     this.frames = 0;
@@ -114,11 +161,23 @@ export class LocalizationStage {
     this.previous = null;
     this.sentVersion = -1;
     this.sentEpoch = -1;
+    this.relinkedTotal = 0;
+    this.recoveredTotal = 0;
+    this.relabels = [];
+    this.pending.clear();
+  }
+
+  /** The re-links the last `process` accepted, for `FlowTracker.relabel`. */
+  takeRelabels(): readonly (readonly [number, number])[] {
+    const out = this.relabels;
+    this.relabels = [];
+    return out;
   }
 
   process(input: LocalizationStageInput): LocalizationReport {
     const t0 = performance.now();
     this.frames++;
+    this.relabels = [];
     const map = input.map;
     const epoch = map.epoch();
     if (this.previous && this.previous.epoch !== epoch) this.previous = null;
@@ -150,13 +209,30 @@ export class LocalizationStage {
     }
 
     const correspondences: PnpCorrespondence[] = [];
+    const unlinked: { id: number; x: number; y: number }[] = [];
+    const observed = new Set<number>();
     for (const f of input.population) {
       const l = map.landmark(f.id);
-      if (!l || l.epoch !== epoch) continue;
+      if (!l || l.epoch !== epoch) {
+        unlinked.push({ id: f.id, x: f.x0, y: f.y0 });
+        continue;
+      }
+      observed.add(f.id);
       correspondences.push({ id: f.id, x: f.x0, y: f.y0, world: l.position });
     }
+    // The landmarks a point could be re-linked to: confirmed, in this epoch, and carried by no live point.
+    const unobserved = all.filter((l) => l.epoch === epoch && l.state === LandmarkState.CONFIRMED && !observed.has(l.id));
+
+    // Too few of the map's tracks survive: look for the landmarks where the last accepted pose,
+    // moved by the shift the points agree on, says they are.
+    let recovery: Relink[] = [];
+    if (correspondences.length < MIN_LOCALIZATION_INLIERS && this.previous && unlinked.length > 0) {
+      recovery = recoverLinks(k, this.previous.pose, unlinked, unobserved);
+      for (const r of recovery) correspondences.push({ id: r.landmarkId, x: r.x, y: r.y, world: r.world });
+    }
+    const recoveryFrom = correspondences.length - recovery.length;
+
     if (correspondences.length < MIN_LOCALIZATION_INLIERS) {
-      this.previous = null;
       return this.finish(
         t0,
         { ...base, correspondences: correspondences.length },
@@ -198,7 +274,6 @@ export class LocalizationStage {
       }
     }
     if (!best || !best.result.pose) {
-      this.previous = null;
       return this.finish(
         t0,
         { ...base, correspondences: correspondences.length },
@@ -227,11 +302,51 @@ export class LocalizationStage {
       problems.push(`median error ${result.medianErrorPx} px, past ${MAX_LOCALIZATION_MEDIAN_PX} px`);
     }
     const accepted = problems.length === 0;
+    if (!accepted) this.pending.clear();
+    // A refused frame leaves the last accepted pose where it was: it is still the best guess at
+    // where the camera is, and recovery needs it.
+    let relinked = 0;
+    const recovered = accepted && recovery.length > 0 && recoveryFrom < MIN_LOCALIZATION_INLIERS;
     if (accepted) {
       this.localizedFrames++;
       this.previous = { pose, epoch };
-    } else {
-      this.previous = null;
+      // Recovery's pairs stay only where the accepted pose agrees with them — and where, through
+      // that pose, the point sits on its landmark and no other: the shift recovery voted for is
+      // one shift for the whole image, and near the edges a neighbouring landmark can be the
+      // nearer one through it.
+      const agreed = recovery.filter((_, j) => {
+        const r = result.residualsPx[recoveryFrom + j] ?? -1;
+        return r >= 0 && r <= INLIER_PX;
+      });
+      const strict = new Map(
+        relinkUnder(k, pose, agreed.map((r) => ({ id: r.featureId, x: r.x, y: r.y })), unobserved, RELINK_RADIUS_PX, { x: 0, y: 0 })
+          .map((r) => [r.featureId, r.landmarkId]),
+      );
+      const kept = agreed.filter((r) => strict.get(r.featureId) === r.landmarkId);
+      const taken = new Set(kept.map((r) => r.featureId));
+      const claimed = new Set(kept.map((r) => r.landmarkId));
+      const candidates = relinkUnder(
+        k,
+        pose,
+        unlinked.filter((f) => !taken.has(f.id)),
+        unobserved.filter((l) => !claimed.has(l.id)),
+        RELINK_RADIUS_PX,
+        { x: 0, y: 0 },
+      );
+      const confirmed: Relink[] = [];
+      const pending = new Map<number, { landmarkId: number; frames: number }>();
+      for (const c of candidates) {
+        const before = this.pending.get(c.featureId);
+        const frames = before && before.landmarkId === c.landmarkId ? before.frames + 1 : 1;
+        if (frames >= RELINK_CONFIRM_FRAMES) confirmed.push(c);
+        else pending.set(c.featureId, { landmarkId: c.landmarkId, frames });
+      }
+      // Consecutive: a candidate missing from this frame starts again.
+      this.pending = pending;
+      this.relabels = [...kept, ...confirmed].map((r) => [r.featureId, r.landmarkId]);
+      relinked = this.relabels.length;
+      this.relinkedTotal += relinked;
+      if (recovered) this.recoveredTotal++;
     }
 
     const samples: ProjectionSample[] = [];
@@ -259,11 +374,15 @@ export class LocalizationStage {
         confidence: accepted ? round(confidence, 4) : 0,
         confidenceTerms: terms,
         projectionSamples: accepted ? samples : [],
+        relinked,
+        recovered,
       },
       accepted ? LocalizationState.LOCALIZED : LocalizationState.REFUSED,
       accepted
-        ? `${result.inliers}/${correspondences.length} landmark(s) agree within the solve's band; median ${result.medianErrorPx} px`
-        : `refused: ${problems.join('; ')}`,
+        ? `${result.inliers}/${correspondences.length} landmark(s) agree within the solve's band; median ${result.medianErrorPx} px` +
+            (recovered ? `; recovered by re-linking ${recovery.length} point(s) to the map` : '') +
+            (relinked > 0 ? `; ${relinked} re-linked` : '')
+        : `refused: ${problems.join('; ')}` + (recovery.length > 0 ? ` (with ${recovery.length} point(s) tried against the map)` : ''),
     );
   }
 
@@ -343,10 +462,179 @@ export class LocalizationStage {
       confidence: 0,
       confidenceTerms: [],
       projectionSamples: [],
+      relinked: 0,
+      recovered: false,
       ...partial,
+      relinkedTotal: this.relinkedTotal,
+      recoveredTotal: this.recoveredTotal,
       localizationMs: round(performance.now() - t0, 4),
     };
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Re-linking                                                                  */
+/* -------------------------------------------------------------------------- */
+
+interface Relink {
+  readonly featureId: number;
+  readonly landmarkId: number;
+  readonly x: number;
+  readonly y: number;
+  readonly world: readonly number[];
+}
+
+interface Projection {
+  readonly landmark: Landmark;
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Landmarks through `pose`, kept to `pad` pixels beyond the frame's edges: a point near the edge
+ * must find its own landmark among the candidates, not the nearest one that projected inside.
+ */
+function project(k: Intrinsics, pose: CameraPose, landmarks: readonly Landmark[], pad: number): Projection[] {
+  const out: Projection[] = [];
+  for (const l of landmarks) {
+    const p = transformPoint(pose, l.position);
+    const z = p[2] ?? 0;
+    if (!(z > 1e-6)) continue;
+    const x = k.fx * ((p[0] ?? 0) / z) + k.cx;
+    const y = k.fy * ((p[1] ?? 0) / z) + k.cy;
+    if (x < -pad || y < -pad || x > k.width + pad || y > k.height + pad) continue;
+    out.push({ landmark: l, x, y });
+  }
+  return out;
+}
+
+/** Projections bucketed by `cell`, for neighbourhood queries. */
+function gridOf(points: readonly Projection[], cell: number): Map<string, Projection[]> {
+  const grid = new Map<string, Projection[]>();
+  for (const p of points) {
+    const key = `${Math.floor(p.x / cell)},${Math.floor(p.y / cell)}`;
+    const list = grid.get(key);
+    if (list) list.push(p);
+    else grid.set(key, [p]);
+  }
+  return grid;
+}
+
+function near(grid: Map<string, Projection[]>, cell: number, x: number, y: number, reach: number): Projection[] {
+  const out: Projection[] = [];
+  const cx = Math.floor(x / cell);
+  const cy = Math.floor(y / cell);
+  const r = Math.ceil(reach / cell);
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const list = grid.get(`${cx + dx},${cy + dy}`);
+      if (list) out.push(...list);
+    }
+  }
+  return out;
+}
+
+/**
+ * Points that sit on exactly one landmark's projection (moved by `shift`).
+ *
+ * Unique both ways: the next projection is at least twice as far as the nearest and past the
+ * radius, and a landmark two points claim goes to neither. A wrong pair costs the map a corrupted
+ * landmark; a missed one costs nothing but a frame's wait.
+ */
+function relinkUnder(
+  k: Intrinsics,
+  pose: CameraPose,
+  points: readonly { id: number; x: number; y: number }[],
+  landmarks: readonly Landmark[],
+  radius: number,
+  shift: { x: number; y: number },
+): Relink[] {
+  if (points.length === 0 || landmarks.length === 0) return [];
+  const pad = 2 * radius + Math.max(Math.abs(shift.x), Math.abs(shift.y));
+  const projected = project(k, pose, landmarks, pad).map((p) => ({ ...p, x: p.x + shift.x, y: p.y + shift.y }));
+  const grid = gridOf(projected, radius);
+  const claims = new Map<number, Relink[]>();
+  for (const f of points) {
+    let best: Projection | null = null;
+    let d1 = Infinity;
+    let d2 = Infinity;
+    for (const p of near(grid, radius, f.x, f.y, 2 * radius)) {
+      const d = Math.hypot(p.x - f.x, p.y - f.y);
+      if (d < d1) {
+        d2 = d1;
+        d1 = d;
+        best = p;
+      } else if (d < d2) {
+        d2 = d;
+      }
+    }
+    if (!best || d1 > radius || d2 < Math.max(radius, 2 * d1)) continue;
+    const pair: Relink = { featureId: f.id, landmarkId: best.landmark.id, x: f.x, y: f.y, world: best.landmark.position };
+    const list = claims.get(best.landmark.id);
+    if (list) list.push(pair);
+    else claims.set(best.landmark.id, [pair]);
+  }
+  const out: Relink[] = [];
+  for (const list of claims.values()) if (list.length === 1 && list[0]) out.push(list[0]);
+  return out;
+}
+
+/**
+ * Recovery: the image shift the points and the last pose's projections agree on, then
+ * `relinkUnder` through it.
+ *
+ * A turn of the camera moves the whole image by nearly one shift. Every pair within
+ * `RECOVERY_SEARCH_PX` votes for its difference; the true pairs pile into one bin and chance
+ * pairs spread over all of them. The peak must hold at least `MIN_LOCALIZATION_INLIERS` votes
+ * and stand at least three times above the mean bin, or nothing is linked.
+ */
+function recoverLinks(
+  k: Intrinsics,
+  pose: CameraPose,
+  points: readonly { id: number; x: number; y: number }[],
+  landmarks: readonly Landmark[],
+): Relink[] {
+  const projected = project(k, pose, landmarks, RECOVERY_SEARCH_PX);
+  if (projected.length < MIN_LOCALIZATION_INLIERS) return [];
+  const grid = gridOf(projected, RECOVERY_SEARCH_PX / 2);
+  const bins = new Map<string, number>();
+  let votes = 0;
+  for (const f of points) {
+    for (const p of near(grid, RECOVERY_SEARCH_PX / 2, f.x, f.y, RECOVERY_SEARCH_PX)) {
+      const dx = f.x - p.x;
+      const dy = f.y - p.y;
+      if (Math.abs(dx) > RECOVERY_SEARCH_PX || Math.abs(dy) > RECOVERY_SEARCH_PX) continue;
+      const key = `${Math.floor(dx / SHIFT_BIN_PX)},${Math.floor(dy / SHIFT_BIN_PX)}`;
+      bins.set(key, (bins.get(key) ?? 0) + 1);
+      votes++;
+    }
+  }
+  if (bins.size === 0) return [];
+  // The peak over 2×2 neighbourhoods, so a shift on a bin edge is not split in two.
+  let peak = 0;
+  let at = { x: 0, y: 0 };
+  for (const key of bins.keys()) {
+    const [bx, by] = key.split(',').map(Number) as [number, number];
+    let sum = 0;
+    let sx = 0;
+    let sy = 0;
+    for (let dy = 0; dy <= 1; dy++) {
+      for (let dx = 0; dx <= 1; dx++) {
+        const n = bins.get(`${bx + dx},${by + dy}`) ?? 0;
+        sum += n;
+        sx += n * (bx + dx + 0.5) * SHIFT_BIN_PX;
+        sy += n * (by + dy + 0.5) * SHIFT_BIN_PX;
+      }
+    }
+    if (sum > peak) {
+      peak = sum;
+      at = { x: sx / sum, y: sy / sum };
+    }
+  }
+  const binsInWindow = ((2 * RECOVERY_SEARCH_PX) / SHIFT_BIN_PX) ** 2;
+  const mean = (4 * votes) / binsInWindow;
+  if (peak < MIN_LOCALIZATION_INLIERS || peak < 3 * mean) return [];
+  return relinkUnder(k, pose, points, landmarks, SHIFT_BIN_PX, at);
 }
 
 /**

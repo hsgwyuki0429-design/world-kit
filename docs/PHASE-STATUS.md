@@ -2216,7 +2216,7 @@ Four defects were found by it before any device saw the code, each fixed at its 
 
 ### Playing it, not only passing it
 
-Three more findings came from asking the legs to *play* rather than to collect records:
+More findings came from asking the legs to *play* rather than to collect records, and from the first device report:
 
 5. **A ring could be generated off the screen.** §28's visibility bound is 55° from the view the
    stage was made from; a portrait phone shows about ±25°. A player would see the HUD say READY
@@ -2232,6 +2232,17 @@ Three more findings came from asking the legs to *play* rather than to collect r
    none. The watch now runs in the page and lifts the finger in the frame the guide turns green
    (`releaseWhenAimScores` in `scripts/lib/harness.mjs`) — a player's reaction, minus the reaction
    time.
+
+8. **On the device, tracking was lost almost at once** (the first report from an iPhone). The map
+   knew each landmark only by the id of the track that made it, so every broken track — every
+   blur and glance away — took a landmark out of view for good, and one refused frame dropped the
+   world's pose. The smooth feed never breaks a track; `scripts/run-e2e-rough.mjs` wipes its view
+   for a quarter of a second every four seconds, and on it the build before the fix **never
+   reached READY in 240 s**. Points are now re-linked to their landmarks, the camera is recovered
+   through the last accepted pose, and the world holds a pose over a refused frame as
+   `DEGRADED`: on the same feed, READY in 25 s, then 60 s of play with **0 `TRACKING LOST`**,
+   15 of 15 dropouts recovered and 91 % of frames localized (`docs/phase12/TEST-PLAN.md`,
+   amendment 2). Whether that is enough on the device is the device's to say.
 
 The feed's camera looks 15° down and never tilts up, so a launch along it (14° above the camera's
 forward) leaves the tee about level and a wall target above the tee is out of its reach. Both

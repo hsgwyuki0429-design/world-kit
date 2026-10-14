@@ -237,6 +237,38 @@ export class FlowTracker {
   }
 
   /**
+   * Give live points the ids of map landmarks they were found to be (Phase 12's re-linking).
+   *
+   * A point whose track breaks — a blur, an occlusion, a glance away — comes back as a new
+   * detection with a new id, and the map, which knows its landmarks only by the id of the track
+   * that made them, can never see it again. `LocalizationStage` finds such points where a
+   * landmark projects and hands the pairs here, so from the next frame on the point *is* the
+   * landmark to every stage downstream: localization, keyframes, and the map's registration.
+   *
+   * Only ids this tracker issued itself and no live point carries are taken, so no two live
+   * points ever share an id. Returns how many points were relabelled.
+   */
+  relabel(pairs: readonly (readonly [number, number])[]): number {
+    if (pairs.length === 0) return 0;
+    const live = new Set(this.population.map((f) => f.id));
+    const index = new Map(this.population.map((f, i) => [f.id, i]));
+    let applied = 0;
+    for (const [from, to] of pairs) {
+      const i = index.get(from);
+      if (i === undefined || live.has(to) || !(to > 0 && to < this.nextId)) continue;
+      const f = this.population[i];
+      if (!f) continue;
+      this.population[i] = { ...f, id: to };
+      live.delete(from);
+      live.add(to);
+      index.delete(from);
+      index.set(to, i);
+      applied++;
+    }
+    return applied;
+  }
+
+  /**
    * Forget everything.
    *
    * Used when tracking is stopped or the processing size changes under us. A population in

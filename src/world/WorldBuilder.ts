@@ -82,6 +82,12 @@ export interface WorldBuilderStats {
   readonly reports: number;
   readonly localized: number;
   readonly byState: Record<string, number>;
+  /** Points re-linked to landmarks whose tracks had broken, over the session (the worker's count). */
+  readonly relinked: number;
+  /** Frames localized only because of re-linking — the map's own tracks had all broken. */
+  readonly recovered: number;
+  /** The longest run of reports without a localized frame, while a pose was held or lost. */
+  readonly longestUnlocalizedRun: number;
   readonly medianErrorPx: number;
   readonly heldOutSamples: number;
   readonly medianHeldOutPx: number;
@@ -136,6 +142,12 @@ export class WorldBuilder {
 
   private reports = 0;
   private localized = 0;
+  private relinked = 0;
+  private recovered = 0;
+  private unlocalizedRun = 0;
+  private longestUnlocalizedRun = 0;
+  /** The newest report's state, for WORLD-004's outside check. */
+  private lastPoseState = 'NONE';
   private byState: Record<string, number> = {};
   private errors: number[] = [];
   private heldOut: number[] = [];
@@ -194,6 +206,11 @@ export class WorldBuilder {
     this.pairingsRefused = {};
     this.reports = 0;
     this.localized = 0;
+    this.relinked = 0;
+    this.recovered = 0;
+    this.unlocalizedRun = 0;
+    this.longestUnlocalizedRun = 0;
+    this.lastPoseState = 'NONE';
     this.byState = {};
     this.errors = [];
     this.heldOut = [];
@@ -224,6 +241,15 @@ export class WorldBuilder {
     if (report.localizationMs >= 0) push(this.localizationMs, report.localizationMs);
 
     if (report.snapshot) this.ingestSnapshot(report.snapshot);
+    this.lastPoseState = report.state === 'LOCALIZED' && report.pose ? 'LOCALIZED' : report.state;
+    this.relinked = report.relinkedTotal ?? this.relinked;
+    this.recovered = report.recoveredTotal ?? this.recovered;
+    if (this.lastPoseState === 'LOCALIZED') {
+      this.unlocalizedRun = 0;
+    } else if (this.localized > 0) {
+      this.unlocalizedRun++;
+      this.longestUnlocalizedRun = Math.max(this.longestUnlocalizedRun, this.unlocalizedRun);
+    }
 
     const intrinsics = intrinsicsRecord(report.width, report.height);
     this.world.ingestPose({
@@ -282,6 +308,9 @@ export class WorldBuilder {
       pairingsRefused: { ...this.pairingsRefused },
       reports: this.reports,
       localized: this.localized,
+      relinked: this.relinked,
+      recovered: this.recovered,
+      longestUnlocalizedRun: this.longestUnlocalizedRun,
       byState: { ...this.byState },
       medianErrorPx: round(median(this.errors), 4),
       heldOutSamples: this.heldOut.length,
@@ -463,6 +492,9 @@ export class WorldBuilder {
     if (v.gravity.state !== GravityState.ESTIMATED) problems.push('gravity UNKNOWN');
     if (!v.surfaces.some((s) => s.surfaceClass === SurfaceClass.GROUND)) problems.push('no GROUND');
     if (!v.cameraPose) problems.push('no camera pose');
+    // A held pose (a refused frame) is DEGRADED by construction; READY on one would mean the hold
+    // leaked into GOOD.
+    if (this.lastPoseState !== 'LOCALIZED') problems.push(`the newest frame was ${this.lastPoseState}, not localized`);
     if (problems.length > 0) {
       this.readyViolations++;
       this.readyViolationDetail = problems.join(', ');

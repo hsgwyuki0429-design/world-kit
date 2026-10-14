@@ -52,6 +52,53 @@ populations — and was refused every few seconds, flickering the game into `TRA
 many landmarks disagree is held separately, by `MIN_INLIER_SHARE`; the median says how well the
 pose fits the ones that agree. The all-points median is still reported beside it.
 
+## Amendment 2, from the first device report: tracks break, and the camera must survive it
+
+The first time the game was played on an iPhone, the report was one line: **tracking is lost
+almost at once.** Two things in this phase made that certain on a phone held in a hand, and
+neither could show on the smooth synthetic feed, where no track ever breaks:
+
+1. **A landmark could only be seen through the track that made it.** The tracker gives a point
+   that is detected again — after a blur, an occlusion, a glance away — a new id, and the map knew
+   its landmarks only by the old one. Every broken track removed a landmark from view for good,
+   until fewer than 12 remained and every frame was `TOO_FEW`, in a room the map had mapped. The
+   same starvation kept the map from registering new keyframes, and after five it redefined the
+   world.
+2. **One refused frame was a lost camera.** The world dropped its pose on any frame that was not
+   localized, so a single blurred frame reported `LOST`.
+
+What changed:
+
+- **Re-linking** (`LocalizationStage`). On a localized frame, a live point that is not a landmark
+  and sits within `RELINK_RADIUS_PX` (2 px) of exactly one unobserved landmark's projection — the
+  next one at least twice as far, and no other point claiming it — is a candidate; on
+  `RELINK_CONFIRM_FRAMES` (3) consecutive localized frames it becomes that landmark: the tracker
+  gives it the landmark's id (`FlowTracker.relabel`), and every stage downstream sees the landmark
+  again.
+- **Recovery.** On a frame with too few, the image shift between the points and the landmarks
+  projected through the last accepted pose is voted for (the peak must hold ≥ 12 votes and stand
+  three times above the mean bin), the points are paired through it, and the pose is solved and
+  held to every bar a normal frame is. Pairs are kept only within `INLIER_PX` of the accepted pose
+  **and** unique through it.
+- **The world holds a pose** over a frame that was refused or saw too few, as `DEGRADED` — never
+  `GOOD`, so never READY — for at most `POSE_STALE_MS`; then `LOST`. WORLD-004's outside check now
+  also requires the newest report to have been `LOCALIZED` on every READY frame.
+
+Measured (`tests/unit/relink.test.ts`, `scripts/run-e2e-rough.mjs`):
+
+| | Before | After |
+| --- | --- | --- |
+| Re-links over 30 frames with a second room of unmapped points tracked alongside | — | 1606, **0 wrong** |
+| Recovery after a 2°, 4° and 7° turn with every track broken | not localized | localized, 0 wrong pairs |
+| Recovery onto 300 random points | — | refused, nothing linked |
+| Rough feed (view wiped for 8 frames every 4 s): time to READY | never, in 240 s | 25 s |
+| ...then 60 s of play: `TRACKING LOST` entries / world redefined under the stage | — | 0 / 0 |
+| ...frames localized / dropouts recovered | — | 564 of 617 / 15 of 15 |
+
+The radius started at `INLIER_PX` (3 px) with no confirmation; the unit test that tracks a second,
+unmapped room alongside the map is what showed that a point the map never held lands near *some*
+landmark's projection often enough to matter, and what the confirmation frames are for.
+
 ## Records
 
 | ID | Req | Pass criteria |
