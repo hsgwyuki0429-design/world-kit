@@ -35,7 +35,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { climbTo, expectLocked, injectOrientation, launch, openApp, pressStart, serve } from './lib/harness.mjs';
+import { climbTo, expectLocked, injectOrientation, launch, openApp, pressStart, serve, releaseWhenAimScores } from './lib/harness.mjs';
 import { writeY4M } from './lib/feed.mjs';
 import { accelerationReading, orientationReading, renderRoomFrame } from './lib/room.mjs';
 import { SPATIAL_LABELS } from './lib/spatialLabels.mjs';
@@ -123,15 +123,7 @@ async function throwBall(page, wait, waitMs = 8000) {
   if (!box) return null;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  const t0 = Date.now();
-  let aimed = false;
-  while (Date.now() - t0 < (wait ? waitMs : 700)) {
-    if (await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().aimWouldScore)) {
-      aimed = true;
-      break;
-    }
-    await page.waitForTimeout(12);
-  }
+  const aimed = await releaseWhenAimScores(page, wait ? waitMs : 700);
   await page.mouse.up();
   await page.waitForFunction(
     () => ['SUCCESS', 'RETRY'].includes(window.__SPATIAL_DEBUG__.getGameView().state),

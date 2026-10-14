@@ -293,3 +293,36 @@ export async function pressStart(page, selector, { idle, busy }) {
     return after;
   };
 }
+
+/**
+ * Hold the gauge until the game's own guide says this aim and power would score, then lift the
+ * finger in that same animation frame.
+ *
+ * A player lets go when the guide turns green; a harness polling over the DevTools protocol sees it
+ * one to three frames late, and with a 1.4 s gauge on the synthetic feed the scoring window is two
+ * or three frames wide — the first version of the play leg made ten patient throws and released
+ * every one of them after the window had closed. So the watch runs in the page, and the release is
+ * the same `pointerup` a lifted finger produces, dispatched to the window the panel listens on.
+ * Resolves whether the guide lined up before `ms` ran out; if it did not, nothing is released and
+ * the caller's own mouse-up throws.
+ */
+export async function releaseWhenAimScores(page, ms) {
+  return page.evaluate((limit) => new Promise((resolve) => {
+    const t0 = performance.now();
+    const check = () => {
+      const v = window.__SPATIAL_DEBUG__.getGameView();
+      if (v.state === 'AIMING' && v.aimWouldScore) {
+        window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, isPrimary: true }));
+        resolve(true);
+        return;
+      }
+      const elapsed = performance.now() - t0;
+      if (elapsed > limit || (v.state !== 'AIMING' && elapsed > 500)) {
+        resolve(false);
+        return;
+      }
+      requestAnimationFrame(check);
+    };
+    requestAnimationFrame(check);
+  }), ms);
+}

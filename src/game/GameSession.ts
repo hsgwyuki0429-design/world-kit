@@ -624,7 +624,9 @@ export class GameSession {
       if (this.cycleArmed) this.cycles++;
       this.cycleArmed = false;
       this.holdUntil = this.now() + SUCCESS_HOLD_MS;
-      this.go(G.SUCCESS, `SUCCESS — through the ring ${round(record.crossing?.offAxis ?? 0, 3)} from its centre`);
+      // In camera heights: the map's own unit is arbitrary from one session to the next.
+      const unit = this.stage?.unit ?? 1;
+      this.go(G.SUCCESS, `SUCCESS — through the ring ${round((record.crossing?.offAxis ?? 0) / unit, 3)} H from its centre`);
     } else {
       this.misses++;
       if (this.cycleArmed) this.cycles++;

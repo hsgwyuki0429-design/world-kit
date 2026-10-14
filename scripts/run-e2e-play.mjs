@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { injectOrientation, launch, openApp, pressStart, serve } from './lib/harness.mjs';
+import { injectOrientation, launch, openApp, pressStart, releaseWhenAimScores, serve } from './lib/harness.mjs';
 import { writeY4M } from './lib/feed.mjs';
 import { accelerationReading, orientationReading, renderRoomFrame } from './lib/room.mjs';
 
@@ -77,17 +77,17 @@ try {
     if (!box) continue;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
-    const start = Date.now();
     const patient = g.successes === 0 && thrown % 3 !== 2;
-    let aimed = false;
-    while (Date.now() - start < (patient ? 20_000 : 600)) {
-      if (await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().aimWouldScore)) {
-        aimed = true;
-        break;
-      }
-      await page.waitForTimeout(12);
-    }
+    const aimed = await releaseWhenAimScores(page, patient ? 20_000 : 600);
     await page.mouse.up();
+    // A press the game refused — tracking dropped between the check and the touch — throws nothing.
+    const after = await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameStats().throwCount);
+    if (after === g.throwCount) {
+      const why = await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().state);
+      console.log(`[play] the press threw nothing (${why}); waiting for READY`);
+      await page.waitForTimeout(1000);
+      continue;
+    }
     thrown++;
     if (thrown === 1) {
       await page.waitForTimeout(250);
