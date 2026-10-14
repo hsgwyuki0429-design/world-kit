@@ -103,9 +103,10 @@ async function worldReady(page, label) {
 
 /**
  * One throw, the way a player makes it: press on the camera view, watch the guide, release.
- * `wait` holds out for the moment the aim would score; otherwise the gauge is released early.
+ * `wait` holds out for the moment the aim would score (for `waitMs`); otherwise the gauge is
+ * released early.
  */
-async function throwBall(page, wait) {
+async function throwBall(page, wait, waitMs = 8000) {
   // A player waits for the ball to be on the tee; so does the harness — tracking can drop for a
   // moment, a stage can be regenerating.
   const ready = await page.waitForFunction(
@@ -124,7 +125,7 @@ async function throwBall(page, wait) {
   await page.mouse.down();
   const t0 = Date.now();
   let aimed = false;
-  while (Date.now() - t0 < (wait ? 8000 : 700)) {
+  while (Date.now() - t0 < (wait ? waitMs : 700)) {
     if (await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().aimWouldScore)) {
       aimed = true;
       break;
@@ -231,6 +232,35 @@ try {
       }
     }
 
+    if (n === 20) {
+      // §52's golden sequence has to run unbroken: a fresh stage, then ready → aim → throw →
+      // success with nothing in between. The earlier goal may sit behind a pause or a tracking
+      // drop, so ask for new stages until one is scored straight through.
+      //
+      // The feed's camera looks 15° down and never tilts up, so a launch along it — 14° above the
+      // camera's forward — leaves the tee about level, and a wall target above the tee is out of
+      // its reach (a player tilts the phone up). Those stages are passed over without a throw.
+      for (let s = 0; s < 16; s++) {
+        const pending = await page.evaluate(() => window.__SPATIAL_DEBUG__.getPhase20Results()
+          .some((r) => r.spec.id === 'PLAY-001' && r.verdict === 'PENDING'));
+        if (!pending) break;
+        await page.waitForFunction(() => !document.getElementById('game-new-stage')?.disabled, undefined, { timeout: 20_000 })
+          .catch(() => {});
+        await page.click('#game-new-stage').catch(() => {});
+        const kind = await page.waitForFunction(() => {
+          const v = window.__SPATIAL_DEBUG__.getGameView();
+          return v.state === 'READY' && v.stage ? v.stage.ring.kind : null;
+        }, undefined, { timeout: 20_000 }).then((h) => h.jsonValue(), () => null);
+        if (kind !== 'HOOP') {
+          console.log(`[spatial] phase 20 golden attempt ${s + 1}: ${kind ?? 'no stage'} — passed over`);
+          continue;
+        }
+        const t = await throwBall(page, true, 20_000);
+        if (t?.result) console.log(`[spatial] phase 20 golden attempt ${s + 1}: ${t.result.outcome}${t.aimed ? ', aimed by the guide' : ''}`);
+        await page.waitForTimeout(1200);
+      }
+    }
+
     // Hold until the screen's required records have settled — or the bound runs out, in which case
     // whatever is still PENDING is reported as PENDING, never rounded up.
     await page.waitForTimeout(PHASE_HOLD_MS);
@@ -292,6 +322,8 @@ try {
   }
   if (g.rejectionAccepted.length > 0) problems.push(`invalid rings accepted: ${g.rejectionAccepted.join('; ')}`);
   if (g.successes === 0) problems.push('no goal was scored');
+  const golden = snapshots.get(20)?.results.find((r) => r.spec.id === 'PLAY-001');
+  if (golden?.verdict !== 'PASS') problems.push(`§52's golden sequence was not played straight through: PLAY-001 ${golden?.verdict}`);
   if (s.resumes === 0) problems.push(`no resume: ${s.lastResumeReason}`);
   if (errors.length > 0) problems.push(`page errors: ${errors.slice(0, 3).join(' | ')}`);
 } finally {

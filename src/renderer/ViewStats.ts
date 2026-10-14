@@ -69,6 +69,7 @@ export class ViewStatsCollector {
       problems.push('drew with no camera pose in the world');
     }
     if (report.ringDrawn && !game?.stage) problems.push('drew a ring with no stage');
+    if (report.ringIndicated && !game?.stage) problems.push('pointed the way to a ring with no stage');
     if (report.ballDrawn && !game?.ball) problems.push('drew a ball the game does not have');
     if (problems.length > 0) {
       this.drawViolations++;

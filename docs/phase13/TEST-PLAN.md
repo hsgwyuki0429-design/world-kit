@@ -19,7 +19,7 @@ The HUD shows §39's figures — `TRACKING …`, `SURFACES n`, `CONFIDENCE x`, `
 | ID | Req | Pass criteria |
 | --- | --- | --- |
 | VIEW-001 | ✓ | ≥ 30 frames: the worker's correspondences (tracker pixel + map position) projected through the renderer's own `projectWorld` land within a median 2.5 px of the tracker's pixels |
-| VIEW-002 | ✓ | ≥ 60 frames drawn; 0 frames drawing a surface the world does not hold, a ring with no stage, a ball the game does not have, or anything with no pose |
+| VIEW-002 | ✓ | ≥ 60 frames drawn; 0 frames drawing a surface the world does not hold, a ring (or the edge arrow pointing to one) with no stage, a ball the game does not have, or anything with no pose |
 | VIEW-003 | ✓ | ≥ 30 DOM reads: the canvas box's aspect equals the video box's within 1 % (one uniform scale from processing pixels to the screen) |
 | VIEW-004 | ✓ | ≥ 30 DOM reads: the tracking label shows the world's tracking state; 0 mismatches |
 | VIEW-005 | — | median draw ≤ 6 ms; median display interval ≤ 34 ms |

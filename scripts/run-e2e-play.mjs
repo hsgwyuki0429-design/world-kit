@@ -53,11 +53,22 @@ try {
   console.log(`[play] READY after ${Math.round((Date.now() - t0) / 1000)} s`);
   await page.screenshot({ path: join(OUT, 'play-ready-desktop-chromium.png') });
 
-  for (let attempt = 0; attempt < 12; attempt++) {
+  // The feed's camera looks 15° down and never tilts up, so a launch along it leaves the tee about
+  // level and a wall target above the tee is out of its reach — a player would tilt the phone up.
+  // Until the first goal, such stages are swapped with 別のステージ, as a player stuck on one would.
+  let thrown = 0;
+  for (let attempt = 0; attempt < 24 && thrown < 12; attempt++) {
     const g = await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameStats());
-    if (g.successes > 0 && g.throws.some((t) => t.contacts.length > 0) && attempt >= 2) break;
-    if ((await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().state)) !== 'READY') {
+    if (g.successes > 0 && g.throws.some((t) => t.contacts.length > 0) && thrown >= 2) break;
+    const v = await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView());
+    if (v.state !== 'READY') {
       await page.waitForTimeout(1000);
+      continue;
+    }
+    if (g.successes === 0 && v.stage && v.stage.ring.kind !== 'HOOP') {
+      console.log(`[play] stage ${v.stageIndex}: ${v.stage.ring.kind} — out of the feed's reach; 別のステージ`);
+      await page.click('#game-new-stage').catch(() => {});
+      await page.waitForTimeout(1500);
       continue;
     }
     const stack = page.locator('#ar-stack');
@@ -67,21 +78,29 @@ try {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     const start = Date.now();
-    const patient = g.successes === 0 && attempt % 3 !== 2;
-    while (Date.now() - start < (patient ? 8000 : 600)) {
-      if (await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().aimWouldScore)) break;
+    const patient = g.successes === 0 && thrown % 3 !== 2;
+    let aimed = false;
+    while (Date.now() - start < (patient ? 20_000 : 600)) {
+      if (await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().aimWouldScore)) {
+        aimed = true;
+        break;
+      }
       await page.waitForTimeout(12);
     }
     await page.mouse.up();
-    if (attempt === 0) {
+    thrown++;
+    if (thrown === 1) {
       await page.waitForTimeout(250);
       await page.screenshot({ path: join(OUT, 'play-throw-desktop-chromium.png') });
     }
     await page.waitForFunction(() => ['SUCCESS', 'RETRY'].includes(window.__SPATIAL_DEBUG__.getGameView().state), undefined, { timeout: 15_000 }).catch(() => {});
     const last = await page.evaluate(() => window.__SPATIAL_DEBUG__.getGameView().lastThrow);
-    console.log(`[play] throw ${attempt + 1}: ${last?.outcome}, ${last?.contacts.length ?? 0} contact(s)`);
+    console.log(`[play] throw ${thrown}: ${last?.outcome}, ${last?.contacts.length ?? 0} contact(s)${aimed ? ', aimed by the guide' : ''}`);
     if (last?.outcome === 'GOAL') await page.screenshot({ path: join(OUT, 'play-success-desktop-chromium.png') });
     await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getGameView().state === 'READY', undefined, { timeout: 10_000 }).catch(() => {});
+    // A patient throw the guide never lined up: this stage's ring is where the feed's sweep does
+    // not look. Swap it, as a player would.
+    if (patient && !aimed && last?.outcome !== 'GOAL') await page.click('#game-new-stage').catch(() => {});
   }
 
   await page.click('#game-save').catch(() => problems.push('save not pressable'));

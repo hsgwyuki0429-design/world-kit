@@ -380,6 +380,8 @@ class Phase0App {
   private arRenderer: ArRenderer | null = null;
   private arFrame = 0;
   private arFrames = 0;
+  /** The renderer's last frame put the ring off the frame and drew the edge arrow to it. */
+  private ringOffFrame = false;
   /** The stack's own "am I running" (§H.5): localization asked for, never inferred from the pipeline. */
   private spatialRequested = false;
   private spatialEverRan = false;
@@ -3928,6 +3930,7 @@ class Phase0App {
         const t0 = performance.now();
         const report = renderer.draw(view, gameView, { surfaces: this.showSurfaces, landmarks: false });
         this.viewStats.recordDraw(report, view, gameView, performance.now() - t0, t0);
+        this.ringOffFrame = report.ringIndicated;
       }
       panel.update(this.hudModel(view, gameView));
       this.arFrames++;
@@ -3977,7 +3980,7 @@ class Phase0App {
     return {
       state: game.state,
       tracking: view.trackingState,
-      message: hudMessage(view, game),
+      message: hudMessage(view, game, this.ringOffFrame),
       detail: game.reason,
       power: game.power,
       showPower: game.state === GameState.AIMING,
@@ -4386,7 +4389,7 @@ class Phase0App {
 
 
 /** The guidance line under the HUD badges. Guidance only — the badges carry the states. */
-function hudMessage(view: SpatialWorldView, game: GameView): string {
+function hudMessage(view: SpatialWorldView, game: GameView, ringOffFrame: boolean): string {
   switch (game.state) {
     case GameState.SCAN:
       return '部屋をゆっくり見回してください。左右に少し歩くと地図ができます。';
@@ -4402,9 +4405,11 @@ function hudMessage(view: SpatialWorldView, game: GameView): string {
     case GameState.STAGE_GENERATING:
       return 'ステージを生成しています…';
     case GameState.READY:
-      return 'リングを狙って画面を長押し、離して投げます。';
+      return ringOffFrame
+        ? 'リングは画面の外です。金色の矢印の方へスマホを向けてください。'
+        : 'リングを狙って画面を長押し、離して投げます。';
     case GameState.AIMING:
-      return '離すと投げます。';
+      return ringOffFrame ? 'リングは矢印の方向です。' : '離すと投げます。';
     case GameState.THROWING:
       return '';
     case GameState.SUCCESS:

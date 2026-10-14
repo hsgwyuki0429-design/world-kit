@@ -30,6 +30,8 @@ import type { SpatialWorldView, WorldPose } from '../world/SpatialWorld';
 export const PIXEL_SCALE = 1.5;
 /** Nothing nearer the camera than this fraction of the scene depth is drawn. */
 const NEAR_FRACTION = 0.03;
+/** A ring whose centre projects within this many processing pixels of the frame's edge, or outside it, gets an edge arrow. */
+const EDGE_MARGIN_PX = 18;
 
 const CLASS_COLOURS: Record<string, string> = {
   [SurfaceClass.GROUND]: '48, 209, 88',
@@ -51,6 +53,8 @@ export interface DrawReport {
   readonly ringDrawn: boolean;
   readonly ballDrawn: boolean;
   readonly startDrawn: boolean;
+  /** The ring was off the frame and an arrow at the edge pointed the way to it. */
+  readonly ringIndicated: boolean;
   readonly guidePoints: number;
   readonly landmarksDrawn: number;
   readonly ms: number;
@@ -111,7 +115,7 @@ export class ArRenderer {
   draw(world: SpatialWorldView, game: GameView | null, options: RenderOptions): DrawReport {
     const empty: DrawReport = {
       surfacesDrawn: 0, surfaceIds: [], ringDrawn: false, ballDrawn: false, startDrawn: false,
-      guidePoints: 0, landmarksDrawn: 0, ms: 0, poseUsed: false,
+      ringIndicated: false, guidePoints: 0, landmarksDrawn: 0, ms: 0, poseUsed: false,
     };
     const ctx = this.ctx;
     const pose = world.cameraPose;
@@ -168,6 +172,7 @@ export class ArRenderer {
     let ringDrawn = false;
     let ballDrawn = false;
     let startDrawn = false;
+    let ringIndicated = false;
     let guidePoints = 0;
     const stage = game?.stage ?? null;
     if (stage && game) {
@@ -186,6 +191,7 @@ export class ArRenderer {
       }
 
       ringDrawn = this.drawRing(ctx, pose, stage.ring.center, stage.ring.axis, stage.ring.radius, near, game.state === 'SUCCESS');
+      ringIndicated = this.drawRingIndicator(ctx, pose, stage.ring.center, near);
 
       const tee = projectWorld(pose, stage.start.position);
       if (tee && tee.depth > near && game.state !== 'THROWING') {
@@ -211,6 +217,7 @@ export class ArRenderer {
       ringDrawn,
       ballDrawn,
       startDrawn,
+      ringIndicated,
       guidePoints,
       landmarksDrawn,
       ms: 0,
@@ -258,6 +265,52 @@ export class ArRenderer {
     stroke(thickness + 3, 'rgba(0, 0, 0, 0.35)');
     stroke(thickness, scored ? 'rgba(48, 209, 88, 1)' : 'rgba(255, 196, 0, 1)');
     stroke(Math.max(1, thickness * 0.35), 'rgba(255, 244, 200, 0.9)');
+    return true;
+  }
+
+  /**
+   * A stage may put its ring up to 55° off the view it was made from (§28), which is past the edge
+   * of a portrait phone's frame. When the ring's centre is off the frame — or behind the camera —
+   * an arrow on the edge points the way to turn. Its direction is the ring's own, through the same
+   * pose: from the frame's centre toward the ring's projection, or, behind the camera, toward the
+   * side the ring is on.
+   */
+  private drawRingIndicator(ctx: CanvasRenderingContext2D, pose: WorldPose, center: readonly number[], near: number): boolean {
+    const k = pose.intrinsics;
+    const c = toCamera(pose, center);
+    const z = c[2] ?? 0;
+    let dx: number;
+    let dy: number;
+    if (z > near) {
+      const x = k.fx * ((c[0] ?? 0) / z) + k.cx;
+      const y = k.fy * ((c[1] ?? 0) / z) + k.cy;
+      const onFrame = x >= EDGE_MARGIN_PX && x <= k.width - EDGE_MARGIN_PX && y >= EDGE_MARGIN_PX && y <= k.height - EDGE_MARGIN_PX;
+      if (onFrame) return false;
+      dx = x - k.cx;
+      dy = y - k.cy;
+    } else {
+      dx = c[0] ?? 0;
+      dy = c[1] ?? 0;
+    }
+    const len = Math.hypot(dx, dy);
+    const ux = len > 1e-9 ? dx / len : 0;
+    const uy = len > 1e-9 ? dy / len : 1;
+    const hw = k.width / 2 - EDGE_MARGIN_PX;
+    const hh = k.height / 2 - EDGE_MARGIN_PX;
+    const reach = Math.min(Math.abs(ux) > 1e-9 ? hw / Math.abs(ux) : Infinity, Math.abs(uy) > 1e-9 ? hh / Math.abs(uy) : Infinity);
+    const px = k.width / 2 + ux * reach;
+    const py = k.height / 2 + uy * reach;
+    const size = 13;
+    ctx.beginPath();
+    ctx.moveTo(px + ux * size, py + uy * size);
+    ctx.lineTo(px - ux * size * 0.6 - uy * size * 0.8, py - uy * size * 0.6 + ux * size * 0.8);
+    ctx.lineTo(px - ux * size * 0.6 + uy * size * 0.8, py - uy * size * 0.6 - ux * size * 0.8);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 196, 0, 0.95)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.stroke();
     return true;
   }
 
