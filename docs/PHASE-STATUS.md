@@ -2176,6 +2176,25 @@ is the game as the user plays it, today, while the ladder waits for its device r
 assumed intrinsics and dispatches the orientation reading that camera would produce. It plays,
 saves, reloads, climbs the ladder, and walks Phases 11–21 pressing each screen's own controls.
 
+The run committed with these bundles (headless Chromium, the 480×640 ray-cast room, build
+`366afad`): **every required record of Phases 11–20 PASS** on the `DESKTOP_DEV` leg, Phase 21
+`PENDING` on AUDIT-001 alone (it needs every phase passed on the device), and every tripwire held.
+
+| Measured | Value |
+| --- | --- |
+| Frames localized against the map | 1659 of 1727 |
+| Reprojection median / held-out median | 0.86 px / 0.84 px |
+| Agreement with the map's own keyframe registration | 0.77° and 0.013 of a depth |
+| Gravity | `ESTIMATED` under the 0° layout, spread 0.32° (runner-up 5.70°) over 32.5° of viewing |
+| Renderer alignment (VIEW-001) | 1.05 px median over 600 readings; 0 draw and 0 UI violations |
+| Game | 6 stages (all EASY on this feed), 14 throws, 3 goals; 68 transitions, 0 illegal |
+| §52's chain, unbroken (PLAY-001) | from transition 10; 3 goals, none of which still scores at a ring moved off its axis (PLAY-003) |
+| Save | 1 save, 1 resume across a reload, 1 pause; the saved world shown, never collided with |
+
+The play leg (`scripts/run-e2e-play.mjs`), on its own page and the same build: READY in 26 s,
+5 throws, a goal on the 5th aimed by the guide, alignment 0.73 px, 0 HUD mismatches, 0 draw
+violations, and no phase's state moved.
+
 Four defects were found by it before any device saw the code, each fixed at its cause:
 
 1. **The camera preview was paused by the screen change.** Entering Phase 11 replaced the tree that
@@ -2194,6 +2213,31 @@ Four defects were found by it before any device saw the code, each fixed at its 
    the points the solve rests on; the share that disagrees is held separately
    (`docs/phase12/TEST-PLAN.md`).
 4. **SURF-004's control compared totals.** See amendment 1 of the Phase 11 plan.
+
+### Playing it, not only passing it
+
+Three more findings came from asking the legs to *play* rather than to collect records:
+
+5. **A ring could be generated off the screen.** §28's visibility bound is 55° from the view the
+   stage was made from; a portrait phone shows about ±25°. A player would see the HUD say READY
+   and no ring. The renderer now draws a gold arrow on the frame's edge toward a ring whose centre
+   is off the frame or behind the camera (`ArRenderer.drawRingIndicator`, `tests/unit/arRenderer.test.ts`),
+   and the HUD message says to follow it. VIEW-002 counts an arrow with no stage as a violation.
+6. **§52's golden chain was scored, but not unbroken.** The leg's first goal came after a pause
+   on Phase 14 had interrupted the chain, so PLAY-001 stayed `PENDING`. Phase 20 now asks for
+   fresh stages until one is scored straight through, and the leg fails if PLAY-001 is not `PASS`.
+7. **The harness released too late to ever score.** With a 1.4 s gauge the scoring window on the
+   synthetic feed is two or three frames wide; polling `aimWouldScore` over the DevTools protocol
+   saw it one to three frames late, and the first play-leg run made ten patient throws and scored
+   none. The watch now runs in the page and lifts the finger in the frame the guide turns green
+   (`releaseWhenAimScores` in `scripts/lib/harness.mjs`) — a player's reaction, minus the reaction
+   time.
+
+The feed's camera looks 15° down and never tilts up, so a launch along it (14° above the camera's
+forward) leaves the tee about level and a wall target above the tee is out of its reach. Both
+legs pass such stages over with **別のステージ**; a player tilts the phone up. That is a property of
+the feed, not a relaxation: the stage generator still offers wall targets, and the device run
+will throw at them.
 
 ## Consolidation, 2026-08-23 — after Phase 7
 

@@ -52,14 +52,17 @@ What to have ready:
    it again to resume.
 9. **空間コリジョンへ進む** → **コリジョン開始**, **ゲーム統合へ進む** → **ゲーム統合開始**.
    Now play: **hold** anywhere on the camera view (the gauge fills), point the phone toward the
-   ring, **release** to throw. The white dotted line is the predicted path. Throw once so the ball
+   ring — if it is off the screen, a gold arrow on the edge shows which way to turn — and
+   **release** to throw. The white dotted line is the predicted path; on an EASY stage it turns
+   green while that aim and power would score. Throw once so the ball
    hits the floor or a wall — COL-003 needs a bounce — and keep going until you score.
 10. **ステージ生成へ進む** → **ステージ生成開始**, **ゴールリングへ進む** → **ゴールリング開始**,
     **ボール物理へ進む** → **ボール物理開始**: one throw on each screen is enough; the records are
     taken from the whole session.
 11. **ゲームプレイ検証へ進む** → **ゲームプレイ検証開始**. Score once more on a fresh stage — tap
     **別のステージ** first if the current ring is out of reach. PLAY-001 needs the whole chain,
-    stage generation to success, in order.
+    stage generation to success, in order — don't pause or lose tracking between the new stage and
+    the goal; if you do, tap **別のステージ** and score again.
 12. **最終監査へ進む** → **最終監査開始**.
 13. On each screen, tap **エビデンス JSON をダウンロード** once its records have settled, and take a
     screenshot. Record the screen during steps 9–11 (§54's real-device recording).
