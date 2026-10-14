@@ -58,8 +58,8 @@
 import { intrinsicsFor } from '../geometry/intrinsics';
 import type { Intrinsics } from '../geometry/intrinsics';
 import { multiply3x3, transpose3x3 } from '../geometry/linalg';
-import { rotationAngleDeg } from '../geometry/rotation';
-import { INLIER_PX, OUTLIER_PX, cameraCenter, refinePose, transformPoint } from '../geometry/pnp';
+import { fromAxisAngle, rotationAngleDeg } from '../geometry/rotation';
+import { INLIER_PX, OUTLIER_PX, cameraCenter, projectPoint, refinePose, transformPoint } from '../geometry/pnp';
 import type { CameraPose, PnpCorrespondence, PnpResult } from '../geometry/pnp';
 import type { KeyframePose, Landmark } from '../mapping/landmarks';
 import { LandmarkState } from '../mapping/landmarks';
@@ -79,18 +79,47 @@ import type {
 
 /** Inliers a pose must rest on. Six unknowns, so twice the minimum the solver itself refuses below. */
 export const MIN_LOCALIZATION_INLIERS = 12;
-/** ...and the share of the correspondences they must be. Half: a pose most points disagree with is not this frame's. */
-export const MIN_INLIER_SHARE = 0.5;
-/** v3 §33's GOOD band, which every reprojection figure in this project is held to. */
+/**
+ * ...and the share of the correspondences they must be.
+ *
+ * A third, not half. The first version asked for half — "a pose most points disagree with is not
+ * this frame's" — and refused frames on a hand-held feed that had 14–21 points agreeing within
+ * 3 px with a 0.9 px median out of 33 tracked: the other points were tracks the tracker had lost
+ * under a fast turn, and are the tracker's outliers, not evidence about the pose. Twelve points
+ * landing within 3 px of their prediction under a wrong pose is about as likely as winning a
+ * lottery (a point lands within 3 px of a given spot with probability ~1e-4), so the count is the
+ * evidence, and the share only has to rule out a pose fitted to a small cluster of a conflicting
+ * majority.
+ */
+export const MIN_INLIER_SHARE = 0.3;
+/**
+ * v3 §33's GOOD band, which every reprojection figure in this project is held to. This is what
+ * WORLD-001 asks of a run's **typical** frame — the bar a phase passes on — and it is not what a
+ * single frame is refused on; see `ACCEPT_MEDIAN_PX`.
+ */
 export const MAX_LOCALIZATION_MEDIAN_PX = 2.0;
+/**
+ * The median reprojection error a single frame may have and still be localized.
+ *
+ * Looser than the bar a run is judged on, because a hand moves. On a hand-held feed 110 of 141
+ * refused frames were refused on the median alone, with 17 of 38 points agreeing within 3 px: the
+ * pose was right and the points were blurred — corners smeared by the motion are placed ±2–3 px
+ * off, and triangulated landmarks carry the same error. A frame accepted between the two bars is
+ * localized but not confident: the reprojection term of the confidence falls below the 0.4 GOOD
+ * bar at about 2.7 px, so such a frame reads DEGRADED — it draws, it holds the pose, it does not
+ * start a stage or accept a throw.
+ */
+export const ACCEPT_MEDIAN_PX = 3.0;
 /** The held-out error may be larger — half the points are missing from its solve — but not by more than half again. */
 export const MAX_HELD_OUT_PX = 3.0;
 /** How often the held-out split runs. It costs one extra refinement. */
 export const HELD_OUT_EVERY = 5;
 /** Correspondences shipped for the renderer's projection check. */
 const PROJECTION_SAMPLES = 24;
-/** Inliers at which the support term saturates. */
-const SUPPORT_SATURATION = 60;
+/** Inliers at which the support term saturates: 16 inliers reach the 0.4 bar for GOOD. */
+const SUPPORT_SATURATION = 40;
+/** Share of agreeing correspondences at which the agreement term saturates. */
+const AGREEMENT_SATURATION = 0.6;
 /** Image spread at which the distribution term saturates, as a fraction of the shorter edge. */
 const SPREAD_SATURATION = 0.35;
 /**
@@ -102,11 +131,15 @@ export const RELINK_RADIUS_PX = MAX_LOCALIZATION_MEDIAN_PX;
 export const RELINK_CONFIRM_FRAMES = 3;
 /**
  * How far the image may have moved since the last accepted pose for recovery to find it: about
- * ten degrees of turn at this field of view. Past it, recovery waits for the camera to come back.
+ * fifteen degrees of turn at this field of view (a wrist whipped through a quarter of a second
+ * does that). Past it, recovery waits for the camera to come back.
  */
-export const RECOVERY_SEARCH_PX = 80;
+export const RECOVERY_SEARCH_PX = 120;
 /** The shift histogram's bin. Wider than the relink radius, so one true shift lands in one or two bins. */
 const SHIFT_BIN_PX = 4;
+/** Candidate shifts tried per recovery, and how far apart they must be to count as different. */
+const RECOVERY_HYPOTHESES = 4;
+const RECOVERY_PEAK_GAP_PX = 24;
 
 export const LocalizationState = {
   /** The map holds too little to localize against. */
@@ -150,6 +183,9 @@ export class LocalizationStage {
   private sentEpoch = -1;
   private relinkedTotal = 0;
   private recoveredTotal = 0;
+  /** `performance.now()` when a pose was last accepted, and in which epoch. */
+  private acceptedAt = -Infinity;
+  private acceptedEpoch = -1;
   /** This frame's re-links, `[live id, landmark id]`, for the tracker. Empty unless the pose was accepted. */
   private relabels: [number, number][] = [];
   /** Candidate re-links waiting out `RELINK_CONFIRM_FRAMES`: live id → landmark and run length. */
@@ -163,8 +199,19 @@ export class LocalizationStage {
     this.sentEpoch = -1;
     this.relinkedTotal = 0;
     this.recoveredTotal = 0;
+    this.acceptedAt = -Infinity;
+    this.acceptedEpoch = -1;
     this.relabels = [];
     this.pending.clear();
+  }
+
+  /**
+   * Whether a pose was accepted in this epoch within `ms` — the world still holds the camera.
+   * `LandmarkStage` is told, so a run of unregisterable batches does not redefine a world the
+   * camera is still being placed in.
+   */
+  localizedWithin(ms: number, epoch: number): boolean {
+    return this.acceptedEpoch === epoch && performance.now() - this.acceptedAt <= ms;
   }
 
   /** The re-links the last `process` accepted, for `FlowTracker.relabel`. */
@@ -220,15 +267,46 @@ export class LocalizationStage {
       observed.add(f.id);
       correspondences.push({ id: f.id, x: f.x0, y: f.y0, world: l.position });
     }
-    // The landmarks a point could be re-linked to: confirmed, in this epoch, and carried by no live point.
-    const unobserved = all.filter((l) => l.epoch === epoch && l.state === LandmarkState.CONFIRMED && !observed.has(l.id));
+    // The landmarks a point could be re-linked to: in this epoch and carried by no live point —
+    // candidates included. A world that has just been (re)defined holds nothing else for its first
+    // seconds, and the first version, which took only confirmed landmarks, could not recover a
+    // young map from the very dropout that made it young: the map was redefined again, and again.
+    const unobserved = all.filter((l) => l.epoch === epoch && !observed.has(l.id));
 
-    // Too few of the map's tracks survive: look for the landmarks where the last accepted pose,
-    // moved by the shift the points agree on, says they are.
+    // The solve on the tracks the map's ids still hold — and, when that is not enough, a look for
+    // the landmarks whose tracks broke: where the last accepted pose, moved by the shift the points
+    // agree on, says they are. "Not enough" is either too few tracks, or tracks that do not agree
+    // with one pose: a fast turn leaves a frame with sixteen of the map's points tracked and four
+    // of them right, and the first version looked for lost landmarks only below twelve.
+    let best: { result: PnpResult; from: string } | null = null;
+    if (correspondences.length >= MIN_LOCALIZATION_INLIERS) best = this.bestSolve(k, correspondences, input, map);
+    const liveOk = best !== null && problemsOf(best.result, correspondences.length).length === 0;
+
     let recovery: Relink[] = [];
-    if (correspondences.length < MIN_LOCALIZATION_INLIERS && this.previous && unlinked.length > 0) {
-      recovery = recoverLinks(k, this.previous.pose, unlinked, unobserved);
-      for (const r of recovery) correspondences.push({ id: r.landmarkId, x: r.x, y: r.y, world: r.world });
+    if (!liveOk && this.previous && unlinked.length > 0) {
+      // Several candidate image shifts, each tried by solving a pose from the pairs it implies:
+      // the shift that gives the most points agreeing with one pose is the camera's. The vote
+      // alone is not asked to be decisive — on a large map chance pairs make its peak a poor
+      // judge, and the solve's own bars are the judge that cannot be fooled by them. A hypothesis
+      // is taken only if its pose passes every one of them.
+      let bestHypothesis: { links: Relink[]; solved: { result: PnpResult; from: string }; total: number } | null = null;
+      for (const links of recoverHypotheses(k, this.previous.pose, unlinked, unobserved)) {
+        const trial = [...correspondences, ...links.map((r) => ({ id: r.landmarkId, x: r.x, y: r.y, world: r.world }))];
+        if (trial.length < MIN_LOCALIZATION_INLIERS) continue;
+        const solved = this.bestSolve(k, trial, input, map);
+        if (!solved) continue;
+        if (problemsOf(solved.result, trial.length).length > 0) continue;
+        const r = solved.result;
+        const held = bestHypothesis?.solved.result;
+        if (!held || r.inliers > held.inliers || (r.inliers === held.inliers && r.medianErrorPx < held.medianErrorPx)) {
+          bestHypothesis = { links, solved, total: trial.length };
+        }
+      }
+      if (bestHypothesis) {
+        recovery = bestHypothesis.links;
+        for (const r of recovery) correspondences.push({ id: r.landmarkId, x: r.x, y: r.y, world: r.world });
+        best = bestHypothesis.solved;
+      }
     }
     const recoveryFrom = correspondences.length - recovery.length;
 
@@ -242,17 +320,7 @@ export class LocalizationStage {
       );
     }
 
-    const starts: { pose: CameraPose; from: string }[] = [];
-    if (this.previous) starts.push({ pose: this.previous.pose, from: 'PREVIOUS' });
-    for (let i = input.keyframeIds.length - 1, n = 0; i >= 0 && n < 2; i--) {
-      const id = input.keyframeIds[i];
-      if (id === undefined) continue;
-      const pose = map.keyframePose(id);
-      if (!pose) continue;
-      starts.push({ pose, from: 'KEYFRAME' });
-      n++;
-    }
-    if (starts.length === 0) {
+    if (this.startsFor(input, map).length === 0) {
       return this.finish(
         t0,
         { ...base, correspondences: correspondences.length },
@@ -261,18 +329,6 @@ export class LocalizationStage {
       );
     }
 
-    let best: { result: PnpResult; from: string } | null = null;
-    for (const start of starts) {
-      const result = refinePose(k, correspondences, start.pose);
-      if (!result.pose) continue;
-      if (
-        !best ||
-        result.inliers > best.result.inliers ||
-        (result.inliers === best.result.inliers && result.medianErrorPx < best.result.medianErrorPx)
-      ) {
-        best = { result, from: start.from };
-      }
-    }
     if (!best || !best.result.pose) {
       return this.finish(
         t0,
@@ -291,16 +347,7 @@ export class LocalizationStage {
     const terms = confidenceTerms(result, correspondences, share, k);
     const confidence = Math.min(...terms.map((t) => t.value));
 
-    const problems: string[] = [];
-    if (result.inliers < MIN_LOCALIZATION_INLIERS) {
-      problems.push(`${result.inliers} inlier(s), below ${MIN_LOCALIZATION_INLIERS}`);
-    }
-    if (share < MIN_INLIER_SHARE) {
-      problems.push(`${round(share * 100, 1)}% of the correspondences agree, below ${MIN_INLIER_SHARE * 100}%`);
-    }
-    if (result.medianErrorPx > MAX_LOCALIZATION_MEDIAN_PX) {
-      problems.push(`median error ${result.medianErrorPx} px, past ${MAX_LOCALIZATION_MEDIAN_PX} px`);
-    }
+    const problems = problemsOf(result, correspondences.length);
     const accepted = problems.length === 0;
     if (!accepted) this.pending.clear();
     // A refused frame leaves the last accepted pose where it was: it is still the best guess at
@@ -310,6 +357,8 @@ export class LocalizationStage {
     if (accepted) {
       this.localizedFrames++;
       this.previous = { pose, epoch };
+      this.acceptedAt = performance.now();
+      this.acceptedEpoch = epoch;
       // Recovery's pairs stay only where the accepted pose agrees with them — and where, through
       // that pose, the point sits on its landmark and no other: the shift recovery voted for is
       // one shift for the whole image, and near the edges a neighbouring landmark can be the
@@ -387,6 +436,59 @@ export class LocalizationStage {
   }
 
   /* ---------------------------------------------------------------------- */
+
+  /**
+   * Where a solve may start: the last accepted pose, that pose turned by the image shift the
+   * tracked landmarks have undergone since, and the newest keyframes the map registered.
+   *
+   * The shifted start is for a hand that turned fast: the last pose can be tens of pixels away
+   * from this frame's, a local solve started there settles on a few points, and the median shift
+   * of the landmarks is a robust estimate of the turn — it survives half the tracks being wrong.
+   */
+  private startsFor(
+    input: LocalizationStageInput,
+    map: MapReader,
+    k?: Intrinsics,
+    correspondences?: readonly PnpCorrespondence[],
+  ): { pose: CameraPose; from: string }[] {
+    const starts: { pose: CameraPose; from: string }[] = [];
+    if (this.previous) {
+      starts.push({ pose: this.previous.pose, from: 'PREVIOUS' });
+      const shifted = k && correspondences ? shiftedStart(k, this.previous.pose, correspondences) : null;
+      if (shifted) starts.push({ pose: shifted, from: 'SHIFTED' });
+    }
+    for (let i = input.keyframeIds.length - 1, n = 0; i >= 0 && n < 2; i--) {
+      const id = input.keyframeIds[i];
+      if (id === undefined) continue;
+      const pose = map.keyframePose(id);
+      if (!pose) continue;
+      starts.push({ pose, from: 'KEYFRAME' });
+      n++;
+    }
+    return starts;
+  }
+
+  /** The best-supported refinement over every start, or `null` if none converged. */
+  private bestSolve(
+    k: Intrinsics,
+    correspondences: readonly PnpCorrespondence[],
+    input: LocalizationStageInput,
+    map: MapReader,
+  ): { result: PnpResult; from: string } | null {
+    let best: { result: PnpResult; from: string } | null = null;
+    for (const start of this.startsFor(input, map, k, correspondences)) {
+      const result = refinePose(k, correspondences, start.pose);
+      if (!result.pose) continue;
+      if (
+        !best ||
+        result.inliers > best.result.inliers ||
+        (result.inliers === best.result.inliers && result.medianErrorPx < best.result.medianErrorPx)
+      ) {
+        best = { result, from: start.from };
+      }
+    }
+    return best;
+  }
 
   private agreementWith(
     input: LocalizationStageInput,
@@ -508,6 +610,52 @@ function project(k: Intrinsics, pose: CameraPose, landmarks: readonly Landmark[]
   return out;
 }
 
+/** The bars a solve must clear to be a localized frame; empty means it clears them all. */
+function problemsOf(result: PnpResult, correspondences: number): string[] {
+  const problems: string[] = [];
+  const share = correspondences > 0 ? result.inliers / correspondences : 0;
+  if (result.inliers < MIN_LOCALIZATION_INLIERS) {
+    problems.push(`${result.inliers} inlier(s), below ${MIN_LOCALIZATION_INLIERS}`);
+  }
+  if (share < MIN_INLIER_SHARE) {
+    problems.push(`${round(share * 100, 1)}% of the correspondences agree, below ${MIN_INLIER_SHARE * 100}%`);
+  }
+  if (result.medianErrorPx > ACCEPT_MEDIAN_PX) {
+    problems.push(`median error ${result.medianErrorPx} px, past ${ACCEPT_MEDIAN_PX} px`);
+  }
+  return problems;
+}
+
+/**
+ * The last pose, turned so the landmarks it projects land where they were observed — by the
+ * median shift of the observations (the camera's yaw and pitch; roll and translation are left to
+ * the solve). `null` when the shift is nothing, or more than a turn the solve could be trusted to
+ * follow.
+ */
+function shiftedStart(k: Intrinsics, previous: CameraPose, correspondences: readonly PnpCorrespondence[]): CameraPose | null {
+  const dx: number[] = [];
+  const dy: number[] = [];
+  for (const c of correspondences) {
+    const p = projectPoint(k, previous, c.world);
+    if (!p) continue;
+    dx.push(c.x - p.x);
+    dy.push(c.y - p.y);
+  }
+  if (dx.length < 8) return null;
+  const mx = median(dx);
+  const my = median(dy);
+  if (Math.hypot(mx, my) < 2 || Math.hypot(mx, my) > 3 * RECOVERY_SEARCH_PX) return null;
+  // A turn about the camera's y axis by θ moves the image by +fθ; about its x axis by φ, by −fφ.
+  const yawDeg = (Math.atan(mx / k.fx) * 180) / Math.PI;
+  const pitchDeg = (-Math.atan(my / k.fy) * 180) / Math.PI;
+  const delta = multiply3x3(fromAxisAngle([1, 0, 0], pitchDeg), fromAxisAngle([0, 1, 0], yawDeg));
+  const t = previous.translation;
+  return {
+    rotation: multiply3x3(delta, previous.rotation),
+    translation: [0, 1, 2].map((i) => (delta[i * 3] ?? 0) * (t[0] ?? 0) + (delta[i * 3 + 1] ?? 0) * (t[1] ?? 0) + (delta[i * 3 + 2] ?? 0) * (t[2] ?? 0)),
+  };
+}
+
 /** Projections bucketed by `cell`, for neighbourhood queries. */
 function gridOf(points: readonly Projection[], cell: number): Map<string, Projection[]> {
   const grid = new Map<string, Projection[]>();
@@ -580,61 +728,82 @@ function relinkUnder(
 }
 
 /**
- * Recovery: the image shift the points and the last pose's projections agree on, then
- * `relinkUnder` through it.
+ * Recovery's candidates: the image shifts the points and the last pose's projections most agree
+ * on, each as the pairs it implies.
  *
  * A turn of the camera moves the whole image by nearly one shift. Every pair within
- * `RECOVERY_SEARCH_PX` votes for its difference; the true pairs pile into one bin and chance
- * pairs spread over all of them. The peak must hold at least `MIN_LOCALIZATION_INLIERS` votes
- * and stand at least three times above the mean bin, or nothing is linked.
+ * `RECOVERY_SEARCH_PX` votes for its difference; the true pairs pile into one bin and chance pairs
+ * spread over all of them. The best `RECOVERY_HYPOTHESES` peaks that are `RECOVERY_PEAK_GAP_PX`
+ * apart and hold at least `MIN_LOCALIZATION_INLIERS` votes are returned, each as the unique pairs
+ * `relinkUnder` finds through it. The caller solves a pose from each; this function does not claim
+ * any of them is right.
+ *
+ * The first version returned one peak and demanded it stand three times above the mean bin. On a
+ * map of a few hundred landmarks that held; past about seven hundred the chance votes in a bin's
+ * neighbourhood approach the true ones, the test failed, the camera was not found, and five
+ * unregistered batches later the world was redefined — on the rough feed, at the third or fourth
+ * dropout, in every run.
  */
-function recoverLinks(
+function recoverHypotheses(
   k: Intrinsics,
   pose: CameraPose,
   points: readonly { id: number; x: number; y: number }[],
   landmarks: readonly Landmark[],
-): Relink[] {
+): Relink[][] {
   const projected = project(k, pose, landmarks, RECOVERY_SEARCH_PX);
   if (projected.length < MIN_LOCALIZATION_INLIERS) return [];
-  const grid = gridOf(projected, RECOVERY_SEARCH_PX / 2);
+  const cell = RECOVERY_SEARCH_PX / 2;
+  const grid = gridOf(projected, cell);
   const bins = new Map<string, number>();
-  let votes = 0;
   for (const f of points) {
-    for (const p of near(grid, RECOVERY_SEARCH_PX / 2, f.x, f.y, RECOVERY_SEARCH_PX)) {
+    for (const p of near(grid, cell, f.x, f.y, RECOVERY_SEARCH_PX)) {
       const dx = f.x - p.x;
       const dy = f.y - p.y;
       if (Math.abs(dx) > RECOVERY_SEARCH_PX || Math.abs(dy) > RECOVERY_SEARCH_PX) continue;
       const key = `${Math.floor(dx / SHIFT_BIN_PX)},${Math.floor(dy / SHIFT_BIN_PX)}`;
       bins.set(key, (bins.get(key) ?? 0) + 1);
-      votes++;
     }
   }
-  if (bins.size === 0) return [];
-  // The peak over 2×2 neighbourhoods, so a shift on a bin edge is not split in two.
-  let peak = 0;
-  let at = { x: 0, y: 0 };
+  // Each bin's vote summed with its 2×2 neighbourhood, so a shift on a bin edge is not split.
+  const peaks: { sum: number; x: number; y: number }[] = [];
+  const seen = new Set<string>();
   for (const key of bins.keys()) {
     const [bx, by] = key.split(',').map(Number) as [number, number];
-    let sum = 0;
-    let sx = 0;
-    let sy = 0;
-    for (let dy = 0; dy <= 1; dy++) {
-      for (let dx = 0; dx <= 1; dx++) {
-        const n = bins.get(`${bx + dx},${by + dy}`) ?? 0;
-        sum += n;
-        sx += n * (bx + dx + 0.5) * SHIFT_BIN_PX;
-        sy += n * (by + dy + 0.5) * SHIFT_BIN_PX;
+    for (let oy = -1; oy <= 0; oy++) {
+      for (let ox = -1; ox <= 0; ox++) {
+        const x0 = bx + ox;
+        const y0 = by + oy;
+        const id = `${x0},${y0}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        let sum = 0;
+        let sx = 0;
+        let sy = 0;
+        for (let dy = 0; dy <= 1; dy++) {
+          for (let dx = 0; dx <= 1; dx++) {
+            const n = bins.get(`${x0 + dx},${y0 + dy}`) ?? 0;
+            sum += n;
+            sx += n * (x0 + dx + 0.5) * SHIFT_BIN_PX;
+            sy += n * (y0 + dy + 0.5) * SHIFT_BIN_PX;
+          }
+        }
+        if (sum >= MIN_LOCALIZATION_INLIERS) peaks.push({ sum, x: sx / sum, y: sy / sum });
       }
     }
-    if (sum > peak) {
-      peak = sum;
-      at = { x: sx / sum, y: sy / sum };
-    }
   }
-  const binsInWindow = ((2 * RECOVERY_SEARCH_PX) / SHIFT_BIN_PX) ** 2;
-  const mean = (4 * votes) / binsInWindow;
-  if (peak < MIN_LOCALIZATION_INLIERS || peak < 3 * mean) return [];
-  return relinkUnder(k, pose, points, landmarks, SHIFT_BIN_PX, at);
+  peaks.sort((a, b) => b.sum - a.sum);
+  const chosen: { x: number; y: number }[] = [];
+  for (const p of peaks) {
+    if (chosen.length >= RECOVERY_HYPOTHESES) break;
+    if (chosen.some((c) => Math.hypot(c.x - p.x, c.y - p.y) < RECOVERY_PEAK_GAP_PX)) continue;
+    chosen.push({ x: p.x, y: p.y });
+  }
+  const out: Relink[][] = [];
+  for (const shift of chosen) {
+    const links = relinkUnder(k, pose, points, landmarks, SHIFT_BIN_PX, shift);
+    if (links.length >= MIN_LOCALIZATION_INLIERS) out.push(links);
+  }
+  return out;
 }
 
 /**
@@ -693,13 +862,13 @@ function confidenceTerms(
     },
     {
       name: 'agreement',
-      value: round(Math.max(0, Math.min(1, share)), 4),
-      note: `${round(share * 100, 1)}% of the tracked landmarks agree with the pose`,
+      value: round(Math.max(0, Math.min(1, share / AGREEMENT_SATURATION)), 4),
+      note: `${round(share * 100, 1)}% of the tracked landmarks agree with the pose, against ${AGREEMENT_SATURATION * 100}%`,
     },
     {
       name: 'reprojectionError',
-      value: round(Math.max(0, 1 - Math.max(0, result.medianErrorPx) / (MAX_LOCALIZATION_MEDIAN_PX * 1.5)), 4),
-      note: `median ${result.medianErrorPx} px against ${MAX_LOCALIZATION_MEDIAN_PX * 1.5} px`,
+      value: round(Math.max(0, 1 - Math.max(0, result.medianErrorPx) / (ACCEPT_MEDIAN_PX * 1.5)), 4),
+      note: `median ${result.medianErrorPx} px against ${ACCEPT_MEDIAN_PX * 1.5} px`,
     },
     {
       name: 'distribution',

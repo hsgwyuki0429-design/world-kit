@@ -124,6 +124,12 @@ const landmarkStage = new LandmarkStage();
  * changed — the map itself.
  */
 const localizationStage = new LocalizationStage();
+/**
+ * How long after the camera was last placed in a world that world is kept through unregisterable
+ * batches. Past it — the camera has been unplaceable for this long and the batches still share
+ * nothing with the map — the world is redefined as before.
+ */
+const HOLD_WORLD_MS = 3000;
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -488,6 +494,13 @@ function runFlow(
   capturedAtEpoch: number,
 ): TrackingResult {
   flowActive = true;
+  const stageMs: Record<string, number> = {};
+  let lapAt = performance.now();
+  const lap = (name: string): void => {
+    const now = performance.now();
+    stageMs[name] = Math.round((now - lapAt) * 100) / 100;
+    lapAt = now;
+  };
   const result = flowStage.process({
     levels: p.levels,
     detectLevel: levelIndex,
@@ -496,13 +509,15 @@ function runFlow(
     meanLuma,
     topLevelMad,
   });
-  if (!options.verify) return result;
+  lap('flow');
+  if (!options.verify) return { ...result, stageMs };
 
   // Phase 5 runs on the population Phase 4 just produced, in the same worker and on the same
   // frame. Splitting them would let an inlier ratio be reported beside a population from a
   // different frame.
   const outcome = verificationStage.process(flowStage.getTracker(), options.wantInjection);
-  if (!options.pose) return { ...result, verification: outcome.report };
+  lap('verification');
+  if (!options.pose) return { ...result, verification: outcome.report, stageMs };
 
   // Phase 6 decomposes the model Phase 5 just selected, on the same frame, in the same worker.
   // `K` comes from this frame's own geometry rather than from a constant read at open (§H.0):
@@ -514,7 +529,8 @@ function runFlow(
     trackedFeatures: result.flow?.tracked ?? 0,
     wantInjection: options.wantPoseInjection,
   });
-  if (!options.keyframes) return { ...result, verification: outcome.report, pose };
+  lap('pose');
+  if (!options.keyframes) return { ...result, verification: outcome.report, pose, stageMs };
 
   // Phase 8 decides on the same frame, from the same three reports the screen shows. A decision
   // taken from one frame's pose beside another frame's population would be a decision about a
@@ -529,7 +545,8 @@ function runFlow(
     verification: outcome.report,
     flow: result.flow,
   });
-  if (!options.triangulate) return { ...result, verification: outcome.report, pose, keyframe };
+  lap('keyframe');
+  if (!options.triangulate) return { ...result, verification: outcome.report, pose, keyframe, stageMs };
 
   // Phase 9 relates the keyframe Phase 8 has just inserted to the one before it. On every other
   // frame it reports IDLE and carries its counters forward, so the screen can tell "no pair this
@@ -539,8 +556,9 @@ function runFlow(
     inserted: keyframe.inserted,
     wantInjections: options.wantInjections,
   });
+  lap('triangulation');
   if (!options.landmarks) {
-    return { ...result, verification: outcome.report, pose, keyframe, triangulation };
+    return { ...result, verification: outcome.report, pose, keyframe, triangulation, stageMs };
   }
 
   // Phase 10 consumes the **full** batch, which the Phase 9 report deliberately does not carry
@@ -550,9 +568,13 @@ function runFlow(
   const landmarks = landmarkStage.process({
     batch: triangulationStage.getBatch(),
     wantInjection: options.wantInjections,
+    // Placed in this world within the last `HOLD_WORLD_MS`: a batch that shares nothing with the
+    // map is a changed-ids problem, not a lost world (see `LandmarkStageInput.deferRestart`).
+    deferRestart: options.localize && localizationStage.localizedWithin(HOLD_WORLD_MS, landmarkStage.epoch()),
   });
+  lap('landmarks');
   if (!options.localize) {
-    return { ...result, verification: outcome.report, pose, keyframe, triangulation, landmarks };
+    return { ...result, verification: outcome.report, pose, keyframe, triangulation, landmarks, stageMs };
   }
 
   // Phase 12 solves this frame's pose against the map **as it stands after this frame's batch**,
@@ -575,6 +597,7 @@ function runFlow(
   // Points found to be landmarks whose tracks had broken carry the landmark's id from the next
   // frame on — to this stage, the keyframes and the map's registration alike.
   flowStage.getTracker().relabel(localizationStage.takeRelabels());
+  lap('localization');
   return {
     ...result,
     verification: outcome.report,
@@ -583,6 +606,7 @@ function runFlow(
     triangulation,
     landmarks,
     localization,
+    stageMs,
   };
 }
 

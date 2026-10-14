@@ -49,6 +49,7 @@ npm run test:e2e          # automated DESKTOP_DEV legs for Phases 0-21, with evi
 npm run test:e2e:spatial  # just Phases 11-21, on a ray-cast synthetic room
 npm run test:e2e:play     # just the play screen: scan, stage, throw until a goal
 npm run test:e2e:rough    # the play screen on a feed that breaks every track every 4 s
+npm run test:e2e:handheld # ...and on a feed with a hand's sweeps, shake, whips and blur
 npm run dev               # HTTPS dev server (required for camera and motion on a phone)
 ```
 

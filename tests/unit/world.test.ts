@@ -46,6 +46,28 @@ describe('SpatialWorld fed by the real stages', () => {
     expect(s.medianControlRatio).toBeLessThan(0.3);
   });
 
+  it('pairs only poses the world would call GOOD with the orientation sensor', () => {
+    // A pose the localization is itself unsure of carries its error straight into the estimate of
+    // down; on a hand-held feed such frames kept the right layout's spread at 4–5° and the
+    // estimate under its bar for over a minute.
+    const run = runRoom(40);
+    const before = run.builder.stats();
+    const confident = before.pairings;
+    expect(confident).toBeGreaterThan(0);
+    const unsure = {
+      frames: 1, localizedFrames: 1, state: 'LOCALIZED', reason: '', epoch: 1, mapVersion: 1, mapLandmarks: 100,
+      pose: { rotation: [1, 0, 0, 0, 1, 0, 0, 0, 1], translation: [0, 0, 0] }, cameraCenter: [0, 0, 0],
+      correspondences: 30, inliers: 14, medianErrorPx: 1.5, heldOutPx: -1, heldOutPoints: 0, startedFrom: 'PREVIOUS',
+      keyframeAgreement: null, medianDepth: 3, confidence: 0.25, confidenceTerms: [], capturedAtEpoch: 3,
+      width: 640, height: 480, projectionSamples: [], snapshot: null, localizationMs: 1,
+      relinked: 0, relinkedTotal: 0, recovered: false, recoveredTotal: 0,
+    } as unknown as Parameters<typeof run.builder.onLocalization>[0];
+    run.builder.onLocalization(unsure);
+    const after = run.builder.stats();
+    expect(after.pairings).toBe(confident);
+    expect(after.pairingsRefused['LOW_CONFIDENCE']).toBe(1);
+  });
+
   it('never reaches READY without the orientation sensor — every surface stays UNKNOWN', () => {
     const run = runRoom(160, { gravity: false });
     const v = run.world.view();

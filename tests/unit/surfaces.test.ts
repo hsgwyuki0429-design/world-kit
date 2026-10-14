@@ -108,6 +108,38 @@ describe('GravityAligner', () => {
     expect(a.estimate().state).toBe(GravityState.UNKNOWN);
   });
 
+  it('keeps a standing estimate through a stretch too noisy to have made it', () => {
+    // A hand-held feed: poses ±4° noisy, motion yaw-only. The right layout spreads 4.4° and the
+    // runner-up 5.9° — not separated enough to *make* an estimate, and the first version dropped a
+    // standing one on exactly such a stretch, flickering READY on and off for over a minute.
+    const stretch = frames(0, 450, 7, 12, 7);
+    const fresh = new GravityAligner();
+    for (const f of stretch) fresh.add(f);
+    expect(fresh.estimate().state, 'a fresh aligner makes no estimate from it').toBe(GravityState.UNKNOWN);
+
+    const standing = new GravityAligner();
+    for (const f of frames(0, 80, 25, 1.0, 21)) standing.add(f);
+    expect(standing.estimate().state).toBe(GravityState.ESTIMATED);
+    standing.reset();
+    for (const f of frames(0, 80, 25, 1.0, 21)) standing.add(f);
+    standing.estimate();
+    for (const f of stretch) standing.add(f);
+    const e = standing.estimate();
+    expect(e.state, e.reason).toBe(GravityState.ESTIMATED);
+    expect(e.candidateDeg).toBe(0);
+  });
+
+  it('does not keep an estimate for a layout that is no longer the best one', () => {
+    const a = new GravityAligner();
+    for (const f of frames(0, 80, 25, 1.0, 22)) a.add(f);
+    expect(a.estimate().state).toBe(GravityState.ESTIMATED);
+    // The sensor now describes a different layout: the standing one must not be kept on credit.
+    for (const f of frames(180, 400, 25, 1.0, 23)) a.add(f);
+    const e = a.estimate();
+    if (e.state === GravityState.ESTIMATED) expect(e.candidateDeg).toBe(180);
+    else expect(e.worldDown).toBeNull();
+  });
+
   it('refuses when the sensor and the pose describe different motions', () => {
     const a = new GravityAligner();
     const good = frames(0, 80, 25, 0.5, 5);

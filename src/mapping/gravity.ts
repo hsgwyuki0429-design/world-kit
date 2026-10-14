@@ -53,9 +53,25 @@ export const MIN_DIVERSITY_DEG = 15;
  * little more while the phone moves. Six degrees is three times the sum.
  */
 export const MAX_SPREAD_DEG = 6;
-/** ...and the runner-up must do at least this much worse, in ratio and in degrees. */
-export const MIN_DISCRIMINATION_RATIO = 2;
+/**
+ * ...and the runner-up must do at least this much worse, in ratio and in degrees, for an estimate
+ * to be **made**.
+ *
+ * The ratio was 2 and became 1.6 when a hand-held feed — poses ±4° noisy, motion yaw-only — gave
+ * the right layout 4.2° against 7.1° for the runner-up and the estimate sat at UNKNOWN for over a
+ * minute. The two spreads are variances of a few hundred frames, and a 1.7 ratio in spread (2.9 in
+ * variance) is well past what chance gives at that size.
+ */
+export const MIN_DISCRIMINATION_RATIO = 1.6;
 export const MIN_DISCRIMINATION_DEG = 2;
+/**
+ * ...and to be **kept** once made: the same layout still best, its spread still within the bar,
+ * and the runner-up still this much worse. Which way is down does not change because one noisy
+ * minute made the layouts look alike; an estimate that flipped with every update flickered READY
+ * on and off and took the stage with it.
+ */
+export const KEEP_DISCRIMINATION_RATIO = 1.25;
+export const KEEP_DISCRIMINATION_DEG = 1;
 /** Bound on the samples kept. Newest kept. */
 export const MAX_GRAVITY_SAMPLES = 600;
 
@@ -111,9 +127,12 @@ export const UNKNOWN_GRAVITY: GravityEstimate = {
 
 export class GravityAligner {
   private readonly samples: GravityPairing[] = [];
+  /** The layout and screen orientation the standing estimate was made under, for the keep bar. */
+  private standing: { angleDeg: number; screenAngle: number } | null = null;
 
   reset(): void {
     this.samples.length = 0;
+    this.standing = null;
   }
 
   size(): number {
@@ -148,15 +167,26 @@ export class GravityAligner {
     const ordered = [...groups.values()].sort((a, b) => b.length - a.length);
     let lastRefusal: GravityEstimate | null = null;
     for (const group of ordered) {
-      const e = solveGroup(group);
-      if (e.state === GravityState.ESTIMATED) return { ...e, samples: this.samples.length };
+      const screenAngle = group[0]?.screenAngle ?? 0;
+      const keep = this.standing && this.standing.screenAngle === screenAngle ? this.standing.angleDeg : null;
+      const e = solveGroup(group, keep);
+      if (e.state === GravityState.ESTIMATED) {
+        this.standing = { angleDeg: e.candidateDeg, screenAngle };
+        return { ...e, samples: this.samples.length };
+      }
       lastRefusal ??= e;
     }
+    // Nothing decided: whatever was standing no longer is.
+    this.standing = null;
     return { ...(lastRefusal ?? UNKNOWN_GRAVITY), samples: this.samples.length };
   }
 }
 
-export function solveGroup(group: readonly GravityPairing[]): GravityEstimate {
+/**
+ * @param standing the layout an estimate already stands under for this group, or `null`. It is held
+ *   to the looser keep bar rather than the one for making an estimate.
+ */
+export function solveGroup(group: readonly GravityPairing[], standing: number | null = null): GravityEstimate {
   if (group.length < MIN_GRAVITY_SAMPLES) {
     return {
       ...UNKNOWN_GRAVITY,
@@ -196,10 +226,10 @@ export function solveGroup(group: readonly GravityPairing[]): GravityEstimate {
         `past ${MAX_SPREAD_DEG}° — the pose and the sensor do not agree about which way is down`,
     };
   }
-  if (
-    runnerUp.spreadDeg < best.spreadDeg * MIN_DISCRIMINATION_RATIO ||
-    runnerUp.spreadDeg - best.spreadDeg < MIN_DISCRIMINATION_DEG
-  ) {
+  const keeping = standing !== null && best.angleDeg === standing;
+  const ratio = keeping ? KEEP_DISCRIMINATION_RATIO : MIN_DISCRIMINATION_RATIO;
+  const margin = keeping ? KEEP_DISCRIMINATION_DEG : MIN_DISCRIMINATION_DEG;
+  if (runnerUp.spreadDeg < best.spreadDeg * ratio || runnerUp.spreadDeg - best.spreadDeg < margin) {
     return {
       ...UNKNOWN_GRAVITY,
       ...base,

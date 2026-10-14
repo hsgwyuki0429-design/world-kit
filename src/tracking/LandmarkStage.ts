@@ -65,6 +65,13 @@ export interface LandmarkStageInput {
   /** Phase 9's batch, or `null` on a frame that produced none. */
   readonly batch: LandmarkBatch | null;
   readonly wantInjection: boolean;
+  /**
+   * Localization has placed the camera in this epoch's world recently. A batch that shares no
+   * landmark with the map is then one whose point ids changed (every track broke and was found
+   * again), not evidence that the world is gone; redefining it would throw away a map the camera
+   * is still being localized in, and the stage with it.
+   */
+  readonly deferRestart?: boolean;
 }
 
 export class LandmarkStage {
@@ -137,7 +144,7 @@ export class LandmarkStage {
         ? this.measureInjection(batch)
         : null;
 
-    const outcome = this.map.ingest(batch);
+    const outcome = this.map.ingest(batch, input.deferRestart ?? false);
     const all = this.map.all();
     const predictions = outcome.predictions;
     const errors = predictions.map((p) => p.errorPx);

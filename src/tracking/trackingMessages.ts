@@ -993,8 +993,17 @@ export interface LocalizationReport {
   readonly recoveredTotal: number;
 }
 
+/** Milliseconds the worker spent in each stage of one frame, for the stages that ran. */
+export type StageTimings = Readonly<Record<string, number>>;
+
 export interface TrackingResult {
   readonly kind: 'phase3';
+  /**
+   * Where this frame's time went, stage by stage (flow, verification, pose, keyframe,
+   * triangulation, landmarks, localization). Measured in the worker with `performance.now()`;
+   * absent on results that predate it. It is what tells a slow device from a slow stage.
+   */
+  readonly stageMs?: StageTimings;
   readonly detected: boolean;
   readonly count: number;
   readonly detectMs: number;

@@ -26,6 +26,9 @@ export interface ArPanelHandlers {
   onSave: () => void;
   onResume: () => void;
   onToggleSurfaces: () => void;
+  onToggleDiagnostics: () => void;
+  /** The text to copy is fetched fresh at the press, so it is never older than the tap. */
+  onCopyDiagnostics: () => string;
 }
 
 export interface HudModel {
@@ -50,6 +53,10 @@ export interface HudModel {
   readonly resumeLabel: string;
   readonly surfacesShown: boolean;
   readonly aspect: string;
+  /** The diagnostic lines, or `null` while the panel is closed. */
+  readonly diagnostics: readonly string[] | null;
+  /** What the copy button would copy, shown in a box so it can be selected by hand too. */
+  readonly diagnosticsText: string;
 }
 
 export interface ArPanel {
@@ -98,6 +105,20 @@ export function getArPanel(handlers: ArPanelHandlers): ArPanel {
   const save = button('game-save', '保存', () => handlersRef?.onSave());
   const resume = button('game-resume', '前回の続きから', () => handlersRef?.onResume());
   const toggle = button('game-surfaces', '面の表示: ON', () => handlersRef?.onToggleSurfaces());
+  const diagToggle = button('game-diagnostics-toggle', '診断を表示', () => handlersRef?.onToggleDiagnostics());
+  const diagCopy = button('game-diagnostics-copy', '診断をコピー', () => {
+    const text = handlersRef?.onCopyDiagnostics() ?? '';
+    void copyText(text, diagBox).then((ok) => {
+      diagCopy.textContent = ok ? 'コピーしました' : '下の欄を長押ししてコピー';
+      window.setTimeout(() => {
+        diagCopy.textContent = '診断をコピー';
+      }, 2500);
+    });
+  });
+  const diagLines = el('pre', { class: 'ar-diagnostics', id: 'game-diagnostics' }, ['']);
+  const diagBox = el('textarea', { class: 'ar-diagnostics-text', id: 'game-diagnostics-text', readOnly: true, rows: 4 } as never);
+  const diagPanel = el('div', { class: 'ar-diagnostics-panel', id: 'game-diagnostics-panel' }, [diagLines, diagBox]);
+  diagPanel.hidden = true;
 
   const root = el('div', { class: 'ar-panel', id: 'ar-panel' }, [
     stack,
@@ -105,6 +126,8 @@ export function getArPanel(handlers: ArPanelHandlers): ArPanel {
     stats,
     el('div', { class: 'button-row ar-buttons' }, [retry, newStage, pause]),
     el('div', { class: 'button-row ar-buttons' }, [save, resume, toggle]),
+    el('div', { class: 'button-row ar-buttons' }, [diagToggle, diagCopy]),
+    diagPanel,
   ]);
 
   // The press: anywhere on the camera view. Released anywhere — including after a rebuild of the
@@ -173,6 +196,15 @@ export function getArPanel(handlers: ArPanelHandlers): ArPanel {
       resume.disabled = !m.canResume;
       setText(resume, m.resumeLabel);
       setText(toggle, `面の表示: ${m.surfacesShown ? 'ON' : 'OFF'}`);
+      const shown = m.diagnostics !== null;
+      if (diagPanel.hidden === shown) diagPanel.hidden = !shown;
+      setText(diagToggle, shown ? '診断を隠す' : '診断を表示');
+      if (m.diagnostics) {
+        setText(diagLines, m.diagnostics.join('\n'));
+        // The text box is left alone while it is being selected: replacing its value drops the
+        // selection a person is making to copy it by hand.
+        if (document.activeElement !== diagBox && diagBox.value !== m.diagnosticsText) diagBox.value = m.diagnosticsText;
+      }
     },
     read() {
       const s = document.getElementById('game-state');
@@ -181,6 +213,31 @@ export function getArPanel(handlers: ArPanelHandlers): ArPanel {
     },
   };
   return panel;
+}
+
+/**
+ * Put `text` on the clipboard — the async API inside the tap's gesture, then a selected text box
+ * and `execCommand` where that is refused. `false` means neither took it, and the box is left
+ * selected for a long-press copy.
+ */
+async function copyText(text: string, box: HTMLTextAreaElement): Promise<boolean> {
+  box.value = text;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to the selection route
+  }
+  try {
+    box.focus();
+    box.select();
+    box.setSelectionRange(0, text.length);
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  }
 }
 
 function setText(node: HTMLElement, text: string): void {
