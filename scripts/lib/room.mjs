@@ -181,3 +181,32 @@ export function accelerationReading() {
   // up_device = (−sinγ·cosβ, sinβ, cosγ·cosβ) with γ = 0
   return { x: 0, y: 9.81 * Math.sin(b), z: 9.81 * Math.cos(b) };
 }
+
+/*
+ * The rough feed: the same room, with the camera's view wiped out for a moment every few seconds.
+ *
+ * On a phone in a hand, tracks break — a whip of the wrist blurs a frame to nothing, a light comes
+ * into view and the exposure jumps. Every point the tracker followed is lost at once, and the
+ * points it finds afterwards are new ones with new ids. The smooth feed never does this, and the
+ * first device run reported `TRACKING LOST` within seconds of every start while the smooth feed
+ * localized 96 % of its frames. This feed is how that is reproduced on the desktop.
+ */
+
+/** A dropout starts this many frames apart (four seconds at 30 fps)... */
+export const DROPOUT_EVERY = 120;
+/** ...and lasts this many: about a quarter of a second, long enough for a 6 fps worker to see it. */
+export const DROPOUT_FRAMES = 8;
+
+export function isDropout(k) {
+  const m = k % DROPOUT_EVERY;
+  return m >= DROPOUT_EVERY / 2 && m < DROPOUT_EVERY / 2 + DROPOUT_FRAMES;
+}
+
+/** `renderRoomFrame`, with nothing trackable in the dropout frames. */
+export function renderRoughRoomFrame(y, width, height, k, frames) {
+  if (isDropout(k)) {
+    y.fill(118);
+    return;
+  }
+  renderRoomFrame(y, width, height, k, frames);
+}

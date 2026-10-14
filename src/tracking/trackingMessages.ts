@@ -976,6 +976,21 @@ export interface LocalizationReport {
   readonly projectionSamples: readonly ProjectionSample[];
   readonly snapshot: MapSnapshot | null;
   readonly localizationMs: number;
+  /**
+   * Live points found this frame to be map landmarks whose tracks had broken, and given the
+   * landmark's id (see `LocalizationStage`, re-linking). Their pose was accepted; nothing is
+   * re-linked on a refused frame.
+   */
+  readonly relinked: number;
+  /** ...and over the session. */
+  readonly relinkedTotal: number;
+  /**
+   * The frame was localized only because points were re-linked to landmarks — the tracks the map
+   * knew had all broken, and the last accepted pose found the landmarks again.
+   */
+  readonly recovered: boolean;
+  /** Frames localized that way, over the session. */
+  readonly recoveredTotal: number;
 }
 
 export interface TrackingResult {

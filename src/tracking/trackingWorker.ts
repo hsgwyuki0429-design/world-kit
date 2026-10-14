@@ -572,6 +572,9 @@ function runFlow(
     registeredKeyframe: registered,
     capturedAtEpoch,
   });
+  // Points found to be landmarks whose tracks had broken carry the landmark's id from the next
+  // frame on — to this stage, the keyframes and the map's registration alike.
+  flowStage.getTracker().relabel(localizationStage.takeRelabels());
   return {
     ...result,
     verification: outcome.report,

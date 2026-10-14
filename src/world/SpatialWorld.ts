@@ -201,6 +201,8 @@ export class SpatialWorld {
   private version = 0;
   private epoch = 0;
   private pose: WorldPose | null = null;
+  /** Whether the newest pose report was a localized frame, or the pose is being held over one that was not. */
+  private poseCurrent = false;
   private poseState = 'NO_MAP';
   private poseReason = 'no frame has been localized yet';
   private history: { center: readonly number[]; at: number }[] = [];
@@ -262,7 +264,9 @@ export class SpatialWorld {
     this.poseState = pose.state;
     this.poseReason = pose.reason;
     const at = this.now();
+    this.poseCurrent = false;
     if (pose.state === 'LOCALIZED' && pose.rotation && pose.translation && pose.center) {
+      this.poseCurrent = true;
       const r = pose.rotation;
       this.pose = {
         rotation: pose.rotation,
@@ -278,9 +282,13 @@ export class SpatialWorld {
       this.history.push({ center: pose.center, at });
       if (this.history.length > MAX_POSE_HISTORY) this.history.shift();
       this.lastPose = at;
-    } else {
+    } else if (pose.state === 'NO_MAP') {
       this.pose = null;
     }
+    // A frame that was refused, or saw too few landmarks, leaves the last pose where it was: held
+    // for at most `POSE_STALE_MS`, as DEGRADED, never as GOOD. One blurred frame on a phone in a
+    // hand is not a lost camera, and the first version — which dropped the pose on any refused
+    // frame — reported `TRACKING LOST` on the device within seconds of every start.
     this.invalid = false;
     this.version++;
   }
@@ -380,8 +388,15 @@ export class SpatialWorld {
       return { state: TrackingState.INITIALIZING, reason: 'the map is still being built — keep looking around slowly' };
     }
     if (!this.pose) return { state: TrackingState.LOST, reason: this.poseReason };
-    if (now - this.pose.at > POSE_STALE_MS) {
-      return { state: TrackingState.LOST, reason: `no pose for ${Math.round(now - this.pose.at)} ms` };
+    const age = Math.round(now - this.pose.at);
+    if (age > POSE_STALE_MS) {
+      return {
+        state: TrackingState.LOST,
+        reason: this.poseCurrent ? `no pose for ${age} ms` : `no frame localized for ${age} ms — ${this.poseReason}`,
+      };
+    }
+    if (!this.poseCurrent) {
+      return { state: TrackingState.DEGRADED, reason: `holding the last pose (${age} ms old) — ${this.poseReason}` };
     }
     if (this.pose.confidence < MIN_GOOD_POSE_CONFIDENCE) {
       return {
@@ -416,6 +431,7 @@ export class SpatialWorld {
 
   private clearEpochState(): void {
     this.pose = null;
+    this.poseCurrent = false;
     this.poseState = 'NO_MAP';
     this.poseReason = 'the world was (re)defined; no frame has been localized in it yet';
     this.history = [];
