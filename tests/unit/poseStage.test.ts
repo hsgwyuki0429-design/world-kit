@@ -141,6 +141,7 @@ function frameFor(v: VerificationReport, pose: PoseReport, reAnchored: boolean):
     keyframe: null,
     triangulation: null,
     landmarks: null,
+    localization: null,
   };
 }
 

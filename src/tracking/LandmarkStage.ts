@@ -37,7 +37,7 @@ import {
   MIN_OBSERVATIONS_CONFIRMED,
   SCALE_LOCAL_UNITS,
 } from '../mapping/landmarks';
-import type { Landmark, LandmarkBatch, LandmarkPoint } from '../mapping/landmarks';
+import type { KeyframePose, Landmark, LandmarkBatch, LandmarkPoint } from '../mapping/landmarks';
 import type {
   LandmarkCullRecord,
   LandmarkInjectionRecord,
@@ -98,6 +98,27 @@ export class LandmarkStage {
   /** The map, for the screen and for whatever phase consumes it next. Read-only by type. */
   landmarks(): readonly Landmark[] {
     return this.map.all();
+  }
+
+  /**
+   * Read-only access for Phase 12's localization, which runs beside this stage in the same
+   * worker and needs the map's positions and keyframe poses — never a way to change them.
+   */
+  landmark(id: number): Landmark | undefined {
+    return this.map.get(id);
+  }
+
+  keyframePose(keyframe: number): KeyframePose | undefined {
+    return this.map.poseOf(keyframe);
+  }
+
+  epoch(): number {
+    return this.map.currentEpoch();
+  }
+
+  /** Bumped on every batch the map was given, so a consumer can tell "unchanged" cheaply. */
+  version(): number {
+    return this.batches;
   }
 
   process(input: LandmarkStageInput): LandmarkReport {

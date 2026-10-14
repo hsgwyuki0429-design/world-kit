@@ -1,8 +1,12 @@
-# Safari Spatial Mapping Engine
+# Safari Spatial Mapping Engine — and the game played on it
 
 Turning what an iPhone's Safari can actually observe — camera frames and motion — into a
 reusable **Spatial World**, and letting a game layer collide with the geometry that was
-reconstructed from the real room.
+reconstructed from the real room: look around a room, and a ring appears on a floor or wall the
+camera actually observed; throw a ball at it, and it bounces only off what was seen.
+
+**▶ To play:** open the deployed page on an iPhone, tap **空間ボールゲームを開く** on the first
+screen, then **ゲーム開始**. How to play, in Japanese: [`docs/HOW-TO-PLAY.md`](docs/HOW-TO-PLAY.md).
 
 Built strictly to spec, phase by phase — `Safari Spatial Mapping Prototype v3.0` through
 Phase 4, and `Safari Spatial Game v4.0` from Phase 5 on. v4 re-scopes the product: the Spatial
@@ -32,15 +36,19 @@ with the gyroscope to 0.762°. **Phase 7 (IMU Support / Fusion) is built and its
 is the first in this project to decide a required test**: v3 §68's pass condition for the phase
 is about *absence* — IMU unavailableでもVision-only modeで継続可能 — and headless Chromium is
 permanently in that case, so IMU-002 is checked on every commit rather than once by hand. The
-device run is still owed. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
+device run is still owed. Phases 8–21 are built — up to a ball game on the observed room — and
+each has an automated leg that decides its required records on synthetic input; none of them can
+pass until a device runs it. See [`docs/PHASE-STATUS.md`](docs/PHASE-STATUS.md).**
 
 ## Quick start
 
 ```bash
 npm install
-npm test          # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
-npm run test:e2e  # automated DESKTOP_DEV legs for Phases 0-7, with evidence and screenshots
-npm run dev       # HTTPS dev server (required for camera and motion on a phone)
+npm test                  # anti-fake audits + typecheck + unit tests, incl. evidence re-derivation
+npm run test:e2e          # automated DESKTOP_DEV legs for Phases 0-21, with evidence and screenshots
+npm run test:e2e:spatial  # just Phases 11-21, on a ray-cast synthetic room
+npm run test:e2e:play     # just the play screen: scan, stage, throw until a goal
+npm run dev               # HTTPS dev server (required for camera and motion on a phone)
 ```
 
 To pass Phase 0, run the device test: [`docs/phase0/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase0/HOW-TO-RUN-DEVICE-TEST.md).
@@ -226,16 +234,24 @@ docs/
   phase7/TEST-PLAN.md            IMU-001..009, written before the code
   phase7/HOW-TO-RUN-DEVICE-TEST.md
   phase7/evidence/
+  phase8/ … phase10/             KEY, TRI, MAP — test plans, device guides, evidence
+  phase11/TEST-PLAN.md           SURF-001..009 (surfaces, gravity)
+  phase11/HOW-TO-RUN-DEVICE-TEST.md   one walk for Phases 11–21
+  phase12/ … phase21/TEST-PLAN.md     WORLD, VIEW, SAVE, COL, GAME, STAGE, RING, BALL, PLAY, AUDIT
+  phase11/ … phase21/evidence/   the spatial leg's DESKTOP_DEV bundles and screenshots
+  HOW-TO-PLAY.md                 遊び方 — the play screen, for a player
 src/
   core/          types, seeded Rng, validators, PhaseRegistry (Phase Lock),
                  stats (median/round/§56's trim, shared by every session)
   capture/       CapabilityDetector, MotionCapabilityProbe, RotationRateMonitor,
+                 GravityMonitor (down in the device frame, sign cross-checked),
                  CameraSource, FrameIntegrityMonitor, ScenarioLedger, probe plumbing
   debug/         Logger, EvidenceRecorder, OverlayAlignmentProbe
   pipeline/      tiers, pyramid maths, AdaptiveController, PipelineMetrics,
                  WorkerFramePipeline
   geometry/      linalg (Jacobi eigen + SVD), twoView (F and H), ransac, verify,
-                 rotation, intrinsics, pose (E/H decomposition, cheirality) —
+                 rotation, intrinsics, pose (E/H decomposition, cheirality),
+                 pnp (per-frame pose against the map, LM + Huber) —
                  pure array arithmetic; may import nothing but core (audited)
   fusion/        quat (no Euler conversion exists), orientationEkf (6-state ESKF:
                  orientation + gyro bias) — same rule as geometry: numbers in,
@@ -247,18 +263,27 @@ src/
                  poseConfidence, gyroRotation, FusionStage, FusionSession,
                  fusionConfidence, KeyframeStage, KeyframeSession,
                  TriangulationStage, TriangulationSession, LandmarkStage,
-                 LandmarkSession, types and messages
+                 LandmarkSession, LocalizationStage (Phase 12), types and messages
   mapping/       keyframes (v3 §20's selector, the bounded store and the metronome it is
                  scored against), triangulation (the parallax gate and the solve),
                  landmarks (the map, the similarity that registers a batch into it,
-                 and the gate) — same rule as geometry and fusion: numbers in,
-                 structures out, may import nothing but core and geometry (audited)
-  testkit/       Phase0Tests..Phase10Tests, runTests (the shape all eleven share)
-  ui/            Phase0Screen..Phase10Screen, dom (el/card/stat/formatters),
-                 phaseSections (the tests/evidence/navigation cards), PreviewVideo, styles
-  world/ renderer/ game/   empty — later phases
+                 and the gate), gravity (down in the world, the four image layouts
+                 told apart by measurement), surfaces (sequential RANSAC, classification
+                 against gravity, ids across extractions, the jittered control) — same
+                 rule as geometry and fusion: numbers in, structures out (audited)
+  world/         SpatialWorld (the single source of truth, a frozen view for every
+                 consumer, READY as a conjunction), WorldBuilder (feeds it, measures it)
+  game/          collision (observed hulls only, with provenance), physics (240 Hz,
+                 in camera heights), ring (§28's constraints, the reach search,
+                 difficulty from the room), stage (seeded, reproducible, with its
+                 controls), GameSession (§37's state machine), SaveGame
+  renderer/      ArRenderer (one projection, checked against the tracker), ViewStats
+  testkit/       Phase0Tests..Phase21Tests, spatialContext, runTests
+  ui/            Phase0Screen..Phase10Screen, SpatialScreens (11–21 and play), ArPanel,
+                 spatialCards, dom, phaseSections, PreviewVideo, styles
 scripts/         audit-fake-data, audit-architecture, run-e2e*,
-                 lib/ (the leg harness: serve, launch, the phase ladder, the Y4M feed)
+                 lib/ (the leg harness: serve, launch, the phase ladder, the Y4M feed,
+                 the ray-cast room the spatial legs film)
 ```
 
 ## What the device actually reported
@@ -803,9 +828,50 @@ rather than the gate; and a sparsity figure that read **338 %** — the same sha
 prediction agreement, viewpoint spread, combined as the minimum. `audit-fake-data.mjs` enforces the
 absence of the alternative mechanically.
 
+## What Phases 11–21 do — the game
+
+Phases 11–21 are built and share one running stack. Each has its own screen, its own records and
+its own evidence bundle, and each is locked behind the one before it exactly as Phases 0–10 are.
+None has passed: they need the device runs Phases 7–10 still owe, and then one walk of their own
+([`docs/phase11/HOW-TO-RUN-DEVICE-TEST.md`](docs/phase11/HOW-TO-RUN-DEVICE-TEST.md)).
+
+**The play screen is the product, outside that ladder.** The first screen's
+**空間ボールゲームを開く** opens it: the same real stack, no phase evaluated (the play leg checks
+that playing moves no phase's state). That is what makes the game playable today without
+pretending any phase passed.
+
+The chain, and the one check in each link that a fake cannot pass:
+
+| Link | What it is | The check a fake fails |
+| --- | --- | --- |
+| **Pose of this frame** (12) | the tracker's ids *are* the map's landmark ids, so each frame is a PnP refinement against the map (`geometry/pnp.ts`, LM + Huber, no DLT — it is degenerate on coplanar points, and a room is planes) | held-out: re-solved on even ids, the odd ids must land where the tracker sees them; and agreement with the map's own registration of the same view |
+| **Down** (11) | `deviceorientation`'s down in the device frame, related to the camera by one of four image layouts; the layout under which every frame agrees on down is chosen, *if* the motion separated them | a camera that has not turned cannot discriminate, and gravity stays `UNKNOWN` — so nothing is a floor |
+| **Surfaces** (11) | seeded sequential RANSAC over confirmed landmarks, cut to connected pieces, bounded by the hull of what was seen, classified against gravity into §24's GROUND / WALL / PLATFORM / OBSTACLE_SURFACE / UNKNOWN | the same landmarks jittered off their planes must yield far smaller surfaces; surfaces must be found again next time |
+| **SpatialWorld** (12) | the single source of truth, a frozen view for every consumer; `READY` is a conjunction re-derived on every read | READY checked from outside the world on every frame |
+| **Viewer** (13) | ring, ball, surfaces and guide drawn through the world's pose | the renderer's own projection is fed the tracker's observations and must land on them; HUD labels are read back from the DOM |
+| **Collision** (15) | only classified, confident, observed hulls — a ball rolling off the seen floor falls | every bouncing throw is re-flown with the surfaces removed and must fly differently |
+| **Stage** (17) | a virtual tee and a goal fitted to this room, seeded and reproducible | regenerated and compared on every stage; the same room moved by half a camera height must give a different stage |
+| **Ring** (18) | §28's constraints, each named in every rejection; difficulty read off the throws that score | three rings built to fail — in a wall, over nothing, in a table — are offered to the validator on every stage |
+| **Ball** (19) | 240 Hz, in units of the measured camera height, never a metre | every throw replayed bit for bit; no bounce may gain energy |
+| **Gameplay** (20) | §52's chain read off the session's transitions | every goal re-flown at a ring moved off its axis must miss |
+
+**Scale is never invented.** The world's unit is a keyframe pair's baseline. The one length it does
+have, in its own units, is the camera's height above the observed floor, and every game constant is
+a multiple of that.
+
+**Resume is honest about what it cannot do.** A saved world's coordinates belong to its own session
+and its landmarks cannot be recognised again (the ids are per-run; there are no descriptors), so a
+resume restores progress and regenerates the stage on the room as it is observed now. The saved
+world is shown, marked not relocalized, and never collided with.
+
 ## Next
 
-Phase 11 — Surface Understanding (v4 §23), once Phase 10 has a device run behind it.
+The device runs, in order: Phase 7 (whose hand-eye fit is the open defect), then 8–10, then one walk
+through 11–21 in a real room. Rule 004 and Rule 005 stand: until then, every phase from 7 on is
+`TESTING` however green the automated legs are — and the play screen is how the game is played in
+the meantime, without any of that changing.
+
+### Earlier notes
 
 The open defect from Phase 3 is still open: the overlay rotates in portrait on the device.
 It matters more in Phase 4 than it did in Phase 3, because Phase 4 measures every displacement

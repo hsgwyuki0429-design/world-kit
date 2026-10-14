@@ -52,6 +52,41 @@ import { renderPhase7Screen } from './ui/Phase7Screen';
 import { renderPhase8Screen } from './ui/Phase8Screen';
 import { renderPhase9Screen } from './ui/Phase9Screen';
 import { renderPhase10Screen } from './ui/Phase10Screen';
+import { GravityMonitor, GravitySource } from './capture/GravityMonitor';
+import { SpatialWorld, TrackingState } from './world/SpatialWorld';
+import type { SpatialWorldView } from './world/SpatialWorld';
+import { WorldBuilder } from './world/WorldBuilder';
+import type { GravityReading } from './world/WorldBuilder';
+import { GameSession, GameState } from './game/GameSession';
+import type { GameView } from './game/GameSession';
+import { MIN_COLLISION_CONFIDENCE, buildCollisionSet } from './game/collision';
+import {
+  SAVE_KEY,
+  SaveLedger,
+  buildSave,
+  parseSave,
+  restoredWorldOf,
+  serialiseSave,
+} from './game/SaveGame';
+import type { RestoredWorld } from './game/SaveGame';
+import { ArRenderer, alignment as projectionAlignment } from './renderer/ArRenderer';
+import { ViewStatsCollector } from './renderer/ViewStats';
+import { getArPanel } from './ui/ArPanel';
+import type { ArPanel, HudModel } from './ui/ArPanel';
+import { renderPlayScreen, renderSpatialPhaseScreen, SPATIAL_PHASE_NAMES } from './ui/SpatialScreens';
+import { SPATIAL_INTROS, spatialCards } from './ui/spatialCards';
+import type { SpatialContext } from './testkit/spatialContext';
+import { runPhase11Tests, PHASE11_SPECS } from './testkit/Phase11Tests';
+import { runPhase12Tests, PHASE12_SPECS } from './testkit/Phase12Tests';
+import { runPhase13Tests, PHASE13_SPECS } from './testkit/Phase13Tests';
+import { runPhase14Tests, PHASE14_SPECS } from './testkit/Phase14Tests';
+import { runPhase15Tests, PHASE15_SPECS } from './testkit/Phase15Tests';
+import { runPhase16Tests, PHASE16_SPECS } from './testkit/Phase16Tests';
+import { runPhase17Tests, PHASE17_SPECS } from './testkit/Phase17Tests';
+import { runPhase18Tests, PHASE18_SPECS } from './testkit/Phase18Tests';
+import { runPhase19Tests, PHASE19_SPECS } from './testkit/Phase19Tests';
+import { runPhase20Tests, PHASE20_SPECS } from './testkit/Phase20Tests';
+import { runPhase21Tests, PHASE21_SPECS } from './testkit/Phase21Tests';
 import { FusionStage } from './tracking/FusionStage';
 import { FusionSession } from './tracking/FusionSession';
 import { KeyframeSession } from './tracking/KeyframeSession';
@@ -94,6 +129,26 @@ const PHASE8 = 8;
 const PHASE9 = 9;
 const PHASE10 = 10;
 const PHASE11 = 11;
+const LAST_PHASE = 21;
+/** Same reasoning as every screen before them: re-render for a human, not for every frame. */
+const SPATIAL_TICK_MS = 500;
+/** How often the HUD is read back from the DOM and compared with the engine (GAME-002, VIEW-004). */
+const UI_CHECK_EVERY_FRAMES = 10;
+
+/** Each spatial phase's suite and specs, by index. One table, so a phase cannot be graded by another's. */
+const SPATIAL_SUITES: Readonly<Record<number, { run: (ctx: SpatialContext) => TestResult[]; specs: readonly unknown[] }>> = {
+  11: { run: runPhase11Tests, specs: PHASE11_SPECS },
+  12: { run: runPhase12Tests, specs: PHASE12_SPECS },
+  13: { run: runPhase13Tests, specs: PHASE13_SPECS },
+  14: { run: runPhase14Tests, specs: PHASE14_SPECS },
+  15: { run: runPhase15Tests, specs: PHASE15_SPECS },
+  16: { run: runPhase16Tests, specs: PHASE16_SPECS },
+  17: { run: runPhase17Tests, specs: PHASE17_SPECS },
+  18: { run: runPhase18Tests, specs: PHASE18_SPECS },
+  19: { run: runPhase19Tests, specs: PHASE19_SPECS },
+  20: { run: runPhase20Tests, specs: PHASE20_SPECS },
+  21: { run: runPhase21Tests, specs: PHASE21_SPECS },
+};
 const PROBE_BUDGET_MS = 1500;
 /** How often the SCAN screen re-evaluates while the camera is live. */
 const PHASE1_TICK_MS = 500;
@@ -126,7 +181,7 @@ const PHASE10_TICK_MS = 500;
 
 type Screen =
   | 'phase0' | 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5' | 'phase6' | 'phase7'
-  | 'phase8' | 'phase9' | 'phase10';
+  | 'phase8' | 'phase9' | 'phase10' | 'spatial' | 'play';
 
 class Phase0App {
   private readonly root: HTMLElement;
@@ -311,6 +366,39 @@ class Phase0App {
   private phase10Bundle: EvidenceBundle | null = null;
   private phase10DevEntry = false;
   private readonly landmarkMap = new LandmarkSession();
+  /*
+   * Phases 11–21 and the game. One stack — localization in the worker, the world, the stage and
+   * the ball on this thread — that every one of those screens and the play screen share.
+   */
+  private readonly gravityMonitor = new GravityMonitor();
+  private readonly spatialWorld = new SpatialWorld();
+  private readonly worldBuilder = new WorldBuilder(this.spatialWorld, (at) => this.gravityReadingAt(at));
+  private readonly game = new GameSession();
+  private readonly viewStats = new ViewStatsCollector();
+  private readonly saveLedger = new SaveLedger();
+  private arPanel: ArPanel | null = null;
+  private arRenderer: ArRenderer | null = null;
+  private arFrame = 0;
+  private arFrames = 0;
+  /** The renderer's last frame put the ring off the frame and drew the edge arrow to it. */
+  private ringOffFrame = false;
+  /** The stack's own "am I running" (§H.5): localization asked for, never inferred from the pipeline. */
+  private spatialRequested = false;
+  private spatialEverRan = false;
+  /** Which spatial phases have had their own start pressed — each screen's own predicate (§H.5). */
+  private readonly spatialStarted = new Set<number>();
+  private spatialPhase = PHASE11;
+  private readonly spatialResults = new Map<number, TestResult[]>();
+  private readonly spatialBundles = new Map<number, EvidenceBundle>();
+  private readonly spatialDevEntry = new Set<number>();
+  /** Free play: the real stack, no phase evaluated. */
+  private playMode = false;
+  private showSurfaces = true;
+  private restoredWorld: RestoredWorld | null = null;
+  private pauseSnapshot: { digest: string; ball: string } | null = null;
+  private collisionSamples = 0;
+  private collisionViolations = 0;
+  private collisionViolationDetail = '';
   private lastOverlayAge: Uint16Array | null = null;
   private lastOverlay: Float32Array | null = null;
   private alignment: AlignmentReading | null = null;
@@ -637,10 +725,79 @@ class Phase0App {
       detecting: this.detecting,
       sensorProbeRunning: this.sensorProbeRunning,
       sensorProbeDone: this.sensorProbeDone,
+      playAvailable: this.matrix !== null && !this.detecting,
+      playNote:
+        'カメラとモーションセンサーを使い、実際に観測した部屋の形からステージを作って遊びます。' +
+        'ここで遊んでもフェーズは合格になりません — 合格判定は下のスキャンから始まる各フェーズ画面で行います。',
     };
   }
 
   private render(): void {
+    if (this.screen === 'play') {
+      renderPlayScreen(
+        this.root,
+        {
+          cameraState: this.camera.getState(),
+          opening: this.cameraOpening,
+          running: this.isSpatialRunning(),
+          restoredNote: this.restoredWorld
+            ? `前回の進行を再開しました（ステージ ${this.restoredWorld.record.progress.stageIndex + 1}、成功 ` +
+              `${this.restoredWorld.record.progress.successes}）。前回のワールド（面 ${this.restoredWorld.record.world.surfaces.length} 枚）は ` +
+              `${this.restoredWorld.note}。`
+            : null,
+          gravityNote: this.gravityNote(),
+        },
+        this.ensureArPanel(),
+        {
+          onStart: () => void this.onStartPlay(),
+          onStop: () => this.onStopSpatial('user stopped the game'),
+          onBack: () => this.leavePlay(),
+        },
+      );
+      return;
+    }
+    if (this.screen === 'spatial') {
+      const n = this.spatialPhase;
+      const next = n < LAST_PHASE ? n + 1 : null;
+      const ctx = this.spatialContext();
+      renderSpatialPhaseScreen(
+        this.root,
+        {
+          index: n,
+          intro: SPATIAL_INTROS[n] ?? '',
+          phase: this.registry.get(n),
+          results: this.spatialResults.get(n) ?? [],
+          cameraState: this.camera.getState(),
+          opening: this.cameraOpening,
+          running: this.spatialStarted.has(n) && this.isSpatialRunning(),
+          cards: spatialCards(n, ctx),
+          backLabel: `${n === PHASE11 ? 'ランドマーク地図' : (SPATIAL_PHASE_NAMES[n - 1] ?? '')}へ戻る`,
+          next:
+            next === null
+              ? null
+              : {
+                  index: next,
+                  phase: this.registry.get(next),
+                  canEnter: this.registry.canEnter(next),
+                  implemented: isPhaseImplemented(next),
+                  blockedReason: this.registry.blockedReason(next),
+                  lockNote: this.registry.lockNote(next),
+                },
+        },
+        this.ensureArPanel(),
+        {
+          onStart: () => void this.onStartSpatial(n),
+          onStop: () => this.onStopSpatial(`user stopped Phase ${n}`),
+          onBack: () => this.leaveSpatial(n),
+          onEnterNext: () => {
+            if (next !== null) this.enterSpatial(next);
+          },
+          onDownloadEvidence: () => this.onDownloadEvidence(this.spatialBundles.get(n) ?? null),
+          onCopyEvidence: () => void this.onCopyEvidence(this.spatialBundles.get(n) ?? null),
+        },
+      );
+      return;
+    }
     if (this.screen === 'phase10') {
       const p = this.pipeline.getStats();
       renderPhase10Screen(
@@ -982,6 +1139,7 @@ class Phase0App {
       return;
     }
     renderPhase0Screen(this.root, this.viewModel(), {
+      onOpenPlay: () => this.enterPlay(),
       onStartScan: () => this.enterPhase1(),
       onProbeSensors: () => void this.onProbeSensors(),
       onDownloadEvidence: () => this.onDownloadEvidence(this.bundle),
@@ -1532,6 +1690,15 @@ class Phase0App {
       // rather than one the map makes about itself.
       if (result.flow) this.landmarkMap.noteTrackedPopulation(result.flow.total);
       this.landmarkMap.record(result.landmarks);
+    }
+    if (result.localization) {
+      this.spatialEverRan = true;
+      this.worldBuilder.onLocalization(result.localization);
+      // VIEW-001: the renderer's own projection, fed the tracker's observations of this frame.
+      const pose = this.worldBuilder.view().cameraPose;
+      if (pose && result.localization.projectionSamples.length > 0) {
+        this.viewStats.recordAlignment(projectionAlignment(pose, result.localization.projectionSamples));
+      }
     }
     if (result.overlay) {
       this.lastOverlay = new Float32Array(result.overlay);
@@ -2740,14 +2907,9 @@ class Phase0App {
     this.render();
   }
 
-  /** Phase 11 does not exist yet; the control says so and this refuses rather than pretending. */
-  private enterPhase11(): boolean {
-    logger.warn(PHASE11, 'App', 'refused entry to Phase 11', {
-      reason: isPhaseImplemented(PHASE11)
-        ? this.registry.blockedReason(PHASE11)
-        : 'Phase 11 has not been written in this build',
-    });
-    return false;
+  /** Enter the SURFACE UNDERSTANDING screen. Same gate as the phases before it (Rule 005). */
+  private enterPhase11(devOverride = false): boolean {
+    return this.enterSpatial(PHASE11, devOverride);
   }
 
   private startPhase10Ticking(): void {
@@ -3493,6 +3655,531 @@ class Phase0App {
    * Read-only debug surface, used by the automated desktop leg to pull the same evidence a
    * human would export. It exposes state; it cannot set a verdict.
    */
+  /* ---------------------------------------------------------------------- */
+  /* Phases 11–21 and the game                                               */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * Whether the localization stack is running — asked for, and a pipeline serving it.
+   *
+   * Both halves, for §H.5's reason: the stack is reached from a Phase 10 screen whose pipeline is
+   * already live, so `pipeline.isRunning()` alone would say "localizing" before anyone asked.
+   */
+  private isSpatialRunning(): boolean {
+    return this.spatialRequested && this.pipeline.isRunning();
+  }
+
+  /**
+   * What the worker is asked to do while a spatial screen is running.
+   *
+   * On the phase screens, Phase 10's whole configuration — injections included, so the stages
+   * underneath stay under their own checks — plus `localize`. On the play screen the injections
+   * are off: they are measurements for the phase screens, and each costs an extra fit.
+   */
+  private spatialOptions(): TrackingOptions {
+    if (this.playMode) {
+      return {
+        ...this.flowOptions(),
+        verify: true,
+        wantInjection: false,
+        pose: true,
+        wantPoseInjection: false,
+        keyframes: true,
+        triangulate: true,
+        wantInjections: false,
+        landmarks: true,
+        localize: true,
+      };
+    }
+    return { ...this.landmarkOptions(), localize: true };
+  }
+
+  /** The gravity reading nearest a frame's capture time, for the world's gravity estimate. */
+  private gravityReadingAt(atEpoch: number): GravityReading | null {
+    const s = this.gravityMonitor.sampleAt(atEpoch);
+    if (!s) return null;
+    return { down: s.down, screenAngle: s.screenAngle, turnRate: this.gravityMonitor.turnRateAt(atEpoch) };
+  }
+
+  private gravityNote(): string {
+    const src = this.gravityMonitor.getSource();
+    if (src === GravitySource.LIVE) return '重力の向き: モーションセンサーから計測中。';
+    if (src === GravitySource.IDLE) return '重力の向きは、開始時に許可するモーションセンサーから計測します。';
+    return `重力の向き: ${src} — ${this.gravityMonitor.getDetail()}。床と壁を区別できないため、ステージは生成されません。`;
+  }
+
+  private ensureArPanel(): ArPanel {
+    if (!this.arPanel) {
+      this.arPanel = getArPanel({
+        onPress: () => {
+          this.game.press();
+        },
+        onRelease: () => {
+          this.game.release();
+        },
+        onRetry: () => this.game.retryNow(),
+        onNewStage: () => this.game.newStage(),
+        onPauseToggle: () => this.onPauseToggle(),
+        onSave: () => this.onSaveGame(),
+        onResume: () => this.onResumeGame(),
+        onToggleSurfaces: () => {
+          this.showSurfaces = !this.showSurfaces;
+        },
+      });
+      this.arRenderer = new ArRenderer(this.arPanel.canvas);
+    }
+    return this.arPanel;
+  }
+
+  /** Enter a Phase 11–21 screen. Same gate as every phase before it (Rule 005). */
+  private enterSpatial(index: number, devOverride = false): boolean {
+    if (!isPhaseImplemented(index)) {
+      logger.warn(index, 'App', `refused entry to Phase ${index}`, { reason: `Phase ${index} has not been written in this build` });
+      return false;
+    }
+    if (!this.registry.canEnter(index)) {
+      const desktop = this.leg?.leg === EvidenceLeg.DESKTOP_DEV;
+      if (!devOverride || !desktop) {
+        logger.warn(index, 'App', `refused entry to Phase ${index}`, {
+          reason: this.registry.blockedReason(index),
+          devOverrideRequested: devOverride,
+          leg: this.leg?.leg ?? null,
+        });
+        return false;
+      }
+      this.spatialDevEntry.add(index);
+      logger.warn(index, 'App', `Phase ${index} opened through the desktop development override`, {
+        note: 'this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase',
+      });
+    }
+    this.stopPhase10Ticking();
+    this.playMode = false;
+    this.screen = 'spatial';
+    this.spatialPhase = index;
+    if (this.registry.get(index).state === PhaseState.NOT_STARTED) {
+      this.registry.setState(index, PhaseState.IMPLEMENTING, `${SPATIAL_PHASE_NAMES[index] ?? ''} screen opened`);
+    }
+    this.startSpatialTicking();
+    if (this.isSpatialRunning()) this.startArLoop();
+    this.evaluateSpatial();
+    this.render();
+    return true;
+  }
+
+  /** The play screen. Not behind the Phase Lock, because it evaluates no phase — see `SpatialScreens`. */
+  private enterPlay(): boolean {
+    if (!this.matrix) return false;
+    this.screen = 'play';
+    this.playMode = true;
+    this.startSpatialTicking();
+    this.render();
+    return true;
+  }
+
+  private leavePlay(): void {
+    this.onStopSpatial('left the game');
+    this.playMode = false;
+    this.screen = 'phase0';
+    this.render();
+  }
+
+  /** MUST be reached from the click handler: the motion permission and the camera need the gesture. */
+  private async onStartSpatial(index: number): Promise<void> {
+    if (this.cameraOpening || (this.spatialStarted.has(index) && this.isSpatialRunning())) return;
+    this.spatialStarted.add(index);
+    await this.startSpatialStack(index);
+  }
+
+  private async onStartPlay(): Promise<void> {
+    if (this.cameraOpening || this.isSpatialRunning()) return;
+    this.playMode = true;
+    await this.startSpatialStack(PHASE11);
+  }
+
+  private async startSpatialStack(index: number): Promise<void> {
+    // The orientation permission first, before anything is awaited — iOS honours it only inside
+    // the gesture. Not restarted when it is already live: a second screen adopts the first's.
+    const gravity = this.gravityMonitor.isLive() ? Promise.resolve(this.gravityMonitor.getSource()) : this.gravityMonitor.start();
+
+    const video = getPreviewVideo();
+    if (!this.camera.isLive()) {
+      this.cameraOpening = true;
+      this.render();
+      const result = await this.camera.open();
+      this.cameraOpening = false;
+      if (result.state !== CameraState.LIVE || !result.stream) {
+        logger.error(
+          index, 'CameraSource', `the spatial stack could not open the camera: ${result.state}`,
+          result.failure?.recovery ?? 'no stream is held and nothing starts',
+          undefined,
+          { errorName: result.failure?.errorName ?? null },
+        );
+        this.spatialStarted.delete(index);
+        this.render();
+        return;
+      }
+      this.cameraEverOpened = true;
+      this.cameraEndedUnexpectedly = false;
+      video.srcObject = result.stream;
+      try {
+        await video.play();
+      } catch (err) {
+        logger.error(index, 'CameraPreview', 'video.play() was rejected', 'the stream stays attached; if no frames arrive the stack reports nothing', err);
+      }
+    }
+    const gravitySource = await gravity;
+    logger.info(index, 'GravityMonitor', `orientation sensor ${gravitySource}`, { detail: this.gravityMonitor.getDetail() });
+
+    const adopted = this.pipeline.isRunning();
+    if (adopted) {
+      logger.info(index, 'App', 'adopted the running landmark map', {
+        note: 'localization, the world and the game run on the map Phase 10 is already building',
+      });
+    }
+    this.spatialRequested = true;
+    this.pipeline.setTrackingOptions(this.spatialOptions());
+    if (adopted || this.pipeline.start(video)) {
+      this.landmarksRequested = true;
+      this.triangulationRequested = true;
+      this.keyframesRequested = true;
+      this.poseRequested = true;
+      this.verifyRequested = true;
+      this.flowRequested = true;
+      this.pipelineEverStarted = true;
+      this.flowEverRan = true;
+      this.verifyEverRan = true;
+      this.poseEverRan = true;
+      this.keyframesEverRan = true;
+      this.triangulationEverRan = true;
+      this.landmarksEverRan = true;
+      this.startSpatialTicking();
+      this.startArLoop();
+    } else {
+      this.spatialRequested = false;
+      this.pipeline.setTrackingOptions(undefined);
+    }
+    this.evaluateSpatial();
+    this.render();
+  }
+
+  private onStopSpatial(reason: string): void {
+    this.stopArLoop();
+    this.stopSpatialTicking();
+    this.spatialRequested = false;
+    this.spatialStarted.clear();
+    this.gravityMonitor.stop();
+    this.landmarksRequested = false;
+    this.triangulationRequested = false;
+    this.keyframesRequested = false;
+    this.poseRequested = false;
+    this.verifyRequested = false;
+    this.flowRequested = false;
+    this.fusionRequested = false;
+    this.rotation.stop();
+    this.pipeline.stop(reason);
+    this.pipeline.setTrackingOptions(undefined);
+    const video = getPreviewVideo();
+    video.srcObject = null;
+    this.camera.close(reason);
+    this.evaluateSpatial();
+    this.render();
+  }
+
+  /**
+   * Back one screen. From Phase 11 that is the landmark map, and everything stops, as every
+   * back button before it does. From later phases the stack is the earlier phase's too, so it
+   * keeps running and only this phase's own start is forgotten.
+   */
+  private leaveSpatial(index: number): void {
+    if (index === PHASE11) {
+      this.onStopSpatial('left the SURFACE UNDERSTANDING screen');
+      this.screen = 'phase10';
+      this.render();
+      return;
+    }
+    this.spatialStarted.delete(index);
+    this.spatialPhase = index - 1;
+    this.evaluateSpatial();
+    this.render();
+  }
+
+  private startSpatialTicking(): void {
+    this.startTicking(PHASE11, SPATIAL_TICK_MS, () => {
+      if (this.isSpatialRunning()) this.pipeline.setTrackingOptions(this.spatialOptions());
+      this.sampleSpatialInvariants();
+      this.evaluateSpatial();
+      this.render();
+    });
+  }
+
+  private stopSpatialTicking(): void {
+    this.stopTicking(PHASE11);
+  }
+
+  /** Display-rate loop: the game advances, the overlay is drawn, the HUD updated in place. */
+  private startArLoop(): void {
+    if (this.arFrame !== 0) return;
+    const panel = this.ensureArPanel();
+    const renderer = this.arRenderer;
+    const tick = (): void => {
+      this.arFrame = requestAnimationFrame(tick);
+      const view = this.worldBuilder.view();
+      this.game.update(view);
+      const gameView = this.game.view();
+      if (renderer) {
+        const t0 = performance.now();
+        const report = renderer.draw(view, gameView, { surfaces: this.showSurfaces, landmarks: false });
+        this.viewStats.recordDraw(report, view, gameView, performance.now() - t0, t0);
+        this.ringOffFrame = report.ringIndicated;
+      }
+      panel.update(this.hudModel(view, gameView));
+      this.arFrames++;
+      if (this.arFrames % UI_CHECK_EVERY_FRAMES === 0) {
+        // GAME-002 and VIEW-004, read back from the DOM against what the engine said this frame.
+        const shown = panel.read();
+        this.viewStats.recordUi(gameView.state, shown.state, view.trackingState, shown.tracking);
+        const canvasRect = panel.canvas.getBoundingClientRect();
+        const videoRect = getPreviewVideo().getBoundingClientRect();
+        this.viewStats.recordAspect(canvasRect, videoRect);
+      }
+    };
+    this.arFrame = requestAnimationFrame(tick);
+  }
+
+  private stopArLoop(): void {
+    if (this.arFrame !== 0) cancelAnimationFrame(this.arFrame);
+    this.arFrame = 0;
+  }
+
+  /** COL-002 and SAVE-003's samples, once a tick. */
+  private sampleSpatialInvariants(): void {
+    if (!this.spatialEverRan) return;
+    const view = this.worldBuilder.view();
+    const set = buildCollisionSet(view);
+    this.collisionSamples++;
+    const classified = view.surfaces.filter((s) => s.surfaceClass !== 'UNKNOWN').length;
+    const bad = set.surfaces.filter(
+      (s) => s.surfaceClass === 'UNKNOWN' || s.provenance.confidence < MIN_COLLISION_CONFIDENCE || s.provenance.worldVersion !== view.version,
+    );
+    if (bad.length > 0 || (classified === 0 && set.surfaces.length > 0)) {
+      this.collisionViolations++;
+      this.collisionViolationDetail = bad.length > 0
+        ? `surface ${bad[0]?.id} (${bad[0]?.surfaceClass}, ${bad[0]?.provenance.confidence}) in the collision set`
+        : 'collision surfaces with no classified surface in the world';
+    }
+    this.saveLedger.checkRestoredNotUsed(this.restoredWorld, set.worldVersion, view.version);
+  }
+
+  private hudModel(view: SpatialWorldView, game: GameView): HudModel {
+    const pose = view.cameraPose?.intrinsics;
+    const p = this.pipeline.getStats();
+    const aspect = pose && pose.width > 0
+      ? `${pose.width} / ${pose.height}`
+      : p.sourceWidth > 0 && p.sourceHeight > 0 ? `${p.sourceWidth} / ${p.sourceHeight}` : '3 / 4';
+    const saved = this.savedRecordValid();
+    return {
+      state: game.state,
+      tracking: view.trackingState,
+      message: hudMessage(view, game, this.ringOffFrame),
+      detail: game.reason,
+      power: game.power,
+      showPower: game.state === GameState.AIMING,
+      surfaces: view.surfaces.length,
+      confidence: view.confidence,
+      readyArea: view.readyArea,
+      coverage: view.coverage,
+      successes: game.successes,
+      throws: game.throws,
+      difficulty: game.stage?.difficulty.difficulty ?? '',
+      paused: game.state === GameState.PAUSED,
+      canRetry: game.state === GameState.RETRY,
+      canNewStage: game.state === GameState.READY || game.state === GameState.RETRY,
+      canSave: view.worldState === 'READY' || game.stage !== null,
+      canResume: saved && game.throws === 0 && this.restoredWorld === null &&
+        game.state !== GameState.AIMING && game.state !== GameState.THROWING,
+      resumeLabel: this.restoredWorld ? '再開済み' : '前回の続きから',
+      surfacesShown: this.showSurfaces,
+      aspect,
+    };
+  }
+
+  private onPauseToggle(): void {
+    const v = this.game.view();
+    if (v.state === GameState.PAUSED) {
+      this.game.resume();
+      const after = this.game.view();
+      if (this.pauseSnapshot) {
+        this.saveLedger.notePauseResume(this.pauseSnapshot, {
+          digest: after.stage?.digest ?? '',
+          ball: JSON.stringify(after.ball),
+        });
+      }
+      this.pauseSnapshot = null;
+    } else {
+      this.pauseSnapshot = { digest: v.stage?.digest ?? '', ball: JSON.stringify(v.ball) };
+      this.game.pause();
+    }
+  }
+
+  private onSaveGame(): void {
+    const view = this.worldBuilder.view();
+    const stage = this.game.view().stage;
+    const built = buildSave(view, stage, this.game.progress(), BUILD_COMMIT, Date.now());
+    if (!built.record) {
+      this.saveLedger.noteRefusedSave();
+      logger.warn(this.spatialPhase, 'SaveGame', 'save refused', { reason: built.reason });
+      return;
+    }
+    const text = serialiseSave(built.record);
+    try {
+      localStorage.setItem(SAVE_KEY, text);
+    } catch (err) {
+      logger.error(this.spatialPhase, 'SaveGame', 'localStorage refused the save', 'the game continues unsaved', err);
+      return;
+    }
+    this.saveLedger.checkSave(built.record, text, view, stage);
+    logger.info(this.spatialPhase, 'SaveGame', 'saved', { bytes: text.length, stageIndex: built.record.progress.stageIndex });
+  }
+
+  private savedRecordValid(): boolean {
+    try {
+      return parseSave(localStorage.getItem(SAVE_KEY)).ok;
+    } catch {
+      return false;
+    }
+  }
+
+  private onResumeGame(): void {
+    let text: string | null = null;
+    try {
+      text = localStorage.getItem(SAVE_KEY);
+    } catch {
+      text = null;
+    }
+    const parsed = parseSave(text);
+    if (!parsed.ok || !parsed.record) {
+      this.saveLedger.noteResume(false, parsed.reason);
+      return;
+    }
+    const ok = this.game.restoreProgress(parsed.record.progress);
+    if (!ok) {
+      this.saveLedger.noteResume(false, 'this session has already thrown — a resume would merge two sessions');
+      return;
+    }
+    this.restoredWorld = restoredWorldOf(parsed.record);
+    this.saveLedger.noteResume(true, `progress restored at stage ${parsed.record.progress.stageIndex + 1}; the saved world is shown, not played on`);
+    logger.info(this.spatialPhase, 'SaveGame', 'resumed', { progress: parsed.record.progress, relocalized: false });
+  }
+
+  /** The one context Phases 11–21 are graded from, and the screens read. */
+  private spatialContext(): SpatialContext {
+    const view = this.worldBuilder.view();
+    const capabilities: Record<string, string> = {};
+    for (const r of this.matrix?.records ?? []) if (r.group === 'spatial') capabilities[r.id] = r.state;
+    return {
+      cameraState: this.camera.getState(),
+      stackEverRan: this.spatialEverRan,
+      gravitySource: this.gravityMonitor.getSource(),
+      gravityDetail: this.gravityMonitor.getDetail(),
+      acceleration: this.gravityMonitor.accelerationCheck(),
+      world: this.worldBuilder.stats(),
+      view,
+      game: this.game.stats(),
+      gameView: this.game.view(),
+      render: this.viewStats.stats(),
+      save: this.saveLedger.stats(),
+      collisionSamples: this.collisionSamples,
+      collisionViolations: this.collisionViolations,
+      collisionViolationDetail: this.collisionViolationDetail,
+      phases: this.registry.all(),
+      carried: this.registry.carriedPasses().map((c) => c.phase),
+      results: this.spatialResults,
+      capabilities,
+    };
+  }
+
+  /**
+   * Grade the spatial phase on screen. Phase 20 also grades 11–19 from the same context, because
+   * PLAY-002 asks whether they hold *in this session*; those results are not applied to the
+   * registry here — each phase's verdict is applied only on its own screen.
+   */
+  private evaluateSpatial(): void {
+    if (this.screen !== 'spatial') return;
+    const n = this.spatialPhase;
+    const suite = SPATIAL_SUITES[n];
+    if (!suite) return;
+    const ctx = this.spatialContext();
+    if (n === 20 || n === 21) {
+      for (let p = PHASE11; p < n; p++) {
+        const s = SPATIAL_SUITES[p];
+        if (s) this.spatialResults.set(p, s.run(ctx));
+      }
+    }
+    const results = suite.run({ ...ctx, results: this.spatialResults });
+    this.spatialResults.set(n, results);
+    this.applyPhase(n, results, (verdict, reason) => this.buildSpatialEvidence(n, results, verdict, reason, ctx));
+  }
+
+  private buildSpatialEvidence(
+    index: number,
+    results: readonly TestResult[],
+    verdict: PhaseState,
+    reason: string,
+    ctx: SpatialContext,
+  ): void {
+    if (!this.matrix || !this.device) return;
+    const v = ctx.view;
+    const built = buildEvidenceBundle({
+      phase: index,
+      phaseName: PHASE_NAMES[index] ?? `Phase ${index}`,
+      appVersion: APP_VERSION,
+      device: this.device,
+      matrix: this.matrix,
+      testResults: results,
+      overallVerdict: verdict,
+      overallReason: reason,
+      transitions: this.registry.getTransitions(),
+      log: logger.getEntries(),
+      context: {
+        camera: this.camera.describe(),
+        pipeline: this.pipeline.describe(),
+        landmarks: this.landmarkMap.describe(),
+        gravity: this.gravityMonitor.describe() as unknown as JsonValue,
+        world: ctx.world as unknown as JsonValue,
+        worldView: {
+          version: v.version,
+          epoch: v.epoch,
+          origin: v.origin,
+          scale: v.scale,
+          worldState: v.worldState,
+          worldReasons: [...v.worldReasons],
+          trackingState: v.trackingState,
+          trackingReason: v.trackingReason,
+          mappingState: v.mappingState,
+          confidence: v.confidence,
+          confidenceTerms: v.confidenceTerms,
+          cameraPose: v.cameraPose,
+          landmarkCount: v.landmarks.length,
+          keyframeCount: v.keyframes.length,
+          gravity: v.gravity,
+          surfaces: v.surfaces,
+          sceneDepth: v.sceneDepth,
+          cameraHeight: v.cameraHeight,
+          coverage: v.coverage,
+          readyArea: v.readyArea,
+          lastUpdated: v.lastUpdated,
+        } as unknown as JsonValue,
+        game: ctx.game as unknown as JsonValue,
+        render: ctx.render as unknown as JsonValue,
+        save: ctx.save as unknown as JsonValue,
+        collision: { samples: ctx.collisionSamples, violations: ctx.collisionViolations, detail: ctx.collisionViolationDetail },
+        devEntry: this.spatialDevEntry.has(index),
+        previewPresented: isPreviewPresented(),
+      },
+    });
+    this.spatialBundles.set(index, this.keepBundle(index, built));
+  }
+
   debugApi(): Record<string, unknown> {
     return {
       version: APP_VERSION,
@@ -3658,10 +4345,83 @@ class Phase0App {
       getPhase10EvidenceJson: () =>
         this.phase10Bundle ? serialiseEvidence(this.phase10Bundle) : null,
       getPhase10State: () => this.registry.get(PHASE10),
+
+      /*
+       * Phases 11–21 and the game. Read-only, as for every phase before them: the legs press
+       * `#start-surfaces`, `#open-play`, `#start-play` and the AR panel in the DOM. The only
+       * entry points are the screens' own gates, with the same desktop override the ladder uses.
+       */
+      ...Object.fromEntries(
+        Object.entries(SPATIAL_SUITES).flatMap(([k, suite]) => {
+          const n = Number(k);
+          return [
+            [`phase${n}Specs`, suite.specs],
+            [`enterPhase${n}`, (devOverride = false) => this.enterSpatial(n, devOverride)],
+            [`leavePhase${n}`, () => this.leaveSpatial(n)],
+            [`getPhase${n}Results`, () => this.spatialResults.get(n) ?? []],
+            [`getPhase${n}Evidence`, () => this.spatialBundles.get(n) ?? null],
+            [`getPhase${n}EvidenceJson`, () => {
+              const b = this.spatialBundles.get(n);
+              return b ? serialiseEvidence(b) : null;
+            }],
+            [`getPhase${n}State`, () => this.registry.get(n)],
+          ];
+        }),
+      ),
+      enterPlay: () => this.enterPlay(),
+      leavePlay: () => this.leavePlay(),
+      getWorldStats: () => this.worldBuilder.stats(),
+      getWorldView: () => {
+        const v = this.worldBuilder.view();
+        return { ...v, landmarks: v.landmarks.length, keyframes: v.keyframes.length };
+      },
+      getGameStats: () => this.game.stats(),
+      getGameView: () => this.game.view(),
+      getViewStats: () => this.viewStats.stats(),
+      getSaveStats: () => this.saveLedger.stats(),
+      getGravity: () => this.gravityMonitor.describe(),
       getLog: () => logger.getEntries(),
       probeSensors: () => this.onProbeSensors(),
       rerun: () => this.detect(),
     };
+  }
+}
+
+
+/** The guidance line under the HUD badges. Guidance only — the badges carry the states. */
+function hudMessage(view: SpatialWorldView, game: GameView, ringOffFrame: boolean): string {
+  switch (game.state) {
+    case GameState.SCAN:
+      return '部屋をゆっくり見回してください。左右に少し歩くと地図ができます。';
+    case GameState.SPATIALIZING: {
+      const r = view.worldReasons[0] ?? '';
+      if (r.startsWith('GRAVITY')) return 'スマホを上下にも傾けながら見回してください（重力の向きを測っています）。';
+      if (r.startsWith('SURFACE')) return '床を映しながら、横に少し動いてください（床を探しています）。';
+      if (r.startsWith('TRACKING')) return view.trackingState === TrackingState.LOST
+        ? 'トラッキングを見失いました。さっき映していた場所にカメラを戻してください。'
+        : 'ゆっくり動かしてください。';
+      return '空間を認識しています…';
+    }
+    case GameState.STAGE_GENERATING:
+      return 'ステージを生成しています…';
+    case GameState.READY:
+      return ringOffFrame
+        ? 'リングは画面の外です。金色の矢印の方へスマホを向けてください。'
+        : 'リングを狙って画面を長押し、離して投げます。';
+    case GameState.AIMING:
+      return ringOffFrame ? 'リングは矢印の方向です。' : '離すと投げます。';
+    case GameState.THROWING:
+      return '';
+    case GameState.SUCCESS:
+      return 'ナイスショット！ リングを通過しました。';
+    case GameState.RETRY:
+      return 'おしい！ もう一度。';
+    case GameState.PAUSED:
+      return '一時停止中です。';
+    case GameState.TRACKING_LOST:
+      return 'トラッキングを見失いました。カメラを部屋に向け直してください。';
+    default:
+      return '';
   }
 }
 

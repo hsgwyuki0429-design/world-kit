@@ -158,13 +158,13 @@ describe('implemented phases', () => {
     expect(isPhaseImplemented(8)).toBe(true);
     expect(isPhaseImplemented(9)).toBe(true);
     expect(isPhaseImplemented(10)).toBe(true);
-    // Phase 11 (Surface Understanding) has not been written. This assertion is the tripwire
-    // that makes someone update the set deliberately rather than letting the UI offer a screen
-    // that does not exist — it has fired for Phases 2 through 10 in turn, each time on the phase
-    // whose screen was about to be added.
-    expect(isPhaseImplemented(11)).toBe(false);
+    // Phases 11–21 were written together: they share one stack (localization, the world, the
+    // stage, the ball) and one screen layout. Every index of v4's list is now built, so the
+    // tripwire becomes the other edge: nothing past the end of the list may claim to exist.
+    for (let i = 11; i <= 21; i++) expect(isPhaseImplemented(i)).toBe(true);
+    expect(isPhaseImplemented(22)).toBe(false);
     expect([...IMPLEMENTED_PHASES].sort((a, b) => a - b)).toEqual([
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     ]);
   });
 });

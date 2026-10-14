@@ -88,6 +88,15 @@ export interface TrackingOptions {
    * relating two pairs' baselines to each other.
    */
   readonly landmarks: boolean;
+  /**
+   * Whether to place **this frame's** camera in the map's world (Phase 12, v4 §25).
+   *
+   * `false` in Phases 4–10. When `true` the worker solves the frame's pose against the landmark
+   * map from the correspondences the tracker and the map share by feature id, and ships the map's
+   * landmarks and keyframe poses to the main thread whenever the map has changed — which is what
+   * the SpatialWorld, the surfaces and the game are built from.
+   */
+  readonly localize: boolean;
   /** Pyramid level to detect on. 1 by default — see the Phase 3 test plan. */
   readonly level: number;
   readonly target: number;
@@ -112,6 +121,7 @@ export const DEFAULT_TRACKING_OPTIONS: TrackingOptions = {
   triangulate: false,
   wantInjections: false,
   landmarks: false,
+  localize: false,
   level: 1,
   target: 800,
   wantContrast: false,
@@ -885,6 +895,89 @@ export interface LandmarkReport {
   readonly landmarkMs: number;
 }
 
+/** One correspondence the localization used, for the main thread's own projection check. */
+export interface ProjectionSample {
+  readonly id: number;
+  /** Where the tracker saw it this frame, level-0 pixels. */
+  readonly x: number;
+  readonly y: number;
+  /** Where the map holds it, world frame. */
+  readonly world: readonly number[];
+}
+
+/** A keyframe's pose in the world, as the map registered it. `X_camera = R · X_world + t`. */
+export interface KeyframePoseRecord {
+  readonly id: number;
+  readonly rotation: readonly number[];
+  readonly translation: readonly number[];
+}
+
+/**
+ * The map's whole content, shipped when it has changed (Phase 12).
+ *
+ * Two transferred buffers rather than an array of records: up to `MAX_LANDMARKS` entries cross
+ * the boundary on a batch frame, and a structured clone of five thousand objects would cost the
+ * main thread far more than the copy. Ids travel as `Int32` so a long run's ids cannot lose
+ * precision in a float.
+ */
+export interface MapSnapshot {
+  readonly epoch: number;
+  readonly version: number;
+  readonly count: number;
+  /** `Int32Array`, one id per landmark. */
+  readonly ids: ArrayBuffer;
+  /**
+   * `Float32Array`, `MAP_SNAPSHOT_STRIDE` per landmark:
+   * `x, y, z, confidence, observations, confirmed (1/0)`.
+   */
+  readonly data: ArrayBuffer;
+  readonly keyframes: readonly KeyframePoseRecord[];
+}
+
+/** Floats per landmark in `MapSnapshot.data`. */
+export const MAP_SNAPSHOT_STRIDE = 6;
+
+/** WORLD-003's instrument: this frame's solved pose beside the pose the map registered for it. */
+export interface KeyframeAgreementRecord {
+  readonly keyframeId: number;
+  readonly rotationDeg: number;
+  /** Centre disagreement as a fraction of the median landmark depth — the world has no metre. */
+  readonly centerRelative: number;
+}
+
+/** One frame of Phase 12's localization. */
+export interface LocalizationReport {
+  readonly frames: number;
+  readonly localizedFrames: number;
+  /** `NO_MAP` / `TOO_FEW` / `LOCALIZED` / `REFUSED`. */
+  readonly state: string;
+  readonly reason: string;
+  readonly epoch: number;
+  readonly mapVersion: number;
+  readonly mapLandmarks: number;
+  readonly pose: { readonly rotation: readonly number[]; readonly translation: readonly number[] } | null;
+  readonly cameraCenter: readonly number[] | null;
+  readonly correspondences: number;
+  readonly inliers: number;
+  readonly medianErrorPx: number;
+  /** Cross-validated: solved on half the ids, measured on the other half. `-1` when not run. */
+  readonly heldOutPx: number;
+  readonly heldOutPoints: number;
+  /** Which start the accepted solve began from — `PREVIOUS`, `KEYFRAME` or `NONE`. */
+  readonly startedFrom: string;
+  readonly keyframeAgreement: KeyframeAgreementRecord | null;
+  readonly medianDepth: number;
+  readonly confidence: number;
+  readonly confidenceTerms: readonly ConfidenceTermRecord[];
+  /** The frame's `postedAtEpoch`, so the main thread can pair it with a sensor reading. */
+  readonly capturedAtEpoch: number;
+  readonly width: number;
+  readonly height: number;
+  readonly projectionSamples: readonly ProjectionSample[];
+  readonly snapshot: MapSnapshot | null;
+  readonly localizationMs: number;
+}
+
 export interface TrackingResult {
   readonly kind: 'phase3';
   readonly detected: boolean;
@@ -971,6 +1064,14 @@ export interface TrackingResult {
    * would leave it unable to tell "no batch this frame" from "the map has stopped".
    */
   readonly landmarks: LandmarkReport | null;
+  /**
+   * Phase 12's frame, or `null` when localization is not running.
+   *
+   * On the same message as the map's report, because the pose is solved against the map as it
+   * stood after this frame's batch — a pose shipped beside a different map would be a pose in a
+   * world nobody holds.
+   */
+  readonly localization: LocalizationReport | null;
 }
 
 /** Narrow the opaque payload, or return `null`. Never casts on faith. */

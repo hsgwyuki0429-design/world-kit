@@ -326,3 +326,62 @@ pre.json {
   margin-top: 3px;
   overflow-wrap: anywhere;
 }
+
+/*
+ * The game's camera view (Phases 11–21 and the play screen).
+ *
+ * The stack is the same aspect-locked box the earlier phases overlay their points in, so a
+ * processing pixel maps onto the canvas by one uniform scale (VIEW-003 reads both boxes back).
+ * The HUD sits inside it; `touch-action: none` keeps a held press from scrolling the page.
+ */
+.ar-panel { display: flex; flex-direction: column; gap: 8px; }
+.ar-stack { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.ar-stack canvas { z-index: 1; }
+.ar-hud-top {
+  position: absolute; top: 8px; left: 8px; right: 8px; z-index: 2;
+  display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none;
+}
+.ar-hud-bottom {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 2;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+}
+.ar-badge {
+  font: 600 11px/1 var(--mono);
+  letter-spacing: 0.02em;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.62);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.ar-badge.state-READY, .ar-badge.state-AIMING { color: var(--ok); }
+.ar-badge.state-SUCCESS { background: rgba(48, 209, 88, 0.85); color: #001a07; }
+.ar-badge.state-RETRY { color: var(--warn); }
+.ar-badge.state-TRACKING_LOST, .ar-badge.state-PAUSED { color: var(--bad); }
+.ar-tracking.tracking-GOOD { color: var(--ok); }
+.ar-tracking.tracking-DEGRADED { color: var(--warn); }
+.ar-tracking.tracking-LOST { color: var(--bad); }
+.ar-message {
+  font-size: 14px; line-height: 1.35; font-weight: 600;
+  background: rgba(0, 0, 0, 0.55); border-radius: 10px; padding: 8px 10px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.ar-message:empty { display: none; }
+.ar-power {
+  height: 10px; border-radius: 5px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.ar-power-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ok), var(--warn), var(--bad)); }
+.ar-crosshair {
+  position: absolute; z-index: 2; left: 50%; top: 50%; width: 22px; height: 22px;
+  margin: -11px 0 0 -11px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+.ar-detail { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+.ar-detail:empty { display: none; }
+.ar-stats { font: 11px/1.5 var(--mono); color: var(--text-2); }
+.ar-buttons button { flex: 1; }
+ol.howto { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 14px; line-height: 1.55; }
+ol.howto li { margin-bottom: 4px; }
+.play-entry { border-color: rgba(48, 209, 88, 0.45); }

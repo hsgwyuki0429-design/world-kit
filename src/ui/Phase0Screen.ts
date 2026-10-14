@@ -39,9 +39,13 @@ export interface Phase0ViewModel {
   readonly detecting: boolean;
   readonly sensorProbeRunning: boolean;
   readonly sensorProbeDone: boolean;
+  /** Whether the play screen can be opened: Phase 0 has finished probing and a camera API exists. */
+  readonly playAvailable: boolean;
+  readonly playNote: string;
 }
 
 export interface Phase0Handlers {
+  onOpenPlay: () => void;
   onStartScan: () => void;
   onProbeSensors: () => void;
   onDownloadEvidence: () => void;
@@ -108,11 +112,12 @@ export function renderPhase0Screen(
       el('h1', {}, ['Safari Spatial Mapping']),
       el('p', {}, ['身のまわりの空間を、そのまま Spatial World にする。']),
       el('div', { class: 'build-line' }, [
-        `v${vm.appVersion} · phase 0 / 20 · ${vm.device?.osGuess ?? '端末不明'}`,
+        `v${vm.appVersion} · phase 0 / 21 · ${vm.device?.osGuess ?? '端末不明'}`,
       ]),
     ]),
   );
 
+  root.append(renderPlayEntry(vm, handlers));
   root.append(renderPrimary(vm, handlers));
   root.append(renderStatusStrip(vm));
   root.append(renderVerdict(vm, handlers));
@@ -121,6 +126,27 @@ export function renderPhase0Screen(
   root.append(renderEvidence(vm, handlers));
   root.append(renderLog(vm));
   root.append(renderLimitations());
+}
+
+/**
+ * The way into the game, beside — not instead of — the phase ladder.
+ *
+ * It opens the play screen, which runs the real stack and evaluates no phase. It is a separate
+ * control from START SCAN on purpose: START SCAN is the Phase Lock's door and CAP-0011 reads it,
+ * and the game must not be reachable by making that door say something it does not mean.
+ */
+function renderPlayEntry(vm: Phase0ViewModel, handlers: Phase0Handlers): HTMLElement {
+  return el('section', { class: 'card play-entry' }, [
+    el('h2', {}, ['ゲームで遊ぶ']),
+    el('button', {
+      class: 'primary',
+      id: 'open-play',
+      disabled: !vm.playAvailable,
+      textContent: '空間ボールゲームを開く',
+      onclick: handlers.onOpenPlay,
+    } as never),
+    el('p', { class: 'footnote' }, [vm.playNote]),
+  ]);
 }
 
 function renderPrimary(vm: Phase0ViewModel, handlers: Phase0Handlers): HTMLElement {

@@ -1,0 +1,6608 @@
+{
+  "schemaVersion": 1,
+  "leg": "DESKTOP_DEV",
+  "phase": 19,
+  "phaseName": "Ball Physics",
+  "createdAt": "2026-10-14T04:55:56.531Z",
+  "appVersion": "0.1.0",
+  "buildCommit": "366afadaa1e0f9bd78bba7839794df03193bf4b5",
+  "origin": "http://localhost:46039",
+  "secureContext": true,
+  "device": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+    "platformHint": "Linux x86_64",
+    "osGuess": "Linux",
+    "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+    "isLikelyIOS": false,
+    "maxTouchPoints": 1,
+    "screenWidth": 430,
+    "screenHeight": 932,
+    "viewportWidth": 430,
+    "viewportHeight": 932,
+    "devicePixelRatio": 2,
+    "hardwareConcurrency": 4,
+    "languages": [
+      "en-US"
+    ],
+    "timezone": "UTC"
+  },
+  "capabilityMatrix": {
+    "records": [
+      {
+        "id": "platform.secureContext",
+        "group": "platform",
+        "label": "Secure context (HTTPS)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "secure context over http://localhost:46039",
+        "data": {
+          "isSecureContext": true,
+          "protocol": "http:",
+          "host": "localhost:46039",
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0.1,
+        "timestamp": 1791953562250
+      },
+      {
+        "id": "platform.iosSafariGuess",
+        "group": "platform",
+        "label": "iOS/Safari (UA guess)",
+        "state": "UNAVAILABLE",
+        "method": "INFERENCE",
+        "detail": "Guessed from the user-agent string. UA sniffing is not a measurement — iPadOS reports a Macintosh UA and any UA can be overridden. This record is barred from backing a phase pass criterion.",
+        "data": {
+          "osGuess": "Linux",
+          "browserGuess": "Chromium-family (or an iOS browser using WebKit under a different brand)",
+          "maxTouchPoints": 1
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562250
+      },
+      {
+        "id": "camera.getUserMedia",
+        "group": "camera",
+        "label": "getUserMedia",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getUserMedia is present in a secure context. Not invoked in Phase 0 — opening the camera is Phase 1 (CAM-001), and probing it here would trigger a permission prompt",
+        "data": {
+          "hasMediaDevices": true,
+          "hasGetUserMedia": true,
+          "secureContext": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1791953562250
+      },
+      {
+        "id": "camera.enumerateDevices",
+        "group": "camera",
+        "label": "Video input devices",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "1 videoinput device(s) enumerated",
+        "data": {
+          "videoInputCount": 1,
+          "audioInputCount": 3,
+          "totalDevices": 7,
+          "labelsHidden": false,
+          "deviceIdsHidden": false
+        },
+        "durationMs": 2.9,
+        "timestamp": 1791953562253
+      },
+      {
+        "id": "camera.supportedConstraints",
+        "group": "camera",
+        "label": "Media constraints",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "all constraints required by Phase 1/2 are supported (facingMode, width, height, frameRate, aspectRatio, deviceId)",
+        "data": {
+          "supportedCount": 36,
+          "facingMode": true,
+          "width": true,
+          "height": true,
+          "frameRate": true,
+          "aspectRatio": true,
+          "deviceId": true,
+          "missing": []
+        },
+        "durationMs": 0.1,
+        "timestamp": 1791953562253
+      },
+      {
+        "id": "camera.trackControl",
+        "group": "camera",
+        "label": "Track capability control",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "getCapabilities / getSettings / applyConstraints all present — Phase 2 can negotiate resolution and frame rate at runtime",
+        "data": {
+          "getCapabilities": true,
+          "getSettings": true,
+          "applyConstraints": true
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562253
+      },
+      {
+        "id": "compute.webassembly",
+        "group": "compute",
+        "label": "WebAssembly (executed)",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "compiled and executed a real 41-byte module: add(2,3) === 5",
+        "data": {
+          "moduleBytes": 41,
+          "addResult": 5,
+          "hasInstantiateStreaming": true,
+          "hasMemory": true
+        },
+        "durationMs": 0.4,
+        "timestamp": 1791953562253
+      },
+      {
+        "id": "compute.worker",
+        "group": "compute",
+        "label": "Web Worker round-trip",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "blob worker round-trip succeeded in 6.4 ms",
+        "data": {
+          "roundTripMs": 6.4,
+          "tokenMatched": true
+        },
+        "durationMs": 7.3,
+        "timestamp": 1791953562260
+      },
+      {
+        "id": "compute.offscreenCanvas",
+        "group": "compute",
+        "label": "OffscreenCanvas",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "drew and read back an exact pixel [10,20,30,255] from an OffscreenCanvas",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.2,
+        "timestamp": 1791953562261
+      },
+      {
+        "id": "compute.transferControlToOffscreen",
+        "group": "compute",
+        "label": "Canvas -> Offscreen transfer",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferControlToOffscreen returned a live OffscreenCanvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0.2,
+        "timestamp": 1791953562261
+      },
+      {
+        "id": "compute.offscreenInWorker",
+        "group": "compute",
+        "label": "OffscreenCanvas inside worker",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "transferred an OffscreenCanvas into a worker, drew there and read back the exact pixel",
+        "data": {
+          "ok": true,
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 8,
+        "timestamp": 1791953562269
+      },
+      {
+        "id": "compute.sharedArrayBuffer",
+        "group": "compute",
+        "label": "SharedArrayBuffer",
+        "state": "UNAVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "SharedArrayBuffer is absent — requires COOP+COEP headers, which static hosting such as GitHub Pages cannot set. WASM threads must not be assumed.",
+        "data": {
+          "crossOriginIsolated": false
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562269
+      },
+      {
+        "id": "graphics.webgl2",
+        "group": "graphics",
+        "label": "WebGL2",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebGL2 context created on ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "data": {
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "rendererMasked": false,
+          "maxTextureSize": 8192,
+          "maxViewportDims": [
+            8192,
+            8192
+          ],
+          "colorBufferFloat": true,
+          "textureFloatLinear": true,
+          "extensionCount": 29
+        },
+        "durationMs": 11.7,
+        "timestamp": 1791953562281
+      },
+      {
+        "id": "graphics.webgpu",
+        "group": "graphics",
+        "label": "WebGPU",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "navigator.gpu exists but requestAdapter() returned null — no usable adapter",
+        "data": {
+          "hasNavigatorGpu": true,
+          "adapter": null
+        },
+        "durationMs": 1.2,
+        "timestamp": 1791953562282
+      },
+      {
+        "id": "graphics.createImageBitmap",
+        "group": "graphics",
+        "label": "createImageBitmap",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "created a real 4x4 ImageBitmap from a canvas",
+        "data": {
+          "width": 4,
+          "height": 4
+        },
+        "durationMs": 0.2,
+        "timestamp": 1791953562282
+      },
+      {
+        "id": "graphics.canvas2dReadback",
+        "group": "graphics",
+        "label": "Canvas 2D readback",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "main-thread canvas readback is byte-exact [10,20,30,255]",
+        "data": {
+          "pixel": [
+            10,
+            20,
+            30,
+            255
+          ],
+          "exact": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1791953562282
+      },
+      {
+        "id": "media.imageCapture",
+        "group": "media",
+        "label": "ImageCapture",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "ImageCapture is present",
+        "data": {},
+        "durationMs": 0,
+        "timestamp": 1791953562282
+      },
+      {
+        "id": "media.webcodecs",
+        "group": "media",
+        "label": "WebCodecs VideoFrame",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "VideoFrame is present — Phase 2 can pull frames without a canvas round-trip",
+        "data": {
+          "VideoFrame": true,
+          "VideoDecoder": true,
+          "VideoEncoder": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1791953562282
+      },
+      {
+        "id": "media.videoFrameCallback",
+        "group": "media",
+        "label": "requestVideoFrameCallback",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "requestVideoFrameCallback is present — frame scheduling can be driven by real decoded frames rather than by rAF guessing",
+        "data": {
+          "playsInline": true
+        },
+        "durationMs": 0.1,
+        "timestamp": 1791953562282
+      },
+      {
+        "id": "storage.estimate",
+        "group": "storage",
+        "label": "Storage quota",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "storage quota reported by the platform: 984.9 MB (used 1.2 KB)",
+        "data": {
+          "quotaBytes": 1032756588,
+          "usageBytes": 1212
+        },
+        "durationMs": 2.3,
+        "timestamp": 1791953562285
+      },
+      {
+        "id": "storage.localStorage",
+        "group": "storage",
+        "label": "localStorage",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "wrote, read and removed a real localStorage key",
+        "data": {},
+        "durationMs": 0,
+        "timestamp": 1791953562285
+      },
+      {
+        "id": "storage.indexedDB",
+        "group": "storage",
+        "label": "IndexedDB",
+        "state": "AVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "opened and deleted a real IndexedDB database — Phase 14 can persist worlds here",
+        "data": {},
+        "durationMs": 7.4,
+        "timestamp": 1791953562292
+      },
+      {
+        "id": "storage.performanceMemory",
+        "group": "storage",
+        "label": "JS heap metrics",
+        "state": "AVAILABLE",
+        "method": "PRESENCE_CHECK",
+        "detail": "performance.memory is present; heap numbers in the debug HUD will be real",
+        "data": {
+          "deviceMemory": 8
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562292
+      },
+      {
+        "id": "spatial.webxr",
+        "group": "spatial",
+        "label": "WebXR",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "WebXR present; immersive-ar=false, immersive-vr=false",
+        "data": {
+          "hasNavigatorXr": true,
+          "immersiveAR": false,
+          "immersiveVR": false
+        },
+        "durationMs": 0.8,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "spatial.nativeBridge",
+        "group": "spatial",
+        "label": "Native app bridge",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no window.webkit.messageHandlers bridge — the page is not hosted by a native app, so no native iOS framework can be reached from JavaScript",
+        "data": {
+          "handlerNames": []
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "spatial.cameraDepth",
+        "group": "spatial",
+        "label": "Camera depth",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "no depth-related media constraint and no WebXR depth-sensing route (webxr=false) — DEPTH: UNAVAILABLE. Any depth used later must be labelled MONOCULAR ESTIMATE and never presented as native depth (§44)",
+        "data": {
+          "depthConstraintKeys": [],
+          "webxrAvailable": false
+        },
+        "durationMs": 0.2,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "spatial.arkit",
+        "group": "spatial",
+        "label": "Native ARKit",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "ARKit has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. ARKit: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "spatial.roomplan",
+        "group": "spatial",
+        "label": "RoomPlan",
+        "state": "UNAVAILABLE",
+        "method": "FUNCTIONAL_PROBE",
+        "detail": "RoomPlan has no JavaScript API. Probed for the only possible surface — a native message bridge — and found none. RoomPlan: UNAVAILABLE",
+        "data": {
+          "nativeBridgePresent": false
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "spatial.metricScale",
+        "group": "spatial",
+        "label": "Metric scale",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "A monocular camera provides no absolute scale (§18, §90). No depth sensor, WebXR session or native bridge is reachable to supply one, so the world will be built in LOCAL UNITS and SCALE stays UNKNOWN until something actually measures it.",
+        "data": {
+          "scaleStatus": "UNKNOWN",
+          "units": "LOCAL_UNITS"
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "motion.deviceMotion",
+        "group": "motion",
+        "label": "DeviceMotion",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceMotionEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "data": {
+          "requiresPermission": false
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562293
+      },
+      {
+        "id": "motion.deviceOrientation",
+        "group": "motion",
+        "label": "DeviceOrientation",
+        "state": "UNKNOWN",
+        "method": "NOT_ATTEMPTED",
+        "detail": "DeviceOrientationEvent exists and needs no permission gate, but no events have been observed yet. Capability is UNKNOWN until real sensor data arrives.",
+        "data": {
+          "requiresPermission": false
+        },
+        "durationMs": 0,
+        "timestamp": 1791953562293
+      }
+    ],
+    "startedAt": 1791953562241,
+    "completedAt": 1791953562293,
+    "totalDurationMs": 43.4
+  },
+  "testResults": [
+    {
+      "spec": {
+        "id": "BALL-001",
+        "title": "Deterministic",
+        "required": true,
+        "input": "every throw replayed from its recorded origin, velocity and frozen collision set",
+        "expected": "the same flight, step for step",
+        "passCriteria": ">= 1 throw; 0 replay mismatches",
+        "failureCondition": "the same input giving a different flight (§50)"
+      },
+      "verdict": "PASS",
+      "observed": "12 throw(s), 0 mismatch(es)",
+      "reason": "every throw replays exactly",
+      "metrics": {
+        "throws": 12,
+        "mismatches": 0
+      },
+      "timestamp": 1791953756526
+    },
+    {
+      "spec": {
+        "id": "BALL-002",
+        "title": "No bounce adds energy",
+        "required": true,
+        "input": "kinetic plus potential energy at the start and after every contact",
+        "expected": "never higher after a contact than before it",
+        "passCriteria": ">= 1 throw with a contact; 0 violations",
+        "failureCondition": "a bounce that gains energy — the integrator, not the room, is moving the ball"
+      },
+      "verdict": "PASS",
+      "observed": "8 throw(s) with contacts, 0 violation(s)",
+      "reason": "energy only ever left the ball",
+      "metrics": {
+        "withContacts": 8,
+        "violations": 0
+      },
+      "timestamp": 1791953756526
+    },
+    {
+      "spec": {
+        "id": "BALL-003",
+        "title": "Local units, consistently",
+        "required": true,
+        "input": "the held stage’s unit, the world’s camera height and scale",
+        "expected": "the game unit is the measured camera height; the world says LOCAL_UNITS",
+        "passCriteria": "unit > 0 and equal to the camera height the stage was made with; scale LOCAL_UNITS",
+        "failureCondition": "a metre asserted anywhere (§32, v3 §15)"
+      },
+      "verdict": "PASS",
+      "observed": "1 game unit = camera height 2.702178 world units; scale LOCAL_UNITS",
+      "reason": "ball, gravity and throws are all in the measured camera height",
+      "metrics": {
+        "unit": 2.702178,
+        "cameraHeight": 2.641596,
+        "scale": "LOCAL_UNITS"
+      },
+      "timestamp": 1791953756526
+    },
+    {
+      "spec": {
+        "id": "BALL-004",
+        "title": "Physics cost",
+        "required": false,
+        "input": "the worst physics time in any display frame",
+        "expected": "small",
+        "passCriteria": "<= 4 ms",
+        "failureCondition": "past the budget"
+      },
+      "verdict": "PASS",
+      "observed": "worst 0.5 ms per frame",
+      "reason": "within budget",
+      "metrics": {
+        "worstMs": 0.5
+      },
+      "timestamp": 1791953756526
+    }
+  ],
+  "overallVerdict": "TESTING",
+  "overallReason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED",
+  "stateTransitions": [
+    {
+      "timestamp": 1791953562240,
+      "subject": "phase[0] Environment / Capability",
+      "from": "NOT_STARTED",
+      "to": "IMPLEMENTING",
+      "reason": "capability detection starting"
+    },
+    {
+      "timestamp": 1791953562295,
+      "subject": "phase[0] Environment / Capability",
+      "from": "IMPLEMENTING",
+      "to": "TESTING",
+      "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953562316,
+      "subject": "phase[2] Frame Pipeline",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953563488,
+      "subject": "phase[3] Feature Detection",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953563938,
+      "subject": "phase[4] Optical Flow Tracking",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953564772,
+      "subject": "phase[5] Geometric Verification",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953565391,
+      "subject": "phase[6] Relative Pose",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953565788,
+      "subject": "phase[7] IMU Support / Fusion",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953565988,
+      "subject": "phase[8] Keyframe System",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: KEY-001, KEY-002, KEY-003, KEY-004, KEY-005, KEY-006 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953566305,
+      "subject": "phase[9] Triangulation",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: TRI-001, TRI-002, TRI-003, TRI-004, TRI-005, TRI-006, TRI-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953566621,
+      "subject": "phase[10] Landmark Map",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: MAP-001, MAP-002, MAP-003, MAP-004, MAP-005, MAP-006, MAP-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953566990,
+      "subject": "phase[11] Surface Understanding",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-001, SURF-002, SURF-003, SURF-004, SURF-005, SURF-006, SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953570539,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-001, SURF-003, SURF-004, SURF-005, SURF-006, SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953572041,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-001, SURF-003, SURF-004, SURF-005, SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953573545,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-003, SURF-004, SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953574539,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-004, SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953579039,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953582539,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "FAILED",
+      "reason": "FAILED: SURF-001"
+    },
+    {
+      "timestamp": 1791953586539,
+      "subject": "phase[11] Surface Understanding",
+      "from": "FAILED",
+      "to": "TESTING",
+      "reason": "PENDING: SURF-007 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953591545,
+      "subject": "phase[11] Surface Understanding",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953596624,
+      "subject": "phase[12] Spatial World",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953601672,
+      "subject": "phase[13] Spatial Game Viewer",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953606687,
+      "subject": "phase[14] Save / Resume",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: SAVE-001, SAVE-002, SAVE-003, SAVE-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953607741,
+      "subject": "phase[14] Save / Resume",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SAVE-001, SAVE-002, SAVE-004 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953610746,
+      "subject": "phase[14] Save / Resume",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: SAVE-001, SAVE-002 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953611242,
+      "subject": "phase[14] Save / Resume",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953615560,
+      "subject": "phase[15] Spatial Collision",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "PENDING: COL-001, COL-003 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953621626,
+      "subject": "phase[15] Spatial Collision",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "PENDING: COL-003 — not yet evaluable"
+    },
+    {
+      "timestamp": 1791953642623,
+      "subject": "phase[15] Spatial Collision",
+      "from": "TESTING",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953647995,
+      "subject": "phase[16] Game Integration",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953675052,
+      "subject": "phase[17] Stage Generator",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953702549,
+      "subject": "phase[18] Goal Ring System",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    },
+    {
+      "timestamp": 1791953729420,
+      "subject": "phase[19] Ball Physics",
+      "from": "BLOCKED",
+      "to": "TESTING",
+      "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+    }
+  ],
+  "errorLog": [],
+  "fullLog": [
+    {
+      "timestamp": 1791953562240,
+      "level": "INFO",
+      "phase": 0,
+      "source": "PhasePassLedger",
+      "message": "phase passes carried in from earlier page loads",
+      "data": {
+        "buildCommit": "366afadaa1e0f9bd78bba7839794df03193bf4b5",
+        "accepted": [],
+        "refused": [],
+        "note": "A carried pass opens the Phase Lock and sets no verdict. Each phase still reports what this session measured, and still needs a committed real-device bundle (Rule 004)."
+      }
+    },
+    {
+      "timestamp": 1791953562240,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "Phase 0 starting",
+      "data": {
+        "appVersion": "0.1.0",
+        "leg": "DESKTOP_DEV",
+        "origin": "http://localhost:46039"
+      }
+    },
+    {
+      "timestamp": 1791953562293,
+      "level": "INFO",
+      "phase": 0,
+      "source": "CapabilityDetector",
+      "message": "capability detection complete",
+      "data": {
+        "records": 31,
+        "totalProbeMs": 43.4
+      }
+    },
+    {
+      "timestamp": 1791953562298,
+      "level": "INFO",
+      "phase": 0,
+      "source": "App",
+      "message": "phase 0: IMPLEMENTING -> TESTING",
+      "data": {
+        "reason": "PENDING: CAP-0004, CAP-0005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953562314,
+      "level": "WARN",
+      "phase": 2,
+      "source": "App",
+      "message": "Phase 2 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953562316,
+      "level": "INFO",
+      "phase": 2,
+      "source": "App",
+      "message": "phase 2: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FRAME-001, FRAME-002, FRAME-003, FRAME-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953562385,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "pipeline started",
+      "data": {
+        "startTier": "BASIC 960x540@30",
+        "routeOrder": [
+          "VIDEO_FRAME",
+          "IMAGE_BITMAP",
+          "MAIN_CANVAS"
+        ]
+      }
+    },
+    {
+      "timestamp": 1791953562406,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FrameWorker",
+      "message": "preprocessing worker ready",
+      "data": {
+        "hasDocument": false,
+        "isWorkerGlobalScope": true,
+        "canvas2dAvailable": true
+      }
+    },
+    {
+      "timestamp": 1791953562607,
+      "level": "INFO",
+      "phase": 2,
+      "source": "FramePipeline",
+      "message": "acquisition route VIDEO_FRAME selected",
+      "data": {
+        "successes": 5,
+        "meanAcquireMs": 0.04
+      }
+    },
+    {
+      "timestamp": 1791953563005,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier UP: BASIC 960x540@30 -> HIGH 1280x720@30",
+      "data": {
+        "reason": "median worker latency 4.1 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows",
+        "medianWorkerMs": 4.1,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1791953563487,
+      "level": "WARN",
+      "phase": 3,
+      "source": "App",
+      "message": "Phase 3 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953563488,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "phase 3: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FEAT-001, FEAT-002, FEAT-003, FEAT-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953563573,
+      "level": "INFO",
+      "phase": 3,
+      "source": "App",
+      "message": "adopted the running Phase 2 pipeline",
+      "data": {
+        "note": "the camera and worker stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1791953563936,
+      "level": "WARN",
+      "phase": 4,
+      "source": "App",
+      "message": "Phase 4 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953563938,
+      "level": "INFO",
+      "phase": 4,
+      "source": "App",
+      "message": "phase 4: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: FLOW-001, FLOW-002, FLOW-003, FLOW-004, FLOW-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953564005,
+      "level": "INFO",
+      "phase": 4,
+      "source": "App",
+      "message": "adopted the running Phase 3 pipeline",
+      "data": {
+        "note": "the camera, worker and detected population stay as they are; only the tracking options change"
+      }
+    },
+    {
+      "timestamp": 1791953564008,
+      "level": "INFO",
+      "phase": 4,
+      "source": "RotationRateMonitor",
+      "message": "gyroscope: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet"
+      }
+    },
+    {
+      "timestamp": 1791953564771,
+      "level": "WARN",
+      "phase": 5,
+      "source": "App",
+      "message": "Phase 5 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953564772,
+      "level": "INFO",
+      "phase": 5,
+      "source": "App",
+      "message": "phase 5: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: GEO-001, GEO-002, GEO-003, GEO-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953564855,
+      "level": "INFO",
+      "phase": 5,
+      "source": "App",
+      "message": "adopted the running Phase 4 tracker",
+      "data": {
+        "note": "the camera, worker and tracked population stay as they are; only the tracking options change. Phase 5 verifies the population Phase 4 passed with, not a new one"
+      }
+    },
+    {
+      "timestamp": 1791953565389,
+      "level": "WARN",
+      "phase": 6,
+      "source": "App",
+      "message": "Phase 6 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953565391,
+      "level": "INFO",
+      "phase": 6,
+      "source": "App",
+      "message": "phase 6: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: POSE-001, POSE-002, POSE-003, POSE-004, POSE-005 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953565522,
+      "level": "INFO",
+      "phase": 6,
+      "source": "App",
+      "message": "adopted the running Phase 5 verifier",
+      "data": {
+        "note": "the camera, worker, population and verification anchor stay as they are; only the tracking options change. Phase 6 decomposes the model Phase 5 selected"
+      }
+    },
+    {
+      "timestamp": 1791953565526,
+      "level": "INFO",
+      "phase": 6,
+      "source": "RotationRateMonitor",
+      "message": "gyroscope: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "why": "POSE-002 compares the recovered rotation against this and nothing else reads it"
+      }
+    },
+    {
+      "timestamp": 1791953565786,
+      "level": "WARN",
+      "phase": 7,
+      "source": "App",
+      "message": "Phase 7 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953565788,
+      "level": "INFO",
+      "phase": 7,
+      "source": "App",
+      "message": "phase 7: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: IMU-001, IMU-002, IMU-003, IMU-004, IMU-005, IMU-006, IMU-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953565859,
+      "level": "INFO",
+      "phase": 7,
+      "source": "App",
+      "message": "adopted the running Phase 6 pose recovery",
+      "data": {
+        "note": "the camera, worker, population, anchor and pose options stay as they are. Phase 7 fuses the poses Phase 6 recovers and changes nothing about how they are recovered — editing the solver here would mean fusing a pose Phase 6 never passed with"
+      }
+    },
+    {
+      "timestamp": 1791953565863,
+      "level": "INFO",
+      "phase": 7,
+      "source": "RotationRateMonitor",
+      "message": "motion sensors: WAITING",
+      "data": {
+        "detail": "listening for devicemotion; no event with rotationRate has arrived yet",
+        "why": "IMU-002 is decided on what actually arrives, and v3 §68 asks for the run to continue when nothing does"
+      }
+    },
+    {
+      "timestamp": 1791953565987,
+      "level": "WARN",
+      "phase": 8,
+      "source": "App",
+      "message": "Phase 8 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953565988,
+      "level": "INFO",
+      "phase": 8,
+      "source": "App",
+      "message": "phase 8: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: KEY-001, KEY-002, KEY-003, KEY-004, KEY-005, KEY-006 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953566057,
+      "level": "INFO",
+      "phase": 8,
+      "source": "App",
+      "message": "adopted the running Phase 7 stack",
+      "data": {
+        "note": "the camera, worker, population, anchor, pose options and filter stay as they are. Phase 8 decides which of the views Phase 6 recovers are worth keeping and changes nothing about how they are recovered"
+      }
+    },
+    {
+      "timestamp": 1791953566304,
+      "level": "WARN",
+      "phase": 9,
+      "source": "App",
+      "message": "Phase 9 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953566305,
+      "level": "INFO",
+      "phase": 9,
+      "source": "App",
+      "message": "phase 9: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: TRI-001, TRI-002, TRI-003, TRI-004, TRI-005, TRI-006, TRI-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953566374,
+      "level": "INFO",
+      "phase": 9,
+      "source": "App",
+      "message": "adopted the running Phase 8 keyframe store",
+      "data": {
+        "note": "the store keeps choosing views on v3 §20’s conditions and Phase 9 relates each new one to the one before it. Changing the selection here would mean triangulating pairs Phase 8 never chose"
+      }
+    },
+    {
+      "timestamp": 1791953566620,
+      "level": "WARN",
+      "phase": 10,
+      "source": "App",
+      "message": "Phase 10 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953566621,
+      "level": "INFO",
+      "phase": 10,
+      "source": "App",
+      "message": "phase 10: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: MAP-001, MAP-002, MAP-003, MAP-004, MAP-005, MAP-006, MAP-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953566689,
+      "level": "INFO",
+      "phase": 10,
+      "source": "App",
+      "message": "adopted the running Phase 9 triangulator",
+      "data": {
+        "note": "the pairs Phase 8 chooses and Phase 9 triangulates stay as they are. Phase 10 brings each batch into one frame by the landmarks it shares with the map, and changes nothing about how the batches are made"
+      }
+    },
+    {
+      "timestamp": 1791953566988,
+      "level": "WARN",
+      "phase": 11,
+      "source": "App",
+      "message": "Phase 11 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953566990,
+      "level": "INFO",
+      "phase": 11,
+      "source": "App",
+      "message": "phase 11: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: SURF-001, SURF-002, SURF-003, SURF-004, SURF-005, SURF-006, SURF-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953567038,
+      "level": "INFO",
+      "phase": 11,
+      "source": "GravityMonitor",
+      "message": "orientation sensor WAITING",
+      "data": {
+        "detail": "listening for deviceorientation; nothing with beta and gamma has arrived yet"
+      }
+    },
+    {
+      "timestamp": 1791953567039,
+      "level": "INFO",
+      "phase": 11,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953567096,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: HIGH 1280x720@30 -> BASIC 960x540@30",
+      "data": {
+        "reason": "median worker latency 127.3 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)",
+        "medianWorkerMs": 127.3,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1791953571174,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@30 -> BASIC 960x540@20",
+      "data": {
+        "reason": "median worker latency 126.7 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)",
+        "medianWorkerMs": 126.7,
+        "budgetMs": 33.33,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1791953575187,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: BASIC 960x540@20 -> REDUCED 640x360@20",
+      "data": {
+        "reason": "median worker latency 130.1 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)",
+        "medianWorkerMs": 130.1,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1791953579200,
+      "level": "INFO",
+      "phase": 2,
+      "source": "AdaptiveController",
+      "message": "tier DOWN: REDUCED 640x360@20 -> REDUCED 640x360@15",
+      "data": {
+        "reason": "median worker latency 78.2 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)",
+        "medianWorkerMs": 78.2,
+        "budgetMs": 50,
+        "underInjectedLoad": false
+      }
+    },
+    {
+      "timestamp": 1791953582539,
+      "level": "INFO",
+      "phase": 11,
+      "source": "App",
+      "message": "phase 11: TESTING -> FAILED",
+      "data": {
+        "reason": "FAILED: SURF-001"
+      }
+    },
+    {
+      "timestamp": 1791953586539,
+      "level": "INFO",
+      "phase": 11,
+      "source": "App",
+      "message": "phase 11: FAILED -> TESTING",
+      "data": {
+        "reason": "PENDING: SURF-007 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953596623,
+      "level": "WARN",
+      "phase": 12,
+      "source": "App",
+      "message": "Phase 12 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953596624,
+      "level": "INFO",
+      "phase": 12,
+      "source": "App",
+      "message": "phase 12: BLOCKED -> TESTING",
+      "data": {
+        "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+      }
+    },
+    {
+      "timestamp": 1791953596672,
+      "level": "INFO",
+      "phase": 12,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953596672,
+      "level": "INFO",
+      "phase": 12,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953601671,
+      "level": "WARN",
+      "phase": 13,
+      "source": "App",
+      "message": "Phase 13 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953601672,
+      "level": "INFO",
+      "phase": 13,
+      "source": "App",
+      "message": "phase 13: BLOCKED -> TESTING",
+      "data": {
+        "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+      }
+    },
+    {
+      "timestamp": 1791953601744,
+      "level": "INFO",
+      "phase": 13,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953601744,
+      "level": "INFO",
+      "phase": 13,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953606686,
+      "level": "WARN",
+      "phase": 14,
+      "source": "App",
+      "message": "Phase 14 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953606687,
+      "level": "INFO",
+      "phase": 14,
+      "source": "App",
+      "message": "phase 14: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: SAVE-001, SAVE-002, SAVE-003, SAVE-004 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953606740,
+      "level": "INFO",
+      "phase": 14,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953606740,
+      "level": "INFO",
+      "phase": 14,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953607589,
+      "level": "INFO",
+      "phase": 14,
+      "source": "SaveGame",
+      "message": "resumed",
+      "data": {
+        "progress": {
+          "stageIndex": 0,
+          "successes": 0,
+          "throws": 0
+        },
+        "relocalized": false
+      }
+    },
+    {
+      "timestamp": 1791953610923,
+      "level": "INFO",
+      "phase": 14,
+      "source": "SaveGame",
+      "message": "saved",
+      "data": {
+        "bytes": 2088,
+        "stageIndex": 0
+      }
+    },
+    {
+      "timestamp": 1791953615559,
+      "level": "WARN",
+      "phase": 15,
+      "source": "App",
+      "message": "Phase 15 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953615560,
+      "level": "INFO",
+      "phase": 15,
+      "source": "App",
+      "message": "phase 15: BLOCKED -> TESTING",
+      "data": {
+        "reason": "PENDING: COL-001, COL-003 — not yet evaluable"
+      }
+    },
+    {
+      "timestamp": 1791953615622,
+      "level": "INFO",
+      "phase": 15,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953615622,
+      "level": "INFO",
+      "phase": 15,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953647994,
+      "level": "WARN",
+      "phase": 16,
+      "source": "App",
+      "message": "Phase 16 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953647995,
+      "level": "INFO",
+      "phase": 16,
+      "source": "App",
+      "message": "phase 16: BLOCKED -> TESTING",
+      "data": {
+        "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+      }
+    },
+    {
+      "timestamp": 1791953648075,
+      "level": "INFO",
+      "phase": 16,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953648075,
+      "level": "INFO",
+      "phase": 16,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953675051,
+      "level": "WARN",
+      "phase": 17,
+      "source": "App",
+      "message": "Phase 17 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953675052,
+      "level": "INFO",
+      "phase": 17,
+      "source": "App",
+      "message": "phase 17: BLOCKED -> TESTING",
+      "data": {
+        "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+      }
+    },
+    {
+      "timestamp": 1791953675121,
+      "level": "INFO",
+      "phase": 17,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953675121,
+      "level": "INFO",
+      "phase": 17,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953702547,
+      "level": "WARN",
+      "phase": 18,
+      "source": "App",
+      "message": "Phase 18 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953702549,
+      "level": "INFO",
+      "phase": 18,
+      "source": "App",
+      "message": "phase 18: BLOCKED -> TESTING",
+      "data": {
+        "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+      }
+    },
+    {
+      "timestamp": 1791953702605,
+      "level": "INFO",
+      "phase": 18,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953702605,
+      "level": "INFO",
+      "phase": 18,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    },
+    {
+      "timestamp": 1791953729418,
+      "level": "WARN",
+      "phase": 19,
+      "source": "App",
+      "message": "Phase 19 opened through the desktop development override",
+      "data": {
+        "note": "this path is unreachable on a real device and the resulting bundle is DESKTOP_DEV, which cannot pass a phase"
+      }
+    },
+    {
+      "timestamp": 1791953729420,
+      "level": "INFO",
+      "phase": 19,
+      "source": "App",
+      "message": "phase 19: BLOCKED -> TESTING",
+      "data": {
+        "reason": "all required tests PASS on the DESKTOP_DEV leg — Rule 004 requires iPhone Safari over HTTPS before this phase can be PASSED"
+      }
+    },
+    {
+      "timestamp": 1791953729523,
+      "level": "INFO",
+      "phase": 19,
+      "source": "GravityMonitor",
+      "message": "orientation sensor LIVE",
+      "data": {
+        "detail": "deviceorientation is delivering finite beta and gamma"
+      }
+    },
+    {
+      "timestamp": 1791953729523,
+      "level": "INFO",
+      "phase": 19,
+      "source": "App",
+      "message": "adopted the running landmark map",
+      "data": {
+        "note": "localization, the world and the game run on the map Phase 10 is already building"
+      }
+    }
+  ],
+  "legDetermination": {
+    "signals": {
+      "uaSuggestsIOS": false,
+      "uaSuggestsIOS_method": "INFERENCE — user-agent string, not a measurement",
+      "maxTouchPoints": 1,
+      "protocol": "http:",
+      "hostname": "localhost",
+      "isLocalHost": true,
+      "navigatorWebdriver": true,
+      "hardwareConcurrency": 4,
+      "devicePixelRatio": 2,
+      "screen": "430x932",
+      "failedChecks": [
+        "UA does not look like iOS/iPadOS",
+        "protocol is http:, not https:",
+        "host is local, so this is not a device reaching a real origin",
+        "navigator.webdriver is true (automated browser)"
+      ]
+    },
+    "explanation": "Classified as DESKTOP_DEV because: UA does not look like iOS/iPadOS; protocol is http:, not https:; host is local, so this is not a device reaching a real origin; navigator.webdriver is true (automated browser). Rule 004 means this run cannot pass a phase, only catch regressions."
+  },
+  "phaseContext": {
+    "camera": {
+      "state": "LIVE",
+      "live": true,
+      "trackReadyState": "live",
+      "rungUsed": 2,
+      "attempts": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal",
+          "ok": false,
+          "errorName": "OverconstrainedError",
+          "durationMs": 6
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal",
+          "ok": true,
+          "durationMs": 5
+        }
+      ],
+      "requestedLadder": [
+        {
+          "rung": 1,
+          "label": "rear camera (exact), 1280x720 ideal, 30 fps ideal"
+        },
+        {
+          "rung": 2,
+          "label": "rear camera (preferred), 1280x720 ideal"
+        },
+        {
+          "rung": 3,
+          "label": "rear camera (preferred), any resolution"
+        },
+        {
+          "rung": 4,
+          "label": "any camera, any resolution"
+        }
+      ],
+      "achievedSettings": {
+        "width": 480,
+        "height": 640,
+        "frameRate": 30,
+        "facingMode": "unreported",
+        "deviceId": "a91e47a0d263effb029fdc8f49d7dd19509be945d10c437a6ad5c085784daad5",
+        "label": "/home/user/world-kit/node_modules/.cache/room-v1-480x640-240.y4m",
+        "aspectRatio": 0.75
+      },
+      "openDurationMs": 11,
+      "failure": null
+    },
+    "pipeline": {
+      "running": true,
+      "startedAt": 193.90000000002328,
+      "uptimeMs": 194141,
+      "route": "VIDEO_FRAME",
+      "routeLocked": true,
+      "routeProbes": [
+        {
+          "route": "VIDEO_FRAME",
+          "ok": true,
+          "attempts": 1575,
+          "successes": 1574,
+          "meanAcquireMs": 0.054,
+          "error": null,
+          "note": "selected"
+        },
+        {
+          "route": "IMAGE_BITMAP",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        },
+        {
+          "route": "MAIN_CANVAS",
+          "ok": false,
+          "attempts": 0,
+          "successes": 0,
+          "meanAcquireMs": 0,
+          "error": null,
+          "note": "not reached; an earlier route is in use"
+        }
+      ],
+      "workerStarted": true,
+      "workerScope": {
+        "hasDocument": false,
+        "hasWindow": false,
+        "isWorkerGlobalScope": true,
+        "hasOffscreenCanvas": true,
+        "canvas2dAvailable": true,
+        "hardwareConcurrency": 4
+      },
+      "workerErrors": [],
+      "callbacks": 5693,
+      "admitted": 1575,
+      "completed": 1574,
+      "pacedOut": 647,
+      "backpressured": 3471,
+      "lost": 0,
+      "acquireFailures": 0,
+      "deliveredFps": 6.4,
+      "sourceFps": 28.71,
+      "sessionDeliveredFps": 8.11,
+      "maxResultGapMs": 431.8,
+      "uiCostMs": {
+        "count": 1575,
+        "mean": 0.1,
+        "p50": 0.1,
+        "p95": 0.2,
+        "min": 0,
+        "max": 2.8
+      },
+      "acquireMs": {
+        "count": 1575,
+        "mean": 0.05,
+        "p50": 0,
+        "p95": 0.1,
+        "min": 0,
+        "max": 3.2
+      },
+      "workerMs": {
+        "count": 1574,
+        "mean": 101.24,
+        "p50": 91.1,
+        "p95": 176.1,
+        "min": 3.3,
+        "max": 343.7
+      },
+      "roundTripMs": {
+        "count": 1574,
+        "mean": 102.98,
+        "p50": 92.3,
+        "p95": 178.8,
+        "min": 3.5,
+        "max": 344.5
+      },
+      "tierStep": 4,
+      "tierLabel": "REDUCED 640x360@15",
+      "targetFps": 15,
+      "procWidth": 360,
+      "procHeight": 480,
+      "decisions": [
+        {
+          "at": 814,
+          "direction": "UP",
+          "fromStep": 1,
+          "toStep": 0,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "HIGH 1280x720@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 4.1,
+          "budgetMs": 33.33,
+          "deliveredFps": 28.52,
+          "windowSize": 15,
+          "reason": "median worker latency 4.1 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+        },
+        {
+          "at": 4905.099999999977,
+          "direction": "DOWN",
+          "fromStep": 0,
+          "toStep": 1,
+          "fromLabel": "HIGH 1280x720@30",
+          "toLabel": "BASIC 960x540@30",
+          "fromTargetFps": 30,
+          "toTargetFps": 30,
+          "medianWorkerMs": 127.3,
+          "budgetMs": 33.33,
+          "deliveredFps": 16.19,
+          "windowSize": 15,
+          "reason": "median worker latency 127.3 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+        },
+        {
+          "at": 8982.79999999993,
+          "direction": "DOWN",
+          "fromStep": 1,
+          "toStep": 2,
+          "fromLabel": "BASIC 960x540@30",
+          "toLabel": "BASIC 960x540@20",
+          "fromTargetFps": 30,
+          "toTargetFps": 20,
+          "medianWorkerMs": 126.7,
+          "budgetMs": 33.33,
+          "deliveredFps": 11.01,
+          "windowSize": 15,
+          "reason": "median worker latency 126.7 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+        },
+        {
+          "at": 12995.29999999993,
+          "direction": "DOWN",
+          "fromStep": 2,
+          "toStep": 3,
+          "fromLabel": "BASIC 960x540@20",
+          "toLabel": "REDUCED 640x360@20",
+          "fromTargetFps": 20,
+          "toTargetFps": 20,
+          "medianWorkerMs": 130.1,
+          "budgetMs": 50,
+          "deliveredFps": 8.13,
+          "windowSize": 15,
+          "reason": "median worker latency 130.1 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+        },
+        {
+          "at": 17008.20000000007,
+          "direction": "DOWN",
+          "fromStep": 3,
+          "toStep": 4,
+          "fromLabel": "REDUCED 640x360@20",
+          "toLabel": "REDUCED 640x360@15",
+          "fromTargetFps": 20,
+          "toTargetFps": 15,
+          "medianWorkerMs": 78.2,
+          "budgetMs": 50,
+          "deliveredFps": 7.45,
+          "windowSize": 15,
+          "reason": "median worker latency 78.2 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+        }
+      ],
+      "spontaneousDegrade": true,
+      "maxDecisionsPer10s": 3,
+      "sourceSizesObserved": [
+        "480x640"
+      ],
+      "processedSizesObserved": [
+        "480x640",
+        "360x480"
+      ],
+      "sourceWidth": 480,
+      "sourceHeight": 640,
+      "maxAspectError": 0,
+      "overBudgetFrames": 0,
+      "upscaledFrames": 0,
+      "framesAfterSourceChange": 0,
+      "procMatchedAfterSourceChange": null,
+      "tierUsage": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "frames": 48,
+          "sizes": [
+            "480x640"
+          ]
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "frames": 43,
+          "sizes": [
+            "480x640"
+          ]
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "frames": 26,
+          "sizes": [
+            "480x640"
+          ]
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "frames": 40,
+          "sizes": [
+            "360x480"
+          ]
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "frames": 1417,
+          "sizes": [
+            "360x480"
+          ]
+        }
+      ],
+      "decisionOutcomes": [
+        {
+          "decisionIndex": 0,
+          "direction": "UP",
+          "beforeMedianWorkerMs": 4.1,
+          "afterMedianWorkerMs": 4.3,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 1,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 127.3,
+          "afterMedianWorkerMs": 135.4,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 2,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 126.7,
+          "afterMedianWorkerMs": 128,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 3,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 130.1,
+          "afterMedianWorkerMs": 57,
+          "samples": 15
+        },
+        {
+          "decisionIndex": 4,
+          "direction": "DOWN",
+          "beforeMedianWorkerMs": 78.2,
+          "afterMedianWorkerMs": 85.7,
+          "samples": 15
+        }
+      ],
+      "pyramidLevels": [
+        {
+          "width": 360,
+          "height": 480,
+          "bytes": 172800
+        },
+        {
+          "width": 180,
+          "height": 240,
+          "bytes": 43200
+        },
+        {
+          "width": 90,
+          "height": 120,
+          "bytes": 10800
+        }
+      ],
+      "pyramidConsistent": true,
+      "pyramidProblems": [],
+      "meanLuma": 133.08,
+      "topMadMax": 48.596,
+      "topMadMedian": 18.42,
+      "topMadSamples": 600,
+      "stripMadMax": 44.751,
+      "stripMadMedian": 16.665,
+      "stripMadSamples": 600,
+      "distinctChecksums": 346,
+      "crossCheck": {
+        "count": 181,
+        "unmatched": 0,
+        "medianAbsDifference": 0.839,
+        "maxAbsDifference": 1.663,
+        "sceneStdDev": 2.019,
+        "sceneRange": 6.546,
+        "costMs": {
+          "count": 181,
+          "mean": 2.95,
+          "p50": 1.7,
+          "p95": 6.1,
+          "min": 1.3,
+          "max": 19
+        }
+      },
+      "stressPasses": 0,
+      "stressIntervals": [],
+      "anyStressed": false,
+      "segments": [
+        {
+          "index": 0,
+          "stressed": false,
+          "startedAt": 193.9,
+          "endedAt": null,
+          "observedMs": 194003.5,
+          "results": 1574,
+          "meanFps": 8.11,
+          "maxGapMs": 431.8,
+          "wasHidden": false,
+          "endReason": "open at 194335"
+        }
+      ],
+      "longestCleanSegment": {
+        "index": 0,
+        "stressed": false,
+        "startedAt": 193.9,
+        "endedAt": null,
+        "observedMs": 194003.5,
+        "results": 1574,
+        "meanFps": 8.11,
+        "maxGapMs": 431.8,
+        "wasHidden": false,
+        "endReason": "open at 194335"
+      },
+      "wasEverHidden": false,
+      "hiddenCount": 0,
+      "recentFrames": [
+        {
+          "frameId": 1535,
+          "at": 188076,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 155,
+          "roundTripMs": 157.1,
+          "meanLuma": 128.12,
+          "checksum": 3290929138,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1536,
+          "at": 188235,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 148.3,
+          "roundTripMs": 149.7,
+          "meanLuma": 128.91,
+          "checksum": 1112321795,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1537,
+          "at": 188457,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 201.9,
+          "roundTripMs": 204.6,
+          "meanLuma": 130.2,
+          "checksum": 2905837245,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1538,
+          "at": 188607,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 113.2,
+          "roundTripMs": 117,
+          "meanLuma": 131.48,
+          "checksum": 4028090038,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1539,
+          "at": 188727,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 107.2,
+          "roundTripMs": 108,
+          "meanLuma": 132.3,
+          "checksum": 3549739963,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1540,
+          "at": 188857,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 101,
+          "roundTripMs": 105,
+          "meanLuma": 132.95,
+          "checksum": 505637189,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1541,
+          "at": 189041,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 153.8,
+          "roundTripMs": 155.2,
+          "meanLuma": 133.12,
+          "checksum": 3179103520,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1542,
+          "at": 189151,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 96.1,
+          "roundTripMs": 98.3,
+          "meanLuma": 132.96,
+          "checksum": 81724694,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1543,
+          "at": 189274,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 120.6,
+          "roundTripMs": 121.9,
+          "meanLuma": 132.93,
+          "checksum": 2840531043,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1544,
+          "at": 189398,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 104.5,
+          "roundTripMs": 105.2,
+          "meanLuma": 133.04,
+          "checksum": 848723142,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1545,
+          "at": 189624,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 196.5,
+          "roundTripMs": 205.3,
+          "meanLuma": 133.48,
+          "checksum": 3774093414,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1546,
+          "at": 189776,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 118.8,
+          "roundTripMs": 119.3,
+          "meanLuma": 133.96,
+          "checksum": 3295150674,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1547,
+          "at": 189907,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 118.8,
+          "roundTripMs": 122,
+          "meanLuma": 134.32,
+          "checksum": 2105900882,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1548,
+          "at": 190007,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 88,
+          "roundTripMs": 88.6,
+          "meanLuma": 134.52,
+          "checksum": 1723661599,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1549,
+          "at": 190294,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 137.7,
+          "roundTripMs": 142.5,
+          "meanLuma": 134.43,
+          "checksum": 2052950054,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1550,
+          "at": 190412,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 92.4,
+          "roundTripMs": 93.2,
+          "meanLuma": 134.15,
+          "checksum": 2146663405,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1551,
+          "at": 190513,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 93.9,
+          "roundTripMs": 94.4,
+          "meanLuma": 133.99,
+          "checksum": 3874363520,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1552,
+          "at": 190598,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 78.6,
+          "roundTripMs": 79.3,
+          "meanLuma": 133.79,
+          "checksum": 1266491046,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1553,
+          "at": 190695,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 75.2,
+          "roundTripMs": 75.8,
+          "meanLuma": 133.68,
+          "checksum": 2760394026,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1554,
+          "at": 190807,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 80.9,
+          "roundTripMs": 83.5,
+          "meanLuma": 133.57,
+          "checksum": 1513886171,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1555,
+          "at": 190924,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 93.6,
+          "roundTripMs": 97.5,
+          "meanLuma": 133.38,
+          "checksum": 907565871,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1556,
+          "at": 191091,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 136,
+          "roundTripMs": 138.5,
+          "meanLuma": 133.1,
+          "checksum": 1644301160,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1557,
+          "at": 191316,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 196.7,
+          "roundTripMs": 197.6,
+          "meanLuma": 132.74,
+          "checksum": 366278525,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1558,
+          "at": 191665,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 343.7,
+          "roundTripMs": 344.5,
+          "meanLuma": 132.31,
+          "checksum": 3917798386,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1559,
+          "at": 191811,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 130.8,
+          "roundTripMs": 131.4,
+          "meanLuma": 131.72,
+          "checksum": 3971936016,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1560,
+          "at": 191918,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 97.3,
+          "roundTripMs": 98,
+          "meanLuma": 131.76,
+          "checksum": 480270818,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1561,
+          "at": 192024,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 100.9,
+          "roundTripMs": 104.9,
+          "meanLuma": 131.96,
+          "checksum": 1484798025,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1562,
+          "at": 192250,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 197.6,
+          "roundTripMs": 198.3,
+          "meanLuma": 132.18,
+          "checksum": 1117381658,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1563,
+          "at": 192358,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 97.9,
+          "roundTripMs": 101,
+          "meanLuma": 132.73,
+          "checksum": 26926281,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1564,
+          "at": 192524,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 133.6,
+          "roundTripMs": 138.7,
+          "meanLuma": 133.09,
+          "checksum": 4034987687,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1565,
+          "at": 192691,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 139.6,
+          "roundTripMs": 145.1,
+          "meanLuma": 132.78,
+          "checksum": 1986557329,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1566,
+          "at": 192902,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 182.3,
+          "roundTripMs": 183.1,
+          "meanLuma": 132.48,
+          "checksum": 3452269601,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1567,
+          "at": 193041,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 112.1,
+          "roundTripMs": 115.7,
+          "meanLuma": 132.4,
+          "checksum": 3573241249,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1568,
+          "at": 193141,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 88.9,
+          "roundTripMs": 89.3,
+          "meanLuma": 132.57,
+          "checksum": 4156257828,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1569,
+          "at": 193291,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 134.2,
+          "roundTripMs": 139.5,
+          "meanLuma": 133.01,
+          "checksum": 2024647338,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1570,
+          "at": 193599,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 147.7,
+          "roundTripMs": 148.3,
+          "meanLuma": 133.83,
+          "checksum": 4006973504,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1571,
+          "at": 193712,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 92.6,
+          "roundTripMs": 93,
+          "meanLuma": 134.25,
+          "checksum": 1860729451,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1572,
+          "at": 193825,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 103.6,
+          "roundTripMs": 106.2,
+          "meanLuma": 134.28,
+          "checksum": 180193704,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1573,
+          "at": 194029,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 173.3,
+          "roundTripMs": 173.9,
+          "meanLuma": 133.79,
+          "checksum": 419590822,
+          "stressPasses": 0
+        },
+        {
+          "frameId": 1574,
+          "at": 194260,
+          "sourceWidth": 480,
+          "sourceHeight": 640,
+          "procWidth": 360,
+          "procHeight": 480,
+          "tierStep": 4,
+          "workerMs": 206.3,
+          "roundTripMs": 207.1,
+          "meanLuma": 133.08,
+          "checksum": 3180517538,
+          "stressPasses": 0
+        }
+      ],
+      "controller": {
+        "config": {
+          "windowSize": 15,
+          "downThreshold": 0.9,
+          "upThreshold": 0.5,
+          "deliveredFpsFloorRatio": 0.75,
+          "deliveredFpsBlameRatio": 0.5,
+          "upWindowsRequired": 3,
+          "cooldownMs": 4000,
+          "upAfterDownCooldownMs": 8000
+        },
+        "ladder": [
+          {
+            "step": 0,
+            "label": "HIGH 1280x720@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 1,
+            "label": "BASIC 960x540@30",
+            "budgetMs": 33.33
+          },
+          {
+            "step": 2,
+            "label": "BASIC 960x540@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 3,
+            "label": "REDUCED 640x360@20",
+            "budgetMs": 50
+          },
+          {
+            "step": 4,
+            "label": "REDUCED 640x360@15",
+            "budgetMs": 50
+          }
+        ],
+        "startStep": 1,
+        "floorStep": 4,
+        "currentStep": 4,
+        "currentTier": "REDUCED 640x360@15",
+        "deepestStep": 4,
+        "windowFill": 15,
+        "decisions": [
+          {
+            "at": 814,
+            "direction": "UP",
+            "fromStep": 1,
+            "toStep": 0,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "HIGH 1280x720@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 4.1,
+            "budgetMs": 33.33,
+            "deliveredFps": 28.52,
+            "windowSize": 15,
+            "reason": "median worker latency 4.1 ms is under 16.67 ms (0.5 of the 33.33 ms budget at HIGH 1280x720@30) for 3 consecutive windows"
+          },
+          {
+            "at": 4905.099999999977,
+            "direction": "DOWN",
+            "fromStep": 0,
+            "toStep": 1,
+            "fromLabel": "HIGH 1280x720@30",
+            "toLabel": "BASIC 960x540@30",
+            "fromTargetFps": 30,
+            "toTargetFps": 30,
+            "medianWorkerMs": 127.3,
+            "budgetMs": 33.33,
+            "deliveredFps": 16.19,
+            "windowSize": 15,
+            "reason": "median worker latency 127.3 ms exceeds 30 ms (0.9 of the 33.33 ms budget at HIGH 1280x720@30)"
+          },
+          {
+            "at": 8982.79999999993,
+            "direction": "DOWN",
+            "fromStep": 1,
+            "toStep": 2,
+            "fromLabel": "BASIC 960x540@30",
+            "toLabel": "BASIC 960x540@20",
+            "fromTargetFps": 30,
+            "toTargetFps": 20,
+            "medianWorkerMs": 126.7,
+            "budgetMs": 33.33,
+            "deliveredFps": 11.01,
+            "windowSize": 15,
+            "reason": "median worker latency 126.7 ms exceeds 30 ms (0.9 of the 33.33 ms budget at BASIC 960x540@30)"
+          },
+          {
+            "at": 12995.29999999993,
+            "direction": "DOWN",
+            "fromStep": 2,
+            "toStep": 3,
+            "fromLabel": "BASIC 960x540@20",
+            "toLabel": "REDUCED 640x360@20",
+            "fromTargetFps": 20,
+            "toTargetFps": 20,
+            "medianWorkerMs": 130.1,
+            "budgetMs": 50,
+            "deliveredFps": 8.13,
+            "windowSize": 15,
+            "reason": "median worker latency 130.1 ms exceeds 45 ms (0.9 of the 50 ms budget at BASIC 960x540@20)"
+          },
+          {
+            "at": 17008.20000000007,
+            "direction": "DOWN",
+            "fromStep": 3,
+            "toStep": 4,
+            "fromLabel": "REDUCED 640x360@20",
+            "toLabel": "REDUCED 640x360@15",
+            "fromTargetFps": 20,
+            "toTargetFps": 15,
+            "medianWorkerMs": 78.2,
+            "budgetMs": 50,
+            "deliveredFps": 7.45,
+            "windowSize": 15,
+            "reason": "median worker latency 78.2 ms exceeds 45 ms (0.9 of the 50 ms budget at REDUCED 640x360@20)"
+          }
+        ],
+        "note": "Every decision carries the median worker latency and the budget it was compared against. The controller reads no clock of its own — only the timestamps on the samples it is given (§59)."
+      },
+      "segmentLog": {
+        "segments": [
+          {
+            "index": 0,
+            "stressed": false,
+            "startedAt": 193.9,
+            "endedAt": null,
+            "observedMs": 194003.5,
+            "results": 1574,
+            "meanFps": 8.11,
+            "maxGapMs": 431.8,
+            "wasHidden": false,
+            "endReason": "open at 194335"
+          }
+        ],
+        "droppedSegments": 0,
+        "longestCleanMs": 194003.5,
+        "note": "The timeline is cut wherever load injection was switched on or off. FRAME-001 reads the longest unstressed segment; stressed segments are measured and reported but never counted toward continuity."
+      },
+      "crossCheckDetail": {
+        "count": 181,
+        "unmatched": 0,
+        "medianAbsDifference": 0.839,
+        "maxAbsDifference": 1.663,
+        "sceneStdDev": 2.019,
+        "sceneRange": 6.546,
+        "costMs": {
+          "count": 181,
+          "mean": 2.95,
+          "p50": 1.7,
+          "p95": 6.1,
+          "min": 1.3,
+          "max": 19
+        },
+        "recentSamples": [
+          {
+            "frameId": 1408,
+            "at": 168853.40000000002,
+            "mainMeanLuma": 131.706,
+            "workerMeanLuma": 132.545,
+            "absDifference": 0.8389554398148107,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 1417,
+            "at": 169997.40000000002,
+            "mainMeanLuma": 131.761,
+            "workerMeanLuma": 132.92,
+            "absDifference": 1.1594777199074144,
+            "costMs": 5.599999999860302
+          },
+          {
+            "frameId": 1423,
+            "at": 171086.09999999998,
+            "mainMeanLuma": 127.597,
+            "workerMeanLuma": 128.596,
+            "absDifference": 0.9994473379629625,
+            "costMs": 1.6000000000931323
+          },
+          {
+            "frameId": 1430,
+            "at": 172219.29999999993,
+            "mainMeanLuma": 129.964,
+            "workerMeanLuma": 130.413,
+            "absDifference": 0.44869502314813303,
+            "costMs": 5.100000000093132
+          },
+          {
+            "frameId": 1437,
+            "at": 173286.09999999998,
+            "mainMeanLuma": 132.425,
+            "workerMeanLuma": 133.219,
+            "absDifference": 0.7940002893518567,
+            "costMs": 1.3999999999068677
+          },
+          {
+            "frameId": 1446,
+            "at": 174286.09999999998,
+            "mainMeanLuma": 133.654,
+            "workerMeanLuma": 134.07,
+            "absDifference": 0.41599392361112564,
+            "costMs": 5.399999999906868
+          },
+          {
+            "frameId": 1453,
+            "at": 175325.70000000007,
+            "mainMeanLuma": 131.212,
+            "workerMeanLuma": 132.167,
+            "absDifference": 0.9552633101851882,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 1459,
+            "at": 176485.99999999988,
+            "mainMeanLuma": 131.801,
+            "workerMeanLuma": 132.777,
+            "absDifference": 0.9765567129629744,
+            "costMs": 6.900000000139698
+          },
+          {
+            "frameId": 1467,
+            "at": 177702.59999999998,
+            "mainMeanLuma": 133.27,
+            "workerMeanLuma": 134.188,
+            "absDifference": 0.9181076388888982,
+            "costMs": 1.5
+          },
+          {
+            "frameId": 1474,
+            "at": 178719.29999999993,
+            "mainMeanLuma": 127.824,
+            "workerMeanLuma": 128.884,
+            "absDifference": 1.0599942129629767,
+            "costMs": 1.4000000001396984
+          },
+          {
+            "frameId": 1481,
+            "at": 179752.59999999998,
+            "mainMeanLuma": 127.383,
+            "workerMeanLuma": 128,
+            "absDifference": 0.6169126157407305,
+            "costMs": 1.3000000000465661
+          },
+          {
+            "frameId": 1488,
+            "at": 180965.09999999998,
+            "mainMeanLuma": 132.361,
+            "workerMeanLuma": 132.971,
+            "absDifference": 0.6106539351851836,
+            "costMs": 19
+          },
+          {
+            "frameId": 1496,
+            "at": 182052.40000000002,
+            "mainMeanLuma": 133.876,
+            "workerMeanLuma": 134.491,
+            "absDifference": 0.6145442708333348,
+            "costMs": 4.800000000046566
+          },
+          {
+            "frameId": 1505,
+            "at": 183091.29999999993,
+            "mainMeanLuma": 131.847,
+            "workerMeanLuma": 132.743,
+            "absDifference": 0.895539641203726,
+            "costMs": 1.6999999999534339
+          },
+          {
+            "frameId": 1512,
+            "at": 184186.09999999998,
+            "mainMeanLuma": 131.657,
+            "workerMeanLuma": 132.636,
+            "absDifference": 0.9792288773147959,
+            "costMs": 5
+          },
+          {
+            "frameId": 1520,
+            "at": 185303.29999999993,
+            "mainMeanLuma": 132.816,
+            "workerMeanLuma": 133.51,
+            "absDifference": 0.6944357638888903,
+            "costMs": 5.199999999953434
+          },
+          {
+            "frameId": 1526,
+            "at": 186361.49999999988,
+            "mainMeanLuma": 130.084,
+            "workerMeanLuma": 131.255,
+            "absDifference": 1.1704875578703593,
+            "costMs": 2.1000000000931323
+          },
+          {
+            "frameId": 1531,
+            "at": 187418.79999999993,
+            "mainMeanLuma": 127.89,
+            "workerMeanLuma": 128.447,
+            "absDifference": 0.5576953124999875,
+            "costMs": 1.3000000000465661
+          },
+          {
+            "frameId": 1538,
+            "at": 188485.49999999988,
+            "mainMeanLuma": 130.577,
+            "workerMeanLuma": 131.479,
+            "absDifference": 0.9018561921296282,
+            "costMs": 4.800000000046566
+          },
+          {
+            "frameId": 1546,
+            "at": 189651.99999999988,
+            "mainMeanLuma": 133.324,
+            "workerMeanLuma": 133.963,
+            "absDifference": 0.6387398726851927,
+            "costMs": 4.7000000001862645
+          },
+          {
+            "frameId": 1554,
+            "at": 190718.59999999998,
+            "mainMeanLuma": 133.042,
+            "workerMeanLuma": 133.567,
+            "absDifference": 0.5250564236111188,
+            "costMs": 5.099999999860302
+          },
+          {
+            "frameId": 1560,
+            "at": 191818.70000000007,
+            "mainMeanLuma": 130.9,
+            "workerMeanLuma": 131.765,
+            "absDifference": 0.8651446759259045,
+            "costMs": 1.2999999998137355
+          },
+          {
+            "frameId": 1567,
+            "at": 192918.79999999993,
+            "mainMeanLuma": 131.667,
+            "workerMeanLuma": 132.399,
+            "absDifference": 0.7313454861111097,
+            "costMs": 6.100000000093132
+          },
+          {
+            "frameId": 1574,
+            "at": 194051.79999999993,
+            "mainMeanLuma": 131.969,
+            "workerMeanLuma": 133.081,
+            "absDifference": 1.1113223379629744,
+            "costMs": 1.5
+          }
+        ],
+        "note": "Each pair is one video frame measured twice: on the main thread with an independent 64x48 readback, and in the worker on the pixels the pipeline actually delivered. The readback costs what §H.1 measured, which is why it runs at 1 Hz and is excluded from the pipeline UI cost in FRAME-005."
+      },
+      "ladder": [
+        {
+          "step": 0,
+          "label": "HIGH 1280x720@30",
+          "pixelBudget": 921600,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 1,
+          "label": "BASIC 960x540@30",
+          "pixelBudget": 518400,
+          "budgetMs": 33.33
+        },
+        {
+          "step": 2,
+          "label": "BASIC 960x540@20",
+          "pixelBudget": 518400,
+          "budgetMs": 50
+        },
+        {
+          "step": 3,
+          "label": "REDUCED 640x360@20",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        },
+        {
+          "step": 4,
+          "label": "REDUCED 640x360@15",
+          "pixelBudget": 230400,
+          "budgetMs": 50
+        }
+      ],
+      "routeOrder": [
+        "VIDEO_FRAME",
+        "IMAGE_BITMAP",
+        "MAIN_CANVAS"
+      ],
+      "constants": {
+        "pacingResyncIntervals": 2,
+        "pacingToleranceMs": 2,
+        "routeLockSuccesses": 5,
+        "pendingTimeoutMs": 3000,
+        "stripIntervalMs": 100,
+        "crossCheckIntervalMs": 1000,
+        "stressTargetBudgetMultiple": 6,
+        "pyramidLevels": 3,
+        "stripSize": "64x48"
+      },
+      "note": "Frames declined by rate pacing (pacedOut) are the scheduler working as designed and are not drops. Frames declined because the worker was busy (backpressured) are deliberate too. Only `lost` counts frames that were handed over and never came back, and only that is held against FRAME-001."
+    },
+    "landmarks": {
+      "running": false,
+      "frames": 1511,
+      "batches": 184,
+      "state": "REGISTERED",
+      "stateReason": "registered against 105 shared landmark(s) at a scale of 0.1261 and a residual of 0.0269",
+      "keyframePair": [
+        214,
+        215
+      ],
+      "shared": 105,
+      "admitted": 7,
+      "merged": 34,
+      "rejected": 71,
+      "samples": [
+        {
+          "id": 19612,
+          "position": [
+            -0.2749,
+            -1.7595,
+            8.0867
+          ],
+          "observations": 7,
+          "keyframes": 8,
+          "maxParallaxDeg": 5.904,
+          "meanPredictionPx": 0.3775,
+          "predictions": 6,
+          "lastMoveRelative": 0.002377,
+          "confidence": 0.8113,
+          "state": "CONFIRMED"
+        },
+        {
+          "id": 3823,
+          "position": [
+            -0.6726,
+            -2.7527,
+            8.0341
+          ],
+          "observations": 4,
+          "keyframes": 5,
+          "maxParallaxDeg": 6.422,
+          "meanPredictionPx": 0.385,
+          "predictions": 3,
+          "lastMoveRelative": 0.005657,
+          "confidence": 0.8,
+          "state": "CONFIRMED"
+        },
+        {
+          "id": 4637,
+          "position": [
+            -1.1644,
+            1.2181,
+            5.6765
+          ],
+          "observations": 4,
+          "keyframes": 5,
+          "maxParallaxDeg": 6.716,
+          "meanPredictionPx": 0.2833,
+          "predictions": 3,
+          "lastMoveRelative": 0.002713,
+          "confidence": 0.8,
+          "state": "CONFIRMED"
+        },
+        {
+          "id": 4670,
+          "position": [
+            -0.4874,
+            -3.8798,
+            7.4647
+          ],
+          "observations": 4,
+          "keyframes": 5,
+          "maxParallaxDeg": 4.657,
+          "meanPredictionPx": 0.422,
+          "predictions": 3,
+          "lastMoveRelative": 0.00352,
+          "confidence": 0.789,
+          "state": "CONFIRMED"
+        },
+        {
+          "id": 19790,
+          "position": [
+            -0.6204,
+            -3.1393,
+            7.8739
+          ],
+          "observations": 4,
+          "keyframes": 5,
+          "maxParallaxDeg": 5.804,
+          "meanPredictionPx": 0.4305,
+          "predictions": 3,
+          "lastMoveRelative": 0.004152,
+          "confidence": 0.7847,
+          "state": "CONFIRMED"
+        },
+        {
+          "id": 3827,
+          "position": [
+            -0.6346,
+            -3.1492,
+            7.8739
+          ],
+          "observations": 4,
+          "keyframes": 5,
+          "maxParallaxDeg": 6.383,
+          "meanPredictionPx": 0.4376,
+          "predictions": 3,
+          "lastMoveRelative": 0.005907,
+          "confidence": 0.7812,
+          "state": "CONFIRMED"
+        }
+      ],
+      "landmarks": 4493,
+      "confirmed": 1137,
+      "peakLandmarks": 4493,
+      "peakConfirmed": 1138,
+      "maxLandmarks": 5000,
+      "multiObservation": 6,
+      "medianObservations": 4,
+      "medianConfidence": 0.2,
+      "heldOutBatches": 166,
+      "heldOutSamples": 166,
+      "medianHeldOutPx": 1.2222,
+      "worstHeldOutPx": 5.0604,
+      "zeroHeldOut": 0,
+      "medianObservationsAtPrediction": 43.5,
+      "registeredBatches": 168,
+      "unregisteredBatches": 16,
+      "unregisteredReasons": {
+        "NO_POINTS": 12,
+        "TOO_FEW_SHARED": 4
+      },
+      "medianRegistrationScale": 0.29277,
+      "medianRegistrationResidual": 0.009254,
+      "worstRegistrationResidual": 0.049695,
+      "registrationOutliers": 5440,
+      "epochs": 2,
+      "epochRestarts": 1,
+      "scale": "LOCAL_UNITS",
+      "scaleViolations": 0,
+      "ingestedUnregistered": 0,
+      "culled": 1022,
+      "cullsByReason": {
+        "DISAGREES": 1022
+      },
+      "cullsWithoutReason": 0,
+      "recentCulls": [
+        {
+          "id": 21516,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.252 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21563,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.164 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 8752,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.455 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21985,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.587 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22027,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.618 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 2602,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.18 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22121,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.47 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21993,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.14 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 15323,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.495 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21164,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.002 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22039,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.846 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22048,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.403 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22058,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.205 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22100,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.088 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22122,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.078 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22133,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.536 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21936,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.77 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22117,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.016 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21302,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.43 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22222,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.191 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22253,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.485 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22258,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.213 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22263,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.224 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 2547,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.545 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22317,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.071 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22353,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.273 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 8752,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.897 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 21520,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.158 px from where it is seen, over 6 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 2614,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.008 px from where it is seen, over 4 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 2602,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.331 px from where it is seen, over 3 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22122,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.499 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        },
+        {
+          "id": 22492,
+          "reason": "DISAGREES",
+          "detail": "its predictions land 2.614 px from where it is seen, over 2 of them — past v3 §33's 2 px"
+        }
+      ],
+      "boundBreaches": 0,
+      "confidenceOutOfRange": 0,
+      "injections": 43,
+      "medianRecall": 1,
+      "medianCleanRejectionRate": 0.2174,
+      "medianBaselineRejectionRate": 0.1739,
+      "medianCleanExcess": 0.0533,
+      "worstCleanExcess": 0.3029,
+      "worstRecall": 1,
+      "injectionDisplacementPx": 18.13,
+      "lastInjection": {
+        "injected": 77,
+        "clean": 180,
+        "injectedRejected": 77,
+        "cleanRejected": 24,
+        "recall": 1,
+        "cleanRejectionRate": 0.1333,
+        "baselineRejectionRate": 0.1444,
+        "displacementPx": 18.13,
+        "fraction": 0.05,
+        "seed": 2556434740
+      },
+      "moveAtTwo": 0.009516,
+      "moveAtFive": 0.000738,
+      "moveAtTwoSamples": 182,
+      "moveAtFiveSamples": 172,
+      "medianMoveRelative": 0.005009,
+      "modelClaim": "this is a set of places the tracker could follow, not a model of the room. Everything between the landmarks is **unobserved** and is not treated as geometry (v4 §16, §22): there is no surface here, no mesh, no volume and no completeness figure, and the density below is what makes \"sparse\" a measurement rather than an adjective",
+      "landmarksPerKeyframe": 24.42,
+      "confirmedShare": 0.2531,
+      "landmarksPerTrackedFeature": 14.45,
+      "meanLandmarkMs": 3.6717,
+      "amortisedMsPerFrame": 0.44712,
+      "costSamples": 184,
+      "rateOutOfRange": 0,
+      "accountingMismatches": 0,
+      "unregisteredAdmissions": 0,
+      "sizeMismatches": 0
+    },
+    "gravity": {
+      "source": "LIVE",
+      "detail": "deviceorientation is delivering finite beta and gamma",
+      "events": 11315,
+      "lastSample": {
+        "at": 1791953756521,
+        "down": [
+          0,
+          -0.9659258262890683,
+          -0.25881904510252074
+        ],
+        "beta": 75,
+        "gamma": 0,
+        "screenAngle": 0
+      },
+      "accelerationCheck": {
+        "sign": -1,
+        "medianDeg": 0,
+        "samples": 600
+      }
+    },
+    "world": {
+      "extractions": 242,
+      "surfaces": 5,
+      "surfacesByClass": {
+        "WALL": 1,
+        "GROUND": 1,
+        "UNKNOWN": 2,
+        "OBSTACLE_SURFACE": 1
+      },
+      "lastSupport": 1113,
+      "lastCandidates": 1138,
+      "sceneDepth": 7.432907,
+      "cameraHeight": 2.641596,
+      "medianResidual": 0.011809,
+      "persistenceOffered": 729,
+      "persistenceFound": 668,
+      "controlRuns": 59,
+      "medianControlRatio": 0.1296,
+      "worstControlRatio": 0.2039,
+      "provenanceViolations": 0,
+      "unclassifiedViolations": 0,
+      "orientationViolations": 0,
+      "surfacesBeforeConfirmed": 0,
+      "medianExtractionMs": 10.55,
+      "worstExtractionMs": 102.9,
+      "gravity": {
+        "state": "ESTIMATED",
+        "reason": "600 frames agree on down to 0.32° under the 0° image layout; the runner-up spreads 5.69°",
+        "worldDown": [
+          -0.002436,
+          0.966228,
+          0.257679
+        ],
+        "candidateDeg": 0,
+        "spreadDeg": 0.316,
+        "runnerUpSpreadDeg": 5.692,
+        "samples": 600,
+        "diversityDeg": 32.25,
+        "candidates": [
+          {
+            "angleDeg": 0,
+            "spreadDeg": 0.316,
+            "down": [
+              -0.002436,
+              0.966228,
+              0.257679
+            ]
+          },
+          {
+            "angleDeg": 180,
+            "spreadDeg": 5.692,
+            "down": [
+              0.12113,
+              -0.963671,
+              0.238044
+            ]
+          },
+          {
+            "angleDeg": 90,
+            "spreadDeg": 10.991,
+            "down": [
+              -0.877095,
+              -0.059013,
+              0.476679
+            ]
+          },
+          {
+            "angleDeg": 270,
+            "spreadDeg": 10.994,
+            "down": [
+              0.997412,
+              0.066455,
+              0.02744
+            ]
+          }
+        ]
+      },
+      "pairings": 1440,
+      "pairingsRefused": {
+        "NO_READING": 1
+      },
+      "reports": 1509,
+      "localized": 1441,
+      "byState": {
+        "LOCALIZED": 1441,
+        "TOO_FEW": 68
+      },
+      "medianErrorPx": 0.7931,
+      "heldOutSamples": 287,
+      "medianHeldOutPx": 0.8117,
+      "worstHeldOutPx": 1.6445,
+      "agreementSamples": 167,
+      "medianAgreementDeg": 0.6539,
+      "medianAgreementCenter": 0.0121,
+      "medianLocalizationMs": 3.2,
+      "snapshots": 184,
+      "epochs": 2,
+      "epochChanges": 1,
+      "readyFrames": 1291,
+      "readyViolations": 0,
+      "readyViolationDetail": "",
+      "coverageWithoutMap": 0,
+      "integrityIssues": 0,
+      "maxHistory": 240,
+      "maxLandmarks": 4493,
+      "samplesInvariant": 1509
+    },
+    "worldView": {
+      "version": 2212,
+      "epoch": 2,
+      "origin": {
+        "epoch": 2,
+        "definition": "the camera frame of the first keyframe registered in this epoch of the landmark map, in units of that keyframe pair’s baseline — not a metre (v4 §18)"
+      },
+      "scale": "LOCAL_UNITS",
+      "worldState": "READY",
+      "worldReasons": [],
+      "trackingState": "GOOD",
+      "trackingReason": "186/217 landmark(s) agree within the solve's band; median 0.6797 px",
+      "mappingState": "MAPPED",
+      "confidence": 0.508,
+      "confidenceTerms": [
+        {
+          "name": "pose",
+          "value": 0.508,
+          "note": "Phase 12’s localization confidence for the latest frame"
+        },
+        {
+          "name": "gravity",
+          "value": 0.9737,
+          "note": "spread 0.316° against twice the 6° bar"
+        },
+        {
+          "name": "ground",
+          "value": 0.6838,
+          "note": "best GROUND surface confidence (1 usable)"
+        },
+        {
+          "name": "map",
+          "value": 1,
+          "note": "1137 confirmed landmark(s) against 100"
+        }
+      ],
+      "cameraPose": {
+        "rotation": [
+          0.999513,
+          0.0084324,
+          -0.0300436,
+          -0.0084605,
+          0.9999639,
+          -0.0008082,
+          0.0300357,
+          0.001062,
+          0.9995483
+        ],
+        "translation": [
+          0.01029,
+          0.003249,
+          -0.084906
+        ],
+        "center": [
+          -0.007707,
+          -0.003246,
+          0.085179
+        ],
+        "forward": [
+          0.0300357,
+          0.001062,
+          0.9995483
+        ],
+        "confidence": 0.508,
+        "intrinsics": {
+          "fx": 362.6004464675763,
+          "fy": 362.6004464675763,
+          "cx": 180,
+          "cy": 240,
+          "width": 360,
+          "height": 480
+        },
+        "at": 194262.40000000002,
+        "medianErrorPx": 0.6797,
+        "inliers": 186
+      },
+      "landmarkCount": 4493,
+      "keyframeCount": 64,
+      "gravity": {
+        "state": "ESTIMATED",
+        "reason": "600 frames agree on down to 0.32° under the 0° image layout; the runner-up spreads 5.69°",
+        "worldDown": [
+          -0.002436,
+          0.966228,
+          0.257679
+        ],
+        "candidateDeg": 0,
+        "spreadDeg": 0.316,
+        "runnerUpSpreadDeg": 5.692,
+        "samples": 600,
+        "diversityDeg": 32.25,
+        "candidates": [
+          {
+            "angleDeg": 0,
+            "spreadDeg": 0.316,
+            "down": [
+              -0.002436,
+              0.966228,
+              0.257679
+            ]
+          },
+          {
+            "angleDeg": 180,
+            "spreadDeg": 5.692,
+            "down": [
+              0.12113,
+              -0.963671,
+              0.238044
+            ]
+          },
+          {
+            "angleDeg": 90,
+            "spreadDeg": 10.991,
+            "down": [
+              -0.877095,
+              -0.059013,
+              0.476679
+            ]
+          },
+          {
+            "angleDeg": 270,
+            "spreadDeg": 10.994,
+            "down": [
+              0.997412,
+              0.066455,
+              0.02744
+            ]
+          }
+        ]
+      },
+      "surfaces": [
+        {
+          "id": 3,
+          "normal": [
+            -0.202443,
+            0.264674,
+            -0.942849
+          ],
+          "offset": -7.992541,
+          "centroid": [
+            1.051556,
+            -2.38727,
+            7.581078
+          ],
+          "basisU": [
+            0,
+            0.962785,
+            0.27027
+          ],
+          "basisV": [
+            0.979294,
+            0.054714,
+            -0.194909
+          ],
+          "polygon": [
+            [
+              3.626724,
+              -4.209866,
+              6.516519
+            ],
+            [
+              2.073737,
+              -4.282854,
+              6.829479
+            ],
+            [
+              -0.360573,
+              -4.384737,
+              7.32356
+            ],
+            [
+              -1.260635,
+              -4.416838,
+              7.507805
+            ],
+            [
+              -1.657823,
+              -4.429276,
+              7.589595
+            ],
+            [
+              -1.673458,
+              -4.402235,
+              7.600543
+            ],
+            [
+              -2.203219,
+              -2.202325,
+              8.331842
+            ],
+            [
+              -2.219314,
+              -0.806568,
+              8.72711
+            ],
+            [
+              -2.227117,
+              0.055778,
+              8.970861
+            ],
+            [
+              -1.062925,
+              0.583916,
+              8.869149
+            ],
+            [
+              1.155022,
+              0.464777,
+              8.35948
+            ],
+            [
+              4.714885,
+              -0.344803,
+              7.367863
+            ],
+            [
+              4.751992,
+              -2.800341,
+              6.670585
+            ],
+            [
+              4.618906,
+              -4.017542,
+              6.357472
+            ],
+            [
+              4.180943,
+              -4.110415,
+              6.425438
+            ]
+          ],
+          "area": 32.812698,
+          "residual": 0.012141,
+          "support": 773,
+          "landmarkIds": [
+            2534,
+            2536,
+            2542,
+            2544,
+            2545,
+            2546,
+            2552,
+            2553,
+            2560,
+            2561,
+            2576,
+            2577,
+            2583,
+            2584,
+            2592,
+            2607,
+            2616,
+            2617,
+            2621,
+            2632,
+            2643,
+            2644,
+            2646,
+            2649,
+            2651,
+            2656,
+            2661,
+            2665,
+            2670,
+            2671,
+            2678,
+            2680,
+            2684,
+            2688,
+            2690,
+            2691,
+            2693,
+            2694,
+            2695,
+            2697,
+            2698,
+            2702,
+            2703,
+            2705,
+            2712,
+            2716,
+            2719,
+            2720,
+            2727,
+            2730,
+            2734,
+            2736,
+            2738,
+            2742,
+            2743,
+            2748,
+            2749,
+            2757,
+            2760,
+            2779,
+            2788,
+            2793,
+            2796,
+            2797,
+            2807,
+            2818,
+            2886,
+            2889,
+            2894,
+            2899,
+            2926,
+            2943,
+            2944,
+            2956,
+            3042,
+            3182,
+            3184,
+            3196,
+            3289,
+            3298,
+            3337,
+            3349,
+            3354,
+            3369,
+            3373,
+            3382,
+            3395,
+            3398,
+            3555,
+            3721,
+            3733,
+            3744,
+            3751,
+            3776,
+            3778,
+            3781,
+            3785,
+            3817,
+            3819,
+            3823,
+            3827,
+            3828,
+            3829,
+            3832,
+            3838,
+            3850,
+            3857,
+            3862,
+            3864,
+            3866,
+            3874,
+            3879,
+            3880,
+            3891,
+            3893,
+            3895,
+            3896,
+            3902,
+            4140,
+            4153,
+            4174,
+            4179,
+            4183,
+            4184,
+            4194,
+            4205,
+            4207,
+            4215,
+            4218,
+            4235,
+            4236,
+            4245,
+            4250,
+            4256,
+            4279,
+            4280,
+            4286,
+            4288,
+            4291,
+            4301,
+            4320,
+            4334,
+            4360,
+            4604,
+            4605,
+            4607,
+            4615,
+            4616,
+            4622,
+            4624,
+            4625,
+            4632,
+            4670,
+            4674,
+            4675,
+            4676,
+            4678,
+            4688,
+            4696,
+            4703,
+            4705,
+            4706,
+            4711,
+            4712,
+            4717,
+            4731,
+            4746,
+            4766,
+            4773,
+            4778,
+            4982,
+            5008,
+            5056,
+            5077,
+            5078,
+            5080,
+            5520,
+            5521,
+            5532,
+            5555,
+            5811,
+            5850,
+            5875,
+            5884,
+            5889,
+            5898,
+            5899,
+            5910,
+            5915,
+            5920,
+            5925,
+            5929,
+            5939,
+            5959,
+            5963,
+            5968,
+            5979,
+            5994,
+            5995,
+            6017,
+            6019,
+            6024,
+            6031,
+            6082,
+            6088,
+            6100,
+            6122,
+            6186,
+            6200,
+            6286,
+            6318,
+            6567,
+            6672,
+            7081,
+            7084,
+            7126,
+            7130,
+            7153,
+            7168,
+            7484,
+            7486,
+            7511,
+            7514,
+            7542,
+            7545,
+            7549,
+            7558,
+            7569,
+            7578,
+            7598,
+            7605,
+            7614,
+            7628,
+            7730,
+            7737,
+            7754,
+            7778,
+            7779,
+            7800,
+            7802,
+            7845,
+            7884,
+            7976,
+            7977,
+            7979,
+            8003,
+            8021,
+            8026,
+            8027,
+            8038,
+            8058,
+            8062,
+            8067,
+            8072,
+            8073,
+            8078,
+            8087,
+            8104,
+            8110,
+            8127,
+            8133,
+            8369,
+            8372,
+            8381,
+            8495,
+            8498,
+            8499,
+            8507,
+            8508,
+            8513,
+            8518,
+            8522,
+            8524,
+            8531,
+            8533,
+            8536,
+            8537,
+            8539,
+            8542,
+            8547,
+            8554,
+            8589,
+            8597,
+            8633,
+            8634,
+            8638,
+            8639,
+            8640,
+            8646,
+            8678,
+            8680,
+            8723,
+            8725,
+            8788,
+            8794,
+            8841,
+            8855,
+            8856,
+            8869,
+            8873,
+            8885,
+            8888,
+            8923,
+            8924,
+            8925,
+            8937,
+            8947,
+            8968,
+            8993,
+            9210,
+            9276,
+            9298,
+            9614,
+            9757,
+            9780,
+            10050,
+            10121,
+            10290,
+            10520,
+            10533,
+            10592,
+            10599,
+            10618,
+            10623,
+            10629,
+            10650,
+            10654,
+            10674,
+            10686,
+            10693,
+            10694,
+            10699,
+            10705,
+            10710,
+            10716,
+            10722,
+            10723,
+            10726,
+            10730,
+            10734,
+            10742,
+            10786,
+            10942,
+            10973,
+            10974,
+            10994,
+            11015,
+            11025,
+            11038,
+            11043,
+            11050,
+            11057,
+            11086,
+            11092,
+            11101,
+            11108,
+            11116,
+            11120,
+            11130,
+            11134,
+            11143,
+            11165,
+            11174,
+            11181,
+            11428,
+            11481,
+            11491,
+            11498,
+            11503,
+            11507,
+            11532,
+            11537,
+            11538,
+            11539,
+            11550,
+            11556,
+            11575,
+            11581,
+            11588,
+            11591,
+            11597,
+            11605,
+            11607,
+            11614,
+            11625,
+            11626,
+            11633,
+            11637,
+            11654,
+            11661,
+            11669,
+            11678,
+            11681,
+            11688,
+            11718,
+            11732,
+            11870,
+            11912,
+            11950,
+            11956,
+            11980,
+            11983,
+            11985,
+            12002,
+            12003,
+            12013,
+            12018,
+            12019,
+            12027,
+            12028,
+            12032,
+            12037,
+            12038,
+            12049,
+            12052,
+            12054,
+            12066,
+            12076,
+            12083,
+            12087,
+            12090,
+            12092,
+            12093,
+            12103,
+            12115,
+            12130,
+            12163,
+            12164,
+            12166,
+            12210,
+            12257,
+            12261,
+            12266,
+            12367,
+            12411,
+            12418,
+            12452,
+            12456,
+            12459,
+            12463,
+            12466,
+            12468,
+            12470,
+            12489,
+            12491,
+            12505,
+            12510,
+            12512,
+            12516,
+            12777,
+            12800,
+            13158,
+            13263,
+            13283,
+            13316,
+            13324,
+            13355,
+            13691,
+            13713,
+            13729,
+            13755,
+            13759,
+            13764,
+            13807,
+            13812,
+            13816,
+            13819,
+            14094,
+            14115,
+            14133,
+            14191,
+            14202,
+            14230,
+            14243,
+            14247,
+            14277,
+            14280,
+            14287,
+            14288,
+            14290,
+            14313,
+            14315,
+            14319,
+            14326,
+            14330,
+            14331,
+            14333,
+            14346,
+            14349,
+            14350,
+            14356,
+            14360,
+            14374,
+            14378,
+            14379,
+            14388,
+            14426,
+            14578,
+            14580,
+            14590,
+            14611,
+            14616,
+            14636,
+            14647,
+            14679,
+            14715,
+            14717,
+            14830,
+            14858,
+            14887,
+            14902,
+            15058,
+            15062,
+            15113,
+            15157,
+            15171,
+            15175,
+            15176,
+            15193,
+            15198,
+            15199,
+            15204,
+            15211,
+            15219,
+            15224,
+            15228,
+            15249,
+            15252,
+            15256,
+            15262,
+            15267,
+            15269,
+            15273,
+            15294,
+            15318,
+            15357,
+            15525,
+            15576,
+            15579,
+            15592,
+            15605,
+            15609,
+            15610,
+            15612,
+            15614,
+            15621,
+            15629,
+            15657,
+            15663,
+            15680,
+            15724,
+            15963,
+            15969,
+            15992,
+            15998,
+            16011,
+            16039,
+            16044,
+            16375,
+            16430,
+            16454,
+            16462,
+            16514,
+            16544,
+            16592,
+            16605,
+            16627,
+            16917,
+            16975,
+            16976,
+            16978,
+            16979,
+            16983,
+            16987,
+            16990,
+            16993,
+            16995,
+            16998,
+            17008,
+            17013,
+            17043,
+            17061,
+            17062,
+            17065,
+            17104,
+            17149,
+            17387,
+            17407,
+            17410,
+            17414,
+            17449,
+            17455,
+            17463,
+            17472,
+            17477,
+            17479,
+            17788,
+            17830,
+            17831,
+            17882,
+            18019,
+            18024,
+            18027,
+            18061,
+            18065,
+            18236,
+            18238,
+            18255,
+            18268,
+            18285,
+            18289,
+            18320,
+            18328,
+            18341,
+            18355,
+            18364,
+            18383,
+            18390,
+            18407,
+            18707,
+            18747,
+            18752,
+            18754,
+            18755,
+            18757,
+            18762,
+            18778,
+            18785,
+            18905,
+            18906,
+            18915,
+            18924,
+            18931,
+            18949,
+            18950,
+            19151,
+            19367,
+            19612,
+            19642,
+            19671,
+            19674,
+            19677,
+            19695,
+            19703,
+            19712,
+            19754,
+            19758,
+            19761,
+            19762,
+            19766,
+            19779,
+            19782,
+            19790,
+            19793,
+            19802,
+            19807,
+            19808,
+            19811,
+            19812,
+            19817,
+            19819,
+            19824,
+            19830,
+            19835,
+            19846,
+            19850,
+            19878,
+            19896,
+            19905,
+            19919,
+            20103,
+            20106,
+            20112,
+            20137,
+            20160,
+            20161,
+            20180,
+            20181,
+            20183,
+            20187,
+            20193,
+            20201,
+            20233,
+            20254,
+            20279,
+            20581,
+            20584,
+            20585,
+            20618,
+            20620,
+            20625,
+            20648,
+            20756,
+            20969,
+            21056,
+            21104,
+            21109,
+            21155,
+            21161,
+            21166,
+            21178,
+            21182,
+            21195,
+            21197,
+            21203,
+            21208,
+            21212,
+            21214,
+            21215,
+            21256,
+            21531,
+            21533,
+            21553,
+            21576,
+            21582,
+            21591,
+            21592,
+            21593,
+            21595,
+            21601,
+            21605,
+            21611,
+            21631,
+            21634,
+            21635,
+            21637,
+            21654,
+            21665,
+            21672,
+            21711,
+            21720,
+            21926,
+            21929,
+            21949,
+            21968,
+            21982,
+            22013,
+            22019,
+            22044,
+            22046,
+            22054,
+            22062,
+            22063,
+            22065,
+            22072,
+            22074,
+            22082,
+            22098,
+            22107,
+            22111,
+            22112,
+            22120,
+            22125,
+            22128,
+            22141,
+            22145,
+            22149,
+            22152,
+            22154,
+            22155,
+            22157,
+            22160,
+            22167,
+            22172,
+            22223,
+            22227,
+            22265,
+            22271,
+            22274,
+            22291,
+            22300,
+            22318,
+            22451
+          ],
+          "confidence": 0.5953,
+          "confidenceTerms": [
+            {
+              "name": "support",
+              "value": 1,
+              "note": "773 landmark(s) worth 331.8 in confidence (median 0.447) against 40"
+            },
+            {
+              "name": "planarity",
+              "value": 0.5953,
+              "note": "RMS 0.01214 of a depth against a band of 0.03"
+            }
+          ],
+          "orientation": "VERTICAL",
+          "surfaceClass": "WALL",
+          "classReason": "vertical within 0.8° of plumb, 773 landmark(s)",
+          "tiltDeg": 89.24,
+          "heightAboveGround": 3.033742
+        },
+        {
+          "id": 4,
+          "normal": [
+            -0.006856,
+            -0.964845,
+            -0.262731
+          ],
+          "offset": -2.701472,
+          "centroid": [
+            -0.150421,
+            1.360915,
+            5.288425
+          ],
+          "basisU": [
+            0,
+            0.262737,
+            -0.964868
+          ],
+          "basisV": [
+            0.999976,
+            -0.006615,
+            -0.001801
+          ],
+          "polygon": [
+            [
+              -1.665569,
+              0.44209,
+              8.702231
+            ],
+            [
+              -2.095371,
+              0.461279,
+              8.642977
+            ],
+            [
+              -1.844968,
+              0.955572,
+              6.821216
+            ],
+            [
+              -1.514643,
+              1.530741,
+              4.70036
+            ],
+            [
+              -1.057808,
+              1.864789,
+              3.461691
+            ],
+            [
+              -0.534354,
+              1.911157,
+              3.277749
+            ],
+            [
+              0.738334,
+              1.987724,
+              2.963355
+            ],
+            [
+              1.214414,
+              1.933433,
+              3.150309
+            ],
+            [
+              1.24672,
+              1.929597,
+              3.163552
+            ],
+            [
+              1.785837,
+              1.800292,
+              3.624343
+            ],
+            [
+              2.24795,
+              1.66565,
+              4.106739
+            ],
+            [
+              1.171075,
+              0.860014,
+              7.093436
+            ],
+            [
+              0.617262,
+              0.692752,
+              7.722135
+            ],
+            [
+              -0.54882,
+              0.533413,
+              8.337719
+            ],
+            [
+              -1.076176,
+              0.475656,
+              8.563585
+            ]
+          ],
+          "area": 16.745397,
+          "residual": 0.009487,
+          "support": 231,
+          "landmarkIds": [
+            2531,
+            2533,
+            2535,
+            2549,
+            2551,
+            2554,
+            2555,
+            2558,
+            2568,
+            2578,
+            2580,
+            2581,
+            2586,
+            2588,
+            2590,
+            2595,
+            2596,
+            2606,
+            2609,
+            2619,
+            2624,
+            2634,
+            2635,
+            2640,
+            2652,
+            2657,
+            2659,
+            2668,
+            2669,
+            2677,
+            2707,
+            2724,
+            2731,
+            2739,
+            2752,
+            2758,
+            2761,
+            2763,
+            2780,
+            2786,
+            2813,
+            2832,
+            2856,
+            2892,
+            2953,
+            2967,
+            3223,
+            3256,
+            3322,
+            3376,
+            3526,
+            3770,
+            3793,
+            3834,
+            3865,
+            3868,
+            3877,
+            3900,
+            3909,
+            3913,
+            3937,
+            4010,
+            4100,
+            4102,
+            4185,
+            4196,
+            4204,
+            4331,
+            4433,
+            4461,
+            4600,
+            4601,
+            4602,
+            4637,
+            4647,
+            4659,
+            4666,
+            4685,
+            4708,
+            4748,
+            4785,
+            4953,
+            4971,
+            5057,
+            5245,
+            5250,
+            5423,
+            5523,
+            5530,
+            5639,
+            5867,
+            5883,
+            6118,
+            6267,
+            6884,
+            6947,
+            7086,
+            7122,
+            7232,
+            7476,
+            7477,
+            7532,
+            7571,
+            7738,
+            7772,
+            7782,
+            7821,
+            7824,
+            7839,
+            7992,
+            8005,
+            8031,
+            8041,
+            8054,
+            8659,
+            8743,
+            8833,
+            8837,
+            8861,
+            8862,
+            8931,
+            8941,
+            8945,
+            9004,
+            9275,
+            9617,
+            10583,
+            10639,
+            10718,
+            10964,
+            11127,
+            11358,
+            11382,
+            11471,
+            11477,
+            11534,
+            11547,
+            11603,
+            11617,
+            11621,
+            11627,
+            11640,
+            12122,
+            12288,
+            12372,
+            12412,
+            12461,
+            12500,
+            12593,
+            12636,
+            12637,
+            12768,
+            13357,
+            13913,
+            13966,
+            14026,
+            14090,
+            14201,
+            14232,
+            14268,
+            14305,
+            14314,
+            14392,
+            14673,
+            14839,
+            14904,
+            15034,
+            15209,
+            15235,
+            15240,
+            15272,
+            15520,
+            15585,
+            15636,
+            15956,
+            15981,
+            15997,
+            16503,
+            16577,
+            16719,
+            16971,
+            17045,
+            17120,
+            17136,
+            17219,
+            17249,
+            17359,
+            17506,
+            17536,
+            17828,
+            17837,
+            17852,
+            17931,
+            18424,
+            18753,
+            18953,
+            18965,
+            19336,
+            19429,
+            19539,
+            19666,
+            19708,
+            19715,
+            19747,
+            19789,
+            19797,
+            19799,
+            19854,
+            19872,
+            20241,
+            20551,
+            20562,
+            20579,
+            21190,
+            21204,
+            21476,
+            21486,
+            21519,
+            21520,
+            21522,
+            21535,
+            21586,
+            21606,
+            21657,
+            21669,
+            21674,
+            21675,
+            21812,
+            21983,
+            21985,
+            22027
+          ],
+          "confidence": 0.6838,
+          "confidenceTerms": [
+            {
+              "name": "support",
+              "value": 1,
+              "note": "231 landmark(s) worth 62.6 in confidence (median 0.248) against 40"
+            },
+            {
+              "name": "planarity",
+              "value": 0.6838,
+              "note": "RMS 0.00949 of a depth against a band of 0.03"
+            }
+          ],
+          "orientation": "HORIZONTAL",
+          "surfaceClass": "GROUND",
+          "classReason": "horizontal within 0.6°, the lowest observed level, below the camera",
+          "tiltDeg": 0.614,
+          "heightAboveGround": 0
+        },
+        {
+          "id": 67,
+          "normal": [
+            -0.272402,
+            -0.401942,
+            -0.874208
+          ],
+          "offset": -4.445164,
+          "centroid": [
+            1.497377,
+            0.934359,
+            4.188612
+          ],
+          "basisU": [
+            0,
+            0.908567,
+            -0.41774
+          ],
+          "basisV": [
+            0.962183,
+            -0.113793,
+            -0.247496
+          ],
+          "polygon": [
+            [
+              1.319303,
+              0.054787,
+              4.648507
+            ],
+            [
+              0.993413,
+              0.29217,
+              4.640911
+            ],
+            [
+              0.840047,
+              0.691541,
+              4.505077
+            ],
+            [
+              0.819699,
+              0.817118,
+              4.45368
+            ],
+            [
+              0.828416,
+              1.223003,
+              4.264346
+            ],
+            [
+              1.368237,
+              1.278446,
+              4.070647
+            ],
+            [
+              1.747165,
+              1.259611,
+              3.961234
+            ],
+            [
+              1.918315,
+              1.176845,
+              3.945958
+            ],
+            [
+              1.989039,
+              0.945386,
+              4.03034
+            ],
+            [
+              1.990633,
+              0.304323,
+              4.32459
+            ]
+          ],
+          "area": 1.351638,
+          "residual": 0.014062,
+          "support": 41,
+          "landmarkIds": [
+            2556,
+            2557,
+            2599,
+            2602,
+            2653,
+            2699,
+            2747,
+            2978,
+            3309,
+            3482,
+            3508,
+            4213,
+            4306,
+            4316,
+            4323,
+            4340,
+            4346,
+            4864,
+            5819,
+            5855,
+            5917,
+            6878,
+            7744,
+            7765,
+            8571,
+            9249,
+            9255,
+            9274,
+            11269,
+            14600,
+            16470,
+            16589,
+            17661,
+            19323,
+            19452,
+            19480,
+            20124,
+            20169,
+            20189,
+            22143,
+            22228
+          ],
+          "confidence": 0.2723,
+          "confidenceTerms": [
+            {
+              "name": "support",
+              "value": 0.2723,
+              "note": "41 landmark(s) worth 10.9 in confidence (median 0.221) against 40"
+            },
+            {
+              "name": "planarity",
+              "value": 0.5313,
+              "note": "RMS 0.01406 of a depth against a band of 0.03"
+            }
+          ],
+          "orientation": "SLANTED",
+          "surfaceClass": "UNKNOWN",
+          "classReason": "confidence 0.272 is below 0.3 — kept as an observation, not used for play",
+          "tiltDeg": 52.195,
+          "heightAboveGround": 0.699668
+        },
+        {
+          "id": 50,
+          "normal": [
+            -0.242983,
+            0.254818,
+            -0.935963
+          ],
+          "offset": -8.171928,
+          "centroid": [
+            -0.900663,
+            -2.671155,
+            8.237625
+          ],
+          "basisU": [
+            0,
+            0.96488,
+            0.262691
+          ],
+          "basisV": [
+            0.970031,
+            0.063829,
+            -0.234449
+          ],
+          "polygon": [
+            [
+              -1.04379,
+              -4.514222,
+              7.773002
+            ],
+            [
+              -1.598656,
+              -4.2141,
+              7.998759
+            ],
+            [
+              -2.077324,
+              -2.808063,
+              8.505821
+            ],
+            [
+              -2.166785,
+              -0.450103,
+              9.171005
+            ],
+            [
+              -0.665487,
+              -0.814641,
+              8.682012
+            ],
+            [
+              -0.165124,
+              -2.129593,
+              8.194115
+            ],
+            [
+              -0.55428,
+              -3.63594,
+              7.885037
+            ]
+          ],
+          "area": 6.06709,
+          "residual": 0.007885,
+          "support": 35,
+          "landmarkIds": [
+            3748,
+            3758,
+            3871,
+            3894,
+            4643,
+            4669,
+            4789,
+            7205,
+            8001,
+            8065,
+            8895,
+            8963,
+            10630,
+            10635,
+            10688,
+            10780,
+            11552,
+            11668,
+            11708,
+            12415,
+            12419,
+            12425,
+            14207,
+            14217,
+            14233,
+            14237,
+            15291,
+            15333,
+            16071,
+            16981,
+            18706,
+            18788,
+            18944,
+            21529,
+            21642
+          ],
+          "confidence": 0.3536,
+          "confidenceTerms": [
+            {
+              "name": "support",
+              "value": 0.3536,
+              "note": "35 landmark(s) worth 14.1 in confidence (median 0.429) against 40"
+            },
+            {
+              "name": "planarity",
+              "value": 0.7372,
+              "note": "RMS 0.00789 of a depth against a band of 0.03"
+            }
+          ],
+          "orientation": "VERTICAL",
+          "surfaceClass": "OBSTACLE_SURFACE",
+          "classReason": "vertical within 0.3° of plumb, 35 landmark(s) — fewer than the 40 a wall is held to",
+          "tiltDeg": 89.678,
+          "heightAboveGround": 3.133991
+        },
+        {
+          "id": 68,
+          "normal": [
+            -0.150049,
+            -0.979467,
+            -0.134643
+          ],
+          "offset": -1.210626,
+          "centroid": [
+            1.878855,
+            0.164087,
+            5.703863
+          ],
+          "basisU": [
+            0,
+            0.136185,
+            -0.990683
+          ],
+          "basisV": [
+            0.988679,
+            -0.148651,
+            -0.020435
+          ],
+          "polygon": [
+            [
+              1.285485,
+              -0.04072,
+              7.854997
+            ],
+            [
+              0.933877,
+              0.37928,
+              5.191539
+            ],
+            [
+              1.062689,
+              0.517792,
+              4.040378
+            ],
+            [
+              1.39746,
+              0.481965,
+              3.927929
+            ],
+            [
+              1.407656,
+              0.480066,
+              3.930375
+            ],
+            [
+              1.534163,
+              0.453803,
+              3.980443
+            ],
+            [
+              3.415411,
+              -0.18051,
+              6.498275
+            ],
+            [
+              2.578476,
+              -0.204202,
+              7.603317
+            ]
+          ],
+          "area": 5.985976,
+          "residual": 0.010049,
+          "support": 33,
+          "landmarkIds": [
+            2559,
+            2571,
+            2614,
+            2710,
+            4203,
+            5814,
+            5940,
+            6603,
+            7506,
+            7865,
+            8447,
+            8546,
+            8572,
+            9184,
+            11046,
+            11161,
+            11966,
+            12111,
+            12342,
+            13731,
+            13747,
+            13801,
+            14646,
+            14678,
+            16585,
+            16645,
+            16861,
+            17312,
+            17803,
+            20131,
+            20220,
+            21177,
+            22121
+          ],
+          "confidence": 0.1689,
+          "confidenceTerms": [
+            {
+              "name": "support",
+              "value": 0.1689,
+              "note": "33 landmark(s) worth 6.8 in confidence (median 0.161) against 40"
+            },
+            {
+              "name": "planarity",
+              "value": 0.665,
+              "note": "RMS 0.01005 of a depth against a band of 0.03"
+            }
+          ],
+          "orientation": "HORIZONTAL",
+          "surfaceClass": "UNKNOWN",
+          "classReason": "confidence 0.169 is below 0.3 — kept as an observation, not used for play",
+          "tiltDeg": 11.273,
+          "heightAboveGround": 1.054386
+        }
+      ],
+      "sceneDepth": 7.432907,
+      "cameraHeight": 2.641596,
+      "coverage": 144,
+      "readyArea": 16.7454,
+      "lastUpdated": {
+        "pose": 194262.40000000002,
+        "map": 194262.40000000002,
+        "surfaces": 194043.70000000007,
+        "gravity": 194264.20000000007
+      }
+    },
+    "game": {
+      "state": "READY",
+      "transitions": [
+        {
+          "at": 5009.8,
+          "from": "SCAN",
+          "to": "SPATIALIZING",
+          "reason": "GRAVITY UNKNOWN: no localized frame has been paired with a gravity reading yet",
+          "allowed": true
+        },
+        {
+          "at": 29192.1,
+          "from": "SPATIALIZING",
+          "to": "STAGE_GENERATING",
+          "reason": "WORLD READY — generating a stage from it",
+          "allowed": true
+        },
+        {
+          "at": 29227.1,
+          "from": "STAGE_GENERATING",
+          "to": "READY",
+          "reason": "stage 1: ring on surface 4 (GROUND), EASY: a hoop on the ground 1.42 H away; 9 direct throws score",
+          "allowed": true
+        },
+        {
+          "at": 45398,
+          "from": "READY",
+          "to": "STAGE_GENERATING",
+          "reason": "resumed from a save",
+          "allowed": true
+        },
+        {
+          "at": 45432.5,
+          "from": "STAGE_GENERATING",
+          "to": "READY",
+          "reason": "stage 1: ring on surface 4 (GROUND), EASY: a hoop on the ground 1.32 H away; 14 direct throws score",
+          "allowed": true
+        },
+        {
+          "at": 46948.4,
+          "from": "READY",
+          "to": "PAUSED",
+          "reason": "paused",
+          "allowed": true
+        },
+        {
+          "at": 48181.3,
+          "from": "PAUSED",
+          "to": "READY",
+          "reason": "resumed",
+          "allowed": true
+        },
+        {
+          "at": 54312,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 58959.1,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 64% power",
+          "allowed": true
+        },
+        {
+          "at": 59259,
+          "from": "THROWING",
+          "to": "SUCCESS",
+          "reason": "SUCCESS — through the ring 0.098 H from its centre",
+          "allowed": true
+        },
+        {
+          "at": 61474.4,
+          "from": "SUCCESS",
+          "to": "STAGE_GENERATING",
+          "reason": "a new stage for the same room",
+          "allowed": true
+        },
+        {
+          "at": 61513.4,
+          "from": "STAGE_GENERATING",
+          "to": "READY",
+          "reason": "stage 2: ring on surface 4 (GROUND), EASY: a hoop on the ground 1.91 H away; 18 direct throws score",
+          "allowed": true
+        },
+        {
+          "at": 61577.3,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 65075.4,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 100% power",
+          "allowed": true
+        },
+        {
+          "at": 65390.9,
+          "from": "THROWING",
+          "to": "SUCCESS",
+          "reason": "SUCCESS — through the ring 0.093 H from its centre",
+          "allowed": true
+        },
+        {
+          "at": 67607.2,
+          "from": "SUCCESS",
+          "to": "STAGE_GENERATING",
+          "reason": "a new stage for the same room",
+          "allowed": true
+        },
+        {
+          "at": 67650.8,
+          "from": "STAGE_GENERATING",
+          "to": "READY",
+          "reason": "stage 3: ring on surface 4 (GROUND), EASY: a hoop on the ground 1.41 H away; 12 direct throws score",
+          "allowed": true
+        },
+        {
+          "at": 67711.7,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 68161.6,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 64% power",
+          "allowed": true
+        },
+        {
+          "at": 68493.7,
+          "from": "THROWING",
+          "to": "SUCCESS",
+          "reason": "SUCCESS — through the ring 0.085 H from its centre",
+          "allowed": true
+        },
+        {
+          "at": 70709.1,
+          "from": "SUCCESS",
+          "to": "STAGE_GENERATING",
+          "reason": "a new stage for the same room",
+          "allowed": true
+        },
+        {
+          "at": 70747.7,
+          "from": "STAGE_GENERATING",
+          "to": "READY",
+          "reason": "stage 4: ring on surface 4 (GROUND), EASY: a hoop on the ground 1.97 H away; 16 direct throws score",
+          "allowed": true
+        },
+        {
+          "at": 70812,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 78827.6,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 55% power",
+          "allowed": true
+        },
+        {
+          "at": 80141.1,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 81443.7,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 82973.5,
+          "from": "READY",
+          "to": "STAGE_GENERATING",
+          "reason": "GOAL INVALID — SUPPORT: the ring does not stand over the observed part of its support surface; regenerating (§36)",
+          "allowed": true
+        },
+        {
+          "at": 83019.8,
+          "from": "STAGE_GENERATING",
+          "to": "READY",
+          "reason": "stage 4: ring on surface 3 (WALL), EASY: a target on the wall 2.48 H away; 4 direct throws score",
+          "allowed": true
+        },
+        {
+          "at": 86777.3,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 94793.8,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 55% power",
+          "allowed": true
+        },
+        {
+          "at": 95556.3,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 96872.5,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 96985.4,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 104994.6,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 56% power",
+          "allowed": true
+        },
+        {
+          "at": 107257.2,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (REST) — try again",
+          "allowed": true
+        },
+        {
+          "at": 108572.1,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 113843.2,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 121861.9,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 54% power",
+          "allowed": true
+        },
+        {
+          "at": 123956.4,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (REST) — try again",
+          "allowed": true
+        },
+        {
+          "at": 125295.4,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 125393.4,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 133410.1,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 55% power",
+          "allowed": true
+        },
+        {
+          "at": 134739.2,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 136054.4,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 141424.6,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 149459,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 52% power",
+          "allowed": true
+        },
+        {
+          "at": 150838.4,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 152153.7,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 152244,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 160274.3,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 53% power",
+          "allowed": true
+        },
+        {
+          "at": 161587.4,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 162903.4,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 168225.6,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 176243.3,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 55% power",
+          "allowed": true
+        },
+        {
+          "at": 177695.4,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 179002.6,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        },
+        {
+          "at": 179093.8,
+          "from": "READY",
+          "to": "AIMING",
+          "reason": "charging",
+          "allowed": true
+        },
+        {
+          "at": 187112.2,
+          "from": "AIMING",
+          "to": "THROWING",
+          "reason": "thrown at 55% power",
+          "allowed": true
+        },
+        {
+          "at": 189139.5,
+          "from": "THROWING",
+          "to": "RETRY",
+          "reason": "missed (FELL) — try again",
+          "allowed": true
+        },
+        {
+          "at": 190452.2,
+          "from": "RETRY",
+          "to": "READY",
+          "reason": "the ball is back on the tee",
+          "allowed": true
+        }
+      ],
+      "transitionCount": 60,
+      "illegalTransitions": 0,
+      "visited": [
+        "SCAN",
+        "SPATIALIZING",
+        "STAGE_GENERATING",
+        "READY",
+        "PAUSED",
+        "AIMING",
+        "THROWING",
+        "SUCCESS",
+        "RETRY"
+      ],
+      "stagesGenerated": 6,
+      "generationFailures": 0,
+      "lastGenerationReason": "ring on surface 3 (WALL), EASY: a target on the wall 2.48 H away; 4 direct throws score",
+      "medianGenerationMs": 6.9,
+      "reproductions": 6,
+      "reproductionMismatches": 0,
+      "generatedWhileNotReady": 0,
+      "stageInvalidations": [
+        "SUPPORT: the ring does not stand over the observed part of its support surface"
+      ],
+      "epochInvalidations": 0,
+      "throws": [
+        {
+          "index": 1,
+          "stageDigest": "0aca36bd",
+          "stageSeed": 1,
+          "worldVersion": 663,
+          "epoch": 2,
+          "origin": [
+            -0.56769,
+            0.36236,
+            2.169077
+          ],
+          "velocity": [
+            -0.246117,
+            -2.733977,
+            11.093107
+          ],
+          "power": 0.6386,
+          "speedH": 4.2651,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "8347ceb7",
+          "outcome": "GOAL",
+          "contacts": [],
+          "crossing": {
+            "point": [
+              -0.64262,
+              0.4217,
+              5.71292
+            ],
+            "offAxis": 0.2629,
+            "time": 0.3
+          },
+          "steps": 72,
+          "duration": 0.3,
+          "replayMatched": true,
+          "controlDiffers": null,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 2,
+          "stageDigest": "7b798588",
+          "stageSeed": 2,
+          "worldVersion": 742,
+          "epoch": 2,
+          "origin": [
+            -0.544588,
+            0.295782,
+            2.110802
+          ],
+          "velocity": [
+            2.071414,
+            -3.78509,
+            15.392297
+          ],
+          "power": 0.9973,
+          "speedH": 5.987,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "c3eb6a8b",
+          "outcome": "GOAL",
+          "contacts": [],
+          "crossing": {
+            "point": [
+              0.09063,
+              0.05624,
+              7.07777
+            ],
+            "offAxis": 0.24962,
+            "time": 0.3083
+          },
+          "steps": 74,
+          "duration": 0.3083,
+          "replayMatched": true,
+          "controlDiffers": null,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 3,
+          "stageDigest": "cc60b030",
+          "stageSeed": 3,
+          "worldVersion": 780,
+          "epoch": 2,
+          "origin": [
+            -0.52648,
+            0.391268,
+            1.730539
+          ],
+          "velocity": [
+            1.420123,
+            -2.754417,
+            11.017979
+          ],
+          "power": 0.6426,
+          "speedH": 4.2843,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "525445c5",
+          "outcome": "GOAL",
+          "contacts": [],
+          "crossing": {
+            "point": [
+              -0.08143,
+              0.4908,
+              5.44367
+            ],
+            "offAxis": 0.22794,
+            "time": 0.3167
+          },
+          "steps": 76,
+          "duration": 0.3167,
+          "replayMatched": true,
+          "controlDiffers": null,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 4,
+          "stageDigest": "a3569d33",
+          "stageSeed": 4,
+          "worldVersion": 916,
+          "epoch": 2,
+          "origin": [
+            -0.299687,
+            0.430211,
+            1.857401
+          ],
+          "velocity": [
+            5.010945,
+            -2.116145,
+            8.73831
+          ],
+          "power": 0.5491,
+          "speedH": 3.8359,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "952a327e",
+          "outcome": "FELL",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.3958,
+              "point": [
+                1.68379,
+                1.22846,
+                5.7578
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 313,
+          "duration": 1.3042,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 5,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 1112,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            5.039185,
+            -2.199054,
+            8.76938
+          ],
+          "power": 0.548,
+          "speedH": 3.8304,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "90c5c3a8",
+          "outcome": "FELL",
+          "contacts": [],
+          "crossing": null,
+          "steps": 182,
+          "duration": 0.7583,
+          "replayMatched": true,
+          "controlDiffers": null,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 6,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 1232,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            1.834872,
+            -2.457078,
+            10.027244
+          ],
+          "power": 0.5584,
+          "speedH": 3.8805,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "dcb8bf58",
+          "outcome": "REST",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4083,
+              "point": [
+                0.37366,
+                1.08611,
+                6.33766
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.6833,
+              "point": [
+                0.76596,
+                -0.08462,
+                8.30982
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.8667,
+              "point": [
+                0.51723,
+                0.77529,
+                7.49254
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.1125,
+              "point": [
+                0.28814,
+                1.01224,
+                6.61223
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.2417,
+              "point": [
+                0.19746,
+                1.10557,
+                6.26548
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.3083,
+              "point": [
+                0.16226,
+                1.14169,
+                6.13129
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 541,
+          "duration": 2.2542,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 7,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 1431,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            0.283397,
+            -2.454219,
+            10.009273
+          ],
+          "power": 0.5449,
+          "speedH": 3.8153,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "327b49df",
+          "outcome": "REST",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4083,
+              "point": [
+                -0.26056,
+                1.09556,
+                6.33221
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.7083,
+              "point": [
+                -0.15859,
+                -0.08516,
+                8.51222
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.8667,
+              "point": [
+                -0.50623,
+                0.69047,
+                7.85146
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.1167,
+              "point": [
+                -0.88171,
+                0.90937,
+                7.01666
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.25,
+              "point": [
+                -1.0292,
+                0.99653,
+                6.68433
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.3208,
+              "point": [
+                -1.0872,
+                1.03114,
+                6.55237
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.3583,
+              "point": [
+                -1.11001,
+                1.04485,
+                6.5001
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 501,
+          "duration": 2.0875,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 8,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 1556,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            3.523263,
+            -2.335029,
+            9.443983
+          ],
+          "power": 0.5477,
+          "speedH": 3.829,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "1270313d",
+          "outcome": "FELL",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4125,
+              "point": [
+                1.07712,
+                1.15469,
+                6.14617
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.6958,
+              "point": [
+                1.86792,
+                0.01428,
+                8.09916
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 317,
+          "duration": 1.3208,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 9,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 1737,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            3.370317,
+            -2.251587,
+            9.160215
+          ],
+          "power": 0.5223,
+          "speedH": 3.707,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "408608b0",
+          "outcome": "FELL",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4083,
+              "point": [
+                1.00109,
+                1.16896,
+                5.98339
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.7292,
+              "point": [
+                1.80538,
+                0.01989,
+                8.10168
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 322,
+          "duration": 1.3417,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 10,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 1856,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            3.967156,
+            -2.238905,
+            9.008459
+          ],
+          "power": 0.5283,
+          "speedH": 3.7358,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "f961d8e3",
+          "outcome": "FELL",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4083,
+              "point": [
+                1.24505,
+                1.17787,
+                5.92255
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.7333,
+              "point": [
+                2.19676,
+                0.03316,
+                8.03397
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 319,
+          "duration": 1.3292,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 11,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 2025,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            4.367471,
+            -2.271665,
+            9.07733
+          ],
+          "power": 0.5461,
+          "speedH": 3.8215,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "25bab6ed",
+          "outcome": "FELL",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4083,
+              "point": [
+                1.40835,
+                1.17003,
+                5.95225
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.7167,
+              "point": [
+                2.41565,
+                0.01992,
+                7.97721
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 322,
+          "duration": 1.3417,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        },
+        {
+          "index": 12,
+          "stageDigest": "25216575",
+          "stageSeed": 4,
+          "worldVersion": 2137,
+          "epoch": 2,
+          "origin": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "velocity": [
+            -0.382672,
+            -2.415286,
+            10.019253
+          ],
+          "power": 0.5451,
+          "speedH": 3.8167,
+          "collisionSurfaceIds": [
+            3,
+            4
+          ],
+          "collisionDigest": "0695b0ec",
+          "outcome": "FELL",
+          "contacts": [
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.4042,
+              "point": [
+                -0.52941,
+                1.09126,
+                6.28713
+              ]
+            },
+            {
+              "surfaceId": 3,
+              "surfaceClass": "WALL",
+              "time": 0.7208,
+              "point": [
+                -0.63098,
+                -0.11807,
+                8.59081
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 0.8667,
+              "point": [
+                -1.02415,
+                0.6222,
+                8.01862
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.1125,
+              "point": [
+                -1.50781,
+                0.84065,
+                7.23461
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.2458,
+              "point": [
+                -1.70844,
+                0.92994,
+                6.91421
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.3167,
+              "point": [
+                -1.78949,
+                0.96564,
+                6.78613
+              ]
+            },
+            {
+              "surfaceId": 4,
+              "surfaceClass": "GROUND",
+              "time": 1.3542,
+              "point": [
+                -1.82199,
+                0.97986,
+                6.73516
+              ]
+            }
+          ],
+          "crossing": null,
+          "steps": 484,
+          "duration": 2.0167,
+          "replayMatched": true,
+          "controlDiffers": true,
+          "energyOk": true,
+          "contactsTraced": true,
+          "frozenMs": 0
+        }
+      ],
+      "throwCount": 12,
+      "successes": 3,
+      "misses": 9,
+      "replayMismatches": 0,
+      "energyViolations": 0,
+      "controlChecks": 8,
+      "controlFailures": 0,
+      "untracedContacts": 0,
+      "stepsWhileFrozen": 0,
+      "lostEntries": 0,
+      "lostRecoveries": 0,
+      "pressesRefused": {},
+      "worstPhysicsMs": 0.5,
+      "difficulties": {
+        "EASY": 6
+      },
+      "cycles": 5,
+      "lastStage": {
+        "seed": 4,
+        "epoch": 2,
+        "worldVersion": 965,
+        "inputDigest": "40bcd175",
+        "unit": 2.702178,
+        "down": [
+          -0.000771,
+          0.965547,
+          0.260229
+        ],
+        "start": {
+          "position": [
+            -0.374286,
+            0.356163,
+            1.776095
+          ],
+          "kind": "VIRTUAL",
+          "note": "a game object floating in front of the player, not part of the room and not a collision surface (§33)"
+        },
+        "viewer": [
+          -0.333253,
+          0.030419,
+          -0.130305
+        ],
+        "viewerForward": [
+          -0.0223765,
+          0.0070502,
+          0.9997248
+        ],
+        "ring": {
+          "kind": "WALL_TARGET",
+          "center": [
+            4.237606,
+            -0.491685,
+            6.587816
+          ],
+          "axis": [
+            0.201864,
+            -0.262839,
+            0.943486
+          ],
+          "radius": 0.378305,
+          "supportSurfaceId": 3,
+          "supportClass": "WALL",
+          "standoff": 0.810653
+        },
+        "difficulty": {
+          "difficulty": "EASY",
+          "reason": "a target on the wall 2.48 H away; 4 direct throws score",
+          "distanceH": 2.481,
+          "riseH": -0.159,
+          "minBounces": 0,
+          "solutions": 4
+        },
+        "solution": {
+          "velocity": [
+            7.227126,
+            -7.504213,
+            5.728669
+          ],
+          "speed": 11.889583,
+          "bounces": 0,
+          "bounceSurfaces": [],
+          "flightTime": 0.65
+        },
+        "solutions": 4,
+        "surfaceIds": [
+          3,
+          4
+        ],
+        "digest": "25216575"
+      },
+      "solutionChecks": 6,
+      "solutionFailures": 0,
+      "stageControls": 6,
+      "stageControlFailures": 0,
+      "lastStageControl": "the ring moved 1.979 H when the room moved 0.5 H",
+      "rejectionOffered": 18,
+      "rejectionAccepted": [],
+      "goalControls": 3,
+      "goalControlFailures": 0,
+      "staleStageFrames": 0
+    },
+    "render": {
+      "framesDrawn": 11044,
+      "medianDrawMs": 0.3,
+      "worstDrawMs": 1.6,
+      "medianFrameIntervalMs": 16.7,
+      "alignmentReadings": 600,
+      "medianAlignmentPx": 1.0401,
+      "worstAlignmentPx": 3.2864,
+      "aspectSamples": 1104,
+      "worstAspectError": 0,
+      "drawViolations": 0,
+      "drawViolationDetail": "",
+      "uiSamples": 1104,
+      "stateMismatches": 0,
+      "trackingMismatches": 0,
+      "uiMismatchDetail": ""
+    },
+    "save": {
+      "saves": 1,
+      "saveRefusals": 0,
+      "roundTripFailures": 0,
+      "tamperChecks": 1,
+      "tamperAccepted": 0,
+      "nonFiniteChecks": 1,
+      "nonFiniteAccepted": 0,
+      "resumes": 1,
+      "resumeRefusals": 0,
+      "lastResumeReason": "progress restored at stage 1; the saved world is shown, not played on",
+      "restoredUsedForCollision": 0,
+      "pauseResumes": 1,
+      "pauseResumeMismatches": 0,
+      "lastSaveBytes": 2088
+    },
+    "collision": {
+      "samples": 372,
+      "violations": 0,
+      "detail": ""
+    },
+    "devEntry": true,
+    "previewPresented": true
+  }
+}
