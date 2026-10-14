@@ -210,3 +210,92 @@ export function renderRoughRoomFrame(y, width, height, k, frames) {
   }
   renderRoomFrame(y, width, height, k, frames);
 }
+
+/*
+ * The handheld feed: the room as a phone in a hand sees it.
+ *
+ * The smooth feed turns a few degrees a second and never blurs; the rough feed wipes its view
+ * clean for a quarter of a second and is otherwise smooth. A hand does neither. It sweeps through
+ * thirty degrees to either side, shakes at three and at five hertz, whips the phone away and back
+ * in under half a second — smearing the frames in between past any corner — loses a whole frame
+ * or five to a blur, and flickers a few per cent in exposure with a little sensor noise on top.
+ *
+ * Pitch stays at `PITCH_DEG`: the orientation sensor's reading is constant (see the header) and
+ * a pitch that moved would put the sensor and the pictures in disagreement the leg has no way to
+ * resolve. Every term is a whole number of cycles over the file, so the loop is continuous.
+ */
+
+/** Frames lost entirely, as `[start, length)` in a 240-frame file. */
+export const HANDHELD_DROPOUTS = [[61, 5], [175, 4]];
+/** Where the wrist whips the phone away and back, in frames. */
+export const HANDHELD_WHIPS = [100, 205];
+
+export function handheldCameraAt(k, frames) {
+  const w = (n) => (2 * Math.PI * k * n) / frames;
+  let yawDeg = 22 * Math.sin(w(1)) + 7 * Math.sin(w(3) + 1) + 0.9 * Math.sin(w(24)) + 0.5 * Math.sin(w(40) + 2);
+  for (const c of HANDHELD_WHIPS) yawDeg += 10 * Math.exp(-(((k - c) / 4) ** 2));
+  const yaw = (yawDeg * Math.PI) / 180;
+  const pitch = (PITCH_DEG * Math.PI) / 180;
+  const center = [
+    STEP_AMPLITUDE_M * Math.sin(w(1) + 0.6) + 0.1 * Math.sin(w(5)),
+    0.03 * Math.sin(w(4)),
+    0.1 * Math.sin(w(2)) + 0.06 * Math.sin(w(7)),
+  ];
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const ry = [cy, 0, sy, 0, 1, 0, -sy, 0, cy];
+  const rx = [1, 0, 0, 0, cp, -sp, 0, sp, cp];
+  const r = new Array(9).fill(0);
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    let s = 0;
+    for (let q = 0; q < 3; q++) s += rx[i * 3 + q] * ry[q * 3 + j];
+    r[i * 3 + j] = s;
+  }
+  return { rotation: r, center, yaw, pitch };
+}
+
+export function isHandheldDropout(k) {
+  const m = k % 240;
+  return HANDHELD_DROPOUTS.some(([s, n]) => m >= s && m < s + n);
+}
+
+function nearWhip(k) {
+  const m = k % 240;
+  return HANDHELD_WHIPS.some((c) => Math.abs(m - c) <= 6);
+}
+
+export function renderHandheldFrame(y, width, height, k, frames) {
+  if (isHandheldDropout(k)) {
+    y.fill(118);
+    return;
+  }
+  const f = (0.5 * Math.max(width, height)) / Math.tan(((FOV_LONG_EDGE_DEG / 2) * Math.PI) / 180);
+  const cx = width / 2;
+  const cyy = height / 2;
+  // Exposure covers about half a frame of motion; a whip's frames are smeared over several.
+  const subs = nearWhip(k) ? 7 : 3;
+  const span = nearWhip(k) ? 2.5 : 0.7;
+  const poses = [];
+  for (let s = 0; s < subs; s++) poses.push(handheldCameraAt(k + (s / (subs - 1) - 0.5) * span, frames));
+  const gain = 1 + 0.05 * Math.sin((2 * Math.PI * k * 7) / frames);
+  let seed = (k * 2654435761) >>> 0;
+  const noise = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return ((seed >>> 8) / 16777216 - 0.5) * 5;
+  };
+  for (let v = 0; v < height; v++) {
+    for (let u = 0; u < width; u++) {
+      const xc = (u + 0.5 - cx) / f;
+      const yc = (v + 0.5 - cyy) / f;
+      let sum = 0;
+      for (const { rotation: r, center } of poses) {
+        const d = [
+          r[0] * xc + r[3] * yc + r[6],
+          r[1] * xc + r[4] * yc + r[7],
+          r[2] * xc + r[5] * yc + r[8],
+        ];
+        sum += shade(center, d);
+      }
+      y[v * width + u] = Math.max(0, Math.min(255, Math.round((sum / subs) * gain + noise())));
+    }
+  }
+}

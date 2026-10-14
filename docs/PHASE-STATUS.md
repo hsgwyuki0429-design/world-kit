@@ -2253,6 +2253,17 @@ More findings came from asking the legs to *play* rather than to collect records
    amendment 3). Now 4 of 4 runs: 0 s lost, 0 redefinitions, 94–95 % `GOOD`. The play screen also
    gained **診断を表示** / **診断をコピー**, so a device report can carry numbers instead of a sentence.
 
+10. **A hand's feed reproduced the symptom.** `renderHandheldFrame` (sweeps, shake, whips, blur,
+    noise) had the camera `LOST` for 21–24 s of a minute and the world redefined 2–3 times. The
+    refusal breakdown in the new diagnostics gave the order of causes — a 2 px per-frame median
+    that blur cannot meet (the pose was right), a half-agreeing bar the tracker's own lost tracks
+    fail, a solve started from a pose a fast turn had left behind, recovery tried only below twelve
+    tracks, and a 0.6 s staleness against ~100 ms result gaps — and the gravity estimate flipped
+    between `ESTIMATED` and `UNKNOWN`. Now `LOST` 0.1–1.9 s, no redefinition (`docs/phase12/TEST-PLAN.md`,
+    amendment 4). **Not solved:** on that feed the stage still does not reliably appear; the map
+    drifts as it is built and the estimate of down is slow. The device's 診断 panel is the next
+    measurement.
+
 The feed's camera looks 15° down and never tilts up, so a launch along it (14° above the camera's
 forward) leaves the tee about level and a wall target above the tee is out of its reach. Both
 legs pass such stages over with **別のステージ**; a player tilts the phone up. That is a property of

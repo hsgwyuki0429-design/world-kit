@@ -82,9 +82,10 @@ describe('re-linking under an accepted pose', () => {
   it('re-links nothing on a refused frame', () => {
     const { map, stage } = setup();
     const rng = new Rng(6);
-    // Two of every three points thrown 10–30 px in random directions: no pose fits them.
+    // Nine of every ten points thrown 10–30 px in random directions: under the share bar, and no
+    // pose fits what is left.
     const pop = populationFor(map, roomPose(10), rng).map((p, i) => {
-      if (i % 3 === 0) return p;
+      if (i % 10 === 0) return p;
       const a = rng.next() * 2 * Math.PI;
       const d = 10 + rng.next() * 20;
       return { ...p, x0: p.x0 + d * Math.cos(a), y0: p.y0 + d * Math.sin(a) };
@@ -210,6 +211,31 @@ describe('recovery when every track the map knew has broken', () => {
       expect(report.state, `after a ${deg}° turn on ${landmarks.length} landmarks: ${report.reason}`).toBe(LocalizationState.LOCALIZED);
       expect(report.recovered).toBe(true);
       expect(stage.takeRelabels().filter(([from, to]) => truth.get(from) !== to)).toEqual([]);
+      expect(solve(stage, map, populationFor(map, before, rng), 3).state).toBe(LocalizationState.LOCALIZED);
+    }
+  });
+
+  it('follows a fast turn with most of the tracks wrong', () => {
+    // A hand-held turn of 8–10° in one processed frame, and the tracks that survive it include
+    // many the tracker has lost: six in ten points are thrown 15–60 px. The solve starts from the
+    // last pose turned by the median image shift, so it does not settle on the few points that
+    // happen to agree with the old pose; and four in ten agreeing is enough, because a hundred
+    // points landing within 3 px of their prediction under a wrong pose does not happen by chance.
+    const { map, stage } = setup();
+    const rng = new Rng(15);
+    const before = roomPose(10);
+    expect(solve(stage, map, populationFor(map, before, rng), 1).state).toBe(LocalizationState.LOCALIZED);
+    for (const deg of [9, -8, 10]) {
+      const pop = populationFor(map, turned(before, deg), rng, 0.6).map((p, i) => {
+        if (i % 5 >= 3) return p;
+        const a = rng.next() * 2 * Math.PI;
+        const d = 15 + rng.next() * 45;
+        return { ...p, x0: p.x0 + d * Math.cos(a), y0: p.y0 + d * Math.sin(a) };
+      });
+      const report = solve(stage, map, pop, 2);
+      expect(report.state, `after a ${deg}° turn: ${report.reason}`).toBe(LocalizationState.LOCALIZED);
+      expect(report.medianErrorPx).toBeLessThan(1.5);
+      // Back to the start for the next turn.
       expect(solve(stage, map, populationFor(map, before, rng), 3).state).toBe(LocalizationState.LOCALIZED);
     }
   });

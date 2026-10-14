@@ -55,8 +55,15 @@ export type { GravityEstimate } from '../mapping/gravity';
 export const MIN_GOOD_POSE_CONFIDENCE = 0.4;
 /** A ground surface the stage may stand on. */
 export const MIN_GROUND_CONFIDENCE = 0.5;
-/** A pose older than this is not this frame's; tracking reads LOST until a new one arrives. */
-export const POSE_STALE_MS = 600;
+/**
+ * A pose older than this is not this frame's; tracking reads LOST until a new one arrives.
+ *
+ * 1.5 s: the first version said 0.6 s ("about eighteen frames") and the play screen read LOST
+ * several times a minute on a hand-held feed, because a fast turn refuses a run of frames and a
+ * phone's results come 100 ms apart at best — the iPhone evidence holds result gaps of 4.4–4.8 s.
+ * Until then the last pose is held as DEGRADED, which neither READY nor a throw accepts.
+ */
+export const POSE_STALE_MS = 1500;
 /** Bound on the pose history (§56: everything is bounded). */
 export const MAX_POSE_HISTORY = 240;
 /** Coverage cell edge, as a fraction of the scene depth. */

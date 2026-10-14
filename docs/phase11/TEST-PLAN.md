@@ -47,7 +47,7 @@ a camera that has not turned cannot discriminate, and the estimate stays `UNKNOW
 | `ORIENTATION_TOLERANCE_DEG` | 12° | horizontal within 12° of level; vertical within 12° of plumb |
 | `MIN_GRAVITY_SAMPLES` / `MIN_DIVERSITY_DEG` | 30 frames / 15° | below this the four layouts are not separated by the data |
 | `MAX_SPREAD_DEG` | 6° | three times the sum of Phase 6's 0.76° visual agreement and the platform's attitude error |
-| discrimination | runner-up ≥ 2× and ≥ 2° worse | the motion must have *told* the layouts apart |
+| discrimination | to make an estimate: runner-up ≥ 1.6× and ≥ 2° worse; to keep one: the same layout best, ≥ 1.25× and ≥ 1° | the motion must have *told* the layouts apart — and a standing estimate is not dropped by one noisy stretch (amendment 4) |
 | `MIN_GROUND_CONFIDENCE` | 0.5 | a floor the game may stand a stage on |
 
 ## Records
@@ -80,6 +80,15 @@ a camera that has not turned cannot discriminate, and the estimate stays `UNKNOW
    0.31, under the ground bar. A plane resting on a hundred moderate landmarks is better
    established than any one of them; support now counts each landmark at its own confidence and
    saturates at 40.
+
+4. **Gravity: a lower bar to make an estimate, a lower one to keep it, and only confident poses.**
+   On the hand-held feed (`docs/phase12/TEST-PLAN.md`, amendment 4) the right layout spread 4.2° and
+   the runner-up 7.1° — a ratio of 1.7 — and the estimate sat at `UNKNOWN` under the 2× bar for over
+   a minute, then flipped to `ESTIMATED` and back on successive updates, flickering `READY` and
+   dropping the stage each time. A ratio in spread of 1.6 over a few hundred frames is well past
+   chance; once an estimate stands, the same layout staying best at 1.25× and one degree keeps it,
+   because which way is down does not change with a noisy stretch. Frames are paired with the
+   sensor only when the pose is one the world would call `GOOD`.
 
 ## What the desktop leg can and cannot establish
 

@@ -33,7 +33,7 @@ import {
 import type { Surface, SurfaceLandmark } from '../mapping/surfaces';
 import { MAP_SNAPSHOT_STRIDE } from '../tracking/trackingMessages';
 import type { LocalizationReport, MapSnapshot } from '../tracking/trackingMessages';
-import { SpatialWorld, TrackingState, WorldState } from './SpatialWorld';
+import { MIN_GOOD_POSE_CONFIDENCE, SpatialWorld, TrackingState, WorldState } from './SpatialWorld';
 import type { CameraIntrinsicsRecord, SpatialWorldView, WorldKeyframe, WorldLandmark } from './SpatialWorld';
 
 /** How often surfaces may be re-extracted, ms. The map changes about once a second. */
@@ -366,6 +366,14 @@ export class WorldBuilder {
 
   private pairGravity(report: LocalizationReport): void {
     if (!report.pose) return;
+    // A pose the world would not call GOOD is one the camera's own estimate of itself is unsure of
+    // — frames in a blur, or resting on a handful of points. Its error goes straight into the
+    // estimate of down, and on a hand-held feed they were the reason the right layout's spread sat
+    // at 4–5° instead of 2: the standing estimate failed its own bar and the stage never started.
+    if (report.confidence < MIN_GOOD_POSE_CONFIDENCE) {
+      this.refusePairing('LOW_CONFIDENCE');
+      return;
+    }
     const reading = this.gravityAt(report.capturedAtEpoch);
     if (!reading) {
       this.refusePairing('NO_READING');

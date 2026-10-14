@@ -45,6 +45,8 @@ interface ResultSample {
   /** The pose confidence the localization reported, and the term that held it down. */
   readonly confidence: number;
   readonly lowTerm: string;
+  /** For a refused frame, which bars it failed (INLIERS, SHARE, MEDIAN, NO_CONVERGE). */
+  readonly refusal: string;
   readonly epoch: number;
   readonly workerMs: number;
   readonly stageMs: Readonly<Record<string, number>>;
@@ -94,6 +96,9 @@ export interface DiagnosticReport {
   readonly registrationFailures: readonly RegistrationEvent[];
   /** When pose confidence sat under the 0.4 bar: which term was the lowest. */
   readonly lowConfidenceTerms: Record<string, number>;
+  /** Refused frames by the bar they failed, and the median tracked/agreeing counts they had. */
+  readonly refusals: Record<string, number>;
+  readonly refusedMedian: { readonly tracked: number; readonly agree: number };
   /** Seconds in each tracking state's reason class (HOLD, LOW_CONFIDENCE, STALE, ...). */
   readonly trackingCauses: Record<string, number>;
   readonly map: { readonly landmarks: number; readonly keyframesInserted: number; readonly epoch: number; readonly epochChanges: number };
@@ -107,13 +112,23 @@ export interface DiagnosticReport {
   readonly meta: Record<string, string | number | boolean>;
 }
 
+/** The bars a refused frame failed, from the localization's own reason. */
+function refusalOf(reason: string): string {
+  const parts: string[] = [];
+  if (reason.includes('inlier(s), below')) parts.push('INLIERS');
+  if (reason.includes('correspondences agree')) parts.push('SHARE');
+  if (reason.includes('median error')) parts.push('MEDIAN');
+  if (reason.includes('did not converge')) parts.push('NO_CONVERGE');
+  return parts.length > 0 ? parts.join('+') : 'OTHER';
+}
+
 /** The reason string, as one of a few classes a person can read. */
 function causeOf(state: string, reason: string): string {
   if (state === 'GOOD') return 'OK';
   if (state === 'INITIALIZING') return 'BUILDING_MAP';
   if (reason.startsWith('holding the last pose')) return 'HOLD (a frame was refused or saw too few map points)';
   if (reason.startsWith('POSE: LOW CONFIDENCE')) return 'LOW_CONFIDENCE';
-  if (reason.startsWith('no frame localized') || reason.startsWith('no pose for')) return 'STALE (no pose for more than 0.6 s)';
+  if (reason.startsWith('no frame localized') || reason.startsWith('no pose for')) return 'STALE (no pose for more than 1.5 s)';
   if (reason.includes('(re)defined')) return 'NEW_WORLD';
   return reason.slice(0, 40);
 }
@@ -210,6 +225,7 @@ export class FieldDiagnostics {
       landmarksState: result.landmarks?.state ?? 'NONE',
       confidence: loc?.confidence ?? -1,
       lowTerm: low ? low.name : '',
+      refusal: loc && loc.state === 'REFUSED' ? refusalOf(loc.reason) : '',
       epoch: loc?.epoch ?? -1,
       workerMs,
       stageMs,
@@ -272,7 +288,15 @@ export class FieldDiagnostics {
     let recovered = 0;
     const stageValues: Record<string, number[]> = {};
     const lowConfidenceTerms: Record<string, number> = {};
+    const refusals: Record<string, number> = {};
+    const refusedTracked: number[] = [];
+    const refusedAgree: number[] = [];
     for (const r of inWindow) {
+      if (r.refusal) {
+        count(refusals, r.refusal);
+        refusedTracked.push(r.correspondences);
+        refusedAgree.push(r.inliers);
+      }
       if (r.state === 'LOCALIZED' && r.confidence >= 0 && r.confidence < 0.4 && r.lowTerm) count(lowConfidenceTerms, r.lowTerm);
       count(localization, r.state);
       count(landmarksStates, r.landmarksState);
@@ -315,6 +339,8 @@ export class FieldDiagnostics {
       landmarksStates,
       registrationFailures: this.registrationFailures.slice(-10),
       lowConfidenceTerms,
+      refusals,
+      refusedMedian: { tracked: distribution(refusedTracked).p50, agree: distribution(refusedAgree).p50 },
       trackingCauses: causes,
       map: { landmarks: last?.mapLandmarks ?? 0, keyframesInserted: this.keyframesInserted, epoch: last?.epoch ?? -1, epochChanges: this.epochChanges },
       relinked,
@@ -350,6 +376,8 @@ export class FieldDiagnostics {
     out.push(`地図: 点 ${report.map.landmarks} / キーフレーム ${report.map.keyframesInserted} / エポック ${report.map.epoch}（作り直し ${report.map.epochChanges} 回）`);
     const causes = Object.entries(report.trackingCauses).map(([k, v]) => `${k} ${v}s`).join(' / ');
     if (causes) out.push(`GOOD でなかった理由（秒）: ${causes}`);
+    const refused = Object.entries(report.refusals).map(([k, v]) => `${k} ${v}`).join(' / ');
+    if (refused) out.push(`却下した理由（件数）: ${refused}（追跡 ${report.refusedMedian.tracked} 点・一致 ${report.refusedMedian.agree} 点が中央値）`);
     const lowTerms = Object.entries(report.lowConfidenceTerms).map(([k, v]) => `${k} ${v}`).join(' / ');
     if (lowTerms) out.push(`信頼度が 0.4 未満だった項目: ${lowTerms}`);
     const failed = report.registrationFailures[report.registrationFailures.length - 1];

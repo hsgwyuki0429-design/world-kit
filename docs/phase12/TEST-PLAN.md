@@ -137,6 +137,51 @@ corners found again, 0 wrong pairs); the version before this amendment fails it 
 `scripts/run-e2e-rough.mjs` now watches from the first frame and fails on any redefinition, on a
 single `LOST` stretch over 1.5 s, or on more than a tenth of the session in `LOST`.
 
+## Amendment 4: a hand's feed, and what the per-frame bars had assumed
+
+A third feed (`scripts/lib/room.mjs`, `renderHandheldFrame`) films the room as a phone in a hand
+does: a sweep through thirty degrees each way, shake at three and five hertz, a whip away and back
+in under half a second with the frames between smeared past any corner, whole frames lost to blur,
+exposure flicker and sensor noise. On it the build before this amendment — after amendments 2 and 3 —
+was in `LOST` for 21–24 s of a minute, was `GOOD` for 15–24 %, localized 46 % of frames, and
+redefined the world twice. The refusal breakdown the diagnostics now carry said why, in order:
+
+| What refused the frame | What it was | Change |
+| --- | --- | --- |
+| Median error over 2 px (110 of 141 refusals) | Blurred corners are placed ±2–3 px off, and the landmarks triangulated from them carry the same error. The pose was right: 17 of 38 points within 3 px. | A frame is **accepted at 3 px** (`ACCEPT_MEDIAN_PX`); the 2 px bar stays what WORLD-001 asks of a run's typical frame. The reprojection term of the confidence falls under 0.4 at about 2.7 px, so a frame accepted between the bars reads `DEGRADED`: it holds the pose, it does not start a stage or take a throw. |
+| Under half the tracks agreeing | The other tracks are ones the tracker lost under a fast turn. Twelve points landing within 3 px of their prediction under a wrong pose is not a chance event (~1e-4 each). | `MIN_INLIER_SHARE` 0.5 → **0.3**; the 12-inlier floor stays; the agreement term saturates at 60 %, the support term at 40 inliers. |
+| The solve settling on a few points | The last pose is tens of pixels from this frame's after a fast turn. | A **shifted start**: the last pose turned by the median image shift of the tracked landmarks, which survives half the tracks being wrong. |
+| Recovery never tried | Recovery ran only below 12 tracked landmarks, and a frame with sixteen tracked and four right is not below twelve. | Recovery runs whenever the live tracks fail the solve's bars. |
+| Pose lost after 0.6 s | A fast turn refuses a run of frames and results arrive ~100 ms apart (the iPhone evidence holds gaps of 4.4–4.8 s). | `POSE_STALE_MS` 600 → **1500**; held as `DEGRADED` meanwhile. |
+
+Gravity (`docs/phase11/TEST-PLAN.md`) took two changes of its own, because its estimate flipped
+between `ESTIMATED` and `UNKNOWN` on the same feed: an estimate is **made** at a runner-up ratio of
+1.6 (was 2) and **kept** while the same layout stays best at 1.25 and 1 degree, and only poses the
+world would call `GOOD` are paired with the sensor.
+
+| Handheld feed, 60 s from the first frame | Before | After |
+| --- | --- | --- |
+| Time in `LOST` / longest stretch | 21–24 s / 2.6–3.5 s | **0.1–1.9 s / 0.1–0.7 s** (3 runs) |
+| World redefinitions | 2–3 | **0** |
+| Frames localized | 44–47 % | 58–65 % |
+| Tracking `GOOD` | 15–24 % | 30–36 % |
+| Rough feed, same measures | LOST 0 s, 0 redefinitions | unchanged |
+
+`tests/unit/relink.test.ts` pins a fast turn with six in ten tracks wrong (the stage before this
+amendment refuses it at 39.7 % agreement); `tests/unit/surfaces.test.ts` pins the keep bar (a
+stretch that makes no estimate keeps a standing one, and the old thresholds drop it).
+
+**What is not solved, and is said here rather than left to be found.** On the handheld feed the
+stage still does not reliably appear. The estimate of down is the slow part: the motion is yaw-only
+(a hand's rotations are not, and a real phone's orientation sensor separates the four layouts far
+better than this feed's constant reading does), and the map, never bundle-adjusted, drifts as it is
+built, so the spread of per-frame estimates of down grows from 1–2° in the first half minute to
+4–5° after a minute. Each run builds a different map (the feed loops on the wall clock), and
+whether `READY` arrives within a minute varies from run to run, so `scripts/run-e2e-rough.mjs
+--feed=handheld` gates only on what repeats — how long the camera was lost, and whether the world
+was redefined — and reports the rest. The device report, with the new 診断 panel, is what says
+whether this matters on a phone.
+
 ## Records
 
 | ID | Req | Pass criteria |
