@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Safari Spatial Mapping Engine \u2014 real-data spatial reconstruction pipeline for iPhone Safari",
+  "description": "Safari Spatial Game \u2014 real-data spatial reconstruction and a ball game played on the observed room, for iPhone Safari",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
     "test:audit": "node scripts/audit-fake-data.mjs && node scripts/audit-architecture.mjs && node scripts/audit-guide-labels.mjs",
-    "test:e2e": "node scripts/run-e2e.mjs && node scripts/run-e2e-phase1.mjs && node scripts/run-e2e-phase2.mjs && node scripts/run-e2e-phase3.mjs && node scripts/run-e2e-phase3-alignment.mjs && node scripts/run-e2e-phase4.mjs && node scripts/run-e2e-phase5.mjs && node scripts/run-e2e-phase6.mjs && node scripts/run-e2e-phase7.mjs && node scripts/run-e2e-phase8.mjs && node scripts/run-e2e-phase9.mjs && node scripts/run-e2e-phase10.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs && node scripts/run-e2e-phase1.mjs && node scripts/run-e2e-phase2.mjs && node scripts/run-e2e-phase3.mjs && node scripts/run-e2e-phase3-alignment.mjs && node scripts/run-e2e-phase4.mjs && node scripts/run-e2e-phase5.mjs && node scripts/run-e2e-phase6.mjs && node scripts/run-e2e-phase7.mjs && node scripts/run-e2e-phase8.mjs && node scripts/run-e2e-phase9.mjs && node scripts/run-e2e-phase10.mjs && node scripts/run-e2e-spatial.mjs && node scripts/run-e2e-play.mjs",
     "test": "npm run test:audit && npm run typecheck && npm run test:unit",
     "test:e2e:phase0": "node scripts/run-e2e.mjs",
     "test:e2e:phase1": "node scripts/run-e2e-phase1.mjs",
@@ -24,7 +24,9 @@
     "test:e2e:phase7": "node scripts/run-e2e-phase7.mjs",
     "test:e2e:phase8": "node scripts/run-e2e-phase8.mjs",
     "test:e2e:phase9": "node scripts/run-e2e-phase9.mjs",
-    "test:e2e:phase10": "node scripts/run-e2e-phase10.mjs"
+    "test:e2e:phase10": "node scripts/run-e2e-phase10.mjs",
+    "test:e2e:spatial": "node scripts/run-e2e-spatial.mjs",
+    "test:e2e:play": "node scripts/run-e2e-play.mjs --build"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

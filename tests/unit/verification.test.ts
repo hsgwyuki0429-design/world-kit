@@ -265,6 +265,7 @@ function frameFor(report: VerificationReport, texture: SceneTexture): TrackingRe
     keyframe: null,
     triangulation: null,
     landmarks: null,
+    localization: null,
   };
 }
 

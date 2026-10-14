@@ -24,17 +24,17 @@ authority is the registry plus the evidence files under `docs/phase0/evidence/`.
 | 8 | Keyframe System | TESTING | Built. The automated leg **decides all six required records** — the instruments are a still segment and a metronome, and the harness makes both. Awaiting the device run. |
 | 9 | Triangulation | TESTING | Built. The automated leg **decides all seven required records** — both gates are injections the harness builds. Awaiting the device run. |
 | 10 | Landmark Map | TESTING | Built. The automated leg **decides all seven required records** — the instruments are the map's own memory and an injection the harness builds. Awaiting the device run. |
-| 11 | Surface Understanding | BLOCKED | v4 §23 — renamed from Plane Detection |
-| 12 | Spatial World | BLOCKED | |
-| 13 | Spatial Game Viewer | BLOCKED | v4 — renamed from World Viewer |
-| 14 | Save / Resume | BLOCKED | v4 §42 — renamed from Save / Load |
-| 15 | Spatial Collision | BLOCKED | v4 — renamed from Collision Geometry |
-| 16 | Game Integration | BLOCKED | |
-| 17 | Stage Generator | BLOCKED | **new in v4** (§48) |
-| 18 | Goal Ring System | BLOCKED | **new in v4** (§49) |
-| 19 | Ball Physics | BLOCKED | **new in v4** (§50) |
-| 20 | Gameplay Validation | BLOCKED | **new in v4** (§51) |
-| 21 | Final Audit | BLOCKED | |
+| 11 | Surface Understanding | TESTING | Built. Surfaces by seeded sequential RANSAC over confirmed landmarks; down measured from the orientation sensor and Phase 12's pose (four image layouts told apart by motion). The spatial leg decides all seven required records. Locked behind Phase 10 on the device. |
+| 12 | Spatial World | TESTING | Built. Per-frame pose against the map (PnP, LM + Huber); the SpatialWorld as the single source of truth; READY as a conjunction checked from outside every frame. |
+| 13 | Spatial Game Viewer | TESTING | Built. Camera overlay through the world's pose; the renderer's own projection checked against the tracker each frame; HUD labels read back from the DOM. |
+| 14 | Save / Resume | TESTING | Built. Saves progress and observations with a checksum; resume restores progress only — a saved world is shown, never collided with (no relocalization exists). |
+| 15 | Spatial Collision | TESTING | Built. Collision only with classified, confident, observed hulls, each contact traced to its world surface; every bounce re-flown with the surfaces removed. |
+| 16 | Game Integration | TESTING | Built. §37's ten states with a declared transition table; tracking loss freezes the ball. |
+| 17 | Stage Generator | TESTING | Built. Seeded and reproducible (regenerated and compared on every stage); a shifted-room control proves it depends on the room. |
+| 18 | Goal Ring System | TESTING | Built. §28's constraints named in every rejection; three invalid rings offered to the validator on every stage; difficulty from the reach search. |
+| 19 | Ball Physics | TESTING | Built. 240 Hz, in units of the measured camera height; every throw replayed bit for bit; energy never gained at a bounce. |
+| 20 | Gameplay Validation | TESTING | Built. §52's chain read off the session's transitions; §53's conditions; success re-flown at a moved ring. Needs a real room and a real device. |
+| 21 | Final Audit | TESTING | Built. Session half (every phase passed, every never-counter zero, absences reported); repository half is `npm test`. |
 
 ## Phase 0 — PASSED
 
@@ -2149,6 +2149,51 @@ mapping worker in the diagram since before Phase 0; the argument for building it
 measurement, and these are the two to watch when the device produces its own.
 
 ---
+
+## Phases 11–21 — TESTING (built, awaiting the device)
+
+**Not passed, and cannot be from what is committed.** The bundles under `docs/phase11/evidence/` …
+`docs/phase21/evidence/` are `DESKTOP_DEV`. Rule 004 stands, and so does Rule 005: on the device
+every one of these phases is locked until Phase 10 has passed, and Phase 10 is locked behind 7.
+
+What exists: the per-frame pose against the map (`geometry/pnp.ts`, `tracking/LocalizationStage.ts`),
+gravity measured from the orientation sensor (`capture/GravityMonitor.ts`, `mapping/gravity.ts`),
+surfaces (`mapping/surfaces.ts`), the SpatialWorld (`world/`), the game (`game/` — collision,
+physics, ring, stage, state machine, save), the renderer (`renderer/`), eleven test suites, eleven
+phase screens and the play screen. Test plans: `docs/phase11/TEST-PLAN.md` … `docs/phase21/TEST-PLAN.md`;
+the device walk: `docs/phase11/HOW-TO-RUN-DEVICE-TEST.md`.
+
+### The play screen
+
+Reached from the first screen's **空間ボールゲームを開く**, outside the Phase Lock, because it
+evaluates no phase: the play leg (`scripts/run-e2e-play.mjs`) checks that a whole game played on it
+leaves every phase's state where it was. It runs the real stack — nothing it shows is staged — so it
+is the game as the user plays it, today, while the ladder waits for its device runs.
+
+### What the spatial leg measured, and the defects it found
+
+`scripts/run-e2e-spatial.mjs` films a ray-cast room (`scripts/lib/room.mjs`) with the app's own
+assumed intrinsics and dispatches the orientation reading that camera would produce. It plays,
+saves, reloads, climbs the ladder, and walks Phases 11–21 pressing each screen's own controls.
+
+Four defects were found by it before any device saw the code, each fixed at its cause:
+
+1. **The camera preview was paused by the screen change.** Entering Phase 11 replaced the tree that
+   held the `<video>`; the AR panel re-attached it on the next animation frame, and a media element
+   found outside the document at a stable state is paused and stays paused. The pipeline delivered
+   62 frames in 188 s, all before the screen changed, and Phase 11 sat at `TRACKING INITIALIZING`.
+   The panel now takes the video in the same render that attaches it (`ArPanel.attachVideo`).
+   The first diagnosis blamed the reload before the climb; removing the reload left the stall in
+   place, which is what ruled it out.
+2. **The floor's confidence was capped by its median landmark.** 97 landmarks, flat to 0.3° of
+   gravity, capped at 0.31 by their median confidence — under the 0.5 ground bar. Surface confidence
+   is now confidence-weighted support and planarity (`docs/phase11/TEST-PLAN.md`, amendment 3).
+3. **The reprojection median included the outliers.** On a long run the never-bundle-adjusted map
+   lets a share of landmarks drift; a pose resting on 162 of 247 within 3 px reported 2.1–2.3 px
+   and was refused every few seconds, flickering play into `TRACKING_LOST`. The median is now over
+   the points the solve rests on; the share that disagrees is held separately
+   (`docs/phase12/TEST-PLAN.md`).
+4. **SURF-004's control compared totals.** See amendment 1 of the Phase 11 plan.
 
 ## Consolidation, 2026-08-23 — after Phase 7
 

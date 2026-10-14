@@ -77,6 +77,9 @@ const EVIDENCE_DIRS = [
   join(process.cwd(), 'docs', 'phase5', 'evidence'),
   join(process.cwd(), 'docs', 'phase6', 'evidence'),
   join(process.cwd(), 'docs', 'phase7', 'evidence'),
+  // Phases 11–21: the spatial leg's bundles. DESKTOP_DEV, so each must re-derive to TESTING —
+  // the same check that catches a hand-edited verdict catches a desktop run claiming a pass.
+  ...[11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((n) => join(process.cwd(), 'docs', `phase${n}`, 'evidence')),
 ];
 
 function loadBundles(): { file: string; bundle: EvidenceBundle }[] {

@@ -37,6 +37,7 @@ import { PoseStage } from './PoseStage';
 import { KeyframeStage } from './KeyframeStage';
 import { TriangulationStage } from './TriangulationStage';
 import { LandmarkStage } from './LandmarkStage';
+import { LocalizationStage } from './LocalizationStage';
 import { asTrackingOptions } from './trackingMessages';
 import type { FeatureRecordSample, TrackingOptions, TrackingResult } from './trackingMessages';
 import { payloadRoute } from '../pipeline/messages';
@@ -114,6 +115,15 @@ const triangulationStage = new TriangulationStage();
  * report deliberately does not carry across the boundary, and it runs on keyframe inserts only.
  */
 const landmarkStage = new LandmarkStage();
+/**
+ * Phase 12. Places each frame's camera in the map's world.
+ *
+ * Here rather than on the main thread because it needs the tracker's population and the map's
+ * positions on the same frame, and both live in this worker. What crosses to the main thread is
+ * the pose, a sample of the correspondences for the renderer's own check, and — when the map has
+ * changed — the map itself.
+ */
+const localizationStage = new LocalizationStage();
 /** Whether the previous frame ran the flow path, so switching modes resets rather than drifts. */
 let flowActive = false;
 
@@ -309,6 +319,9 @@ function handleFrame(msg: FrameMessage): void {
   if (strip) transfer.push(strip);
   if (tracking?.overlay) transfer.push(tracking.overlay);
   if (tracking?.flowAge) transfer.push(tracking.flowAge);
+  if (tracking?.localization?.snapshot) {
+    transfer.push(tracking.localization.snapshot.ids, tracking.localization.snapshot.data);
+  }
   post(result, transfer);
 }
 
@@ -337,6 +350,7 @@ function runTracking(
       keyframeStage.reset();
       triangulationStage.reset();
       landmarkStage.reset();
+      localizationStage.reset();
       flowActive = false;
     }
     return undefined;
@@ -347,7 +361,7 @@ function runTracking(
   if (!level) return undefined;
   const levelScale = 2 ** levelIndex;
 
-  if (options.track) return runFlow(options, p, levelIndex, meanLuma, topLevelMad);
+  if (options.track) return runFlow(options, p, levelIndex, meanLuma, topLevelMad, msg.postedAtEpoch);
   if (flowActive) {
     flowStage.reset();
     verificationStage.reset();
@@ -355,6 +369,7 @@ function runTracking(
     keyframeStage.reset();
     triangulationStage.reset();
     landmarkStage.reset();
+    localizationStage.reset();
     flowActive = false;
   }
 
@@ -451,6 +466,7 @@ function runTracking(
     keyframe: null,
     triangulation: null,
     landmarks: null,
+    localization: null,
   };
 }
 
@@ -469,6 +485,7 @@ function runFlow(
   levelIndex: number,
   meanLuma: number,
   topLevelMad: number,
+  capturedAtEpoch: number,
 ): TrackingResult {
   flowActive = true;
   const result = flowStage.process({
@@ -534,7 +551,36 @@ function runFlow(
     batch: triangulationStage.getBatch(),
     wantInjection: options.wantInjections,
   });
-  return { ...result, verification: outcome.report, pose, keyframe, triangulation, landmarks };
+  if (!options.localize) {
+    return { ...result, verification: outcome.report, pose, keyframe, triangulation, landmarks };
+  }
+
+  // Phase 12 solves this frame's pose against the map **as it stands after this frame's batch**,
+  // and on a frame where the map registered a keyframe it compares the two poses for that view.
+  const registered =
+    keyframe.inserted &&
+    (landmarks.state === 'REGISTERED' || landmarks.state === 'EPOCH_RESTART') &&
+    landmarks.keyframePair
+      ? (landmarks.keyframePair[1] ?? null)
+      : null;
+  const localization = localizationStage.process({
+    population: flowStage.getTracker().getPopulation(),
+    width: p.levels[0]?.width ?? 0,
+    height: p.levels[0]?.height ?? 0,
+    map: landmarkStage,
+    keyframeIds: keyframeStage.keyframes().map((k) => k.id),
+    registeredKeyframe: registered,
+    capturedAtEpoch,
+  });
+  return {
+    ...result,
+    verification: outcome.report,
+    pose,
+    keyframe,
+    triangulation,
+    landmarks,
+    localization,
+  };
 }
 
 scope.onmessage = (event: MessageEvent<ToWorkerMessage>): void => {

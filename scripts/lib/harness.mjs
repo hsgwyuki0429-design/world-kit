@@ -136,7 +136,60 @@ const RUNGS = [
     ready: () => window.__SPATIAL_DEBUG__.getTriangulationStats().frames > 0 },
   { enter: 'enterPhase10', start: { dom: '#start-landmarks' },
     ready: () => window.__SPATIAL_DEBUG__.getLandmarkStats().frames > 0 },
+  // Phases 11–21 share one stack. The first rung starts it; the rest adopt it, each pressing its
+  // own start so the screen's own predicate is exercised the way a person exercises it.
+  { enter: 'enterPhase11', start: { dom: '#start-surfaces' },
+    ready: () => window.__SPATIAL_DEBUG__.getWorldStats().reports > 0 },
+  { enter: 'enterPhase12', start: { dom: '#start-world' },
+    ready: () => window.__SPATIAL_DEBUG__.getWorldStats().reports > 0 },
+  { enter: 'enterPhase13', start: { dom: '#start-viewer' },
+    ready: () => window.__SPATIAL_DEBUG__.getViewStats().framesDrawn > 0 },
+  { enter: 'enterPhase14', start: { dom: '#start-save' },
+    ready: () => true },
+  { enter: 'enterPhase15', start: { dom: '#start-collision' },
+    ready: () => true },
+  { enter: 'enterPhase16', start: { dom: '#start-game' },
+    ready: () => true },
+  { enter: 'enterPhase17', start: { dom: '#start-stage' },
+    ready: () => true },
+  { enter: 'enterPhase18', start: { dom: '#start-ring' },
+    ready: () => true },
+  { enter: 'enterPhase19', start: { dom: '#start-ball' },
+    ready: () => true },
+  { enter: 'enterPhase20', start: { dom: '#start-gameplay' },
+    ready: () => true },
 ];
+
+/**
+ * The orientation sensor, played by the harness.
+ *
+ * Headless Chromium has no IMU. The spatial legs dispatch `deviceorientation` and `devicemotion`
+ * events with the reading the synthetic room's camera would produce (`room.mjs`) — a stimulus, as
+ * the Y4M file is a stimulus for the camera, and labelled as such in every leg that uses it. A
+ * `DESKTOP_DEV` bundle cannot pass a phase whatever it was fed (Rule 004).
+ */
+export async function injectOrientation(page, { beta, gamma }, acceleration) {
+  await page.evaluate(
+    ({ beta, gamma, acceleration }) => {
+      const w = window;
+      if (w.__HARNESS_IMU__) clearInterval(w.__HARNESS_IMU__);
+      w.__HARNESS_IMU__ = setInterval(() => {
+        window.dispatchEvent(
+          new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta, gamma, absolute: false }),
+        );
+        window.dispatchEvent(
+          new DeviceMotionEvent('devicemotion', {
+            accelerationIncludingGravity: acceleration,
+            acceleration: { x: 0, y: 0, z: 0 },
+            rotationRate: { alpha: 0, beta: 0, gamma: 0 },
+            interval: 16,
+          }),
+        );
+      }, 16);
+    },
+    { beta, gamma, acceleration },
+  );
+}
 
 /**
  * Climb from the capability screen to `target`, leaving every phase below it **running**.
