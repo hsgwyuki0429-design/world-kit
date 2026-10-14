@@ -71,6 +71,7 @@ import {
 import type { RestoredWorld } from './game/SaveGame';
 import { ArRenderer, alignment as projectionAlignment } from './renderer/ArRenderer';
 import { ViewStatsCollector } from './renderer/ViewStats';
+import { FieldDiagnostics } from './ui/FieldDiagnostics';
 import { getArPanel } from './ui/ArPanel';
 import type { ArPanel, HudModel } from './ui/ArPanel';
 import { renderPlayScreen, renderSpatialPhaseScreen, SPATIAL_PHASE_NAMES } from './ui/SpatialScreens';
@@ -375,6 +376,11 @@ class Phase0App {
   private readonly worldBuilder = new WorldBuilder(this.spatialWorld, (at) => this.gravityReadingAt(at));
   private readonly game = new GameSession();
   private readonly viewStats = new ViewStatsCollector();
+  private readonly diagnostics = new FieldDiagnostics();
+  private showDiagnostics = false;
+  private diagnosticsLines: string[] = [];
+  private diagnosticsText = '';
+  private diagnosticsAt = -Infinity;
   private readonly saveLedger = new SaveLedger();
   private arPanel: ArPanel | null = null;
   private arRenderer: ArRenderer | null = null;
@@ -1693,6 +1699,7 @@ class Phase0App {
     }
     if (result.localization) {
       this.spatialEverRan = true;
+      this.diagnostics.recordResult(result, now);
       this.worldBuilder.onLocalization(result.localization);
       // VIEW-001: the renderer's own projection, fed the tracker's observations of this frame.
       const pose = this.worldBuilder.view().cameraPose;
@@ -3725,6 +3732,14 @@ class Phase0App {
         onToggleSurfaces: () => {
           this.showSurfaces = !this.showSurfaces;
         },
+        onToggleDiagnostics: () => {
+          this.showDiagnostics = !this.showDiagnostics;
+          this.diagnosticsAt = -Infinity;
+        },
+        onCopyDiagnostics: () => {
+          this.refreshDiagnostics(performance.now(), true);
+          return this.diagnosticsText;
+        },
       });
       this.arRenderer = new ArRenderer(this.arPanel.canvas);
     }
@@ -3827,6 +3842,7 @@ class Phase0App {
         logger.error(index, 'CameraPreview', 'video.play() was rejected', 'the stream stays attached; if no frames arrive the stack reports nothing', err);
       }
     }
+    this.diagnostics.reset();
     const gravitySource = await gravity;
     logger.info(index, 'GravityMonitor', `orientation sensor ${gravitySource}`, { detail: this.gravityMonitor.getDetail() });
 
@@ -3923,7 +3939,10 @@ class Phase0App {
     const renderer = this.arRenderer;
     const tick = (): void => {
       this.arFrame = requestAnimationFrame(tick);
+      const frameAt = performance.now();
+      this.diagnostics.recordFrame(frameAt);
       const view = this.worldBuilder.view();
+      this.diagnostics.recordWorld(view, frameAt);
       this.game.update(view);
       const gameView = this.game.view();
       if (renderer) {
@@ -3970,6 +3989,38 @@ class Phase0App {
     this.saveLedger.checkRestoredNotUsed(this.restoredWorld, set.worldVersion, view.version);
   }
 
+  /** The diagnostic lines, refreshed twice a second at most while the panel is open. */
+  private diagnosticsFor(at: number): readonly string[] {
+    if (at - this.diagnosticsAt >= 500) this.refreshDiagnostics(at, false);
+    return this.diagnosticsLines;
+  }
+
+  private refreshDiagnostics(at: number, force: boolean): void {
+    if (!force && at - this.diagnosticsAt < 500) return;
+    this.diagnosticsAt = at;
+    const p = this.pipeline.getStats();
+    const ua = navigator.userAgent;
+    const ios = /OS (\d+[_\d]*)/.exec(ua)?.[1]?.replace(/_/g, '.') ?? '';
+    const report = this.diagnostics.report(
+      {
+        build: BUILD_COMMIT.slice(0, 7),
+        ios,
+        deliveredFps: p.deliveredFps,
+        sourceFps: p.sourceFps,
+        tier: p.tierLabel,
+        proc: `${p.procWidth}x${p.procHeight}`,
+        pipelineWorkerMsP50: p.workerMs.p50,
+        maxResultGapMsSession: p.maxResultGapMs,
+        backpressured: p.backpressured,
+        pacedOut: p.pacedOut,
+        gravity: this.gravityMonitor.isLive() ? this.gravityMonitor.getSource() : 'none',
+      },
+      at,
+    );
+    this.diagnosticsLines = [`ビルド ${BUILD_COMMIT.slice(0, 7)}${ios ? ` / iOS ${ios}` : ''} / ${p.tierLabel} / 配信 ${p.deliveredFps} fps`, ...this.diagnostics.lines(report)];
+    this.diagnosticsText = this.diagnostics.text(report);
+  }
+
   private hudModel(view: SpatialWorldView, game: GameView): HudModel {
     const pose = view.cameraPose?.intrinsics;
     const p = this.pipeline.getStats();
@@ -3999,6 +4050,8 @@ class Phase0App {
         game.state !== GameState.AIMING && game.state !== GameState.THROWING,
       resumeLabel: this.restoredWorld ? '再開済み' : '前回の続きから',
       surfacesShown: this.showSurfaces,
+      diagnostics: this.showDiagnostics ? this.diagnosticsFor(performance.now()) : null,
+      diagnosticsText: this.showDiagnostics ? this.diagnosticsText : '',
       aspect,
     };
   }
@@ -4377,6 +4430,10 @@ class Phase0App {
       },
       getGameStats: () => this.game.stats(),
       getGameView: () => this.game.view(),
+      getDiagnostics: () => {
+        this.refreshDiagnostics(performance.now(), true);
+        return { lines: this.diagnosticsLines, report: JSON.parse(this.diagnosticsText) as unknown };
+      },
       getViewStats: () => this.viewStats.stats(),
       getSaveStats: () => this.saveLedger.stats(),
       getGravity: () => this.gravityMonitor.describe(),

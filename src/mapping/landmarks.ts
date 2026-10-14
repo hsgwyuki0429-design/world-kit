@@ -435,7 +435,12 @@ export class LandmarkMap {
   }
 
   /** Register the batch, fold it in, cull what has stopped agreeing, and stay inside the bound. */
-  ingest(batch: LandmarkBatch): IngestOutcome {
+  /**
+   * @param deferRestart the camera is still being placed in this epoch's world, so a run of
+   *   unregistered batches is an id problem rather than a lost world and the map is kept. The run
+   *   keeps counting; the restart happens on the first unregistered batch after the flag clears.
+   */
+  ingest(batch: LandmarkBatch, deferRestart = false): IngestOutcome {
     const plan = this.evaluate(batch);
     if (plan.state !== IngestState.REGISTERED || !plan.registration || !plan.poseB) {
       this.unregisteredRun++;
@@ -448,7 +453,7 @@ export class LandmarkMap {
       // map, re-ingested nothing, and reported `EPOCH_RESTART` with **no registration behind
       // it**. The leg caught it as one batch ingested without a registration, which is MAP-003's
       // failure condition and was exactly right about it.
-      if (this.unregisteredRun >= EPOCH_RESTART_AFTER && batch.points.length > 0) {
+      if (this.unregisteredRun >= EPOCH_RESTART_AFTER && batch.points.length > 0 && !deferRestart) {
         this.landmarks.clear();
         this.poses.clear();
         this.epoch++;

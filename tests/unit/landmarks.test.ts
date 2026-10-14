@@ -18,6 +18,7 @@ import { fromAxisAngle } from '../../src/geometry/rotation';
 import { KeyframeReason } from '../../src/mapping/keyframes';
 import type { Keyframe } from '../../src/mapping/keyframes';
 import {
+  EPOCH_RESTART_AFTER,
   IngestState,
   LandmarkMap,
   MAX_LANDMARK_REPROJECTION_PX,
@@ -280,6 +281,38 @@ describe('LandmarkMap', () => {
     expect(out.merged.length).toBe(0);
     expect(out.rejected.length).toBe(stranger.points.length);
     expect(out.reason).toContain(String(MIN_REGISTRATION_POINTS));
+  });
+
+  describe('redefining the world', () => {
+    /** The map holds one batch, then is offered strangers: batches that share no id with it. */
+    function offer(map: LandmarkMap, strangers: number, deferRestart: boolean) {
+      map.ingest(syntheticBatch(1, 2, 0));
+      const outcomes = [];
+      for (let i = 0; i < strangers; i++) {
+        outcomes.push(map.ingest({ ...syntheticBatch(10 + i, 11 + i, 0), points: syntheticBatch(10 + i, 11 + i, 900 + 50 * i).points }, deferRestart));
+      }
+      return outcomes;
+    }
+
+    it('starts a new epoch after a run of batches that cannot be registered', () => {
+      const map = new LandmarkMap();
+      const outcomes = offer(map, EPOCH_RESTART_AFTER + 1, false);
+      expect(outcomes.some((o) => o.epochRestarted)).toBe(true);
+      expect(map.currentEpoch()).toBe(2);
+    });
+
+    it('keeps the world while told the camera is still placed in it, and restarts the moment that stops', () => {
+      const map = new LandmarkMap();
+      const outcomes = offer(map, EPOCH_RESTART_AFTER + 3, true);
+      expect(outcomes.some((o) => o.epochRestarted)).toBe(false);
+      expect(map.currentEpoch()).toBe(1);
+      expect(map.all().length).toBeGreaterThan(0);
+      // The run kept counting while it was deferred, so the first refused batch after the camera
+      // stops being placed redefines the world.
+      const next = map.ingest({ ...syntheticBatch(40, 41, 0), points: syntheticBatch(40, 41, 5000).points }, false);
+      expect(next.epochRestarted).toBe(true);
+      expect(map.currentEpoch()).toBe(2);
+    });
   });
 
   it('confirms a landmark only once enough views have seen it', () => {

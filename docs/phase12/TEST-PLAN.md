@@ -99,6 +99,44 @@ The radius started at `INLIER_PX` (3 px) with no confirmation; the unit test tha
 unmapped room alongside the map is what showed that a point the map never held lands near *some*
 landmark's projection often enough to matter, and what the confirmation frames are for.
 
+## Amendment 3: the second device report, and what the rough feed had hidden
+
+After amendment 2 the answer was the same — **tracking is lost almost at once** — and this time
+the rough feed was made to say why. The play screen now has a **診断を表示** panel
+(`src/ui/FieldDiagnostics.ts`, with **診断をコピー** for a paste): result gaps, the worker's
+per-stage time, localization states, why the map refused each batch, and what held a pose
+`DEGRADED`. Run from the first frame rather than from READY, the rough feed lost the camera for 5–9
+seconds at a stretch and **redefined the world 1–4 times** in its first minute, in every run —
+the earlier leg had looked only after READY and had missed all of it.
+
+Three causes, in the order they bite:
+
+1. **A young map could not recover from the dropout that made it young.** After a redefinition
+   every landmark is a candidate, and re-linking took only confirmed ones. Candidates are used now.
+2. **Recovery trusted one vote peak** that had to stand three times above the mean bin. On a few
+   hundred landmarks that held; past about seven hundred the chance votes near the true shift come
+   close to the true ones, recovery failed at the third or fourth dropout, and five unregistered
+   batches (each sharing **0** landmarks with the map, because every id had changed) later the world
+   was redefined and the stage with it. Recovery now takes the best four peaks, tries a pose from
+   each, and keeps the one the solve supports — the solve's own bars (2 px median, half the points
+   agreeing) are the judge, and chance pairs cannot pass them. The search reaches 120 px.
+3. **The map redefined a world the camera was still placed in.** `LandmarkStage` is now told when a
+   pose has been accepted in this epoch within `HOLD_WORLD_MS` (3 s), and a run of unregisterable
+   batches does not redefine it; the run keeps counting, so the first refused batch after the camera
+   stops being placed does.
+
+| Rough feed, 50 s from the first frame | Before | After |
+| --- | --- | --- |
+| Time in `LOST` / longest stretch | 5.0–9.0 s / 5.0–9.0 s (6 of 6 runs) | **0 s / 0 s (4 of 4 runs)** |
+| World redefinitions | 1–4 | **0** |
+| Time in `GOOD` | 62–85 % | **94–95 %** |
+| Worker per-stage median (desktop, headless) | | flow 50 ms, pose 9, verification 3, localization 2 |
+
+`tests/unit/relink.test.ts` pins the large-map case (1890 landmarks, four turns of ±2–6°, half the
+corners found again, 0 wrong pairs); the version before this amendment fails it on the 5° turn.
+`scripts/run-e2e-rough.mjs` now watches from the first frame and fails on any redefinition, on a
+single `LOST` stretch over 1.5 s, or on more than a tenth of the session in `LOST`.
+
 ## Records
 
 | ID | Req | Pass criteria |

@@ -2244,6 +2244,15 @@ More findings came from asking the legs to *play* rather than to collect records
    15 of 15 dropouts recovered and 91 % of frames localized (`docs/phase12/TEST-PLAN.md`,
    amendment 2). Whether that is enough on the device is the device's to say.
 
+9. **The second device report was the same sentence, and the first fix had not touched the cause.**
+   The rough leg had watched only after READY. Watched from the first frame, it showed the camera
+   lost for 5–9 s at a stretch and the world redefined 1–4 times in a minute, in every run: a young
+   map's landmarks were still candidates and could not be re-linked, and recovery — one vote peak
+   that had to stand three times above the mean — failed once the map passed about 700 landmarks,
+   after which five batches sharing nothing with the map redefined the world (`docs/phase12/TEST-PLAN.md`,
+   amendment 3). Now 4 of 4 runs: 0 s lost, 0 redefinitions, 94–95 % `GOOD`. The play screen also
+   gained **診断を表示** / **診断をコピー**, so a device report can carry numbers instead of a sentence.
+
 The feed's camera looks 15° down and never tilts up, so a launch along it (14° above the camera's
 forward) leaves the tee about level and a wall target above the tee is out of its reach. Both
 legs pass such stages over with **別のステージ**; a player tilts the phone up. That is a property of

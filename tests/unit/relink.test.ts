@@ -14,6 +14,7 @@ import { Rng } from '../../src/core/Rng';
 import { multiply3x3 } from '../../src/geometry/linalg';
 import { fromAxisAngle } from '../../src/geometry/rotation';
 import type { CameraPose } from '../../src/geometry/pnp';
+import { LandmarkState } from '../../src/mapping/landmarks';
 import type { KeyframePose } from '../../src/mapping/landmarks';
 import { FlowTracker } from '../../src/tracking/FlowTracker';
 import type { TrackedFeature } from '../../src/tracking/FlowTracker';
@@ -168,6 +169,59 @@ describe('recovery when every track the map knew has broken', () => {
     const report = solve(stage, map, population);
     expect(report.state).toBe(LocalizationState.LOCALIZED);
     expect(stage.takeRelabels().filter(([from, to]) => truth.get(from) !== to)).toEqual([]);
+  });
+
+  it('recovers a young map whose landmarks are all still candidates', () => {
+    // The first version re-linked only confirmed landmarks, so a world that had just been
+    // (re)defined — every landmark a candidate — could not recover from the dropout that made it
+    // young, and was redefined again and again.
+    const landmarks = roomLandmarks().map((l) => ({ ...l, state: LandmarkState.CANDIDATE, observations: 2 }));
+    const keyframes = new Map<number, KeyframePose>([[1, roomPose(0)]]);
+    const map = mapReaderFor(landmarks, keyframes);
+    const stage = new LocalizationStage();
+    const rng = new Rng(12);
+    const before = roomPose(10);
+    expect(solve(stage, map, populationFor(map, before, rng), 1).state).toBe(LocalizationState.LOCALIZED);
+    const { population, truth } = broken(populationFor(map, turned(before, 3), rng));
+    const report = solve(stage, map, population, 2);
+    expect(report.state, report.reason).toBe(LocalizationState.LOCALIZED);
+    expect(report.recovered).toBe(true);
+    expect(stage.takeRelabels().filter(([from, to]) => truth.get(from) !== to)).toEqual([]);
+  });
+
+  it('recovers on a large map, where chance pairs crowd the vote', () => {
+    // The first version trusted one vote peak that had to stand three times above the mean bin.
+    // On a few hundred landmarks that held; on a map this size the chance votes near the true
+    // shift come close to the true ones, and recovery failed at the third or fourth dropout of
+    // every rough-feed run, after which the world was redefined.
+    const second = roomLandmarks({ seed: 9 }).map((l) => ({ ...l, id: l.id + 5000 }));
+    const landmarks = [...roomLandmarks(), ...second, ...roomLandmarks({ seed: 21 }).map((l) => ({ ...l, id: l.id + 9000 }))];
+    expect(landmarks.length).toBeGreaterThan(1800);
+    const map = mapReaderFor(landmarks, new Map<number, KeyframePose>([[1, roomPose(0)]]));
+    const stage = new LocalizationStage();
+    const rng = new Rng(14);
+    const before = roomPose(10);
+    expect(solve(stage, map, populationFor(map, before, rng), 1).state).toBe(LocalizationState.LOCALIZED);
+    for (const deg of [2, -3, 5, -6]) {
+      // After a dropout only some corners are found again, and the points are noisier.
+      const seen = populationFor(map, turned(before, deg), rng, 0.8).filter((_, i) => i % 2 === 0);
+      const { population, truth } = broken(seen);
+      const report = solve(stage, map, population, 2);
+      expect(report.state, `after a ${deg}° turn on ${landmarks.length} landmarks: ${report.reason}`).toBe(LocalizationState.LOCALIZED);
+      expect(report.recovered).toBe(true);
+      expect(stage.takeRelabels().filter(([from, to]) => truth.get(from) !== to)).toEqual([]);
+      expect(solve(stage, map, populationFor(map, before, rng), 3).state).toBe(LocalizationState.LOCALIZED);
+    }
+  });
+
+  it('says whether the camera was placed in this world recently', () => {
+    const { map, stage } = setup();
+    expect(stage.localizedWithin(3000, 1)).toBe(false);
+    solve(stage, map, populationFor(map, roomPose(10), new Rng(13)), 1);
+    expect(stage.localizedWithin(3000, 1)).toBe(true);
+    expect(stage.localizedWithin(3000, 2)).toBe(false);
+    stage.reset();
+    expect(stage.localizedWithin(3000, 1)).toBe(false);
   });
 
   it('does not invent a camera from points that are not the map', () => {

@@ -102,11 +102,15 @@ export const RELINK_RADIUS_PX = MAX_LOCALIZATION_MEDIAN_PX;
 export const RELINK_CONFIRM_FRAMES = 3;
 /**
  * How far the image may have moved since the last accepted pose for recovery to find it: about
- * ten degrees of turn at this field of view. Past it, recovery waits for the camera to come back.
+ * fifteen degrees of turn at this field of view (a wrist whipped through a quarter of a second
+ * does that). Past it, recovery waits for the camera to come back.
  */
-export const RECOVERY_SEARCH_PX = 80;
+export const RECOVERY_SEARCH_PX = 120;
 /** The shift histogram's bin. Wider than the relink radius, so one true shift lands in one or two bins. */
 const SHIFT_BIN_PX = 4;
+/** Candidate shifts tried per recovery, and how far apart they must be to count as different. */
+const RECOVERY_HYPOTHESES = 4;
+const RECOVERY_PEAK_GAP_PX = 24;
 
 export const LocalizationState = {
   /** The map holds too little to localize against. */
@@ -150,6 +154,9 @@ export class LocalizationStage {
   private sentEpoch = -1;
   private relinkedTotal = 0;
   private recoveredTotal = 0;
+  /** `performance.now()` when a pose was last accepted, and in which epoch. */
+  private acceptedAt = -Infinity;
+  private acceptedEpoch = -1;
   /** This frame's re-links, `[live id, landmark id]`, for the tracker. Empty unless the pose was accepted. */
   private relabels: [number, number][] = [];
   /** Candidate re-links waiting out `RELINK_CONFIRM_FRAMES`: live id → landmark and run length. */
@@ -163,8 +170,19 @@ export class LocalizationStage {
     this.sentEpoch = -1;
     this.relinkedTotal = 0;
     this.recoveredTotal = 0;
+    this.acceptedAt = -Infinity;
+    this.acceptedEpoch = -1;
     this.relabels = [];
     this.pending.clear();
+  }
+
+  /**
+   * Whether a pose was accepted in this epoch within `ms` — the world still holds the camera.
+   * `LandmarkStage` is told, so a run of unregisterable batches does not redefine a world the
+   * camera is still being placed in.
+   */
+  localizedWithin(ms: number, epoch: number): boolean {
+    return this.acceptedEpoch === epoch && performance.now() - this.acceptedAt <= ms;
   }
 
   /** The re-links the last `process` accepted, for `FlowTracker.relabel`. */
@@ -220,15 +238,40 @@ export class LocalizationStage {
       observed.add(f.id);
       correspondences.push({ id: f.id, x: f.x0, y: f.y0, world: l.position });
     }
-    // The landmarks a point could be re-linked to: confirmed, in this epoch, and carried by no live point.
-    const unobserved = all.filter((l) => l.epoch === epoch && l.state === LandmarkState.CONFIRMED && !observed.has(l.id));
+    // The landmarks a point could be re-linked to: in this epoch and carried by no live point —
+    // candidates included. A world that has just been (re)defined holds nothing else for its first
+    // seconds, and the first version, which took only confirmed landmarks, could not recover a
+    // young map from the very dropout that made it young: the map was redefined again, and again.
+    const unobserved = all.filter((l) => l.epoch === epoch && !observed.has(l.id));
 
     // Too few of the map's tracks survive: look for the landmarks where the last accepted pose,
     // moved by the shift the points agree on, says they are.
     let recovery: Relink[] = [];
     if (correspondences.length < MIN_LOCALIZATION_INLIERS && this.previous && unlinked.length > 0) {
-      recovery = recoverLinks(k, this.previous.pose, unlinked, unobserved);
-      for (const r of recovery) correspondences.push({ id: r.landmarkId, x: r.x, y: r.y, world: r.world });
+      // Several candidate image shifts, each tried by solving a pose from the pairs it implies:
+      // the shift that gives the most points agreeing with one pose is the camera's. The vote
+      // alone is not asked to be decisive — on a large map chance pairs make its peak a poor
+      // judge, and the solve's own bars (a 2 px median, half the points agreeing) are the
+      // judge that cannot be fooled by them.
+      let bestHypothesis: { links: Relink[]; inliers: number; medianPx: number } | null = null;
+      for (const links of recoverHypotheses(k, this.previous.pose, unlinked, unobserved)) {
+        const trial = [...correspondences, ...links.map((r) => ({ id: r.landmarkId, x: r.x, y: r.y, world: r.world }))];
+        if (trial.length < MIN_LOCALIZATION_INLIERS) continue;
+        const solved = this.bestSolve(k, trial, input, map);
+        if (!solved) continue;
+        const r = solved.result;
+        if (
+          !bestHypothesis ||
+          r.inliers > bestHypothesis.inliers ||
+          (r.inliers === bestHypothesis.inliers && r.medianErrorPx < bestHypothesis.medianPx)
+        ) {
+          bestHypothesis = { links, inliers: r.inliers, medianPx: r.medianErrorPx };
+        }
+      }
+      if (bestHypothesis) {
+        recovery = bestHypothesis.links;
+        for (const r of recovery) correspondences.push({ id: r.landmarkId, x: r.x, y: r.y, world: r.world });
+      }
     }
     const recoveryFrom = correspondences.length - recovery.length;
 
@@ -242,17 +285,7 @@ export class LocalizationStage {
       );
     }
 
-    const starts: { pose: CameraPose; from: string }[] = [];
-    if (this.previous) starts.push({ pose: this.previous.pose, from: 'PREVIOUS' });
-    for (let i = input.keyframeIds.length - 1, n = 0; i >= 0 && n < 2; i--) {
-      const id = input.keyframeIds[i];
-      if (id === undefined) continue;
-      const pose = map.keyframePose(id);
-      if (!pose) continue;
-      starts.push({ pose, from: 'KEYFRAME' });
-      n++;
-    }
-    if (starts.length === 0) {
+    if (this.startsFor(input, map).length === 0) {
       return this.finish(
         t0,
         { ...base, correspondences: correspondences.length },
@@ -261,18 +294,7 @@ export class LocalizationStage {
       );
     }
 
-    let best: { result: PnpResult; from: string } | null = null;
-    for (const start of starts) {
-      const result = refinePose(k, correspondences, start.pose);
-      if (!result.pose) continue;
-      if (
-        !best ||
-        result.inliers > best.result.inliers ||
-        (result.inliers === best.result.inliers && result.medianErrorPx < best.result.medianErrorPx)
-      ) {
-        best = { result, from: start.from };
-      }
-    }
+    const best = this.bestSolve(k, correspondences, input, map);
     if (!best || !best.result.pose) {
       return this.finish(
         t0,
@@ -310,6 +332,8 @@ export class LocalizationStage {
     if (accepted) {
       this.localizedFrames++;
       this.previous = { pose, epoch };
+      this.acceptedAt = performance.now();
+      this.acceptedEpoch = epoch;
       // Recovery's pairs stay only where the accepted pose agrees with them — and where, through
       // that pose, the point sits on its landmark and no other: the shift recovery voted for is
       // one shift for the whole image, and near the edges a neighbouring landmark can be the
@@ -387,6 +411,43 @@ export class LocalizationStage {
   }
 
   /* ---------------------------------------------------------------------- */
+
+  /** Where a solve may start: the last accepted pose, and the newest keyframes the map registered. */
+  private startsFor(input: LocalizationStageInput, map: MapReader): { pose: CameraPose; from: string }[] {
+    const starts: { pose: CameraPose; from: string }[] = [];
+    if (this.previous) starts.push({ pose: this.previous.pose, from: 'PREVIOUS' });
+    for (let i = input.keyframeIds.length - 1, n = 0; i >= 0 && n < 2; i--) {
+      const id = input.keyframeIds[i];
+      if (id === undefined) continue;
+      const pose = map.keyframePose(id);
+      if (!pose) continue;
+      starts.push({ pose, from: 'KEYFRAME' });
+      n++;
+    }
+    return starts;
+  }
+
+  /** The best-supported refinement over every start, or `null` if none converged. */
+  private bestSolve(
+    k: Intrinsics,
+    correspondences: readonly PnpCorrespondence[],
+    input: LocalizationStageInput,
+    map: MapReader,
+  ): { result: PnpResult; from: string } | null {
+    let best: { result: PnpResult; from: string } | null = null;
+    for (const start of this.startsFor(input, map)) {
+      const result = refinePose(k, correspondences, start.pose);
+      if (!result.pose) continue;
+      if (
+        !best ||
+        result.inliers > best.result.inliers ||
+        (result.inliers === best.result.inliers && result.medianErrorPx < best.result.medianErrorPx)
+      ) {
+        best = { result, from: start.from };
+      }
+    }
+    return best;
+  }
 
   private agreementWith(
     input: LocalizationStageInput,
@@ -580,61 +641,82 @@ function relinkUnder(
 }
 
 /**
- * Recovery: the image shift the points and the last pose's projections agree on, then
- * `relinkUnder` through it.
+ * Recovery's candidates: the image shifts the points and the last pose's projections most agree
+ * on, each as the pairs it implies.
  *
  * A turn of the camera moves the whole image by nearly one shift. Every pair within
- * `RECOVERY_SEARCH_PX` votes for its difference; the true pairs pile into one bin and chance
- * pairs spread over all of them. The peak must hold at least `MIN_LOCALIZATION_INLIERS` votes
- * and stand at least three times above the mean bin, or nothing is linked.
+ * `RECOVERY_SEARCH_PX` votes for its difference; the true pairs pile into one bin and chance pairs
+ * spread over all of them. The best `RECOVERY_HYPOTHESES` peaks that are `RECOVERY_PEAK_GAP_PX`
+ * apart and hold at least `MIN_LOCALIZATION_INLIERS` votes are returned, each as the unique pairs
+ * `relinkUnder` finds through it. The caller solves a pose from each; this function does not claim
+ * any of them is right.
+ *
+ * The first version returned one peak and demanded it stand three times above the mean bin. On a
+ * map of a few hundred landmarks that held; past about seven hundred the chance votes in a bin's
+ * neighbourhood approach the true ones, the test failed, the camera was not found, and five
+ * unregistered batches later the world was redefined — on the rough feed, at the third or fourth
+ * dropout, in every run.
  */
-function recoverLinks(
+function recoverHypotheses(
   k: Intrinsics,
   pose: CameraPose,
   points: readonly { id: number; x: number; y: number }[],
   landmarks: readonly Landmark[],
-): Relink[] {
+): Relink[][] {
   const projected = project(k, pose, landmarks, RECOVERY_SEARCH_PX);
   if (projected.length < MIN_LOCALIZATION_INLIERS) return [];
-  const grid = gridOf(projected, RECOVERY_SEARCH_PX / 2);
+  const cell = RECOVERY_SEARCH_PX / 2;
+  const grid = gridOf(projected, cell);
   const bins = new Map<string, number>();
-  let votes = 0;
   for (const f of points) {
-    for (const p of near(grid, RECOVERY_SEARCH_PX / 2, f.x, f.y, RECOVERY_SEARCH_PX)) {
+    for (const p of near(grid, cell, f.x, f.y, RECOVERY_SEARCH_PX)) {
       const dx = f.x - p.x;
       const dy = f.y - p.y;
       if (Math.abs(dx) > RECOVERY_SEARCH_PX || Math.abs(dy) > RECOVERY_SEARCH_PX) continue;
       const key = `${Math.floor(dx / SHIFT_BIN_PX)},${Math.floor(dy / SHIFT_BIN_PX)}`;
       bins.set(key, (bins.get(key) ?? 0) + 1);
-      votes++;
     }
   }
-  if (bins.size === 0) return [];
-  // The peak over 2×2 neighbourhoods, so a shift on a bin edge is not split in two.
-  let peak = 0;
-  let at = { x: 0, y: 0 };
+  // Each bin's vote summed with its 2×2 neighbourhood, so a shift on a bin edge is not split.
+  const peaks: { sum: number; x: number; y: number }[] = [];
+  const seen = new Set<string>();
   for (const key of bins.keys()) {
     const [bx, by] = key.split(',').map(Number) as [number, number];
-    let sum = 0;
-    let sx = 0;
-    let sy = 0;
-    for (let dy = 0; dy <= 1; dy++) {
-      for (let dx = 0; dx <= 1; dx++) {
-        const n = bins.get(`${bx + dx},${by + dy}`) ?? 0;
-        sum += n;
-        sx += n * (bx + dx + 0.5) * SHIFT_BIN_PX;
-        sy += n * (by + dy + 0.5) * SHIFT_BIN_PX;
+    for (let oy = -1; oy <= 0; oy++) {
+      for (let ox = -1; ox <= 0; ox++) {
+        const x0 = bx + ox;
+        const y0 = by + oy;
+        const id = `${x0},${y0}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        let sum = 0;
+        let sx = 0;
+        let sy = 0;
+        for (let dy = 0; dy <= 1; dy++) {
+          for (let dx = 0; dx <= 1; dx++) {
+            const n = bins.get(`${x0 + dx},${y0 + dy}`) ?? 0;
+            sum += n;
+            sx += n * (x0 + dx + 0.5) * SHIFT_BIN_PX;
+            sy += n * (y0 + dy + 0.5) * SHIFT_BIN_PX;
+          }
+        }
+        if (sum >= MIN_LOCALIZATION_INLIERS) peaks.push({ sum, x: sx / sum, y: sy / sum });
       }
     }
-    if (sum > peak) {
-      peak = sum;
-      at = { x: sx / sum, y: sy / sum };
-    }
   }
-  const binsInWindow = ((2 * RECOVERY_SEARCH_PX) / SHIFT_BIN_PX) ** 2;
-  const mean = (4 * votes) / binsInWindow;
-  if (peak < MIN_LOCALIZATION_INLIERS || peak < 3 * mean) return [];
-  return relinkUnder(k, pose, points, landmarks, SHIFT_BIN_PX, at);
+  peaks.sort((a, b) => b.sum - a.sum);
+  const chosen: { x: number; y: number }[] = [];
+  for (const p of peaks) {
+    if (chosen.length >= RECOVERY_HYPOTHESES) break;
+    if (chosen.some((c) => Math.hypot(c.x - p.x, c.y - p.y) < RECOVERY_PEAK_GAP_PX)) continue;
+    chosen.push({ x: p.x, y: p.y });
+  }
+  const out: Relink[][] = [];
+  for (const shift of chosen) {
+    const links = relinkUnder(k, pose, points, landmarks, SHIFT_BIN_PX, shift);
+    if (links.length >= MIN_LOCALIZATION_INLIERS) out.push(links);
+  }
+  return out;
 }
 
 /**

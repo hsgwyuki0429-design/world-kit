@@ -48,6 +48,8 @@ try {
   await confirm();
 
   const t0 = Date.now();
+  // Watched from the first frame: the world is most fragile while it is young, and the first
+  // version of this leg looked only after READY and missed four redefinitions before it.
   const ready = await page.waitForFunction(() => window.__SPATIAL_DEBUG__.getGameView().state === 'READY', undefined, { timeout: 240_000 })
     .then(() => true, () => false);
   console.log(`[rough] ${ready ? `READY after ${Math.round((Date.now() - t0) / 1000)} s` : 'never READY'}`);
@@ -67,6 +69,7 @@ try {
     await page.waitForTimeout(250);
   }
   const after = await page.evaluate(() => ({ game: window.__SPATIAL_DEBUG__.getGameStats(), world: window.__SPATIAL_DEBUG__.getWorldStats() }));
+  const diag = await page.evaluate(() => window.__SPATIAL_DEBUG__.getDiagnostics().report);
   const d = (k, from = 'game') => (after[from][k] ?? 0) - (before[from][k] ?? 0);
   summary = {
     observedS: OBSERVE_S,
@@ -82,6 +85,11 @@ try {
     longestUnlocalizedRun: after.world.longestUnlocalizedRun ?? 'n/a',
     trackingSamples: tracking,
     gameSamples: game,
+    sessionLostS: diag.session.lostS,
+    sessionLongestLostS: diag.session.longestLostS,
+    sessionGoodS: diag.session.goodS,
+    sessionTotalS: diag.session.totalS,
+    worldRedefinitions: diag.map.epochChanges,
   };
   console.log(`[rough] ${JSON.stringify(summary)}`);
   if (errors.length > 0) problems.push(`page errors: ${errors.slice(0, 3).join(' | ')}`);
@@ -93,6 +101,11 @@ try {
 if (!REPORT_ONLY && summary) {
   if (summary.lostEntries > 0) problems.push(`play froze on TRACKING LOST ${summary.lostEntries} time(s) in ${OBSERVE_S} s`);
   if (summary.worldRedefinedUnderStage > 0) problems.push(`the world was redefined under the stage ${summary.worldRedefinedUnderStage} time(s)`);
+  // The whole session, from the first frame: a camera that is lost for seconds at a time while
+  // the map is young is the report this leg exists for.
+  if (summary.worldRedefinitions > 0) problems.push(`the world was redefined ${summary.worldRedefinitions} time(s) in ${summary.sessionTotalS} s`);
+  if (summary.sessionLongestLostS > 1.5) problems.push(`tracking was LOST for ${summary.sessionLongestLostS} s at a stretch`);
+  if (summary.sessionLostS > 0.1 * summary.sessionTotalS) problems.push(`tracking was LOST for ${summary.sessionLostS} of ${summary.sessionTotalS} s`);
   if (!(summary.recovered > 0)) problems.push('no frame was recovered by re-linking — the dropouts were not exercised');
   if (!(summary.localized / summary.reports >= 0.8)) problems.push(`only ${summary.localized}/${summary.reports} frames localized`);
 }
